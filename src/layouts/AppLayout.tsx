@@ -10,9 +10,9 @@ const AppLayout = () => {
   const {isAuthenticated} = useAuthContext();
   const navigate = useNavigate();
 
-  // useEffect(() => {
-  //   !isAuthenticated && navigate({to: '/signin'});
-  // }, [isAuthenticated]);
+    // useEffect(() => {
+    //   !isAuthenticated && navigate({to: '/signin'});
+    // }, [isAuthenticated]);
 
   return (
     <div className="dark:bg-boxdark-2 dark:text-bodydark">
@@ -26,7 +26,7 @@ const AppLayout = () => {
           </main>
         </div>
       </div>
-              <Footer />
+    
     </div>
   );
 };

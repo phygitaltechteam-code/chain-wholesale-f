@@ -115,7 +115,7 @@ const SignIn: React.FC = () => {
             {/* Login Button */}
             <button
               onClick={() => {
-                navigate({to: '/market'});
+                navigate({to: '/dashboard'});
               }}
               className="group mt-2 flex w-full transform items-center justify-center rounded-full bg-[#37ec13] px-6 py-4 font-bold text-[#132210] shadow-lg shadow-[#37ec13]/20 transition-all hover:bg-opacity-90 active:scale-[0.98]"
               type="submit"
@@ -128,12 +128,14 @@ const SignIn: React.FC = () => {
             <div className="mt-6 text-center">
               <p className="text-sm text-white">
                 Don't have an account?
-                <Link
+                <button
                   className="ml-1 font-bold text-[#37ec13] hover:underline"
-                  to="/signup"
+                  onClick={() => {
+                    navigate({to: '/signup'});
+                  }}
                 >
                   Sign Up
-                </Link>
+                </button>
               </p>
             </div>
           </form>

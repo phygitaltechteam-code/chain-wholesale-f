@@ -1,5 +1,5 @@
-import {useNavigate} from '@tanstack/react-router';
-import React, {useState} from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import React, { useState } from 'react';
 import {
   MdNotifications,
   MdTrendingUp,
@@ -11,10 +11,9 @@ import {
   MdInfoOutline,
   MdArrowDropDown,
   MdArrowDropUp,
-  MdSwipe,
 } from 'react-icons/md';
 
-// Types
+// ==================== TYPES ====================
 interface Holding {
   id: string;
   symbol: string;
@@ -28,7 +27,7 @@ interface Holding {
   pnlPercent: number;
   dayChange: number;
   dayChangePercent: number;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   assetType: 'gold' | 'silver' | 'digital' | 'coin';
 }
 
@@ -46,145 +45,45 @@ interface Position {
   pnlPercent: number;
   dayChange: number;
   dayChangePercent: number;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   expiry?: string;
   margin?: number;
 }
 
-const Portfolio: React.FC = () => {
+interface PortfolioProps {
+  holdings?: Holding[];
+  positions?: Position[];
+}
+
+// ==================== MAIN PORTFOLIO COMPONENT ====================
+const Portfolio: React.FC<PortfolioProps> = ({
+  holdings: initialHoldings = [],
+  positions: initialPositions = [],
+}) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'holdings' | 'positions'>(
-    'holdings',
-  );
+  const [activeTab, setActiveTab] = useState<'holdings' | 'positions'>('holdings');
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
 
-  // Sample holdings data with detailed information
-  const holdings: Holding[] = [
-    {
-      id: '1',
-      symbol: 'XAU/USD',
-      name: 'Spot Gold',
-      quantity: 150,
-      avgPrice: 62.87,
-      ltp: 64.2,
-      investAmount: 9430.5,
-      currentValue: 9630.0,
-      pnl: 199.5,
-      pnlPercent: 2.12,
-      dayChange: 15.2,
-      dayChangePercent: 0.24,
-      icon: <MdGridView />,
-      assetType: 'gold',
-    },
-    {
-      id: '2',
-      symbol: 'KRUGER',
-      name: 'Krugerrand',
-      quantity: 5,
-      avgPrice: 1995.0,
-      ltp: 2015.0,
-      investAmount: 9975.0,
-      currentValue: 10075.0,
-      pnl: 100.0,
-      pnlPercent: 1.0,
-      dayChange: 8.5,
-      dayChangePercent: 0.42,
-      icon: <MdMonetizationOn />,
-      assetType: 'coin',
-    },
-    {
-      id: '3',
-      symbol: 'XAG/USD',
-      name: 'Silver Bar',
-      quantity: 5000,
-      avgPrice: 0.87,
-      ltp: 0.86,
-      investAmount: 4350.0,
-      currentValue: 4300.0,
-      pnl: -50.0,
-      pnlPercent: -1.15,
-      dayChange: -12.3,
-      dayChangePercent: -1.41,
-      icon: <MdRectangle />,
-      assetType: 'silver',
-    },
-    {
-      id: '4',
-      symbol: 'DGLD',
-      name: 'Digital Gold',
-      quantity: 938,
-      avgPrice: 64.5,
-      ltp: 64.18,
-      investAmount: 60471.0,
-      currentValue: 60200.84,
-      pnl: -270.16,
-      pnlPercent: -0.45,
-      dayChange: -5.2,
-      dayChangePercent: -0.08,
-      icon: <MdCloudDone />,
-      assetType: 'digital',
-    },
-  ];
+  // Use passed data or fallback to sample data
+  const holdings = initialHoldings.length > 0 ? initialHoldings : getSampleHoldings();
+  const positions = initialPositions.length > 0 ? initialPositions : getSamplePositions();
 
-  // Sample positions data with detailed information
-  const positions: Position[] = [
-    {
-      id: 'p1',
-      symbol: 'GOLDFUT',
-      name: 'Gold Futures',
-      type: 'long',
-      quantity: 2,
-      avgPrice: 2415.0,
-      ltp: 2430.0,
-      investAmount: 4830.0,
-      currentValue: 4860.0,
-      pnl: 30.0,
-      pnlPercent: 0.62,
-      dayChange: 15.0,
-      dayChangePercent: 0.62,
-      icon: <MdCandlestickChart />,
-      expiry: 'Dec 2024',
-      margin: 1200.0,
-    },
-    {
-      id: 'p2',
-      symbol: 'SILVFUT',
-      name: 'Silver Futures',
-      type: 'short',
-      quantity: 1,
-      avgPrice: 1215.0,
-      ltp: 1208.0,
-      investAmount: 1215.0,
-      currentValue: 1208.0,
-      pnl: 7.0,
-      pnlPercent: 0.58,
-      dayChange: -4.5,
-      dayChangePercent: -0.37,
-      icon: <MdCandlestickChart />,
-      expiry: 'Dec 2024',
-      margin: 800.0,
-    },
-  ];
-
-  // Calculate portfolio summary
+  // Portfolio Summary Calculations
   const totalInvestment = holdings.reduce((sum, h) => sum + h.investAmount, 0);
-  const totalCurrentValue = holdings.reduce(
-    (sum, h) => sum + h.currentValue,
-    0,
-  );
+  const totalCurrentValue = holdings.reduce((sum, h) => sum + h.currentValue, 0);
   const totalPnl = totalCurrentValue - totalInvestment;
-  const totalPnlPercent = (totalPnl / totalInvestment) * 100;
+  const totalPnlPercent = totalInvestment > 0 ? (totalPnl / totalInvestment) * 100 : 0;
 
   const toggleRow = (id: string) => {
     setExpandedRows((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
     );
   };
 
   return (
     <div className="flex min-h-screen justify-center bg-[#050505] font-[Inter] text-white">
       <div className="flex min-h-screen w-full flex-col pb-20">
-        {/* Header - Optimized for mobile */}
+        {/* Header */}
         <header className="sticky top-0 z-10 flex items-center justify-between bg-[#050505]/95 px-4 py-4 backdrop-blur-lg">
           <div className="flex items-center gap-2">
             <div className="h-9 w-9 overflow-hidden rounded-full border border-white/10">
@@ -194,7 +93,6 @@ const Portfolio: React.FC = () => {
                 className="h-full w-full object-cover"
               />
             </div>
-
             <h1 className="text-lg font-bold tracking-tight">Portfolio</h1>
           </div>
 
@@ -206,41 +104,36 @@ const Portfolio: React.FC = () => {
 
         {/* Main Content */}
         <main className="flex flex-1 flex-col gap-4 px-2">
-          {/* Portfolio Card - Mobile optimized */}
+          {/* Portfolio Summary Card */}
           <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-[#131313] shadow-[0_0_15px_rgba(55,236,19,0.15)]">
             <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#37ec13]/10 blur-[60px]" />
-
             <div className="relative flex flex-col gap-4 p-4">
               <div>
-                <p className="mb-1 text-xs text-white/60">
-                  Total Portfolio Value
-                </p>
-
-                <h2 className="text-2xl font-bold">
-                  ${totalCurrentValue.toFixed(2)}
-                </h2>
+                <p className="mb-1 text-xs text-white/60">Total Portfolio Value</p>
+                <h2 className="text-2xl font-bold">${totalCurrentValue.toFixed(2)}</h2>
 
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <div className="rounded-lg bg-white/5 p-2">
                     <p className="text-xs text-white/40">Investment</p>
-                    <p className="text-sm font-semibold">
-                      ${totalInvestment.toFixed(2)}
-                    </p>
+                    <p className="text-sm font-semibold">${totalInvestment.toFixed(2)}</p>
                   </div>
                   <div className="rounded-lg bg-white/5 p-2">
                     <p className="text-xs text-white/40">Overall P&L</p>
                     <p
                       className={`text-sm font-semibold ${totalPnl >= 0 ? 'text-[#37ec13]' : 'text-red-500'}`}
                     >
-                      {totalPnl >= 0 ? '+' : '-'}$
-                      {Math.abs(totalPnl).toFixed(2)}
+                      {totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toFixed(2)}
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-3 flex items-center gap-2">
                   <span
-                    className={`flex items-center rounded-lg ${totalPnl >= 0 ? 'bg-[#37ec13]/10 text-[#37ec13]' : 'bg-red-500/10 text-red-500'} px-2 py-1 text-xs font-semibold`}
+                    className={`flex items-center rounded-lg ${
+                      totalPnl >= 0
+                        ? 'bg-[#37ec13]/10 text-[#37ec13]'
+                        : 'bg-red-500/10 text-red-500'
+                    } px-2 py-1 text-xs font-semibold`}
                   >
                     {totalPnl >= 0 ? (
                       <MdTrendingUp className="mr-1" />
@@ -255,7 +148,7 @@ const Portfolio: React.FC = () => {
             </div>
           </div>
 
-          {/* Tabs - Mobile friendly */}
+          {/* Tabs */}
           <div className="flex rounded-full bg-[#1f221e] p-1">
             <button
               onClick={() => setActiveTab('holdings')}
@@ -267,7 +160,6 @@ const Portfolio: React.FC = () => {
             >
               Holdings ({holdings.length})
             </button>
-
             <button
               onClick={() => setActiveTab('positions')}
               className={`flex-1 rounded-full py-2.5 text-sm font-semibold transition-all active:scale-95 ${
@@ -280,7 +172,7 @@ const Portfolio: React.FC = () => {
             </button>
           </div>
 
-          {/* Summary Bar - Mobile optimized */}
+          {/* Summary Bar */}
           <div className="sticky top-[72px] z-10 flex items-center justify-between bg-[#050505]/95 px-2 py-2 text-xs text-white/40 backdrop-blur-sm">
             <div className="flex items-center gap-1">
               <span>Asset</span>
@@ -293,46 +185,145 @@ const Portfolio: React.FC = () => {
             </div>
           </div>
 
-          {/* Assets/Positions List - Mobile optimized */}
+          {/* Assets / Positions List */}
           <div className="flex flex-col gap-2 pb-4">
-            {activeTab === 'holdings' && (
-              <>
-                {holdings.map((holding) => (
-                  <React.Fragment key={holding.id}>
-                    <HoldingItem
-                      holding={holding}
-                      isExpanded={expandedRows.includes(holding.id)}
-                      onToggle={() => toggleRow(holding.id)}
-                    />
-                  </React.Fragment>
-                ))}
-              </>
-            )}
+            {activeTab === 'holdings' &&
+              holdings.map((holding) => (
+                <HoldingItem
+                  key={holding.id}
+                  holding={holding}
+                  isExpanded={expandedRows.includes(holding.id)}
+                  onToggle={() => toggleRow(holding.id)}
+                />
+              ))}
 
-            {activeTab === 'positions' && (
-              <>
-                {positions.map((position) => (
-                  <React.Fragment key={position.id}>
-                    <PositionItem
-                      position={position}
-                      isExpanded={expandedRows.includes(position.id)}
-                      onToggle={() => toggleRow(position.id)}
-                    />
-                  </React.Fragment>
-                ))}
-              </>
-            )}
+            {activeTab === 'positions' &&
+              positions.map((position) => (
+                <PositionItem
+                  key={position.id}
+                  position={position}
+                  isExpanded={expandedRows.includes(position.id)}
+                  onToggle={() => toggleRow(position.id)}
+                />
+              ))}
           </div>
         </main>
 
-        {/* Bottom Safe Area for Mobile */}
+        {/* Bottom Safe Area */}
         <div className="h-4" />
       </div>
     </div>
   );
 };
 
-// Mobile-optimized Holding Item Component
+// ==================== SAMPLE DATA ====================
+const getSampleHoldings = (): Holding[] => [
+  {
+    id: '1',
+    symbol: 'XAU/USD',
+    name: 'Spot Gold',
+    quantity: 150,
+    avgPrice: 62.87,
+    ltp: 64.2,
+    investAmount: 9430.5,
+    currentValue: 9630.0,
+    pnl: 199.5,
+    pnlPercent: 2.12,
+    dayChange: 15.2,
+    dayChangePercent: 0.24,
+    icon: <MdGridView />,
+    assetType: 'gold',
+  },
+  {
+    id: '2',
+    symbol: 'KRUGER',
+    name: 'Krugerrand',
+    quantity: 5,
+    avgPrice: 1995.0,
+    ltp: 2015.0,
+    investAmount: 9975.0,
+    currentValue: 10075.0,
+    pnl: 100.0,
+    pnlPercent: 1.0,
+    dayChange: 8.5,
+    dayChangePercent: 0.42,
+    icon: <MdMonetizationOn />,
+    assetType: 'coin',
+  },
+  {
+    id: '3',
+    symbol: 'XAG/USD',
+    name: 'Silver Bar',
+    quantity: 5000,
+    avgPrice: 0.87,
+    ltp: 0.86,
+    investAmount: 4350.0,
+    currentValue: 4300.0,
+    pnl: -50.0,
+    pnlPercent: -1.15,
+    dayChange: -12.3,
+    dayChangePercent: -1.41,
+    icon: <MdRectangle />,
+    assetType: 'silver',
+  },
+  {
+    id: '4',
+    symbol: 'DGLD',
+    name: 'Digital Gold',
+    quantity: 938,
+    avgPrice: 64.5,
+    ltp: 64.18,
+    investAmount: 60471.0,
+    currentValue: 60200.84,
+    pnl: -270.16,
+    pnlPercent: -0.45,
+    dayChange: -5.2,
+    dayChangePercent: -0.08,
+    icon: <MdCloudDone />,
+    assetType: 'digital',
+  },
+];
+
+const getSamplePositions = (): Position[] => [
+  {
+    id: 'p1',
+    symbol: 'GOLDFUT',
+    name: 'Gold Futures',
+    type: 'long',
+    quantity: 2,
+    avgPrice: 2415.0,
+    ltp: 2430.0,
+    investAmount: 4830.0,
+    currentValue: 4860.0,
+    pnl: 30.0,
+    pnlPercent: 0.62,
+    dayChange: 15.0,
+    dayChangePercent: 0.62,
+    icon: <MdCandlestickChart />,
+    expiry: 'Dec 2024',
+    margin: 1200.0,
+  },
+  {
+    id: 'p2',
+    symbol: 'SILVFUT',
+    name: 'Silver Futures',
+    type: 'short',
+    quantity: 1,
+    avgPrice: 1215.0,
+    ltp: 1208.0,
+    investAmount: 1215.0,
+    currentValue: 1208.0,
+    pnl: 7.0,
+    pnlPercent: 0.58,
+    dayChange: -4.5,
+    dayChangePercent: -0.37,
+    icon: <MdCandlestickChart />,
+    expiry: 'Dec 2024',
+    margin: 800.0,
+  },
+];
+
+// ==================== HOLDING ITEM COMPONENT ====================
 interface HoldingItemProps {
   holding: Holding;
   isExpanded: boolean;
@@ -348,7 +339,7 @@ const HoldingItem: React.FC<HoldingItemProps> = ({
 
   return (
     <div className="overflow-hidden rounded-xl border border-white/5 bg-[#131313] transition-colors active:bg-white/5">
-      {/* Main Row - Mobile optimized touch target */}
+      {/* Main Row */}
       <div
         className="flex min-h-[64px] cursor-pointer items-center justify-between p-3"
         onClick={onToggle}
@@ -357,7 +348,6 @@ const HoldingItem: React.FC<HoldingItemProps> = ({
         onKeyDown={(e) => e.key === 'Enter' && onToggle()}
       >
         <div className="flex min-w-0 flex-1 items-center gap-2">
-
           <div className="min-w-0">
             <h4 className="truncate text-xs font-bold text-white">
               {holding.name}
@@ -373,12 +363,10 @@ const HoldingItem: React.FC<HoldingItemProps> = ({
             <div className="text-xs font-medium">{holding.quantity}</div>
             <div className="text-xs text-white/40">Qty</div>
           </div>
-
           <div className="w-16 text-right">
             <div className="text-xs">${holding.ltp.toFixed(2)}</div>
             <div className="text-xs text-white/40">LTP</div>
           </div>
-
           <div className="w-16 text-right">
             <div
               className={`text-sm font-semibold ${pnlPositive ? 'text-[#37ec13]' : 'text-red-500'}`}
@@ -392,7 +380,6 @@ const HoldingItem: React.FC<HoldingItemProps> = ({
               ${Math.abs(holding.pnl).toFixed(2)}
             </div>
           </div>
-
           <div className="ml-1 text-white/40">
             {isExpanded ? (
               <MdArrowDropUp className="text-xl" />
@@ -403,39 +390,27 @@ const HoldingItem: React.FC<HoldingItemProps> = ({
         </div>
       </div>
 
-      {/* Expanded Details - Mobile optimized grid */}
+      {/* Expanded Details */}
       {isExpanded && (
         <div className="border-t border-white/5 bg-black/20 p-3">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <p className="mb-2 text-xs text-white/40">Investment Details</p>
               <div className="space-y-2">
-                <DetailRow
-                  label="Invested"
-                  value={`$${holding.investAmount.toFixed(2)}`}
-                />
-                <DetailRow
-                  label="Avg Price"
-                  value={`$${holding.avgPrice.toFixed(2)}`}
-                />
+                <DetailRow label="Invested" value={`$${holding.investAmount.toFixed(2)}`} />
+                <DetailRow label="Avg Price" value={`$${holding.avgPrice.toFixed(2)}`} />
                 <DetailRow
                   label="Day Change"
                   value={`${holding.dayChange >= 0 ? '+' : '-'}${Math.abs(holding.dayChangePercent).toFixed(2)}%`}
-                  valueClass={
-                    holding.dayChange >= 0 ? 'text-[#37ec13]' : 'text-red-500'
-                  }
+                  valueClass={holding.dayChange >= 0 ? 'text-[#37ec13]' : 'text-red-500'}
                 />
               </div>
             </div>
-
             <div>
               <p className="mb-2 text-xs text-white/40">Asset Details</p>
               <div className="space-y-2">
                 <DetailRow label="Type" value={holding.assetType} capitalize />
-                <DetailRow
-                  label="Current Val"
-                  value={`$${holding.currentValue.toFixed(2)}`}
-                />
+                <DetailRow label="Current Val" value={`$${holding.currentValue.toFixed(2)}`} />
                 <DetailRow
                   label="Total Qty"
                   value={`${holding.quantity}${holding.assetType === 'digital' ? 'g' : holding.assetType === 'coin' ? ' oz' : 'g'}`}
@@ -449,7 +424,7 @@ const HoldingItem: React.FC<HoldingItemProps> = ({
   );
 };
 
-// Mobile-optimized Position Item Component
+// ==================== POSITION ITEM COMPONENT ====================
 interface PositionItemProps {
   position: Position;
   isExpanded: boolean;
@@ -465,7 +440,7 @@ const PositionItem: React.FC<PositionItemProps> = ({
 
   return (
     <div className="overflow-hidden rounded-xl border border-white/5 bg-[#131313] transition-colors active:bg-white/5">
-      {/* Main Row - Mobile optimized */}
+      {/* Main Row */}
       <div
         className="flex min-h-[64px] cursor-pointer items-center justify-between p-3"
         onClick={onToggle}
@@ -474,7 +449,6 @@ const PositionItem: React.FC<PositionItemProps> = ({
         onKeyDown={(e) => e.key === 'Enter' && onToggle()}
       >
         <div className="flex min-w-0 flex-1 items-center gap-2">
-
           <div className="min-w-0">
             <div className="flex items-center gap-1">
               <h4 className="truncate text-xs font-bold text-white">
@@ -492,12 +466,10 @@ const PositionItem: React.FC<PositionItemProps> = ({
             <div className="text-xs font-medium">{position.quantity}</div>
             <div className="text-xs text-white/40">Qty</div>
           </div>
-
           <div className="w-16 text-right">
             <div className="text-xs">${position.ltp.toFixed(2)}</div>
             <div className="text-xs text-white/40">LTP</div>
           </div>
-
           <div className="w-16 text-right">
             <div
               className={`text-xs font-semibold ${pnlPositive ? 'text-[#37ec13]' : 'text-red-500'}`}
@@ -511,7 +483,6 @@ const PositionItem: React.FC<PositionItemProps> = ({
               ${Math.abs(position.pnl).toFixed(2)}
             </div>
           </div>
-
           <div className="ml-1 text-white/40">
             {isExpanded ? (
               <MdArrowDropUp className="text-xl" />
@@ -522,42 +493,27 @@ const PositionItem: React.FC<PositionItemProps> = ({
         </div>
       </div>
 
-      {/* Expanded Details - Mobile optimized */}
+      {/* Expanded Details */}
       {isExpanded && (
         <div className="border-t border-white/5 bg-black/20 p-3">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <p className="mb-2 text-xs text-white/40">Position Details</p>
               <div className="space-y-2">
-                <DetailRow
-                  label="Margin"
-                  value={`$${position.margin?.toFixed(2)}`}
-                />
-                <DetailRow
-                  label="Avg Price"
-                  value={`$${position.avgPrice.toFixed(2)}`}
-                />
+                <DetailRow label="Margin" value={`$${position.margin?.toFixed(2) || '0.00'}`} />
+                <DetailRow label="Avg Price" value={`$${position.avgPrice.toFixed(2)}`} />
                 <DetailRow label="Expiry" value={position.expiry || '-'} />
               </div>
             </div>
-
             <div>
               <p className="mb-2 text-xs text-white/40">P&L Breakdown</p>
               <div className="space-y-2">
-                <DetailRow
-                  label="Invested"
-                  value={`$${position.investAmount.toFixed(2)}`}
-                />
-                <DetailRow
-                  label="Current"
-                  value={`$${position.currentValue.toFixed(2)}`}
-                />
+                <DetailRow label="Invested" value={`$${position.investAmount.toFixed(2)}`} />
+                <DetailRow label="Current" value={`$${position.currentValue.toFixed(2)}`} />
                 <DetailRow
                   label="Day Change"
                   value={`${position.dayChange >= 0 ? '+' : '-'}${Math.abs(position.dayChangePercent).toFixed(2)}%`}
-                  valueClass={
-                    position.dayChange >= 0 ? 'text-[#37ec13]' : 'text-red-500'
-                  }
+                  valueClass={position.dayChange >= 0 ? 'text-[#37ec13]' : 'text-red-500'}
                 />
               </div>
             </div>
@@ -568,7 +524,7 @@ const PositionItem: React.FC<PositionItemProps> = ({
   );
 };
 
-// Helper component for detail rows
+// ==================== DETAIL ROW HELPER ====================
 interface DetailRowProps {
   label: string;
   value: string;
