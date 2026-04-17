@@ -38,31 +38,33 @@ const SignIn: React.FC = () => {
   const {mutateAsync: login, isPending, isSuccess} = useLogin();
   const {user, isAuthenticated} = useAuthContext();
 
-  // useEffect(() => {
-  //   if (isSuccess || isAuthenticated) {
-  //     window.location.href = '/dashboard';
-  //   }
-  // }, [isSuccess, isAuthenticated]);
+  useEffect(() => {
+    if (isSuccess || isAuthenticated) {
+      window.location.href = '/dashboard';
+    }
+  }, [isSuccess, isAuthenticated]);
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    console.log('Attempting login with:', credentials);
 
     if (!credentials.username || !credentials.password) {
       toast.error('Please enter username and password');
       return;
     }
 
-    // TEMPORARY: Just navigate to dashboard directly
-    navigate({to: '/dashboard'});
+   
+  //  navigate({to: '/dashboard'});
 
     // Comment out or remove the API call for now
-    // try {
-    //   await login({
-    //     username: credentials.username,
-    //     password: credentials.password,
-    //   });
-    // } catch (err) {
-    //   // Error handled in hook
-    // }
+    try {
+      await login({
+        username: credentials.username,
+        password: credentials.password,
+      });
+    } catch (err) {
+      // Error handled in hook
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -200,7 +202,7 @@ const SignIn: React.FC = () => {
                   </div>
 
                   <motion.button
-                    onClick={() => navigate({to: '/dashboard'})}
+                    onClick={() =>{handleLogin}}
                     whileHover={{scale: 1.02}}
                     whileTap={{scale: 0.98}}
                     type="submit"

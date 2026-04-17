@@ -3,40 +3,36 @@ import {motion, AnimatePresence} from 'framer-motion';
 import {FormProvider, useForm} from 'react-hook-form';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import GenericInputField from '../Forms/Input/GenericInputField';
+import { useAddClient } from './api';
+import { ClientFormData } from './types';
 
 interface AddClientProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: (clientData: any) => void;
+  onSave?: (clientData: ClientFormData) => void;
 }
 
-interface ClientFormData {
-  name: string;
-  phone: string;
-  city: string;
-  address: string;
-  gst: string;
-  pan: string;
-  aadhaar: string;
-}
+
 
 export default function AddClient({isOpen, onClose, onSave}: AddClientProps) {
   const methods = useForm<ClientFormData>({
     defaultValues: {
-      name: '',
-      phone: '',
+      fullname: '',
+      phoneNumber : '',
       city: '',
       address: '',
-      gst: '',
-      pan: '',
-      aadhaar: '',
+      GST: '',
+      PAN: '',
+      aadhar: '',
     },
   });
 
   const {handleSubmit, reset} = methods;
+  //const {mutate: addClient} = useAddClient();
+  const onSubmit = async (data: ClientFormData) => {
 
-  const onSubmit = (data: ClientFormData) => {
     console.log('Form Data:', data);
+   //  await addClient(data);
 
     if (onSave) {
       onSave(data);
@@ -103,7 +99,7 @@ export default function AddClient({isOpen, onClose, onSave}: AddClientProps) {
                     </h4>
 
                     <GenericInputField
-                      name="name"
+                      name="fullname"
                       label="Full Name"
                       placeholder="e.g. Ramesh Chandra"
                       required={true}
@@ -112,7 +108,7 @@ export default function AddClient({isOpen, onClose, onSave}: AddClientProps) {
 
                     <div className="grid grid-cols-2 gap-4">
                       <GenericInputField
-                        name="phone"
+                        name="phoneNumber"
                         label="Mobile Number"
                         placeholder="+91 00000 00000"
                         type="tel"
@@ -144,7 +140,7 @@ export default function AddClient({isOpen, onClose, onSave}: AddClientProps) {
                     </h4>
 
                     <GenericInputField
-                      name="gst"
+                      name="GST"
                       label="GST Number"
                       placeholder="27AAAAA0000A1Z5"
                       uppercase={true}
@@ -152,13 +148,13 @@ export default function AddClient({isOpen, onClose, onSave}: AddClientProps) {
 
                     <div className="grid grid-cols-2 gap-4">
                       <GenericInputField
-                        name="pan"
+                        name="PAN"
                         label="PAN Card"
                         placeholder="ABCDE1234F"
                         uppercase={true}
                       />
                       <GenericInputField
-                        name="aadhaar"
+                        name="aadhar"
                         label="Aadhaar Number"
                         placeholder="0000 0000 0000"
                       />

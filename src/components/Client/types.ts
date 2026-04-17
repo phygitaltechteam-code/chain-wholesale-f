@@ -10,6 +10,18 @@ export interface Client {
   lastActive: string;
   tier: 'Premium Tier' | 'Standard';
   avatar: string;
+
+}
+
+
+export interface ClientFormData {
+  fullname: string;
+  phoneNumber : string;
+  city: string;
+  address: string;
+  GST: string;
+  PAN: string;
+  aadhar: string;
 }
 
 export interface Transaction {
