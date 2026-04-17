@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   Printer,
   Download,
@@ -9,9 +9,9 @@ import {
   Clock,
   FileText,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import {motion} from 'framer-motion';
 
-import GenericTable, { Column } from '@/components/Forms/Table/GenericTable';
+import GenericTable, {Column} from '@/components/Forms/Table/GenericTable';
 
 type Ledger = {
   invoice: string;
@@ -111,7 +111,7 @@ const GSTReport = () => {
           >
             {item.gstin}
           </span>
-          <span className="text-[10px] text-[#5E5B56]/50 uppercase">
+          <span className="text-[10px] uppercase text-[#5E5B56]/50">
             {item.client}
           </span>
         </div>
@@ -151,7 +151,7 @@ const GSTReport = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F9F7F3] p-8 font-sans">
+    <div className="font-sans min-h-screen bg-[#F9F7F3] p-8">
       {/* Top Nav */}
       <div className="mb-10 flex justify-between">
         <span className="text-xl font-bold text-[#B88A44]">
@@ -173,13 +173,13 @@ const GSTReport = () => {
         <motion.div className="rounded-2xl bg-white p-6 shadow">
           <TrendingUp className="mb-3 text-[#B88A44]" />
           <h2 className="text-2xl font-bold">₹4,82,450</h2>
-          <p className="text-sm text-gray-500">Output GST</p>
+          <p className="text-gray-500 text-sm">Output GST</p>
         </motion.div>
 
         <motion.div className="rounded-2xl bg-white p-6 shadow">
           <Landmark className="mb-3 text-[#B88A44]" />
           <h2 className="text-2xl font-bold">₹3,15,800</h2>
-          <p className="text-sm text-gray-500">Input ITC</p>
+          <p className="text-gray-500 text-sm">Input ITC</p>
         </motion.div>
 
         <motion.div className="rounded-2xl bg-[#1E2A3A] p-6 text-white shadow">
@@ -201,7 +201,7 @@ const GSTReport = () => {
       />
 
       {/* Footer */}
-      <div className="mt-16 border-t pt-6 text-sm text-gray-500">
+      <div className="text-gray-500 mt-16 border-t pt-6 text-sm">
         <div className="flex gap-6">
           <User size={14} /> Rajesh K.
           <Clock size={14} /> 18 Oct 2023

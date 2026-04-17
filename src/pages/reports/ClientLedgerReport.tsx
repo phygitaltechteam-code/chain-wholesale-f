@@ -1,5 +1,14 @@
 import React from 'react';
-import { Calendar, Search, Filter, Printer, Download, Share2, Plus, ArrowRight } from 'lucide-react';
+import {
+  Calendar,
+  Search,
+  Filter,
+  Printer,
+  Download,
+  Share2,
+  Plus,
+  ArrowRight,
+} from 'lucide-react';
 
 const ClientLedgerReport = () => {
   const transactions = [
@@ -54,128 +63,193 @@ const ClientLedgerReport = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-atelier-bg p-8 font-sans selection:bg-atelier-gold-light selection:text-atelier-gold-dark">
+    <div className="bg-atelier-bg font-sans selection:bg-atelier-gold-light selection:text-atelier-gold-dark min-h-screen p-8">
       {/* Header Utilities */}
-      <div className="flex justify-between items-center mb-10">
+      <div className="mb-10 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-atelier-gold animate-pulse" />
-            <span className="font-serif text-lg font-semibold text-atelier-gold">Live Bullion Rates</span>
+            <div className="bg-atelier-gold h-2 w-2 animate-pulse rounded-full" />
+            <span className="font-serif text-atelier-gold text-lg font-semibold">
+              Live Bullion Rates
+            </span>
           </div>
           <div className="flex gap-6 text-sm">
-            <span className="text-atelier-ink-variant">Gold: <span className="font-bold text-atelier-gold">₹6,245</span></span>
-            <span className="text-atelier-ink-variant">Silver: <span className="font-bold text-atelier-gold">₹74,200</span></span>
+            <span className="text-atelier-ink-variant">
+              Gold: <span className="text-atelier-gold font-bold">₹6,245</span>
+            </span>
+            <span className="text-atelier-ink-variant">
+              Silver:{' '}
+              <span className="text-atelier-gold font-bold">₹74,200</span>
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-4 py-1.5 rounded-full border border-atelier-ink-variant/10 text-sm font-medium hover:bg-atelier-surface transition-colors flex items-center gap-2">
-            <Printer className="w-4 h-4" />
+          <button className="border-atelier-ink-variant/10 hover:bg-atelier-surface flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors">
+            <Printer className="h-4 w-4" />
             Print View
           </button>
-          <button className="px-4 py-1.5 rounded-full bg-linear-to-br from-atelier-gold to-atelier-gold-dark text-white text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2">
-            <Share2 className="w-4 h-4" />
+          <button className="bg-linear-to-br from-atelier-gold to-atelier-gold-dark flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90">
+            <Share2 className="h-4 w-4" />
             Export All
           </button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto">
+      <div className="mx-auto max-w-7xl">
         {/* Page Heading & Editorial Summary */}
-        <div className="flex justify-between items-end mb-10">
+        <div className="mb-10 flex items-end justify-between">
           <div>
-            <h2 className="font-serif text-4xl font-bold text-atelier-ink tracking-tight">Sales Analysis</h2>
-            <p className="text-atelier-ink-variant/70 mt-2 font-medium">Detailed transaction report for the selected period</p>
+            <h2 className="font-serif text-atelier-ink text-4xl font-bold tracking-tight">
+              Sales Analysis
+            </h2>
+            <p className="text-atelier-ink-variant/70 mt-2 font-medium">
+              Detailed transaction report for the selected period
+            </p>
           </div>
           <div className="flex gap-12 text-right">
             <div>
-              <span className="block text-[10px] uppercase tracking-widest text-atelier-ink-variant/60 font-bold mb-1">Total Sales Value</span>
-              <span className="font-serif text-3xl font-bold text-atelier-gold">₹2,48,50,000</span>
+              <span className="text-atelier-ink-variant/60 mb-1 block text-[10px] font-bold uppercase tracking-widest">
+                Total Sales Value
+              </span>
+              <span className="font-serif text-atelier-gold text-3xl font-bold">
+                ₹2,48,50,000
+              </span>
             </div>
             <div>
-              <span className="block text-[10px] uppercase tracking-widest text-atelier-ink-variant/60 font-bold mb-1">Net Weight</span>
-              <span className="font-serif text-3xl font-bold text-atelier-ink">3,982.45g</span>
+              <span className="text-atelier-ink-variant/60 mb-1 block text-[10px] font-bold uppercase tracking-widest">
+                Net Weight
+              </span>
+              <span className="font-serif text-atelier-ink text-3xl font-bold">
+                3,982.45g
+              </span>
             </div>
           </div>
         </div>
 
         {/* Filters Section (Bento Style) */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="md:col-span-2 bg-atelier-surface-low p-6 rounded-xl flex flex-col gap-3">
-            <label className="text-[10px] font-bold text-atelier-ink-variant/60 uppercase tracking-widest">Date Range Selection</label>
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="bg-atelier-surface-low flex flex-col gap-3 rounded-xl p-6 md:col-span-2">
+            <label className="text-atelier-ink-variant/60 text-[10px] font-bold uppercase tracking-widest">
+              Date Range Selection
+            </label>
             <div className="flex items-center gap-4">
-              <div className="flex-1 bg-white border border-atelier-ink-variant/5 rounded-lg px-4 py-2.5 flex items-center justify-between shadow-xs">
+              <div className="border-atelier-ink-variant/5 shadow-xs flex flex-1 items-center justify-between rounded-lg border bg-white px-4 py-2.5">
                 <span className="text-sm font-medium">Oct 01, 2023</span>
-                <Calendar className="w-4 h-4 text-atelier-ink-variant/40" />
+                <Calendar className="text-atelier-ink-variant/40 h-4 w-4" />
               </div>
               <span className="text-atelier-ink-variant/40">to</span>
-              <div className="flex-1 bg-white border border-atelier-ink-variant/5 rounded-lg px-4 py-2.5 flex items-center justify-between shadow-xs">
+              <div className="border-atelier-ink-variant/5 shadow-xs flex flex-1 items-center justify-between rounded-lg border bg-white px-4 py-2.5">
                 <span className="text-sm font-medium">Oct 31, 2023</span>
-                <Calendar className="w-4 h-4 text-atelier-ink-variant/40" />
+                <Calendar className="text-atelier-ink-variant/40 h-4 w-4" />
               </div>
             </div>
           </div>
-          <div className="bg-atelier-surface-low p-6 rounded-xl flex flex-col gap-3">
-            <label className="text-[10px] font-bold text-atelier-ink-variant/60 uppercase tracking-widest">Metal Category</label>
+          <div className="bg-atelier-surface-low flex flex-col gap-3 rounded-xl p-6">
+            <label className="text-atelier-ink-variant/60 text-[10px] font-bold uppercase tracking-widest">
+              Metal Category
+            </label>
             <div className="relative">
-              <select className="w-full appearance-none bg-white border border-atelier-ink-variant/5 rounded-lg px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-atelier-gold shadow-xs">
+              <select className="border-atelier-ink-variant/5 focus:ring-atelier-gold shadow-xs w-full appearance-none rounded-lg border bg-white px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-1">
                 <option>All Metals</option>
                 <option>Gold (22K/24K)</option>
                 <option>Silver (925/999)</option>
                 <option>Platinum</option>
               </select>
-              <ArrowRight className="absolute right-3 top-3 w-4 h-4 rotate-90 text-atelier-ink-variant/40 pointer-events-none" />
+              <ArrowRight className="text-atelier-ink-variant/40 pointer-events-none absolute right-3 top-3 h-4 w-4 rotate-90" />
             </div>
           </div>
-          <div className="bg-atelier-surface-low p-6 rounded-xl flex flex-col gap-3">
-            <label className="text-[10px] font-bold text-atelier-ink-variant/60 uppercase tracking-widest">Client Search</label>
+          <div className="bg-atelier-surface-low flex flex-col gap-3 rounded-xl p-6">
+            <label className="text-atelier-ink-variant/60 text-[10px] font-bold uppercase tracking-widest">
+              Client Search
+            </label>
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search name/ID..."
-                className="w-full bg-white border border-atelier-ink-variant/5 rounded-lg px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-atelier-gold placeholder:text-atelier-ink-variant/30 shadow-xs"
+                className="border-atelier-ink-variant/5 focus:ring-atelier-gold placeholder:text-atelier-ink-variant/30 shadow-xs w-full rounded-lg border bg-white px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-1"
               />
-              <Search className="absolute right-3 top-3 w-4 h-4 text-atelier-ink-variant/40 pointer-events-none" />
+              <Search className="text-atelier-ink-variant/40 pointer-events-none absolute right-3 top-3 h-4 w-4" />
             </div>
           </div>
         </div>
 
         {/* Ledger Table */}
-        <div className="bg-white rounded-2xl shadow-[0px_10px_40px_rgba(121,88,0,0.06)] overflow-hidden border border-atelier-ink-variant/5">
+        <div className="border-atelier-ink-variant/5 overflow-hidden rounded-2xl border bg-white shadow-[0px_10px_40px_rgba(121,88,0,0.06)]">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="bg-atelier-surface-low/50 border-b border-atelier-ink-variant/5">
-                  <th className="px-6 py-5 text-[10px] font-bold text-atelier-ink-variant/50 uppercase tracking-widest">Date</th>
-                  <th className="px-6 py-5 text-[10px] font-bold text-atelier-ink-variant/50 uppercase tracking-widest">Invoice #</th>
-                  <th className="px-6 py-5 text-[10px] font-bold text-atelier-ink-variant/50 uppercase tracking-widest">Client</th>
-                  <th className="px-6 py-5 text-[10px] font-bold text-atelier-ink-variant/50 uppercase tracking-widest">Metal Detail</th>
-                  <th className="px-6 py-5 text-[10px] font-bold text-atelier-ink-variant/50 uppercase tracking-widest">Rate (per g)</th>
-                  <th className="px-6 py-5 text-[10px] font-bold text-atelier-ink-variant/50 uppercase tracking-widest text-right">Taxable</th>
-                  <th className="px-6 py-5 text-[10px] font-bold text-atelier-ink-variant/50 uppercase tracking-widest text-right">GST (3%)</th>
-                  <th className="px-6 py-5 text-[10px] font-bold text-atelier-ink-variant/50 uppercase tracking-widest text-right">Total</th>
+                <tr className="bg-atelier-surface-low/50 border-atelier-ink-variant/5 border-b">
+                  <th className="text-atelier-ink-variant/50 px-6 py-5 text-[10px] font-bold uppercase tracking-widest">
+                    Date
+                  </th>
+                  <th className="text-atelier-ink-variant/50 px-6 py-5 text-[10px] font-bold uppercase tracking-widest">
+                    Invoice #
+                  </th>
+                  <th className="text-atelier-ink-variant/50 px-6 py-5 text-[10px] font-bold uppercase tracking-widest">
+                    Client
+                  </th>
+                  <th className="text-atelier-ink-variant/50 px-6 py-5 text-[10px] font-bold uppercase tracking-widest">
+                    Metal Detail
+                  </th>
+                  <th className="text-atelier-ink-variant/50 px-6 py-5 text-[10px] font-bold uppercase tracking-widest">
+                    Rate (per g)
+                  </th>
+                  <th className="text-atelier-ink-variant/50 px-6 py-5 text-right text-[10px] font-bold uppercase tracking-widest">
+                    Taxable
+                  </th>
+                  <th className="text-atelier-ink-variant/50 px-6 py-5 text-right text-[10px] font-bold uppercase tracking-widest">
+                    GST (3%)
+                  </th>
+                  <th className="text-atelier-ink-variant/50 px-6 py-5 text-right text-[10px] font-bold uppercase tracking-widest">
+                    Total
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-atelier-ink-variant/5">
+              <tbody className="divide-atelier-ink-variant/5 divide-y">
                 {transactions.map((tx, idx) => (
-                  <tr key={idx} className="hover:bg-atelier-surface-low/30 transition-colors group">
-                    <td className="px-6 py-5 text-sm font-medium text-atelier-ink">{tx.date}</td>
-                    <td className="px-6 py-5 text-sm font-bold text-atelier-gold">{tx.invoice}</td>
+                  <tr
+                    key={idx}
+                    className="hover:bg-atelier-surface-low/30 group transition-colors"
+                  >
+                    <td className="text-atelier-ink px-6 py-5 text-sm font-medium">
+                      {tx.date}
+                    </td>
+                    <td className="text-atelier-gold px-6 py-5 text-sm font-bold">
+                      {tx.invoice}
+                    </td>
                     <td className="px-6 py-5">
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-atelier-ink">{tx.client}</span>
-                        <span className="text-[10px] text-atelier-ink-variant/60">ID: {tx.clientId}</span>
+                        <span className="text-atelier-ink text-sm font-bold">
+                          {tx.client}
+                        </span>
+                        <span className="text-atelier-ink-variant/60 text-[10px]">
+                          ID: {tx.clientId}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tx.metalColor }} />
-                        <span className="text-sm text-atelier-ink">{tx.metalDetail}</span>
+                        <div
+                          className="h-2 w-2 rounded-full"
+                          style={{backgroundColor: tx.metalColor}}
+                        />
+                        <span className="text-atelier-ink text-sm">
+                          {tx.metalDetail}
+                        </span>
                       </div>
                     </td>
-                    <td className="px-6 py-5 text-sm font-medium text-atelier-ink-variant">{tx.rate}</td>
-                    <td className="px-6 py-5 text-sm font-medium text-right text-atelier-ink-variant">{tx.taxable}</td>
-                    <td className="px-6 py-5 text-sm font-medium text-right text-atelier-ink-variant">{tx.gst}</td>
-                    <td className="px-6 py-5 text-sm font-bold text-right text-atelier-ink">{tx.total}</td>
+                    <td className="text-atelier-ink-variant px-6 py-5 text-sm font-medium">
+                      {tx.rate}
+                    </td>
+                    <td className="text-atelier-ink-variant px-6 py-5 text-right text-sm font-medium">
+                      {tx.taxable}
+                    </td>
+                    <td className="text-atelier-ink-variant px-6 py-5 text-right text-sm font-medium">
+                      {tx.gst}
+                    </td>
+                    <td className="text-atelier-ink px-6 py-5 text-right text-sm font-bold">
+                      {tx.total}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -184,51 +258,72 @@ const ClientLedgerReport = () => {
         </div>
 
         {/* Summary Totals Bar */}
-        <div className="mt-8 bg-atelier-surface/50 p-6 rounded-2xl flex items-center justify-between border border-atelier-ink-variant/5">
+        <div className="bg-atelier-surface/50 border-atelier-ink-variant/5 mt-8 flex items-center justify-between rounded-2xl border p-6">
           <div className="flex gap-16">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-atelier-gold/10 flex items-center justify-center">
-                <Filter className="w-5 h-5 text-atelier-gold" />
+              <div className="bg-atelier-gold/10 flex h-12 w-12 items-center justify-center rounded-full">
+                <Filter className="text-atelier-gold h-5 w-5" />
               </div>
               <div>
-                <p className="text-[10px] font-bold text-atelier-ink-variant/60 uppercase tracking-widest leading-none mb-1.5">Total Net Weight</p>
-                <p className="text-2xl font-serif font-bold">186.40g <span className="text-xs font-sans font-medium text-atelier-ink-variant/50 ml-1">Au</span> / 240.00g <span className="text-xs font-sans font-medium text-atelier-ink-variant/50 ml-1">Ag</span></p>
+                <p className="text-atelier-ink-variant/60 mb-1.5 text-[10px] font-bold uppercase leading-none tracking-widest">
+                  Total Net Weight
+                </p>
+                <p className="font-serif text-2xl font-bold">
+                  186.40g{' '}
+                  <span className="font-sans text-atelier-ink-variant/50 ml-1 text-xs font-medium">
+                    Au
+                  </span>{' '}
+                  / 240.00g{' '}
+                  <span className="font-sans text-atelier-ink-variant/50 ml-1 text-xs font-medium">
+                    Ag
+                  </span>
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-atelier-navy/10 flex items-center justify-center">
-                <Search className="w-5 h-5 text-atelier-navy" />
+              <div className="bg-atelier-navy/10 flex h-12 w-12 items-center justify-center rounded-full">
+                <Search className="text-atelier-navy h-5 w-5" />
               </div>
               <div>
-                <p className="text-[10px] font-bold text-atelier-ink-variant/60 uppercase tracking-widest leading-none mb-1.5">Consolidated GST</p>
-                <p className="text-2xl font-serif font-bold">₹31,238.10</p>
+                <p className="text-atelier-ink-variant/60 mb-1.5 text-[10px] font-bold uppercase leading-none tracking-widest">
+                  Consolidated GST
+                </p>
+                <p className="font-serif text-2xl font-bold">₹31,238.10</p>
               </div>
             </div>
           </div>
-          <div className="bg-white px-8 py-5 rounded-xl border border-atelier-ink-variant/10 shadow-sm text-right">
-            <p className="text-[10px] font-bold text-atelier-ink-variant/60 uppercase tracking-widest mb-1">Grand Total (Net Receivable)</p>
-            <p className="text-4xl font-serif font-bold text-atelier-gold tracking-tighter">₹10,72,508.10</p>
+          <div className="border-atelier-ink-variant/10 rounded-xl border bg-white px-8 py-5 text-right shadow-sm">
+            <p className="text-atelier-ink-variant/60 mb-1 text-[10px] font-bold uppercase tracking-widest">
+              Grand Total (Net Receivable)
+            </p>
+            <p className="font-serif text-atelier-gold text-4xl font-bold tracking-tighter">
+              ₹10,72,508.10
+            </p>
           </div>
         </div>
 
         {/* Footer Utilities */}
-        <div className="mt-12 flex justify-between items-center text-xs text-atelier-ink-variant/40 font-medium">
+        <div className="text-atelier-ink-variant/40 mt-12 flex items-center justify-between text-xs font-medium">
           <p>Generated on Oct 25, 2023 • 10:45 AM • User: Admin_Karan</p>
           <div className="flex gap-8">
-            <button className="hover:text-atelier-gold transition-colors">Audit Log</button>
-            <button className="hover:text-atelier-gold transition-colors flex items-center gap-1">
-              <Download className="w-3 h-3" />
+            <button className="hover:text-atelier-gold transition-colors">
+              Audit Log
+            </button>
+            <button className="hover:text-atelier-gold flex items-center gap-1 transition-colors">
+              <Download className="h-3 w-3" />
               Download CSV
             </button>
-            <button className="hover:text-atelier-gold transition-colors">Direct WhatsApp</button>
+            <button className="hover:text-atelier-gold transition-colors">
+              Direct WhatsApp
+            </button>
           </div>
         </div>
       </div>
 
       {/* Floating Action Button */}
-      <button className="fixed bottom-10 right-10 w-16 h-16 bg-linear-to-br from-atelier-gold to-atelier-gold-dark text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group">
-        <Plus className="w-8 h-8" />
-        <span className="absolute right-full mr-4 bg-atelier-ink text-white px-4 py-2 rounded-xl text-xs font-bold tracking-widest whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0 pointer-events-none shadow-xl">
+      <button className="bg-linear-to-br from-atelier-gold to-atelier-gold-dark group fixed bottom-10 right-10 z-50 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-2xl transition-all hover:scale-110 active:scale-95">
+        <Plus className="h-8 w-8" />
+        <span className="bg-atelier-ink pointer-events-none absolute right-full mr-4 translate-x-4 transform whitespace-nowrap rounded-xl px-4 py-2 text-xs font-bold tracking-widest text-white opacity-0 shadow-xl transition-all group-hover:translate-x-0 group-hover:opacity-100">
           RECORD NEW SALE
         </span>
       </button>

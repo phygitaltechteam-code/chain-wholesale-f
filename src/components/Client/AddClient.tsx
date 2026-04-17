@@ -3,8 +3,8 @@ import {motion, AnimatePresence} from 'framer-motion';
 import {FormProvider, useForm} from 'react-hook-form';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import GenericInputField from '../Forms/Input/GenericInputField';
-import { useAddClient } from './api';
-import { ClientFormData } from './types';
+import {useAddClient} from './api';
+import {ClientFormData} from './types';
 
 interface AddClientProps {
   isOpen: boolean;
@@ -12,13 +12,11 @@ interface AddClientProps {
   onSave?: (clientData: ClientFormData) => void;
 }
 
-
-
 export default function AddClient({isOpen, onClose, onSave}: AddClientProps) {
   const methods = useForm<ClientFormData>({
     defaultValues: {
       fullname: '',
-      phoneNumber : '',
+      phoneNumber: '',
       city: '',
       address: '',
       GST: '',
@@ -30,9 +28,8 @@ export default function AddClient({isOpen, onClose, onSave}: AddClientProps) {
   const {handleSubmit, reset} = methods;
   //const {mutate: addClient} = useAddClient();
   const onSubmit = async (data: ClientFormData) => {
-
     console.log('Form Data:', data);
-   //  await addClient(data);
+    //  await addClient(data);
 
     if (onSave) {
       onSave(data);

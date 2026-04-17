@@ -53,8 +53,7 @@ const SignIn: React.FC = () => {
       return;
     }
 
-   
-  //  navigate({to: '/dashboard'});
+    //  navigate({to: '/dashboard'});
 
     // Comment out or remove the API call for now
     try {
@@ -202,7 +201,9 @@ const SignIn: React.FC = () => {
                   </div>
 
                   <motion.button
-                    onClick={() =>{handleLogin}}
+                    onClick={() => {
+                      handleLogin;
+                    }}
                     whileHover={{scale: 1.02}}
                     whileTap={{scale: 0.98}}
                     type="submit"

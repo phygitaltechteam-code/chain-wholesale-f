@@ -131,10 +131,7 @@ const PLReport = () => {
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
-                  className={`
-                    rounded-lg px-6 py-2 text-sm font-bold capitalize transition-all
-                    ${period === p ? 'text-atelier-gold bg-white shadow-md' : 'text-atelier-ink-variant/60 hover:text-atelier-ink'}
-                  `}
+                  className={`rounded-lg px-6 py-2 text-sm font-bold capitalize transition-all ${period === p ? 'text-atelier-gold bg-white shadow-md' : 'text-atelier-ink-variant/60 hover:text-atelier-ink'} `}
                 >
                   {p}
                 </button>

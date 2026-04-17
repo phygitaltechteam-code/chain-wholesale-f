@@ -1,9 +1,7 @@
-import { api } from "@/utils/axios";
-import {  ClientFormData } from "./types";
-import { toast } from "react-hot-toast";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-
+import {api} from '@/utils/axios';
+import {ClientFormData} from './types';
+import {toast} from 'react-hot-toast';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 
 const addNewClient = async (data: ClientFormData) => {
   try {
@@ -19,18 +17,16 @@ const getClients = async () => {
   try {
     const response = await api.get(`shop/client`);
     return response.data;
-    } catch (error) {
+  } catch (error) {
     toast.error('Failed to fetch clients');
     throw error;
   }
 };
 
-
-
- const useAddClient = () => {
+const useAddClient = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn:  addNewClient,
+    mutationFn: addNewClient,
     onSuccess: () => {
       toast.success('client Added Successfully');
       queryClient.invalidateQueries({queryKey: ['clients']});
@@ -41,9 +37,6 @@ const getClients = async () => {
   });
 };
 
-
-
-
 const useGetClient = () => {
   return useQuery({
     queryKey: ['clients'],
@@ -51,5 +44,4 @@ const useGetClient = () => {
   });
 };
 
-
-export { useAddClient , useGetClient};
+export {useAddClient, useGetClient};
