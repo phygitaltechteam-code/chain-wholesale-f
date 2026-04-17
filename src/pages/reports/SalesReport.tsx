@@ -107,6 +107,8 @@ const salesData: SaleRecord[] = [
 const metalOptions = ['All Metals', 'Gold (99.9)', 'Gold (22K)', 'Silver (99.9)'];
 const billTypeOptions = ['GST Invoice', 'Estimate', 'Export Bill', 'All'];
 
+
+
 // Helper for number formatting
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('en-IN', {
