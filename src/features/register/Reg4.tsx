@@ -45,7 +45,7 @@ const Reg4: React.FC = () => {
       <div className="relative flex min-h-screen w-full flex-col overflow-hidden border-2 border-zinc-900 bg-[#000000] text-white">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-2">
-          <button 
+          <button
             onClick={() => navigate({to: '/reg3'})}
             className="flex h-10 w-10 items-center justify-center rounded-full text-[#39ff14] transition-colors hover:bg-[#39ff14]/10"
           >
@@ -71,9 +71,9 @@ const Reg4: React.FC = () => {
               Face Verification
             </h1>
             <p className="mx-auto max-w-[280px] text-sm leading-relaxed text-zinc-400">
-              {selectedImage 
-                ? "Image ready for verification. Please ensure your face is clearly visible."
-                : "Upload a clear photo of your face. Please remove glasses or masks."}
+              {selectedImage
+                ? 'Image ready for verification. Please ensure your face is clearly visible.'
+                : 'Upload a clear photo of your face. Please remove glasses or masks.'}
             </p>
           </div>
 
@@ -83,7 +83,7 @@ const Reg4: React.FC = () => {
 
             {!selectedImage ? (
               // Upload UI
-              <div 
+              <div
                 onClick={triggerFileInput}
                 className="relative h-full w-full cursor-pointer overflow-hidden rounded-full border-2 border-dashed border-[#39ff14]/30 bg-zinc-900/50 transition-all hover:border-[#39ff14] hover:bg-zinc-900/80"
               >
@@ -94,16 +94,22 @@ const Reg4: React.FC = () => {
                   accept="image/*"
                   className="hidden"
                 />
-                
+
                 <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
                   <div className="rounded-full bg-[#39ff14]/10 p-4">
                     <MdCameraAlt className="text-4xl text-[#39ff14]" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[#39ff14]">Click to upload</p>
-                    <p className="mt-1 text-xs text-zinc-500">or drag and drop</p>
+                    <p className="text-sm font-medium text-[#39ff14]">
+                      Click to upload
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      or drag and drop
+                    </p>
                   </div>
-                  <p className="text-[10px] text-zinc-600">PNG, JPG up to 10MB</p>
+                  <p className="text-[10px] text-zinc-600">
+                    PNG, JPG up to 10MB
+                  </p>
                 </div>
 
                 {isUploading && (
@@ -167,7 +173,7 @@ const Reg4: React.FC = () => {
                 <p className="inline-block rounded-lg bg-[#39ff14] px-3 py-1 text-xs font-bold uppercase tracking-wider text-black shadow-[0_0_15px_rgba(57,255,20,0.4)]">
                   Face detected
                 </p>
-                
+
                 {/* Upload Another Button */}
                 <button
                   onClick={resetImage}
@@ -194,7 +200,7 @@ const Reg4: React.FC = () => {
               <MdVerifiedUser className="text-[16px] text-zinc-600" />
               <span>Your biometric data is encrypted end-to-end.</span>
             </div>
-            
+
             {/* Continue Button - Only enabled when image is uploaded */}
             <button
               onClick={() => navigate({to: '/market'})}

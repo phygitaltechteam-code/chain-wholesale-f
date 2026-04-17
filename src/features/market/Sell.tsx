@@ -149,7 +149,7 @@ const Sell: React.FC = () => {
                 onClick={() => setTif('DAY')}
                 className={`flex-1 rounded-xl py-3 text-sm font-semibold ${
                   tif === 'DAY'
-                    ? `border border-[#940303] bg-[#940303] text-white]`
+                    ? `text-white] border border-[#940303] bg-[#940303]`
                     : 'text-gray-400 border border-[#2a1a1a] bg-[#000000]'
                 }`}
               >
@@ -205,11 +205,11 @@ const Sell: React.FC = () => {
 
           <div className="mt-8">
             <button
-            onClick={()=>{
-              navigate({
-                to: '/rejected'
-              })
-            }}
+              onClick={() => {
+                navigate({
+                  to: '/rejected',
+                });
+              }}
               className={`flex h-12 w-full items-center justify-center gap-3 rounded-full bg-[#940303] text-sm font-bold text-white`}
             >
               <span>Place Sell Order</span>

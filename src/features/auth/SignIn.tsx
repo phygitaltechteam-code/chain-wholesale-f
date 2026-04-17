@@ -1,155 +1,382 @@
+// pages/SignInPage.tsx
 import {Link, useNavigate} from '@tanstack/react-router';
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
+import {motion, AnimatePresence} from 'framer-motion';
 import {
-  MdArrowBack,
-  MdPerson,
-  MdLock,
-  MdVisibilityOff,
-  MdVisibility,
-  MdLogin,
-} from 'react-icons/md';
+  Gem,
+  Lock,
+  ArrowRight,
+  LayoutGrid,
+  User,
+  Smartphone,
+  Building2,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
+import {useLogin} from '@/lib/api/auth';
+import toast from 'react-hot-toast';
+import {useAuthContext} from '@/context/AuthContext';
+
+type Tab = 'LOGIN' | 'REGISTER';
 
 const SignIn: React.FC = () => {
-  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<Tab>('LOGIN');
+  const [showPassword, setShowPassword] = useState(false);
+  const [credentials, setCredentials] = useState({
+    username: '',
+    password: '',
+  });
+  const [registerData, setRegisterData] = useState({
+    companyName: '',
+    ownerName: '',
+    mobileNumber: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  const {mutateAsync: login, isPending, isSuccess} = useLogin();
+  const {user, isAuthenticated} = useAuthContext();
+
+  // useEffect(() => {
+  //   if (isSuccess || isAuthenticated) {
+  //     window.location.href = '/dashboard';
+  //   }
+  // }, [isSuccess, isAuthenticated]);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!credentials.username || !credentials.password) {
+      toast.error('Please enter username and password');
+      return;
+    }
+
+    // TEMPORARY: Just navigate to dashboard directly
+    navigate({to: '/dashboard'});
+
+    // Comment out or remove the API call for now
+    // try {
+    //   await login({
+    //     username: credentials.username,
+    //     password: credentials.password,
+    //   });
+    // } catch (err) {
+    //   // Error handled in hook
+    // }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (registerData.password !== registerData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    // Add your registration logic here
+    toast.success('Registration successful! Please login.');
+    setActiveTab('LOGIN');
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const {name, value} = e.target;
+    setCredentials((prev) => ({...prev, [name]: value}));
+  };
+
+  const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const {name, value} = e.target;
+    setRegisterData((prev) => ({...prev, [name]: value}));
+  };
 
   return (
-    <div className="flex min-h-screen justify-center bg-[#132210]">
-      <div className="flex min-h-screen w-full flex-col bg-[#132210]">
-        {/* Sticky Header */}
-        <header className="sticky top-0 z-10 flex w-full items-center justify-center bg-[#132210]/90 px-6 pb-4 pt-12 backdrop-blur-sm">
-          {/* <button className="hover:bg-gray-200 -ml-2 rounded-full p-2 text-white transition-colors">
-            <MdArrowBack className="text-2xl" />
-          </button> */}
-          <div className="text-sm font-bold uppercase tracking-wide text-[#37ec13]/80">
-            Gold Trader Pro
-          </div>
-          {/* <button className="text-sm font-medium text-white transition-colors hover:text-[#37ec13]">
-            Sign Up
-          </button> */}
-        </header>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 selection:bg-amber-500/30 sm:p-8">
+      {/* Header / Logo Section */}
+      <motion.div
+        initial={{opacity: 0, y: -20}}
+        animate={{opacity: 1, y: 0}}
+        className="mb-10 text-center"
+      >
+        <div className="mb-2 flex items-center justify-center gap-3">
+          <Gem className="h-10 w-10 text-amber-500" />
+          <h1 className="font-serif text-5xl font-bold tracking-tight text-amber-400">
+            Sona ERP
+          </h1>
+        </div>
+        <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-slate-400">
+          The Gilded Ledger
+        </p>
+      </motion.div>
 
-        {/* Main Content */}
-        <main className="flex flex-1 flex-col justify-center px-6 pb-8">
-          <div className="mb-10">
-            <h1 className="mb-2 text-3xl font-bold tracking-tight text-white">
-              Welcome Back
-            </h1>
-            <p className="text-white">
-              Login to your institutional-grade portfolio securely.
-            </p>
-          </div>
-
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-            {/* Email/Phone Field */}
-            <div className="group relative">
-              <label className="sr-only" htmlFor="identifier">
-                Email or Phone Number
-              </label>
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                <MdPerson className="text-xl text-white transition-colors group-focus-within:text-[#37ec13]" />
-              </div>
-              <input
-                className="placeholder-gray-400 block w-full rounded-full border-transparent bg-[#223b1d] py-4 pl-12 pr-4 text-sm font-medium text-white shadow-sm transition-all focus:border-[#37ec13] focus:ring-1 focus:ring-[#37ec13]"
-                id="identifier"
-                name="identifier"
-                placeholder="Email or Phone Number"
-                type="text"
-              />
-            </div>
-
-            {/* Password Field */}
-            <div className="group relative">
-              <label className="sr-only" htmlFor="password">
-                Password
-              </label>
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                <MdLock className="text-xl text-white transition-colors group-focus-within:text-[#37ec13]" />
-              </div>
-              <input
-                className="placeholder-gray-400 block w-full rounded-full border-transparent bg-[#223b1d] py-4 pl-12 pr-12 text-sm font-medium text-white shadow-sm transition-all focus:border-[#37ec13] focus:ring-1 focus:ring-[#37ec13]"
-                id="password"
-                name="password"
-                placeholder="Enter your password"
-                type={showPassword ? 'text' : 'password'}
-              />
-              <button
-                className="absolute inset-y-0 right-0 flex items-center pr-4 text-white transition-colors hover:text-white focus:outline-none"
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <MdVisibility className="text-xl" />
-                ) : (
-                  <MdVisibilityOff className="text-xl" />
-                )}
-              </button>
-            </div>
-
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between px-2">
-              <div className="flex items-center">
-                <input
-                  className="border-gray-600 h-4 w-4 cursor-pointer rounded accent-[#37ec13] hover:accent-[#2ed10f] focus:ring-[#37ec13]"
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                />
-                <label
-                  className="ml-2 block text-sm text-white"
-                  htmlFor="remember-me"
-                >
-                  Remember me
-                </label>
-              </div>
-              <div className="text-sm">
-                <a
-                  className="font-medium text-[#37ec13] transition-colors hover:text-[#37ec13]/80"
-                  href="#"
-                >
-                  Forgot Password?
-                </a>
-              </div>
-            </div>
-
-            {/* Login Button */}
+      {/* Main Card */}
+      <motion.div
+        initial={{opacity: 0, scale: 0.95}}
+        animate={{opacity: 1, scale: 1}}
+        transition={{delay: 0.1}}
+        className="w-full max-w-[480px] overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-900/50 shadow-2xl backdrop-blur-xl"
+      >
+        {/* Tabs */}
+        <div className="flex border-b border-slate-700/50">
+          {(['LOGIN', 'REGISTER'] as Tab[]).map((tab) => (
             <button
-              onClick={() => {
-                navigate({to: '/dashboard'});
-              }}
-              className="group mt-2 flex w-full transform items-center justify-center rounded-full bg-[#37ec13] px-6 py-4 font-bold text-[#132210] shadow-lg shadow-[#37ec13]/20 transition-all hover:bg-opacity-90 active:scale-[0.98]"
-              type="submit"
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`relative flex-1 py-5 text-xs font-semibold tracking-widest transition-all ${
+                activeTab === tab
+                  ? 'text-amber-400'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
             >
-              Log In
-              <MdLogin className="ml-2 text-lg transition-transform group-hover:translate-x-1" />
+              {tab}
+              {activeTab === tab && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-amber-500"
+                />
+              )}
             </button>
+          ))}
+        </div>
 
-            {/* Sign Up Link */}
-            <div className="mt-6 text-center">
-              <p className="text-sm text-white">
-                Don't have an account?
-                <button
-                  className="ml-1 font-bold text-[#37ec13] hover:underline"
-                  onClick={() => {
-                    navigate({to: '/signup'});
-                  }}
-                >
-                  Sign Up
-                </button>
-              </p>
-            </div>
-          </form>
-        </main>
+        <div className="p-8 sm:p-10">
+          <AnimatePresence mode="wait">
+            {activeTab === 'LOGIN' ? (
+              <motion.div
+                key="login"
+                initial={{opacity: 0, x: -20}}
+                animate={{opacity: 1, x: 0}}
+                exit={{opacity: 0, x: 20}}
+                className="space-y-6"
+              >
+                <div className="mb-6 text-center">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10">
+                    <Lock className="h-8 w-8 text-amber-500" />
+                  </div>
+                  <h3 className="text-xl font-medium text-slate-200">
+                    Welcome Back
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Sign in to your account
+                  </p>
+                </div>
 
-        {/* Footer */}
-        <footer className="py-6 text-center">
-          <p className="text-[10px] uppercase tracking-widest text-white">
-            Secure • Regulated • Trusted
-          </p>
-        </footer>
-      </div>
+                <form onSubmit={handleLogin} className="space-y-5">
+                  <InputField
+                    label="USERNAME / PHONE"
+                    name="username"
+                    placeholder="Enter your username"
+                    icon={<User className="h-4 w-4" />}
+                    value={credentials.username}
+                    onChange={handleInputChange}
+                  />
+
+                  <InputField
+                    label="PASSWORD"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    icon={<Lock className="h-4 w-4" />}
+                    value={credentials.password}
+                    onChange={handleInputChange}
+                    rightIcon={
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="focus:outline-none"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-slate-500 hover:text-amber-400" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-slate-500 hover:text-amber-400" />
+                        )}
+                      </button>
+                    }
+                  />
+
+                  <div className="flex items-center justify-end">
+                    <a
+                      href="#"
+                      className="text-[10px] text-amber-500/70 transition-colors hover:text-amber-400"
+                    >
+                      Forgot Password?
+                    </a>
+                  </div>
+
+                  <motion.button
+                    onClick={() => navigate({to: '/dashboard'})}
+                    whileHover={{scale: 1.02}}
+                    whileTap={{scale: 0.98}}
+                    type="submit"
+                    disabled={isPending}
+                    className="group mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 py-4 font-bold text-amber-950 shadow-lg shadow-amber-900/20 transition-all hover:from-amber-500 hover:to-amber-400"
+                  >
+                    <span className="text-sm uppercase tracking-widest">
+                      {isPending ? 'Signing in...' : 'Sign In'}
+                    </span>
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </motion.button>
+                </form>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="register"
+                initial={{opacity: 0, x: 20}}
+                animate={{opacity: 1, x: 0}}
+                exit={{opacity: 0, x: -20}}
+                className="space-y-6"
+              >
+                <div className="mb-2 text-center">
+                  <h3 className="text-xl font-medium text-slate-200">
+                    Register Company
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Create your business account
+                  </p>
+                </div>
+
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <InputField
+                    label="COMPANY NAME"
+                    name="companyName"
+                    placeholder="Goldsmith & Co."
+                    icon={<Building2 className="h-4 w-4" />}
+                    value={registerData.companyName}
+                    onChange={handleRegisterChange}
+                    required
+                  />
+
+                  <InputField
+                    label="OWNER NAME"
+                    name="ownerName"
+                    placeholder="Julian Sterling"
+                    icon={<User className="h-4 w-4" />}
+                    value={registerData.ownerName}
+                    onChange={handleRegisterChange}
+                    required
+                  />
+
+                  <InputField
+                    label="MOBILE NUMBER"
+                    name="mobileNumber"
+                    placeholder="+91 98765 43210"
+                    icon={<Smartphone className="h-4 w-4" />}
+                    value={registerData.mobileNumber}
+                    onChange={handleRegisterChange}
+                    required
+                  />
+
+                  <InputField
+                    label="PASSWORD"
+                    name="password"
+                    type="password"
+                    placeholder="••••••••"
+                    icon={<Lock className="h-4 w-4" />}
+                    value={registerData.password}
+                    onChange={handleRegisterChange}
+                    required
+                  />
+
+                  <InputField
+                    label="CONFIRM PASSWORD"
+                    name="confirmPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    icon={<Lock className="h-4 w-4" />}
+                    value={registerData.confirmPassword}
+                    onChange={handleRegisterChange}
+                    required
+                  />
+
+                  <motion.button
+                    onClick={() => navigate({to: '/dashboard'})}
+                    whileHover={{scale: 1.02}}
+                    whileTap={{scale: 0.98}}
+                    type="submit"
+                    className="group mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 py-4 font-bold text-amber-950 shadow-lg shadow-amber-900/20 transition-all hover:from-amber-500 hover:to-amber-400"
+                  >
+                    <span className="text-sm uppercase tracking-widest">
+                      Register
+                    </span>
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </motion.button>
+
+                  <p className="mt-4 text-center text-[10px] text-slate-500">
+                    By registering, you agree to our{' '}
+                    <a
+                      href="#"
+                      className="text-amber-500/80 transition-colors hover:text-amber-400"
+                    >
+                      Terms of Service
+                    </a>
+                  </p>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+
+      {/* Decorative Footer Element */}
+      <motion.div
+        initial={{opacity: 0}}
+        animate={{opacity: 1}}
+        transition={{delay: 0.5}}
+        className="mt-12 flex items-center gap-4 opacity-30"
+      >
+        <div className="h-[1px] w-12 bg-slate-600" />
+        <LayoutGrid className="h-4 w-4 text-slate-500" />
+        <div className="h-[1px] w-12 bg-slate-600" />
+      </motion.div>
     </div>
   );
 };
+
+interface InputFieldProps {
+  label: string;
+  name: string;
+  placeholder: string;
+  icon: React.ReactNode;
+  type?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  rightIcon?: React.ReactNode;
+  required?: boolean;
+}
+
+function InputField({
+  label,
+  name,
+  placeholder,
+  icon,
+  type = 'text',
+  value,
+  onChange,
+  rightIcon,
+  required = false,
+}: InputFieldProps) {
+  return (
+    <div className="space-y-2">
+      <label className="ml-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+        {label}
+      </label>
+      <div className="group relative">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 transition-colors group-focus-within:text-amber-500">
+          {icon}
+        </div>
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          className="w-full rounded-xl border border-slate-700/50 bg-slate-800/50 py-3.5 pl-12 pr-12 text-sm text-slate-200 transition-all placeholder:text-slate-600 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+        />
+        {rightIcon && (
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            {rightIcon}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default SignIn;

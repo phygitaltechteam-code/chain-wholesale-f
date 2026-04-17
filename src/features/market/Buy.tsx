@@ -204,8 +204,9 @@ const Buy: React.FC = () => {
 
           <div className="mt-8">
             <button
-            onClick={()=>navigate({to: '/success'})}
-            className="flex h-12 w-full items-center justify-center gap-3 rounded-full bg-[#37ec13] text-sm font-bold text-[#132210]">
+              onClick={() => navigate({to: '/success'})}
+              className="flex h-12 w-full items-center justify-center gap-3 rounded-full bg-[#37ec13] text-sm font-bold text-[#132210]"
+            >
               <span>Place Buy Order</span>
               <MdArrowForward />
             </button>

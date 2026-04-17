@@ -118,7 +118,7 @@ const Reg1: React.FC = ({setStep}: any) => {
                   type="checkbox"
                   checked={terms}
                   onChange={(e) => setTerms(e.target.checked)}
-                  className="border-gray-300 h-5 w-5 cursor-pointer accent-[#37ec13] rounded text-[#37ec13]"
+                  className="border-gray-300 h-5 w-5 cursor-pointer rounded text-[#37ec13] accent-[#37ec13]"
                 />
               </div>
 

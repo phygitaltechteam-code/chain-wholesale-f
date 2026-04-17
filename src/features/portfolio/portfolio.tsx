@@ -1,5 +1,5 @@
-import { useNavigate } from '@tanstack/react-router';
-import React, { useState } from 'react';
+import {useNavigate} from '@tanstack/react-router';
+import React, {useState} from 'react';
 import {
   MdNotifications,
   MdTrendingUp,
@@ -61,22 +61,30 @@ const Portfolio: React.FC<PortfolioProps> = ({
   positions: initialPositions = [],
 }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'holdings' | 'positions'>('holdings');
+  const [activeTab, setActiveTab] = useState<'holdings' | 'positions'>(
+    'holdings',
+  );
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
 
   // Use passed data or fallback to sample data
-  const holdings = initialHoldings.length > 0 ? initialHoldings : getSampleHoldings();
-  const positions = initialPositions.length > 0 ? initialPositions : getSamplePositions();
+  const holdings =
+    initialHoldings.length > 0 ? initialHoldings : getSampleHoldings();
+  const positions =
+    initialPositions.length > 0 ? initialPositions : getSamplePositions();
 
   // Portfolio Summary Calculations
   const totalInvestment = holdings.reduce((sum, h) => sum + h.investAmount, 0);
-  const totalCurrentValue = holdings.reduce((sum, h) => sum + h.currentValue, 0);
+  const totalCurrentValue = holdings.reduce(
+    (sum, h) => sum + h.currentValue,
+    0,
+  );
   const totalPnl = totalCurrentValue - totalInvestment;
-  const totalPnlPercent = totalInvestment > 0 ? (totalPnl / totalInvestment) * 100 : 0;
+  const totalPnlPercent =
+    totalInvestment > 0 ? (totalPnl / totalInvestment) * 100 : 0;
 
   const toggleRow = (id: string) => {
     setExpandedRows((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id],
     );
   };
 
@@ -109,13 +117,19 @@ const Portfolio: React.FC<PortfolioProps> = ({
             <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-[#37ec13]/10 blur-[60px]" />
             <div className="relative flex flex-col gap-4 p-4">
               <div>
-                <p className="mb-1 text-xs text-white/60">Total Portfolio Value</p>
-                <h2 className="text-2xl font-bold">${totalCurrentValue.toFixed(2)}</h2>
+                <p className="mb-1 text-xs text-white/60">
+                  Total Portfolio Value
+                </p>
+                <h2 className="text-2xl font-bold">
+                  ${totalCurrentValue.toFixed(2)}
+                </h2>
 
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <div className="rounded-lg bg-white/5 p-2">
                     <p className="text-xs text-white/40">Investment</p>
-                    <p className="text-sm font-semibold">${totalInvestment.toFixed(2)}</p>
+                    <p className="text-sm font-semibold">
+                      ${totalInvestment.toFixed(2)}
+                    </p>
                   </div>
                   <div className="rounded-lg bg-white/5 p-2">
                     <p className="text-xs text-white/40">Overall P&L</p>
@@ -397,12 +411,20 @@ const HoldingItem: React.FC<HoldingItemProps> = ({
             <div>
               <p className="mb-2 text-xs text-white/40">Investment Details</p>
               <div className="space-y-2">
-                <DetailRow label="Invested" value={`$${holding.investAmount.toFixed(2)}`} />
-                <DetailRow label="Avg Price" value={`$${holding.avgPrice.toFixed(2)}`} />
+                <DetailRow
+                  label="Invested"
+                  value={`$${holding.investAmount.toFixed(2)}`}
+                />
+                <DetailRow
+                  label="Avg Price"
+                  value={`$${holding.avgPrice.toFixed(2)}`}
+                />
                 <DetailRow
                   label="Day Change"
                   value={`${holding.dayChange >= 0 ? '+' : '-'}${Math.abs(holding.dayChangePercent).toFixed(2)}%`}
-                  valueClass={holding.dayChange >= 0 ? 'text-[#37ec13]' : 'text-red-500'}
+                  valueClass={
+                    holding.dayChange >= 0 ? 'text-[#37ec13]' : 'text-red-500'
+                  }
                 />
               </div>
             </div>
@@ -410,7 +432,10 @@ const HoldingItem: React.FC<HoldingItemProps> = ({
               <p className="mb-2 text-xs text-white/40">Asset Details</p>
               <div className="space-y-2">
                 <DetailRow label="Type" value={holding.assetType} capitalize />
-                <DetailRow label="Current Val" value={`$${holding.currentValue.toFixed(2)}`} />
+                <DetailRow
+                  label="Current Val"
+                  value={`$${holding.currentValue.toFixed(2)}`}
+                />
                 <DetailRow
                   label="Total Qty"
                   value={`${holding.quantity}${holding.assetType === 'digital' ? 'g' : holding.assetType === 'coin' ? ' oz' : 'g'}`}
@@ -500,20 +525,34 @@ const PositionItem: React.FC<PositionItemProps> = ({
             <div>
               <p className="mb-2 text-xs text-white/40">Position Details</p>
               <div className="space-y-2">
-                <DetailRow label="Margin" value={`$${position.margin?.toFixed(2) || '0.00'}`} />
-                <DetailRow label="Avg Price" value={`$${position.avgPrice.toFixed(2)}`} />
+                <DetailRow
+                  label="Margin"
+                  value={`$${position.margin?.toFixed(2) || '0.00'}`}
+                />
+                <DetailRow
+                  label="Avg Price"
+                  value={`$${position.avgPrice.toFixed(2)}`}
+                />
                 <DetailRow label="Expiry" value={position.expiry || '-'} />
               </div>
             </div>
             <div>
               <p className="mb-2 text-xs text-white/40">P&L Breakdown</p>
               <div className="space-y-2">
-                <DetailRow label="Invested" value={`$${position.investAmount.toFixed(2)}`} />
-                <DetailRow label="Current" value={`$${position.currentValue.toFixed(2)}`} />
+                <DetailRow
+                  label="Invested"
+                  value={`$${position.investAmount.toFixed(2)}`}
+                />
+                <DetailRow
+                  label="Current"
+                  value={`$${position.currentValue.toFixed(2)}`}
+                />
                 <DetailRow
                   label="Day Change"
                   value={`${position.dayChange >= 0 ? '+' : '-'}${Math.abs(position.dayChangePercent).toFixed(2)}%`}
-                  valueClass={position.dayChange >= 0 ? 'text-[#37ec13]' : 'text-red-500'}
+                  valueClass={
+                    position.dayChange >= 0 ? 'text-[#37ec13]' : 'text-red-500'
+                  }
                 />
               </div>
             </div>

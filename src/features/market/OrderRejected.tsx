@@ -1,6 +1,6 @@
-import { useNavigate } from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import React from 'react';
-import { MdClose, MdArrowBack } from 'react-icons/md';
+import {MdClose, MdArrowBack} from 'react-icons/md';
 
 const OrderRejected: React.FC = () => {
   const navigate = useNavigate();
@@ -8,10 +8,8 @@ const OrderRejected: React.FC = () => {
   return (
     <div className="flex min-h-screen justify-center bg-[#000000] text-white">
       <div className="relative flex min-h-screen w-full flex-col pb-20 shadow-2xl">
-        
         {/* MAIN CONTENT */}
         <main className="flex flex-grow flex-col items-center justify-center px-6 pb-4 pt-6">
-          
           {/* Rejected Icon */}
           <div className="relative mb-6">
             <div className="absolute inset-0 rounded-full bg-red-500/20 blur-2xl"></div>
@@ -25,16 +23,15 @@ const OrderRejected: React.FC = () => {
             Order Rejected
           </h1>
 
-          <p className="mb-6 text-center text-xs text-gray-400">
+          <p className="text-gray-400 mb-6 text-center text-xs">
             Order ID: #8829304-XAU
           </p>
 
           {/* Order Card */}
           <div className="mb-4 w-full rounded-2xl border border-[#000000] bg-[#000000] p-4">
             <div className="mb-4 flex items-start justify-between border-b border-white/5 pb-4">
-              
               <div>
-                <span className="mb-1 block text-[10px] uppercase text-gray-400">
+                <span className="text-gray-400 mb-1 block text-[10px] uppercase">
                   Instrument
                 </span>
 
@@ -48,7 +45,7 @@ const OrderRejected: React.FC = () => {
               </div>
 
               <div className="text-right">
-                <span className="mb-1 block text-[10px] uppercase text-gray-400">
+                <span className="text-gray-400 mb-1 block text-[10px] uppercase">
                   Status
                 </span>
 
@@ -61,28 +58,28 @@ const OrderRejected: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-y-4 text-sm">
               <div>
-                <span className="mb-1 block text-[10px] uppercase text-gray-500">
+                <span className="text-gray-500 mb-1 block text-[10px] uppercase">
                   Type
                 </span>
                 <span>Limit Buy</span>
               </div>
 
               <div className="text-right">
-                <span className="mb-1 block text-[10px] uppercase text-gray-500">
+                <span className="text-gray-500 mb-1 block text-[10px] uppercase">
                   Qty
                 </span>
                 <span>10 OZ</span>
               </div>
 
               <div>
-                <span className="mb-1 block text-[10px] uppercase text-gray-500">
+                <span className="text-gray-500 mb-1 block text-[10px] uppercase">
                   Price
                 </span>
                 <span className="font-mono">$2,040.00</span>
               </div>
 
               <div className="text-right">
-                <span className="mb-1 block text-[10px] uppercase text-gray-500">
+                <span className="text-gray-500 mb-1 block text-[10px] uppercase">
                   Total
                 </span>
                 <span className="font-mono">$20,400.00</span>
@@ -92,7 +89,7 @@ const OrderRejected: React.FC = () => {
 
           {/* Rejection Reason */}
           <div className="mb-4 w-full rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center">
-            <span className="block text-[10px] uppercase text-red-400 mb-1">
+            <span className="mb-1 block text-[10px] uppercase text-red-400">
               Reason
             </span>
 
@@ -118,7 +115,6 @@ const OrderRejected: React.FC = () => {
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );

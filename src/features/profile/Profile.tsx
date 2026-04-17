@@ -1,5 +1,5 @@
-import { useRouter } from '@tanstack/react-router';
-import React, { useState } from 'react';
+import {useRouter} from '@tanstack/react-router';
+import React, {useState} from 'react';
 import {
   MdArrowBack,
   MdCameraAlt,
@@ -39,30 +39,31 @@ const Profile: React.FC = () => {
 
   // State for form data (dynamic & editable)
   const [profile, setProfile] = useState<UserProfile>({
-    fullName: "Michael Thompson",
-    mobile: "+91 98765 43210",
-    email: "michael.t@example.com",
-    city: "Nagpur",
-    zipCode: "440001",
+    fullName: 'Michael Thompson',
+    mobile: '+91 98765 43210',
+    email: 'michael.t@example.com',
+    city: 'Nagpur',
+    zipCode: '440001',
     isEmailVerified: true,
-    profileImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuCJUoDBgD_i1-S1kFp6x9JTuFEKouYQ0bIXgeX_imhWMMGDfJh0uCBWWGkynXT2WE-h7jPccF9AoITRTO4UahKBV6-g2IiMnSQENRKU6bQcEj1suQv327thSCcwvplRQQWPhT9KNr5kmHYhV3AopghepfYTeZtdmS4_8Tr_wYUM7tw74wGZcoTRj5d9G7WLSnoHelaGlcln1sjaMvIAQISFEHtZbx2AIhBqNQQgstGVuXpCBoM6_VCWqYxMfWdmPjcoFAA3vyPCUNo",
+    profileImage:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuCJUoDBgD_i1-S1kFp6x9JTuFEKouYQ0bIXgeX_imhWMMGDfJh0uCBWWGkynXT2WE-h7jPccF9AoITRTO4UahKBV6-g2IiMnSQENRKU6bQcEj1suQv327thSCcwvplRQQWPhT9KNr5kmHYhV3AopghepfYTeZtdmS4_8Tr_wYUM7tw74wGZcoTRj5d9G7WLSnoHelaGlcln1sjaMvIAQISFEHtZbx2AIhBqNQQgstGVuXpCBoM6_VCWqYxMfWdmPjcoFAA3vyPCUNo',
   });
 
   const [isSaving, setIsSaving] = useState(false);
 
   // Handle input changes
   const handleInputChange = (field: keyof UserProfile, value: string) => {
-    setProfile((prev) => ({ ...prev, [field]: value }));
+    setProfile((prev) => ({...prev, [field]: value}));
   };
 
   // Handle Save
   const handleSave = async () => {
     setIsSaving(true);
-    
+
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 800));
-    
-    alert("✅ Profile updated successfully!");
+
+    alert('✅ Profile updated successfully!');
     setIsSaving(false);
   };
 
@@ -70,24 +71,23 @@ const Profile: React.FC = () => {
   const accountSections: AccountSection[] = [
     {
       id: 'nominee',
-      title: "Nominee Details",
-      description: "Manage inheritance beneficiaries",
+      title: 'Nominee Details',
+      description: 'Manage inheritance beneficiaries',
       icon: <MdDiversity1 className="text-[#37ec13]" />,
-      onClick: () => alert("Navigating to Nominee Details..."),
+      onClick: () => alert('Navigating to Nominee Details...'),
     },
     {
       id: 'bank',
-      title: "Bank Details",
-      description: "Update withdrawal account",
+      title: 'Bank Details',
+      description: 'Update withdrawal account',
       icon: <MdAccountBalance className="text-[#37ec13]" />,
-      onClick: () => alert("Navigating to Bank Details..."),
+      onClick: () => alert('Navigating to Bank Details...'),
     },
   ];
 
   return (
-    <div className="flex justify-center bg-[#000000] text-white min-h-screen">
+    <div className="flex min-h-screen justify-center bg-[#000000] text-white">
       <div className="relative flex w-full max-w-md flex-col overflow-hidden border border-white/5 shadow-2xl">
-        
         {/* Header */}
         <div className="flex items-center justify-between bg-[#000000] px-6 pb-4 pt-2">
           <button
@@ -106,7 +106,6 @@ const Profile: React.FC = () => {
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-6 pb-32">
-          
           {/* Profile Photo Section */}
           <div className="relative mb-10 mt-6 flex flex-col items-center">
             <div className="group relative cursor-pointer">
@@ -138,7 +137,6 @@ const Profile: React.FC = () => {
 
           {/* Form Fields */}
           <div className="space-y-6">
-            
             {/* Full Name */}
             <div>
               <label className="mb-2 ml-4 block text-[10px] font-bold uppercase tracking-widest text-white/50">
@@ -148,7 +146,9 @@ const Profile: React.FC = () => {
                 <input
                   type="text"
                   value={profile.fullName}
-                  onChange={(e) => handleInputChange('fullName', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange('fullName', e.target.value)
+                  }
                   className="w-full rounded-full border border-white/10 bg-[#0a0a0a] py-4 pl-6 pr-12 text-sm font-medium text-white focus:border-[#37ec13]/60 focus:outline-none focus:ring-1 focus:ring-[#37ec13]"
                 />
                 <MdPerson className="absolute right-5 top-1/2 -translate-y-1/2 text-xl text-white/30" />
@@ -239,8 +239,12 @@ const Profile: React.FC = () => {
                         {section.icon}
                       </div>
                       <div>
-                        <h3 className="text-sm font-semibold text-white">{section.title}</h3>
-                        <p className="text-xs text-white/50">{section.description}</p>
+                        <h3 className="text-sm font-semibold text-white">
+                          {section.title}
+                        </h3>
+                        <p className="text-xs text-white/50">
+                          {section.description}
+                        </p>
                       </div>
                     </div>
                     <MdChevronRight className="text-2xl text-white/30 transition-colors group-hover:text-[#37ec13]" />
@@ -258,7 +262,7 @@ const Profile: React.FC = () => {
             disabled={isSaving}
             className="flex w-full items-center justify-center gap-3 rounded-full bg-[#37ec13] py-4 text-base font-bold tracking-wider text-black shadow-[0_0_25px_rgba(55,236,19,0.4)] transition-all hover:bg-[#2dd40f] active:scale-[0.97] disabled:opacity-70"
           >
-            {isSaving ? "Saving Changes..." : "Save Changes"}
+            {isSaving ? 'Saving Changes...' : 'Save Changes'}
             <MdCheckCircle className="text-lg" />
           </button>
         </div>
