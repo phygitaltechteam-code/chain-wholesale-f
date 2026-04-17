@@ -1,3 +1,4 @@
+// StockReport.tsx - Stock Movement & Inventory Report matching HTML design exactly
 import React, {useState} from 'react';
 import {
   Search,
@@ -6,21 +7,15 @@ import {
   Printer,
   ChevronLeft,
   ChevronRight,
-  TrendingUp,
-  TrendingDown,
   AlertCircle,
-  MoreVertical,
   Plus,
   PieChart,
   ArrowUpRight,
   ArrowDownRight,
 } from 'lucide-react';
-import GenericTable, {Column} from '@/components/Forms/Table/GenericTable';
-import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import GenericDropdown from '@/components/Forms/DropDown/GenericDropDown';
-import {useForm} from 'react-hook-form';
-import Inventory from '@/components/inventory/Inventory';
+import {FaSync} from 'react-icons/fa';
 import {MdVerifiedUser} from 'react-icons/md';
+import GenericTable, {Column} from '@/components/Forms/Table/GenericTable';
 
 interface StockTransaction {
   id: string;
@@ -37,7 +32,7 @@ interface StockTransaction {
   fineWeight: number;
   rate: number;
   stockValue: number;
-  status?: 'low_stock' | 'normal';
+  isLowStock?: boolean;
 }
 
 const stockData: StockTransaction[] = [
@@ -52,7 +47,6 @@ const stockData: StockTransaction[] = [
     fineWeight: 499.95,
     rate: 6245,
     stockValue: 3122187,
-    status: 'normal',
   },
   {
     id: '2',
@@ -65,7 +59,7 @@ const stockData: StockTransaction[] = [
     fineWeight: 14985.0,
     rate: 74.2,
     stockValue: 1111887,
-    status: 'low_stock',
+    isLowStock: true,
   },
   {
     id: '3',
@@ -78,7 +72,6 @@ const stockData: StockTransaction[] = [
     fineWeight: 110.45,
     rate: 5780,
     stockValue: 638401,
-    status: 'normal',
   },
   {
     id: '4',
@@ -91,7 +84,6 @@ const stockData: StockTransaction[] = [
     fineWeight: 41.4,
     rate: 5780,
     stockValue: 239292,
-    status: 'normal',
   },
   {
     id: '5',
@@ -104,7 +96,6 @@ const stockData: StockTransaction[] = [
     fineWeight: 229.0,
     rate: 5780,
     stockValue: 1323620,
-    status: 'normal',
   },
   {
     id: '6',
@@ -117,7 +108,6 @@ const stockData: StockTransaction[] = [
     fineWeight: 75.45,
     rate: 6245,
     stockValue: 471192,
-    status: 'normal',
   },
 ];
 
@@ -142,7 +132,6 @@ export default function StockReport() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const itemsPerPage = 5;
-  const {control} = useForm();
 
   // Filter data based on search and metal
   const filteredData = stockData.filter((item) => {
@@ -187,13 +176,13 @@ export default function StockReport() {
   const getTransactionIcon = (type: StockTransaction['transactionType']) => {
     switch (type) {
       case 'Purchase':
-        return <ArrowDownRight className="h-4 w-4 text-green-600" />;
+        return <ArrowDownRight className="h-4 w-4 text-green-700" />;
       case 'Sales':
         return <ArrowUpRight className="h-4 w-4 text-amber-700" />;
       case 'Internal Transfer':
-        return <Sync className="text-on-surface-variant h-4 w-4" />;
+        return <FaSync className="text-on-surface-variant h-4 w-4" />;
       case 'Karigar Return':
-        return <ArrowDownRight className="h-4 w-4 text-green-600" />;
+        return <ArrowDownRight className="h-4 w-4 text-green-700" />;
       default:
         return null;
     }
@@ -214,7 +203,22 @@ export default function StockReport() {
     }
   };
 
-  // Table columns
+  const getTransactionLabel = (type: StockTransaction['transactionType']) => {
+    switch (type) {
+      case 'Purchase':
+        return 'Purchase (In)';
+      case 'Sales':
+        return 'Sales (Out)';
+      case 'Internal Transfer':
+        return 'Internal Transfer';
+      case 'Karigar Return':
+        return 'Karigar Return (In)';
+      default:
+        return type;
+    }
+  };
+
+  // Table columns matching HTML design
   const columns: Column<StockTransaction>[] = [
     {
       header: 'Date',
@@ -235,7 +239,7 @@ export default function StockReport() {
           className={`flex items-center gap-2 text-sm font-bold ${getTransactionColor(item.transactionType)}`}
         >
           {getTransactionIcon(item.transactionType)}
-          {item.transactionType}
+          {getTransactionLabel(item.transactionType)}
         </span>
       ),
     },
@@ -245,12 +249,18 @@ export default function StockReport() {
       align: 'left',
       render: (item) => (
         <div className="flex flex-col">
-          <span className="text-on-surface text-sm font-bold">
-            {item.metal}
-          </span>
-          <span className="text-on-surface-variant text-[10px]">
-            {item.purity}
-          </span>
+          <span className="text-sm font-bold">{item.metal}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-on-surface-variant text-[10px]">
+              {item.purity}
+            </span>
+            {item.isLowStock && (
+              <span className="text-error flex items-center gap-0.5 text-[10px] font-bold">
+                <AlertCircle className="h-3 w-3" />
+                LOW STOCK
+              </span>
+            )}
+          </div>
         </div>
       ),
     },
@@ -325,7 +335,7 @@ export default function StockReport() {
         {/* Header Section */}
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <h2 className="font-headline text-on-surface text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="font-headline text-on-surface text-4xl font-bold tracking-tight">
               Stock Movement & Inventory
             </h2>
             <p className="text-on-surface-variant mt-2 font-medium">
@@ -343,17 +353,21 @@ export default function StockReport() {
               onClick={handleGenerate}
               className="hover:bg-surface-container rounded-full p-2 text-primary transition-colors"
             >
-              <RefreshCw className="h-5 w-5" />
+              <RefreshCw
+                className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`}
+              />
             </button>
           </div>
         </div>
 
-        {/* Summary Cards: Bento Style */}
+        {/* Summary Cards: Bento Style - Matching HTML exactly */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {/* Total Gold Stock */}
-          <div className="border-outline-variant/5 bg-surface-container-lowest group relative overflow-hidden rounded-xl border p-6 shadow-[0px_10px_40px_rgba(121,88,0,0.06)]">
+          <div className="bg-surface-container-lowest border-outline-variant/5 group relative overflow-hidden rounded-xl border p-6 shadow-[0px_10px_40px_rgba(121,88,0,0.06)]">
             <div className="absolute right-0 top-0 p-4 opacity-10 transition-opacity group-hover:opacity-20">
-              <div className="text-6xl">✨</div>
+              <span className="material-symbols-outlined text-6xl">
+                conversion_path
+              </span>
             </div>
             <div className="relative z-10">
               <p className="text-on-surface-variant mb-2 text-sm font-semibold uppercase tracking-wider">
@@ -375,9 +389,9 @@ export default function StockReport() {
           </div>
 
           {/* Total Silver Stock */}
-          <div className="border-outline-variant/5 bg-surface-container-lowest group relative overflow-hidden rounded-xl border p-6 shadow-[0px_10px_40px_rgba(121,88,0,0.06)]">
+          <div className="bg-surface-container-lowest border-outline-variant/5 group relative overflow-hidden rounded-xl border p-6 shadow-[0px_10px_40px_rgba(121,88,0,0.06)]">
             <div className="absolute right-0 top-0 p-4 opacity-10 transition-opacity group-hover:opacity-20">
-              <div className="text-6xl">📦</div>
+              <span className="material-symbols-outlined text-6xl">layers</span>
             </div>
             <div className="relative z-10">
               <p className="text-on-surface-variant mb-2 text-sm font-semibold uppercase tracking-wider">
@@ -402,7 +416,9 @@ export default function StockReport() {
           <div className="group relative overflow-hidden rounded-xl bg-primary p-6 text-white">
             <div className="to-primary-container absolute inset-0 bg-gradient-to-br from-primary opacity-90"></div>
             <div className="absolute -bottom-4 -right-4 opacity-20">
-              <div className="text-8xl">💰</div>
+              <span className="material-symbols-outlined text-8xl">
+                account_balance
+              </span>
             </div>
             <div className="relative z-10">
               <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-white/70">
@@ -418,7 +434,7 @@ export default function StockReport() {
           </div>
         </div>
 
-        {/* Filters & Search Bar */}
+        {/* Filters & Search Bar - Matching HTML exactly */}
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative min-w-[300px] flex-1">
             <Search className="text-on-surface-variant absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2" />
@@ -427,50 +443,40 @@ export default function StockReport() {
               placeholder="Search by Batch Ref or Transaction..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="border-outline-variant/20 bg-surface-container-lowest placeholder:text-on-surface-variant/50 w-full rounded-lg py-3 pl-12 pr-4 transition-all focus:border-primary focus:ring-2 focus:ring-primary/10"
+              className="bg-surface-container-lowest border-outline-variant/20 placeholder:text-on-surface-variant/50 w-full rounded-lg py-3 pl-12 pr-4 transition-all focus:border-primary focus:ring-2 focus:ring-primary/10"
             />
           </div>
           <div className="flex gap-2">
             <select
               value={selectedMetal}
               onChange={(e) => setSelectedMetal(e.target.value)}
-              className="border-outline-variant/20 bg-surface-container-lowest cursor-pointer rounded-lg px-4 py-3 text-sm font-medium outline-none focus:border-primary focus:ring-primary/10"
+              className="bg-surface-container-lowest border-outline-variant/20 cursor-pointer rounded-lg px-4 py-3 text-sm font-medium outline-none focus:border-primary focus:ring-primary/10"
             >
-              <option value="all">All Metals</option>
-              <option value="gold_24k">Gold (24K)</option>
-              <option value="gold_22k">Gold (22K)</option>
-              <option value="silver">Silver (999)</option>
+              {metalOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
             <select
               value={selectedDateRange}
               onChange={(e) => setSelectedDateRange(e.target.value)}
-              className="border-outline-variant/20 bg-surface-container-lowest cursor-pointer rounded-lg px-4 py-3 text-sm font-medium outline-none focus:border-primary focus:ring-primary/10"
+              className="bg-surface-container-lowest border-outline-variant/20 cursor-pointer rounded-lg px-4 py-3 text-sm font-medium outline-none focus:border-primary focus:ring-primary/10"
             >
-              <option value="30days">Last 30 Days</option>
-              <option value="quarter">This Quarter</option>
-              <option value="year">Financial Year</option>
-              <option value="custom">Custom Range</option>
+              {dateRangeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
             <button className="bg-surface-container-highest hover:bg-surface-container rounded-lg p-3 transition-colors">
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"
-                />
-              </svg>
+              <span className="material-symbols-outlined">tune</span>
             </button>
           </div>
         </div>
 
-        {/* Table: Stock Ledger */}
-        <div className="border-outline-variant/10 bg-surface-container-lowest overflow-hidden rounded-xl border shadow-[0px_10px_40px_rgba(121,88,0,0.04)]">
+        {/* Table: Stock Ledger - Using GenericTable */}
+        <div className="bg-surface-container-lowest border-outline-variant/10 overflow-hidden rounded-xl border shadow-[0px_10px_40px_rgba(121,88,0,0.04)]">
           <GenericTable
             data={currentData}
             columns={columns}
@@ -480,15 +486,31 @@ export default function StockReport() {
             paginationOff={true}
           />
 
-          {/* Table Footer with Totals */}
+          {/* Table Footer with Totals and Pagination */}
           {filteredData.length > 0 && (
-            <div className="border-outline-variant/10 bg-surface-container-low border-t px-6 py-4">
+            <div className="bg-surface-container-low border-outline-variant/10 border-t px-6 py-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <p className="text-on-surface-variant text-xs font-medium">
-                  Showing {indexOfFirstItem + 1} to{' '}
-                  {Math.min(indexOfLastItem, filteredData.length)} of{' '}
-                  {filteredData.length} transactions
-                </p>
+                <div className="flex flex-wrap items-center gap-6">
+                  <p className="text-on-surface-variant text-xs font-medium">
+                    Showing {indexOfFirstItem + 1} to{' '}
+                    {Math.min(indexOfLastItem, filteredData.length)} of{' '}
+                    {filteredData.length} transactions
+                  </p>
+                  <div className="flex items-center gap-4 text-xs">
+                    <span className="text-on-surface-variant font-medium">
+                      Totals:
+                    </span>
+                    <span className="font-bold">
+                      Gross: {totalGrossWeight.toFixed(2)}g
+                    </span>
+                    <span className="font-bold">
+                      Fine: {totalFineWeight.toFixed(2)}g
+                    </span>
+                    <span className="font-bold text-primary">
+                      Value: ₹{totalStockValue.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() =>
@@ -518,6 +540,14 @@ export default function StockReport() {
                   {totalPages > 5 && (
                     <span className="px-3 py-1 text-xs">...</span>
                   )}
+                  {totalPages > 5 && (
+                    <button
+                      onClick={() => setCurrentPage(totalPages)}
+                      className="border-outline-variant/30 hover:bg-surface-container rounded border px-3 py-1 text-xs transition-colors"
+                    >
+                      {totalPages}
+                    </button>
+                  )}
                   <button
                     onClick={() =>
                       setCurrentPage((prev) => Math.min(prev + 1, totalPages))
@@ -533,10 +563,10 @@ export default function StockReport() {
           )}
         </div>
 
-        {/* Secondary Insights Area */}
+        {/* Secondary Insights Area - Matching HTML exactly */}
         <div className="mt-4 grid grid-cols-1 gap-8 lg:grid-cols-2">
           {/* Stock Composition Chart Placeholder */}
-          <div className="border-outline-variant/5 bg-surface-container-low rounded-2xl border p-6">
+          <div className="bg-surface-container-low border-outline-variant/5 rounded-2xl border p-8">
             <div className="mb-6 flex items-start justify-between">
               <h4 className="font-headline text-xl font-bold">
                 Inventory Composition
@@ -572,8 +602,8 @@ export default function StockReport() {
             </div>
           </div>
 
-          {/* Recent Notifications / Warnings */}
-          <div className="border-outline-variant/5 bg-surface-container-lowest rounded-2xl border p-6 shadow-[0px_10px_40px_rgba(121,88,0,0.04)]">
+          {/* Recent Notifications / Warnings - Matching HTML exactly */}
+          <div className="bg-surface-container-lowest border-outline-variant/5 rounded-2xl border p-8 shadow-[0px_10px_40px_rgba(121,88,0,0.04)]">
             <h4 className="font-headline mb-6 text-xl font-bold">
               Stock Alerts
             </h4>
@@ -591,7 +621,9 @@ export default function StockReport() {
                 </div>
               </div>
               <div className="border-outline-variant/10 bg-surface-container-low flex gap-4 rounded-xl border p-4">
-                <Inventory className="h-5 w-5 text-primary" />
+                <span className="material-symbols-outlined text-primary">
+                  inventory
+                </span>
                 <div>
                   <p className="text-sm font-bold">Large Inflow Detected</p>
                   <p className="text-on-surface-variant mt-1 text-xs">
@@ -614,20 +646,26 @@ export default function StockReport() {
           </div>
         </div>
 
-        {/* Header Actions for Export */}
+        {/* Header Actions for Export - Matching HTML exactly */}
         <div className="flex justify-end gap-2">
-          <button className="border-outline-variant/30 hover:bg-surface-container flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors">
+          <button
+            onClick={handlePrint}
+            className="border-outline-variant/30 hover:bg-surface-container flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
+          >
             <Printer className="h-4 w-4" />
             Print View
           </button>
-          <button className="flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          >
             <Download className="h-4 w-4" />
             Export All
           </button>
         </div>
       </div>
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button - Matching HTML exactly */}
       <button className="group fixed bottom-8 right-8 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-2xl transition-transform hover:scale-105">
         <Plus className="h-6 w-6" />
         <span className="bg-on-surface absolute right-full mr-4 whitespace-nowrap rounded px-3 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
@@ -636,10 +674,17 @@ export default function StockReport() {
       </button>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Manrope:wght@300;400;500;600;700&display=swap');
-        
-        .font-headline {
-          font-family: 'Noto Serif', serif;
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+          display: inline-block;
+          line-height: 1;
         }
       `}</style>
     </div>
