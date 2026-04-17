@@ -24,6 +24,8 @@ import StockReport from '@/pages/reports/StockReport';
 import GSTReport from '@/pages/reports/GSTReport';
 import ClientLedgerReport from '@/pages/reports/ClientLedgerReport';
 import PLReport from '@/pages/reports/PLReport';
+import PageHeader from '../Forms/Common/PageHeader';
+import BookingReport from '@/pages/reports/BookingReport';
 
 // Report categories configuration matching HTML exactly
 const reportCategories = [
@@ -73,7 +75,7 @@ const reportCategories = [
   },
 ];
 
-// Sidebar Category Item Component - No padding/margin, darker text
+// Sidebar Category Item Component
 function SidebarCategoryItem({
   category,
   isActive,
@@ -111,7 +113,7 @@ function SidebarCategoryItem({
   );
 }
 
-// Left Sidebar Component - No extra padding/margin
+// Left Sidebar Component - Fixed/sticky
 function LeftSidebar() {
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-full w-64 flex-col border-r border-[#e0e0e0] bg-white shadow-sm">
@@ -217,6 +219,8 @@ export default function Reports() {
         return <ClientLedgerReport />;
       case 'pl':
         return <PLReport />;
+      case 'booking':
+        return <BookingReport />;
       default:
         return (
           <div className="flex min-h-[60vh] flex-1 items-center justify-center">
@@ -237,57 +241,61 @@ export default function Reports() {
 
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
-      {/* Left Sidebar */}
+      {/* Left Sidebar - Fixed */}
       <LeftSidebar />
 
-      {/* Main Content Area */}
-      <main className="mt-0 min-h-screen p-6">
-        {/* Reports Header Section */}
-        <div className="mb-6 flex items-end justify-between">
-          <div>
-            <h2 className="font-headline text-3xl font-bold tracking-tight text-[#1a1c1b]">
-              Reports Console
-            </h2>
-            <p className="mt-1 text-sm text-[#666666]">
-              Real-time valuation and logistics of precious metal holdings.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 rounded-lg bg-white p-1.5 shadow-sm">
-            <div className="flex flex-col border-r border-[#e0e0e0] px-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#888888]">
-                Last Updated
-              </span>
-              <span className="text-sm font-semibold text-[#1a1a1a]">
-                {new Date().toLocaleTimeString()}, Today
-              </span>
+      {/* Main Content Area - Scrollable only the report content */}
+      <main className="min-h-screen">
+        {/* Fixed Header Section - Stays at top */}
+        <div className="sticky top-0 z-10 bg-[#f9f9f9] px-6 pb-3 pt-6">
+          <div className="mb-4 flex items-end justify-between">
+            <div>
+              <PageHeader
+                title="Reports Console"
+                subtitle="Comprehensive analytics and transaction reports"
+              />
             </div>
-            <button className="rounded-full p-1.5 text-[#B8860B] transition-colors hover:bg-[#f5f5f5]">
-              <RefreshCw className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-3 rounded-lg bg-white p-1.5 shadow-sm">
+              <div className="flex flex-col border-r border-[#e0e0e0] px-3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#888888]">
+                  Last Updated
+                </span>
+                <span className="text-sm font-semibold text-[#1a1a1a]">
+                  {new Date().toLocaleTimeString()}, Today
+                </span>
+              </div>
+              <button className="rounded-full p-1.5 text-[#B8860B] transition-colors hover:bg-[#f5f5f5]">
+                <RefreshCw className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Reports Body Section - Category Sidebar + Content */}
-        <div className="flex gap-5">
-          {/* Left Sidebar - Report Categories */}
-          <aside className="w-56 flex-shrink-0 rounded-xl bg-white p-3 shadow-sm">
-            <p className="mb-2 px-2 font-['DM_Sans'] text-[10px] font-bold uppercase tracking-wider text-[#888888]">
-              Report Category
-            </p>
-            <nav className="space-y-0.5">
-              {reportCategories.map((category) => (
-                <SidebarCategoryItem
-                  key={category.id}
-                  category={category}
-                  isActive={activeReport === category.id}
-                  onClick={() => setActiveReport(category.id)}
-                />
-              ))}
-            </nav>
-          </aside>
+          {/* Report Category Sidebar - Horizontal scroll on small screens, stays fixed on desktop */}
+          <div className="flex gap-5">
+            {/* Left Sidebar - Report Categories (Sticky within main) */}
+            <aside className="sticky top-24 h-[calc(100vh-8rem)] w-56 flex-shrink-0 overflow-y-auto rounded-xl bg-white p-3 shadow-sm">
+              <p className="mb-2 px-2 font-['DM_Sans'] text-[10px] font-bold uppercase tracking-wider text-[#888888]">
+                Report Category
+              </p>
+              <nav className="space-y-0.5">
+                {reportCategories.map((category) => (
+                  <SidebarCategoryItem
+                    key={category.id}
+                    category={category}
+                    isActive={activeReport === category.id}
+                    onClick={() => setActiveReport(category.id)}
+                  />
+                ))}
+              </nav>
+            </aside>
 
-          {/* Main Content Area - Reports */}
-          <div className="min-w-0 flex-1">{renderReportContent()}</div>
+            {/* Main Content Area - Reports (Scrollable) */}
+            <div className="min-w-0 flex-1">
+              <div className="max-h-[calc(100vh-10rem)] overflow-y-auto pr-2">
+                {renderReportContent()}
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 
@@ -309,6 +317,22 @@ export default function Reports() {
         .material-symbols-outlined {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
           font-size: 20px;
+        }
+        
+        /* Custom scrollbar for report content */
+        .overflow-y-auto::-webkit-scrollbar {
+          width: 6px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 10px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+          background: #a1a1a1;
         }
       `}</style>
     </div>

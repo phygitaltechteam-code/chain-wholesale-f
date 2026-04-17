@@ -94,7 +94,7 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
       icon: <MdEngineering size={22} />,
     },
     {label: 'Reports', path: '/report', icon: <MdAssessment size={22} />},
-    {label: 'Settings', path: '/settings', icon: <MdSettings size={22} />},
+    {label: 'Settings', path: '/setting', icon: <MdSettings size={22} />},
   ];
 
   const isActive = (itemPath: string) => {
