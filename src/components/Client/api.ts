@@ -15,13 +15,18 @@ const addNewClient = async (data: ClientFormData) => {
 
 const getClients = async () => {
   try {
+    
     const response = await api.get(`shop/client`);
+    
     return response.data;
   } catch (error) {
     toast.error('Failed to fetch clients');
     throw error;
   }
 };
+
+
+
 
 const useAddClient = () => {
   const queryClient = useQueryClient();

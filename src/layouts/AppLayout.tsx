@@ -1,13 +1,17 @@
 import Sidebar from '@/components/Sidebar';
-import {useAuthContext} from '@/context/AuthContext';
-import {Outlet, useNavigate} from '@tanstack/react-router';
-import React, {useEffect, useState} from 'react';
+import { useAuthContext } from '@/context/AuthContext';
+import { Outlet, useNavigate } from '@tanstack/react-router';
+import React, { useEffect, useState } from 'react';
 
 const AppLayout = () => {
   const navigate = useNavigate();
-  const {isAuthenticated} = useAuthContext();
+  const { isAuthenticated, user } = useAuthContext();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  console.log('AppLayout - isAuthenticated:', isAuthenticated);
+  console.log('AppLayout - User:', user);
+  console.log('AppLayout - User Role:', user?.role);
 
   // Check if screen is mobile
   useEffect(() => {
@@ -21,12 +25,12 @@ const AppLayout = () => {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  // useEffect(() => {
-  //   if (!isAuthenticated) {
-  //     navigate({to: '/signin'});
-  //     return;
-  //   }
-  // }, [isAuthenticated, navigate]);
+  // Redirect to signin if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate({ to: '/signin', replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   // Get margin left based on sidebar state
   const getMarginLeft = () => {
@@ -35,6 +39,15 @@ const AppLayout = () => {
     }
     return sidebarCollapsed ? 'ml-20' : 'ml-64';
   };
+
+  // Show loading or redirect if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#B8860B] border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f9f9f7]">

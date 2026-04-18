@@ -17,6 +17,7 @@ import {
   MdClose,
   MdChevronLeft,
 } from 'react-icons/md';
+import {useAuthContext} from '@/context/AuthContext';
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
@@ -25,16 +26,20 @@ interface SidebarProps {
 const Sidebar = ({onCollapseChange}: SidebarProps) => {
   const location = useLocation();
   const {pathname} = location;
+  const {user, isAuthenticated} = useAuthContext();
+
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Get user role from context
+  const role = user?.role;
 
   // Check if screen is mobile
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-      // Close mobile menu when switching to desktop
       if (!mobile) {
         setIsMobileMenuOpen(false);
       }
@@ -51,51 +56,81 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  const menuItems = [
-    {label: 'Dashboard', path: '/dashboard', icon: <MdDashboard size={22} />},
+  // All menu items with role-based visibility
+  const allMenuItems = [
+    {
+      label: 'Dashboard',
+      path: '/dashboard',
+      icon: <MdDashboard size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+    },
     {
       label: 'Rate Management',
       path: '/rate/ratemanagement',
       icon: <MdTrendingUp size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
     {
       label: 'Clients',
       path: '/client/clientdirectory',
       icon: <MdGroup size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
     {
       label: 'Billing',
       path: '/billing/Billing',
       icon: <MdReceiptLong size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
     {
       label: 'Bookings & Delivery',
       path: '/bookdelivery/bookings-delivery',
       icon: <MdLocalShipping size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
     {
       label: 'Inventory',
       path: '/inventory/Inventory',
       icon: <MdInventory2 size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
     {
       label: 'Accounts',
       path: '/accounts',
       icon: <MdAccountBalanceWallet size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN'],
     },
     {
       label: 'Jewellery Job Work',
       path: '/JewlleryWork/jewelleryworkdata',
       icon: <MdPrecisionManufacturing size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN'],
     },
     {
       label: 'Karigars',
       path: '/kariger/karigers',
       icon: <MdEngineering size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN'],
     },
-    {label: 'Reports', path: '/report', icon: <MdAssessment size={22} />},
-    {label: 'Settings', path: '/setting', icon: <MdSettings size={22} />},
+    {
+      label: 'Reports',
+      path: '/report',
+      icon: <MdAssessment size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+    },
+    {
+      label: 'Settings',
+      path: '/setting',
+      icon: <MdSettings size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+    },
   ];
+
+  // Filter menu items based on user role
+  const menuItems = allMenuItems.filter((item) => {
+    if (!role) return false;
+    return item.roles.includes(role);
+  });
 
   const isActive = (itemPath: string) => {
     if (itemPath === '/dashboard') {
@@ -110,7 +145,7 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
   const handleLogout = () => {
     localStorage.clear();
     sessionStorage.clear();
-    window.location.href = '/';
+    window.location.href = '/signin';
   };
 
   const toggleCollapse = () => {
@@ -119,6 +154,25 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
     if (onCollapseChange) {
       onCollapseChange(newState);
     }
+  };
+
+  // Get user initials
+  const getUserInitials = () => {
+    const name = user?.fullname || user?.username || 'User';
+    return name
+      .split(' ')
+      .map((word: string) => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Get role display name
+  const getRoleDisplay = () => {
+    if (role === 'SUPERADMIN') return 'Super Admin';
+    if (role === 'ADMIN') return 'Mall Admin';
+    if (role === 'SHOP') return 'Shop Owner';
+    return 'User';
   };
 
   // Mobile menu button
@@ -153,7 +207,7 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
           <div className="flex justify-center">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#B8860B]/20">
               <span className="font-['Playfair_Display'] text-sm font-bold text-[#B8860B]">
-                B
+                {role === 'SUPERADMIN' ? 'S' : role === 'ADMIN' ? 'M' : 'B'}
               </span>
             </div>
           </div>
@@ -163,7 +217,7 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
               BullionPro ERP
             </h1>
             <p className="mt-1 whitespace-nowrap font-['DM_Sans'] text-[8px] uppercase tracking-[0.2em] text-slate-400 md:text-[10px]">
-              The Digital Goldsmith
+              {role === 'ADMIN' ? 'Mall Management' : 'The Digital Goldsmith'}
             </p>
           </>
         )}
@@ -187,6 +241,9 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
           <Link
             key={index}
             to={item.path}
+            onClick={() => {
+              if (isMobile) setIsMobileMenuOpen(false);
+            }}
             className={`flex items-center rounded-lg px-2 py-2 font-['DM_Sans'] text-xs font-medium tracking-wide transition-colors md:px-3 md:py-2.5 md:text-sm ${
               isActive(item.path)
                 ? 'border-r-4 border-[#B8860B] bg-[#B8860B]/10 text-[#B8860B]'
@@ -205,6 +262,27 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
           </Link>
         ))}
       </nav>
+
+      {/* User Info Section */}
+      <div className="border-t border-white/10 px-3 py-3">
+        <div
+          className={`flex items-center ${!isMobile && isCollapsed ? 'justify-center' : 'space-x-3'}`}
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#B8860B]/20">
+            <span className="text-sm font-semibold text-[#B8860B]">
+              {getUserInitials()}
+            </span>
+          </div>
+          {(!isMobile || !isCollapsed) && (
+            <div className="flex-1">
+              <p className="text-sm font-medium text-white">
+                {user?.fullname || user?.username || 'User'}
+              </p>
+              <p className="text-xs text-slate-400">{getRoleDisplay()}</p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Logout Button */}
       <div className="mt-auto border-t border-white/5 px-2 py-3 md:px-3 md:py-4">
@@ -228,17 +306,20 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
   // Sidebar width classes
   const getSidebarWidth = () => {
     if (isMobile) {
-      return 'w-64'; // Full width on mobile
+      return 'w-64';
     }
     return isCollapsed ? 'w-20' : 'w-64';
   };
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <>
       <MobileMenuButton />
       <MobileOverlay />
 
-      {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 z-50 flex h-full flex-col bg-[#1a1a2e] shadow-xl transition-transform duration-300 ${getSidebarWidth()} ${
           isMobile && !isMobileMenuOpen ? '-translate-x-full' : 'translate-x-0'
