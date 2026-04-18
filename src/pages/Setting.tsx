@@ -172,7 +172,7 @@ const Setting = () => {
       {/* Main Content Area */}
       <main className="min-h-screen">
         {/* Header */}
-        <header className="sticky top-0 z-40 flex w-full items-center justify-between bg-[#f9f9f7] px-8 py-4 shadow-sm backdrop-blur-md">
+        <header className="top-0 z-40 flex w-full items-center justify-between bg-[#f9f9f7] px-8 py-4 shadow-sm backdrop-blur-md">
           <div className="flex items-center gap-4">
             <PageHeader title="Settings" />
           </div>
