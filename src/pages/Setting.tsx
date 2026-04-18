@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   ShoppingCart,
   Calendar,
@@ -16,7 +16,7 @@ import {
   Stars,
   Diamond,
 } from 'lucide-react';
-import { FaSellcast } from 'react-icons/fa';
+import {FaSellcast} from 'react-icons/fa';
 import {
   MdAccountBalance,
   MdContactPage,
@@ -27,8 +27,9 @@ import {
   MdReceipt,
   MdVerifiedUser,
 } from 'react-icons/md';
-import { IoArrowForward } from 'react-icons/io5';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {IoArrowForward} from 'react-icons/io5';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import Account from '@/components/account/Account';
 
 interface User {
   id: string;
@@ -111,16 +112,26 @@ const productsData: Product[] = [
 ];
 
 const tabs = [
-  { id: 'shopInfo', label: 'Shop Info' },
-  { id: 'users', label: 'Users' },
-  { id: 'products', label: 'Products' },
-  { id: 'locations', label: 'Locations' },
-  { id: 'tax', label: 'Tax/HSN' },
-  { id: 'printConfig', label: 'Print Config' },
+  {id: 'shopInfo', label: 'Shop Info'},
+  {id: 'users', label: 'Users'},
+  {id: 'products', label: 'Products'},
+  {id: 'locations', label: 'Locations'},
+  {id: 'tax', label: 'Tax/HSN'},
+  {id: 'printConfig', label: 'Print Config'},
+  {
+    id: 'account',
+    label: 'Account',
+  },
 ];
 
 // Toggle Switch Component
-function ToggleSwitch({ enabled, onChange }: { enabled: boolean; onChange: () => void }) {
+function ToggleSwitch({
+  enabled,
+  onChange,
+}: {
+  enabled: boolean;
+  onChange: () => void;
+}) {
   return (
     <div className="relative mr-2 inline-block w-10 select-none align-middle transition duration-200 ease-in">
       <input
@@ -128,7 +139,7 @@ function ToggleSwitch({ enabled, onChange }: { enabled: boolean; onChange: () =>
         checked={enabled}
         onChange={onChange}
         className={`toggle-checkbox absolute block h-6 w-6 cursor-pointer appearance-none rounded-full border-4 bg-white transition-all duration-200 ease-in-out ${
-          enabled ? 'right-0 border-[#785600]' : 'border-[#D3C4AF] right-4'
+          enabled ? 'right-0 border-[#785600]' : 'right-4 border-[#D3C4AF]'
         }`}
       />
       <label
@@ -148,8 +159,10 @@ const Setting = () => {
   const toggleProduct = (productId: string) => {
     setProducts(
       products.map((product) =>
-        product.id === productId ? { ...product, enabled: !product.enabled } : product
-      )
+        product.id === productId
+          ? {...product, enabled: !product.enabled}
+          : product,
+      ),
     );
   };
 
@@ -209,7 +222,9 @@ const Setting = () => {
         {/* Header */}
         <header className="sticky top-0 z-40 flex w-full items-center justify-between bg-[#f9f9f7] px-8 py-4 shadow-sm backdrop-blur-md">
           <div className="flex items-center gap-4">
-            <h1 className="font-serif text-2xl font-bold text-[#1A1C1B]">Settings</h1>
+            <h1 className="font-serif text-2xl font-bold text-[#1A1C1B]">
+              Settings
+            </h1>
           </div>
           <div className="flex items-center gap-6">
             <div className="relative">
@@ -223,7 +238,7 @@ const Setting = () => {
         {/* Content Canvas */}
         <div className="mx-auto max-w-7xl p-12">
           {/* Horizontal Tabs */}
-          <div className="mb-12 flex gap-8 overflow-x-auto whitespace-nowrap border-b border-[#D3C4AF]/20 scrollbar-hide">
+          <div className="scrollbar-hide mb-12 flex gap-8 overflow-x-auto whitespace-nowrap border-b border-[#D3C4AF]/20">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -239,194 +254,207 @@ const Setting = () => {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
-            {/* Left Column - Shop Info & Users */}
-            <div className="space-y-10 lg:col-span-2">
-              {/* Shop Info Section */}
-              {activeTab === 'shopInfo' && (
-                <section>
-                  <h3 className="mb-6 font-serif font-bold text-xl text-[#1A1C1B]">
-                    Store Identity
-                  </h3>
-                  <div className="rounded-lg border border-[#D3C4AF]/10 bg-white p-8 shadow-lg shadow-[#785600]/5">
-                    <div className="mb-10 flex items-center gap-8">
-                      <div className="group relative">
-                        <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg border border-[#D3C4AF]/30 bg-[#F4F4F2]">
-                          <img
-                            alt="Store Logo"
-                            className="h-full w-full object-cover"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfNGT0fFFu34Q5jKEN1tnjSkGOfy5snQcgHaabCu1aYSVE5-vF4fNRw_k3RLK9ttc-PQpsdtg_q4UvSUSePTWEsMfylQ_OCxpOvr-J_Kymhz-552v6B0_1Lx0BB5YkqkVfQj22bfR5-UsRQA6SOKLnPLuQGub0NMPXwITO3pIDzwyGy-XQ1VMqUr97KukSMKU4S4mQJmleBkVjseGv8VSr0_V8NuqXomMUuRCdcUJ6mFlUWYFsHDHC8YA5sii97qDt5p6zfFiAWRZv"
-                          />
-                        </div>
-                        <button className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-[#785600] text-white shadow-lg transition-transform hover:scale-105">
-                          <Edit className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-[#1A1C1B]">Store Logo</h4>
-                        <p className="text-sm text-[#5E5B56]">
-                          Upload your brand identity for invoices and reports.
-                        </p>
-                      </div>
-                    </div>
-                    <form className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-[#5E5B56]">
-                          Store Name
-                        </label>
-                        <input
-                          type="text"
-                          defaultValue="Royal Bullion & Jewels"
-                          className="w-full rounded border border-[#D3C4AF]/20 bg-white py-3 text-[#1A1C1B] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-[#5E5B56]">
-                          GST Number
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="27AAAAA0000A125"
-                          className="w-full rounded border border-[#D3C4AF]/20 bg-white py-3 text-[#1A1C1B] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]"
-                        />
-                      </div>
-                      <div className="space-y-1.5 md:col-span-2">
-                        <label className="text-xs font-bold uppercase tracking-wider text-[#5E5B56]">
-                          Store Address
-                        </label>
-                        <textarea
-                          rows={3}
-                          defaultValue="102, Gold Souk, Zaveri Bazaar, Mumbai, Maharashtra 400002"
-                          className="w-full rounded border border-[#D3C4AF]/20 bg-white py-3 text-[#1A1C1B] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-[#5E5B56]">
-                          PAN Number
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="ABCDE1234F"
-                          className="w-full rounded border border-[#D3C4AF]/20 bg-white py-3 text-[#1A1C1B] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-[#5E5B56]">
-                          Contact Phone
-                        </label>
-                        <input
-                          type="tel"
-                          defaultValue="+91 98765 43210"
-                          className="w-full rounded border border-[#D3C4AF]/20 bg-white py-3 text-[#1A1C1B] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]"
-                        />
-                      </div>
-                    </form>
-                  </div>
-                </section>
-              )}
-
-              {/* Users Section */}
-              {(activeTab === 'shopInfo' || activeTab === 'users') && (
-                <section>
-                  <div className="mb-6 flex items-end justify-between">
-                    <h3 className="font-serif text-xl text-[#1A1C1B]">
-                      User Access
+          {/* Account Tab Content - Imported from separate component */}
+          {activeTab === 'account' ? (
+            <Account />
+          ) : (
+            <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
+              {/* Left Column - Shop Info & Users */}
+              <div className="space-y-10 lg:col-span-2">
+                {/* Shop Info Section */}
+                {activeTab === 'shopInfo' && (
+                  <section>
+                    <h3 className="font-serif mb-6 text-xl font-bold text-[#1A1C1B]">
+                      Store Identity
                     </h3>
-                    <button className="flex items-center gap-2 rounded-full bg-[#785600] px-6 py-2.5 text-sm font-bold text-white shadow-lg transition-colors hover:bg-[#986d00]">
-                      <Plus className="h-4 w-4" />
-                      Add User
-                    </button>
-                  </div>
-                  <div className="overflow-hidden rounded-lg border border-[#D3C4AF]/10 bg-white shadow-lg shadow-[#785600]/5">
-                    <GenericTable
-                      data={users}
-                      columns={userColumns}
-                      title=""
-                      searchable={false}
-                      itemsPerPage={5}
-                      paginationOff={true}
-                      className="border-0 shadow-none"
-                    />
-                  </div>
-                </section>
-              )}
-            </div>
-
-            {/* Right Column - Products & Security */}
-            <div className="space-y-10">
-              {/* Product Catalog Section */}
-              {activeTab === 'shopInfo' && (
-                <section>
-                  <h3 className="mb-6 font-serif text-xl font-bold text-[#1A1C1B]">
-                    Product Catalog
-                  </h3>
-                  <div className="space-y-6 rounded-lg border border-[#D3C4AF]/10 bg-white p-6 shadow-lg shadow-[#785600]/5">
-                    {products.map((product) => (
-                      <div
-                        key={product.id}
-                        className="group flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div
-                            className={`flex h-12 w-12 items-center justify-center rounded ${product.bgColor} ${product.iconColor}`}
-                          >
-                            {product.icon}
+                    <div className="rounded-lg border border-[#D3C4AF]/10 bg-white p-8 shadow-lg shadow-[#785600]/5">
+                      <div className="mb-10 flex items-center gap-8">
+                        <div className="group relative">
+                          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg border border-[#D3C4AF]/30 bg-[#F4F4F2]">
+                            <img
+                              alt="Store Logo"
+                              className="h-full w-full object-cover"
+                              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfNGT0fFFu34Q5jKEN1tnjSkGOfy5snQcgHaabCu1aYSVE5-vF4fNRw_k3RLK9ttc-PQpsdtg_q4UvSUSePTWEsMfylQ_OCxpOvr-J_Kymhz-552v6B0_1Lx0BB5YkqkVfQj22bfR5-UsRQA6SOKLnPLuQGub0NMPXwITO3pIDzwyGy-XQ1VMqUr97KukSMKU4S4mQJmleBkVjseGv8VSr0_V8NuqXomMUuRCdcUJ6mFlUWYFsHDHC8YA5sii97qDt5p6zfFiAWRZv"
+                            />
                           </div>
-                          <div>
-                            <h5 className="font-bold text-[#1A1C1B]">
-                              {product.name}
-                            </h5>
-                            <p className="text-xs text-[#5E5B56]">
-                              {product.description}
-                            </p>
-                          </div>
+                          <button className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-[#785600] text-white shadow-lg transition-transform hover:scale-105">
+                            <Edit className="h-4 w-4" />
+                          </button>
                         </div>
-                        <div className="text-right">
-                          <p className="text-xs font-bold text-[#785600]">
-                            {product.fee}
+                        <div>
+                          <h4 className="font-bold text-[#1A1C1B]">
+                            Store Logo
+                          </h4>
+                          <p className="text-sm text-[#5E5B56]">
+                            Upload your brand identity for invoices and reports.
                           </p>
-                          <ToggleSwitch
-                            enabled={product.enabled}
-                            onChange={() => toggleProduct(product.id)}
-                          />
                         </div>
                       </div>
-                    ))}
-                    <button className="w-full rounded-lg border-2 border-dashed border-[#D3C4AF]/30 py-3 text-sm font-bold text-[#5E5B56] transition-colors hover:bg-[#F4F4F2]">
-                      + Manage Full Catalog
+                      <form className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold uppercase tracking-wider text-[#5E5B56]">
+                            Store Name
+                          </label>
+                          <input
+                            type="text"
+                            defaultValue="Royal Bullion & Jewels"
+                            className="w-full rounded border border-[#D3C4AF]/20 bg-white py-3 text-[#1A1C1B] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold uppercase tracking-wider text-[#5E5B56]">
+                            GST Number
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="27AAAAA0000A125"
+                            className="w-full rounded border border-[#D3C4AF]/20 bg-white py-3 text-[#1A1C1B] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]"
+                          />
+                        </div>
+                        <div className="space-y-1.5 md:col-span-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-[#5E5B56]">
+                            Store Address
+                          </label>
+                          <textarea
+                            rows={3}
+                            defaultValue="102, Gold Souk, Zaveri Bazaar, Mumbai, Maharashtra 400002"
+                            className="w-full rounded border border-[#D3C4AF]/20 bg-white py-3 text-[#1A1C1B] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold uppercase tracking-wider text-[#5E5B56]">
+                            PAN Number
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="ABCDE1234F"
+                            className="w-full rounded border border-[#D3C4AF]/20 bg-white py-3 text-[#1A1C1B] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold uppercase tracking-wider text-[#5E5B56]">
+                            Contact Phone
+                          </label>
+                          <input
+                            type="tel"
+                            defaultValue="+91 98765 43210"
+                            className="w-full rounded border border-[#D3C4AF]/20 bg-white py-3 text-[#1A1C1B] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]"
+                          />
+                        </div>
+                      </form>
+                    </div>
+                  </section>
+                )}
+
+                {/* Users Section */}
+                {(activeTab === 'shopInfo' || activeTab === 'users') && (
+                  <section>
+                    <div className="mb-6 flex items-end justify-between">
+                      <h3 className="font-serif text-xl text-[#1A1C1B]">
+                        User Access
+                      </h3>
+                      <button className="flex items-center gap-2 rounded-full bg-[#785600] px-6 py-2.5 text-sm font-bold text-white shadow-lg transition-colors hover:bg-[#986d00]">
+                        <Plus className="h-4 w-4" />
+                        Add User
+                      </button>
+                    </div>
+                    <div className="overflow-hidden rounded-lg border border-[#D3C4AF]/10 bg-white shadow-lg shadow-[#785600]/5">
+                      <GenericTable
+                        data={users}
+                        columns={userColumns}
+                        title=""
+                        searchable={false}
+                        itemsPerPage={5}
+                        paginationOff={true}
+                        className="border-0 shadow-none"
+                      />
+                    </div>
+                  </section>
+                )}
+              </div>
+
+              {/* Right Column - Products & Security */}
+              <div className="space-y-10">
+                {/* Product Catalog Section */}
+                {activeTab === 'shopInfo' && (
+                  <section>
+                    <h3 className="font-serif mb-6 text-xl font-bold text-[#1A1C1B]">
+                      Product Catalog
+                    </h3>
+                    <div className="space-y-6 rounded-lg border border-[#D3C4AF]/10 bg-white p-6 shadow-lg shadow-[#785600]/5">
+                      {products.map((product) => (
+                        <div
+                          key={product.id}
+                          className="group flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div
+                              className={`flex h-12 w-12 items-center justify-center rounded ${product.bgColor} ${product.iconColor}`}
+                            >
+                              {product.icon}
+                            </div>
+                            <div>
+                              <h5 className="font-bold text-[#1A1C1B]">
+                                {product.name}
+                              </h5>
+                              <p className="text-xs text-[#5E5B56]">
+                                {product.description}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs font-bold text-[#785600]">
+                              {product.fee}
+                            </p>
+                            <ToggleSwitch
+                              enabled={product.enabled}
+                              onChange={() => toggleProduct(product.id)}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <button className="w-full rounded-lg border-2 border-dashed border-[#D3C4AF]/30 py-3 text-sm font-bold text-[#5E5B56] transition-colors hover:bg-[#F4F4F2]">
+                        + Manage Full Catalog
+                      </button>
+                    </div>
+                  </section>
+                )}
+
+                {/* Trust & Security Section */}
+                {activeTab !== 'account' && (
+                  <section className="rounded-lg border border-[#785600]/10 bg-[#785600]/5 p-6">
+                    <div className="mb-4 flex items-center gap-3 text-[#785600]">
+                      <MdVerifiedUser className="h-5 w-5" />
+                      <h4 className="font-bold text-[#1A1C1B]">
+                        Trust & Security
+                      </h4>
+                    </div>
+                    <p className="mb-6 text-sm leading-relaxed text-[#5E5B56]">
+                      Your billing data and GST compliance settings are audited
+                      weekly. Ensure your HSN codes are up to date with the
+                      latest ministry notifications.
+                    </p>
+                    <button className="flex items-center gap-2 text-sm font-bold text-[#785600] transition-all hover:gap-3">
+                      View Compliance Report
+                      <IoArrowForward className="h-4 w-4" />
                     </button>
-                  </div>
-                </section>
-              )}
-
-              {/* Trust & Security Section */}
-              <section className="rounded-lg border border-[#785600]/10 bg-[#785600]/5 p-6">
-                <div className="mb-4 flex items-center gap-3 text-[#785600]">
-                  <MdVerifiedUser className="h-5 w-5" />
-                  <h4 className="font-bold text-[#1A1C1B]">Trust & Security</h4>
-                </div>
-                <p className="mb-6 text-sm leading-relaxed text-[#5E5B56]">
-                  Your billing data and GST compliance settings are audited
-                  weekly. Ensure your HSN codes are up to date with the latest
-                  ministry notifications.
-                </p>
-                <button className="flex items-center gap-2 text-sm font-bold text-[#785600] transition-all hover:gap-3">
-                  View Compliance Report
-                  <IoArrowForward className="h-4 w-4" />
-                </button>
-              </section>
+                  </section>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Global Actions */}
-          <div className="mt-16 flex justify-end gap-4 border-t border-[#D3C4AF]/20 pt-10">
-            <button className="rounded-full px-8 py-3 font-bold text-[#5E5B56] transition-colors hover:bg-[#F4F4F2]">
-              Discard Changes
-            </button>
-            <button className="transform rounded-full bg-gradient-to-r from-[#785600] to-[#5a4000] px-10 py-3 font-bold text-white shadow-xl transition-all hover:scale-[1.02] active:scale-95">
-              Save Configuration
-            </button>
-          </div>
+          {/* Global Actions - Only show for non-account tabs */}
+          {activeTab !== 'account' && (
+            <div className="mt-16 flex justify-end gap-4 border-t border-[#D3C4AF]/20 pt-10">
+              <button className="rounded-full px-8 py-3 font-bold text-[#5E5B56] transition-colors hover:bg-[#F4F4F2]">
+                Discard Changes
+              </button>
+              <button className="transform rounded-full bg-gradient-to-r from-[#785600] to-[#5a4000] px-10 py-3 font-bold text-white shadow-xl transition-all hover:scale-[1.02] active:scale-95">
+                Save Configuration
+              </button>
+            </div>
+          )}
         </div>
       </main>
 

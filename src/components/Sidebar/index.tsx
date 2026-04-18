@@ -16,14 +16,23 @@ import {
   MdMenu,
   MdClose,
   MdChevronLeft,
+  MdChevronRight,
 } from 'react-icons/md';
 import {useAuthContext} from '@/context/AuthContext';
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
+  isMobile?: boolean;
+  sidebarOpen?: boolean;
+  setSidebarOpen?: (open: boolean) => void;
 }
 
-const Sidebar = ({onCollapseChange}: SidebarProps) => {
+const Sidebar = ({
+  onCollapseChange,
+  isMobile: propIsMobile,
+  sidebarOpen,
+  setSidebarOpen,
+}: SidebarProps) => {
   const location = useLocation();
   const {pathname} = location;
   const {user, isAuthenticated} = useAuthContext();
@@ -31,17 +40,25 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
 
   // Get user role from context
   const role = user?.role;
 
-  // Check if screen is mobile
+  // Use prop isMobile or calculate
+  const isMobileDevice = propIsMobile !== undefined ? propIsMobile : isMobile;
+
+  // Check screen size
   useEffect(() => {
     const checkScreenSize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      if (!mobile) {
+      const width = window.innerWidth;
+      setIsMobile(width < 640);
+      setIsTablet(width >= 640 && width < 1024);
+
+      // Auto-close mobile menu on larger screens
+      if (width >= 640 && isMobileMenuOpen) {
         setIsMobileMenuOpen(false);
+        if (setSidebarOpen) setSidebarOpen(false);
       }
     };
 
@@ -53,8 +70,34 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
 
   // Close mobile menu when route changes
   useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
+    if (isMobileDevice) {
+      setIsMobileMenuOpen(false);
+      if (setSidebarOpen) setSidebarOpen(false);
+    }
+  }, [pathname, isMobileDevice]);
+
+  // Sync with parent sidebarOpen state
+  useEffect(() => {
+    if (sidebarOpen !== undefined) {
+      setIsMobileMenuOpen(sidebarOpen);
+    }
+  }, [sidebarOpen]);
+
+  // Load collapsed state from localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebar-collapsed');
+    if (savedState !== null) {
+      setIsCollapsed(savedState === 'true');
+    }
+  }, []);
+
+  // Save collapsed state
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', String(isCollapsed));
+    if (onCollapseChange) {
+      onCollapseChange(isCollapsed);
+    }
+  }, [isCollapsed, onCollapseChange]);
 
   // All menu items with role-based visibility
   const allMenuItems = [
@@ -96,9 +139,9 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
     },
     {
       label: 'Accounts',
-      path: '/accounts',
+      path: '/account',
       icon: <MdAccountBalanceWallet size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN'],
+      roles: ['SUPERADMIN', 'ADMIN','SHOP'],
     },
     {
       label: 'Jewellery Job Work',
@@ -149,11 +192,13 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
   };
 
   const toggleCollapse = () => {
-    const newState = !isCollapsed;
-    setIsCollapsed(newState);
-    if (onCollapseChange) {
-      onCollapseChange(newState);
-    }
+    setIsCollapsed(!isCollapsed);
+  };
+
+  const toggleMobileMenu = () => {
+    const newState = !isMobileMenuOpen;
+    setIsMobileMenuOpen(newState);
+    if (setSidebarOpen) setSidebarOpen(newState);
   };
 
   // Get user initials
@@ -175,63 +220,79 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
     return 'User';
   };
 
-  // Mobile menu button
+  // Get logo letter
+  const getLogoLetter = () => {
+    if (role === 'SUPERADMIN') return 'S';
+    if (role === 'ADMIN') return 'M';
+    return 'B';
+  };
+
+  // Get portal name
+  const getPortalName = () => {
+    if (role === 'SUPERADMIN') return 'Super Admin';
+    if (role === 'ADMIN') return 'Mall Admin';
+    return 'BullionPro ERP';
+  };
+
+  // Mobile menu button - Now positioned at top of sidebar
   const MobileMenuButton = () => (
     <button
-      onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      className="fixed left-4 top-4 z-50 rounded-lg bg-[#1a1a2e] p-2 text-white shadow-lg md:hidden"
+      onClick={toggleMobileMenu}
+      className="absolute left-4 top-4 z-50 flex items-center justify-center rounded-lg bg-[#1a1a2e] p-2.5 text-white shadow-lg transition-all hover:bg-[#2a2a3e] active:scale-95 md:hidden"
       aria-label="Toggle menu"
     >
-      {isMobileMenuOpen ? <MdClose size={24} /> : <MdMenu size={24} />}
+      {isMobileMenuOpen ? <MdClose size={22} /> : <MdMenu size={22} />}
     </button>
   );
 
   // Mobile overlay
   const MobileOverlay = () => (
     <div
-      className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 md:hidden ${
-        isMobileMenuOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+      className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-all duration-300 md:hidden ${
+        isMobileMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
       }`}
-      onClick={() => setIsMobileMenuOpen(false)}
+      onClick={toggleMobileMenu}
     />
   );
 
   // Sidebar content
   const SidebarContent = () => (
     <>
-      {/* Logo Section */}
+      {/* Logo Section - Add padding-top on mobile to account for menu button */}
       <div
-        className={`mb-6 px-4 pt-4 transition-all duration-300 md:mb-10 md:px-6 md:pt-6 ${!isMobile && isCollapsed ? 'md:px-2' : ''}`}
+        className={`mb-6 transition-all duration-300 ${isMobileDevice ? 'px-4 pt-16' : ''} ${!isMobileDevice && isCollapsed ? 'px-2' : 'px-4'} md:mb-8 md:pt-6`}
       >
-        {!isMobile && isCollapsed ? (
+        {!isMobileDevice && isCollapsed ? (
           <div className="flex justify-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#B8860B]/20">
-              <span className="font-['Playfair_Display'] text-sm font-bold text-[#B8860B]">
-                {role === 'SUPERADMIN' ? 'S' : role === 'ADMIN' ? 'M' : 'B'}
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#B8860B]/20">
+              <span className="font-['Playfair_Display'] text-lg font-bold text-[#B8860B]">
+                {getLogoLetter()}
               </span>
             </div>
           </div>
         ) : (
-          <>
-            <h1 className="whitespace-nowrap font-['Playfair_Display'] text-lg font-bold text-[#B8860B] md:text-xl">
-              BullionPro ERP
+          <div className="text-center md:text-left">
+            <h1 className="font-['Playfair_Display'] text-xl font-bold text-[#B8860B] md:text-2xl">
+              {getPortalName()}
             </h1>
-            <p className="mt-1 whitespace-nowrap font-['DM_Sans'] text-[8px] uppercase tracking-[0.2em] text-slate-400 md:text-[10px]">
+            <p className="mt-1 font-['DM_Sans'] text-[8px] uppercase tracking-[0.2em] text-slate-400 md:text-[10px]">
               {role === 'ADMIN' ? 'Mall Management' : 'The Digital Goldsmith'}
             </p>
-          </>
+          </div>
         )}
       </div>
 
       {/* Collapse Toggle Button (Desktop only) */}
-      {!isMobile && (
+      {!isMobileDevice && !isTablet && (
         <button
           onClick={toggleCollapse}
           className="absolute -right-3 top-20 hidden rounded-full bg-[#B8860B] p-1 text-white shadow-md transition-all hover:bg-[#B8860B]/80 md:block"
         >
-          <MdChevronLeft
-            className={`h-4 w-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}
-          />
+          {isCollapsed ? (
+            <MdChevronRight className="h-4 w-4" />
+          ) : (
+            <MdChevronLeft className="h-4 w-4" />
+          )}
         </button>
       )}
 
@@ -242,40 +303,50 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
             key={index}
             to={item.path}
             onClick={() => {
-              if (isMobile) setIsMobileMenuOpen(false);
+              if (isMobileDevice) toggleMobileMenu();
             }}
-            className={`flex items-center rounded-lg px-2 py-2 font-['DM_Sans'] text-xs font-medium tracking-wide transition-colors md:px-3 md:py-2.5 md:text-sm ${
+            className={`group relative flex items-center rounded-lg px-3 py-2.5 font-['DM_Sans'] text-xs font-medium tracking-wide transition-all duration-200 md:px-4 md:py-3 md:text-sm ${
               isActive(item.path)
-                ? 'border-r-4 border-[#B8860B] bg-[#B8860B]/10 text-[#B8860B]'
+                ? 'bg-[#B8860B]/10 text-[#B8860B] shadow-sm'
                 : 'text-slate-400 hover:bg-white/5 hover:text-white'
-            } ${!isMobile && isCollapsed ? 'justify-center md:px-2' : ''}`}
-            title={!isMobile && isCollapsed ? item.label : ''}
+            } ${!isMobileDevice && isCollapsed ? 'justify-center' : ''}`}
+            title={!isMobileDevice && isCollapsed ? item.label : ''}
           >
             <span
-              className={`${!isMobile && isCollapsed ? 'mr-0' : 'mr-2 md:mr-3'}`}
+              className={`shrink-0 ${!isMobileDevice && isCollapsed ? 'mr-0' : 'mr-3'}`}
             >
               {item.icon}
             </span>
-            {!isMobile && isCollapsed ? null : (
+            {(!isMobileDevice || !isCollapsed) && (
               <span className="whitespace-nowrap">{item.label}</span>
+            )}
+            {/* Active indicator */}
+            {isActive(item.path) && (
+              <span className="absolute left-0 top-1/2 h-8 w-0.5 -translate-y-1/2 rounded-r-full bg-[#B8860B]"></span>
+            )}
+            {/* Tooltip for collapsed state */}
+            {!isMobileDevice && isCollapsed && (
+              <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg bg-[#1a1a2e] px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-xl transition-opacity duration-200 group-hover:opacity-100">
+                {item.label}
+              </div>
             )}
           </Link>
         ))}
       </nav>
 
       {/* User Info Section */}
-      <div className="border-t border-white/10 px-3 py-3">
+      <div className="border-t border-white/10 px-3 py-3 md:px-4 md:py-4">
         <div
-          className={`flex items-center ${!isMobile && isCollapsed ? 'justify-center' : 'space-x-3'}`}
+          className={`flex items-center ${!isMobileDevice && isCollapsed ? 'justify-center' : 'gap-3'}`}
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#B8860B]/20">
-            <span className="text-sm font-semibold text-[#B8860B]">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#B8860B]/20 md:h-10 md:w-10">
+            <span className="text-sm font-semibold text-[#B8860B] md:text-base">
               {getUserInitials()}
             </span>
           </div>
-          {(!isMobile || !isCollapsed) && (
-            <div className="flex-1">
-              <p className="text-sm font-medium text-white">
+          {(!isMobileDevice || !isCollapsed) && (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-white">
                 {user?.fullname || user?.username || 'User'}
               </p>
               <p className="text-xs text-slate-400">{getRoleDisplay()}</p>
@@ -285,19 +356,19 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
       </div>
 
       {/* Logout Button */}
-      <div className="mt-auto border-t border-white/5 px-2 py-3 md:px-3 md:py-4">
+      <div className="border-t border-white/5 px-2 py-3 md:px-3 md:py-4">
         <button
           onClick={handleLogout}
-          className={`flex w-full items-center rounded-lg px-2 py-2 font-['DM_Sans'] text-xs font-medium tracking-wide text-slate-400 transition-colors hover:text-white md:px-3 md:py-2.5 md:text-sm ${
-            !isMobile && isCollapsed ? 'justify-center' : ''
+          className={`flex w-full items-center rounded-lg px-3 py-2.5 font-['DM_Sans'] text-xs font-medium tracking-wide text-slate-400 transition-all duration-200 hover:bg-white/5 hover:text-white md:px-4 md:py-3 md:text-sm ${
+            !isMobileDevice && isCollapsed ? 'justify-center' : ''
           }`}
-          title={!isMobile && isCollapsed ? 'Logout' : ''}
+          title={!isMobileDevice && isCollapsed ? 'Logout' : ''}
         >
           <MdLogout
             size={20}
-            className={`${!isMobile && isCollapsed ? 'mr-0' : 'mr-2 md:mr-3'}`}
+            className={`shrink-0 ${!isMobileDevice && isCollapsed ? 'mr-0' : 'mr-3'}`}
           />
-          {!isMobile && isCollapsed ? null : 'Logout'}
+          {(!isMobileDevice || !isCollapsed) && 'Logout'}
         </button>
       </div>
     </>
@@ -305,9 +376,8 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
 
   // Sidebar width classes
   const getSidebarWidth = () => {
-    if (isMobile) {
-      return 'w-64';
-    }
+    if (isMobileDevice) return 'w-72';
+    if (isTablet) return 'w-64';
     return isCollapsed ? 'w-20' : 'w-64';
   };
 
@@ -317,12 +387,16 @@ const Sidebar = ({onCollapseChange}: SidebarProps) => {
 
   return (
     <>
-      <MobileMenuButton />
+      {/* Mobile menu button - rendered outside sidebar */}
+      {isMobileDevice && <MobileMenuButton />}
       <MobileOverlay />
 
+      {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-full flex-col bg-[#1a1a2e] shadow-xl transition-transform duration-300 ${getSidebarWidth()} ${
-          isMobile && !isMobileMenuOpen ? '-translate-x-full' : 'translate-x-0'
+        className={`fixed left-0 top-0 z-50 flex h-full flex-col bg-[#1a1a2e] shadow-2xl transition-all duration-300 ease-in-out ${getSidebarWidth()} ${
+          isMobileDevice && !isMobileMenuOpen
+            ? '-translate-x-full'
+            : 'translate-x-0'
         }`}
       >
         <SidebarContent />

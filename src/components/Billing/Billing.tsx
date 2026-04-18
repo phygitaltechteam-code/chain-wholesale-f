@@ -1,10 +1,9 @@
 import React, {useState, useEffect} from 'react';
-import {Search, Plus, TrendingUp, X} from 'lucide-react';
+import {Search, TrendingUp, X, Trash2, ChevronDown} from 'lucide-react';
 import {MdSave} from 'react-icons/md';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
 import GenericButton from '../Forms/Buttons/GenericButton';
-import GenericInputField from '../Forms/Input/GenericInputField';
 import {FormProvider, useForm} from 'react-hook-form';
 import PageHeader from '../Forms/Common/PageHeader';
 import {
@@ -12,14 +11,16 @@ import {
   InvoicePayloadSchema,
   MetalItemUISchema,
 } from './BillingSchema';
-import GenericTable, {Column} from '../Forms/Table/GenericTable';
 import {useSubmitBill} from './billapi';
 import {useGetClient} from '../Client/api';
+import toast from 'react-hot-toast';
+import {useNavigate} from '@tanstack/react-router';
+import BillingPrintReceipt from './BillingPrintReceipt';
 
 type MetalItem = z.infer<typeof MetalItemUISchema>;
 type BillingFormData = z.infer<typeof BillingFormSchema>;
 type InvoicePayload = z.infer<typeof InvoicePayloadSchema>;
-  
+
 interface BillingFormDataWithFields extends BillingFormData {
   [key: string]: any;
 }
@@ -35,7 +36,15 @@ interface Client {
   aadhar?: string;
 }
 
+// Account options for dropdown
+const accountOptions = [
+  {value: 'cash', label: 'Cash Account'},
+  {value: 'bank', label: 'Bank Account'},
+  {value: 'upi', label: 'UPI Account'},
+];
+
 export default function Billing() {
+  const navigate = useNavigate();
   const methods = useForm<BillingFormDataWithFields>({
     resolver: zodResolver(BillingFormSchema),
     defaultValues: {
@@ -44,12 +53,12 @@ export default function Billing() {
       rate: '',
       makingChargeType: 'g',
       makingChargeValue: '',
-      hsnCode: '7113',
+      hsnCode: '',
       gstPercent: '3',
       discount: '0',
       exchangeMetalType: '',
       exchangeGrossWeight: '',
-      exchangePurity: '75.00',
+      exchangePurity: '0',
       exchangeRate: '',
       cashPaid: '',
       previousBalance: '0',
@@ -65,20 +74,24 @@ export default function Billing() {
     formState: {errors, isValid},
   } = methods;
 
+  const [showPrintReceipt, setShowPrintReceipt] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
   const [transactionType, setTransactionType] = useState<'SELL' | 'BUY'>(
     'SELL',
   );
   const [billingMode, setBillingMode] = useState<'CASH_BILL' | 'GST_BILL'>(
     'CASH_BILL',
   );
-  const [paymentMode, setPaymentMode] = useState<'CASH' | 'METAL' | 'SPLIT'>(
-    'CASH',
-  );
+  const [paymentMode, setPaymentMode] = useState<
+    'CASH_UPI' | 'EXCHANGE' | 'SPLIT'
+  >('CASH_UPI');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
-  const [metalItems, setMetalItems] = useState<MetalItem[]>([]);
+  const [metalItem, setMetalItem] = useState<MetalItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState('cash');
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{
     metalName?: string;
     fineWeight?: string;
@@ -88,18 +101,18 @@ export default function Billing() {
   const savebill = useSubmitBill();
   const {data: clientsData, isLoading: clientsLoading} = useGetClient();
 
-  const clients = clientsData?.data || [];
+  const clients = clientsData || [];
 
-  // Filter clients based on search query
   const filteredClients = clients.filter(
     (client: Client) =>
       client.fullname?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.phoneNumber?.includes(searchQuery),
   );
 
-  // Watch all form values
+  
   const fineWeight = watch('fineWeight') || '0';
   const rate = watch('rate') || '0';
+  const metalType = watch('metalType') || '';
   const makingChargeType = watch('makingChargeType') || 'g';
   const makingChargeValue = watch('makingChargeValue') || '0';
   const gstPercent = watch('gstPercent') || '0';
@@ -112,65 +125,86 @@ export default function Billing() {
   const cashPaid = watch('cashPaid') || '0';
   const previousBalance = watch('previousBalance') || '0';
 
-  // Calculate exchange fine weight and value
+  // Auto-add metal item when all fields are filled and keep fields
+  useEffect(() => {
+    const hasMetalType = metalType && metalType.trim() !== '';
+    const hasFineWeight = fineWeight && parseFloat(fineWeight) > 0;
+    const hasRate = rate && parseFloat(rate) > 0;
+
+    if (hasMetalType && hasFineWeight && hasRate && !metalItem) {
+      const fineWt = parseFloat(parseFloat(fineWeight).toFixed(3));
+      const rateVal = parseFloat(parseFloat(rate).toFixed(2));
+      const amount = parseFloat((fineWt * rateVal).toFixed(2));
+
+      const newItem: MetalItem = {
+        id: Date.now().toString(),
+        metalType: metalType,
+        grossWeight: fineWt,
+        purity: 100,
+        fineWeight: fineWt,
+        rate: rateVal,
+        amount: amount,
+      };
+
+      setMetalItem(newItem);
+      // Don't clear fields - keep them visible
+      toast.success('Item added successfully');
+    }
+  }, [metalType, fineWeight, rate, metalItem]);
+
   const calculateExchangeFineWeight = (gross: string, pur: string): number => {
     const g = parseFloat(gross) || 0;
     const p = parseFloat(pur) || 0;
-    return (g * p) / 100;
+    return parseFloat(((g * p) / 100).toFixed(3));
   };
 
   const exchangeFineWt = calculateExchangeFineWeight(
     exchangeGrossWeight,
     exchangePurity,
   );
-  const exchangeValue = exchangeFineWt * parseFloat(exchangeRate);
-
-  // Calculate making charges
-  const totalGrossWeight = metalItems.reduce(
-    (sum, item) => sum + item.grossWeight,
-    0,
+  const exchangeValue = parseFloat(
+    (exchangeFineWt * parseFloat(exchangeRate)).toFixed(2),
   );
+
+  const totalGrossWeight = metalItem?.grossWeight || 0;
   const makingFees = (() => {
     const value = parseFloat(makingChargeValue) || 0;
     if (makingChargeType === 'g') {
-      return totalGrossWeight * value;
+      return parseFloat((totalGrossWeight * value).toFixed(2));
     }
-    return value;
+    return parseFloat(value.toFixed(2));
   })();
 
-  // Calculate items subtotal
-  const itemsSubtotal = metalItems.reduce((sum, item) => sum + item.amount, 0);
-
-  // Calculate subtotal with making fees
-  const subtotal = itemsSubtotal + makingFees;
-
-  // Calculate GST
+  const itemsSubtotal = metalItem?.amount || 0;
+  const subtotal = parseFloat((itemsSubtotal + makingFees).toFixed(2));
   const gstAmount =
-    billingMode === 'GST_BILL' ? (subtotal * parseFloat(gstPercent)) / 100 : 0;
+    billingMode === 'GST_BILL'
+      ? parseFloat(((subtotal * parseFloat(gstPercent)) / 100).toFixed(2))
+      : 0;
+  const totalWithTax = parseFloat((subtotal + gstAmount).toFixed(2));
+  const discountAmount = parseFloat(parseFloat(discount).toFixed(2)) || 0;
+  const afterDiscount = parseFloat((totalWithTax - discountAmount).toFixed(2));
+  const metalAdjustmentAmount =
+    parseFloat(parseFloat(metalAdjustment).toFixed(2)) || 0;
+  const netPayable = parseFloat(
+    (
+      afterDiscount -
+      metalAdjustmentAmount -
+      exchangeValue +
+      parseFloat(previousBalance)
+    ).toFixed(2),
+  );
+  const rawBalanceDue = parseFloat(
+    (netPayable - parseFloat(cashPaid)).toFixed(2),
+  );
+  const isOverpaid = rawBalanceDue < 0;
+  const overpaidAmount = isOverpaid ? Math.abs(rawBalanceDue) : 0;
+  const balanceDue = isOverpaid ? 0 : rawBalanceDue;
 
-  // Calculate total with tax
-  const totalWithTax = subtotal + gstAmount;
+  // Ensure values are never negative for API
+  const safeNetPayable = netPayable < 0 ? 0 : netPayable;
+  const safeCashPaid = parseFloat(cashPaid) < 0 ? 0 : parseFloat(cashPaid) || 0;
 
-  // Calculate discount amount
-  const discountAmount = parseFloat(discount) || 0;
-
-  // Calculate after discount
-  const afterDiscount = totalWithTax - discountAmount;
-
-  // Calculate metal adjustment
-  const metalAdjustmentAmount = parseFloat(metalAdjustment) || 0;
-
-  // Calculate net payable
-  const netPayable =
-    afterDiscount -
-    metalAdjustmentAmount -
-    exchangeValue +
-    parseFloat(previousBalance);
-
-  // Calculate balance due
-  const balanceDue = netPayable - parseFloat(cashPaid);
-
-  // Format functions
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -184,10 +218,6 @@ export default function Billing() {
     return value.toFixed(decimals);
   };
 
-  const formatWeight = (value: number): string => value.toFixed(3);
-  const formatRate = (value: number): string => value.toFixed(2);
-
-  // Handle fine weight input
   const handleFineWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     setValidationErrors((prev) => ({...prev, fineWeight: undefined}));
@@ -202,7 +232,6 @@ export default function Billing() {
     }
   };
 
-  // Handle rate input
   const handleRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     setValidationErrors((prev) => ({...prev, rate: undefined}));
@@ -217,111 +246,60 @@ export default function Billing() {
     }
   };
 
-  // Add metal item
-  const handleAddMetalItem = () => {
-    const metalTypeValue = watch('metalType');
-    const fineWeightValue = watch('fineWeight');
-    const rateValue = watch('rate');
-
-    const newErrors: {metalName?: string; fineWeight?: string; rate?: string} =
-      {};
-
-    if (!metalTypeValue) {
-      newErrors.metalName = '❌ Metal name is required';
-    }
-    if (!fineWeightValue || parseFloat(fineWeightValue) === 0) {
-      newErrors.fineWeight =
-        '❌ Fine weight is required and must be greater than 0';
-    } else if (parseFloat(fineWeightValue) < 0) {
-      newErrors.fineWeight = '❌ Fine weight cannot be negative';
-    }
-    if (!rateValue || parseFloat(rateValue) === 0) {
-      newErrors.rate = '❌ Rate is required and must be greater than 0';
-    } else if (parseFloat(rateValue) < 0) {
-      newErrors.rate = '❌ Rate cannot be negative';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setValidationErrors(newErrors);
-      return;
-    }
-
-    setValidationErrors({});
-
-    const fineWt = parseFloat(parseFloat(fineWeightValue).toFixed(3));
-    const rateVal = parseFloat(parseFloat(rateValue).toFixed(2));
-    const amount = parseFloat((fineWt * rateVal).toFixed(2));
-
-    const newItem: MetalItem = {
-      id: Date.now().toString(),
-      metalType: metalTypeValue,
-      grossWeight: fineWt,
-      purity: 100,
-      fineWeight: fineWt,
-      rate: rateVal,
-      amount: amount,
-    };
-
-    setMetalItems([...metalItems, newItem]);
+  const removeMetalItem = () => {
+    setMetalItem(null);
     setValue('metalType', '');
     setValue('fineWeight', '');
     setValue('rate', '');
   };
 
-  // Remove metal item
-  const removeMetalItem = (id: string) => {
-    setMetalItems(metalItems.filter((item) => item.id !== id));
-  };
-
-  // Build exchange items array
   const buildExchangeItems = () => {
-    if (paymentMode !== 'METAL' && paymentMode !== 'SPLIT') return [];
+    if (paymentMode !== 'EXCHANGE' && paymentMode !== 'SPLIT') return [];
     if (!exchangeMetalType) return [];
 
     return [
       {
         metalType: exchangeMetalType,
-        grossWeight: parseFloat(exchangeGrossWeight) || 0,
-        purity: parseFloat(exchangePurity) || 0,
+        grossWeight:
+          parseFloat(parseFloat(exchangeGrossWeight).toFixed(3)) || 0,
+        purity: parseFloat(parseFloat(exchangePurity).toFixed(2)) || 0,
         fineWeight: exchangeFineWt,
-        rate: parseFloat(exchangeRate) || 0,
+        rate: parseFloat(parseFloat(exchangeRate).toFixed(2)) || 0,
         amount: exchangeValue,
       },
     ];
   };
 
-  // Build items array for API
   const buildItemsForAPI = () => {
-    return metalItems.map((item) => ({
-      metalName: item.metalType,
-      weight: item.fineWeight,
-      rate: item.rate,
-      amount: item.amount,
-    }));
+    if (!metalItem) return [];
+    return [
+      {
+        metalName: metalItem.metalType,
+        weight: parseFloat(metalItem.fineWeight.toFixed(3)),
+        rate: parseFloat(metalItem.rate.toFixed(2)),
+        amount: parseFloat(metalItem.amount.toFixed(2)),
+      },
+    ];
   };
 
-  // Build payload for API matching backend schema
   const buildPayload = () => {
-    const transactionTypeMap = {
-      SELL: 'SELL',
-      BUY: 'BUY',
-    };
-
-    const billingModeMap = {
-      CASH_BILL: 'CASH_BILL',
-      GST_BILL: 'GST_BILL',
-    };
-
     const paymentModeMap = {
-      CASH: 'CASH',
-      METAL: 'METAL',
+      CASH_UPI: 'CASH_UPI',
+      EXCHANGE: 'EXCHANGE',
       SPLIT: 'SPLIT',
     };
 
+    const finalBalanceDue = balanceDue < 0 ? 0 : balanceDue;
+    let finalCashPaid = safeCashPaid;
+
+    if (isOverpaid) {
+      finalCashPaid = safeNetPayable;
+    }
+
     const payload = {
       clientId: selectedClient?.id || '',
-      transactionType: transactionTypeMap[transactionType],
-      billingMode: billingModeMap[billingMode],
+      transactionType: transactionType,
+      billingMode: billingMode,
       paymentMode: paymentModeMap[paymentMode],
       items: buildItemsForAPI(),
       exchangeItems: buildExchangeItems(),
@@ -332,66 +310,110 @@ export default function Billing() {
       subTotal: parseFloat((itemsSubtotal + makingFees).toFixed(2)),
       discount: parseFloat(discountAmount.toFixed(2)),
       exchangeValue: parseFloat(exchangeValue.toFixed(2)),
-      previousBalance: parseFloat(previousBalance) || 0,
-      netPayable: parseFloat(netPayable.toFixed(2)),
-      cashPaid: parseFloat(cashPaid) || 0,
-      balanceDue: parseFloat(balanceDue.toFixed(2)),
+      previousBalance: 0, // Set to 0 as requested
+      netPayable: parseFloat(safeNetPayable.toFixed(2)),
+      cashPaid: parseFloat(finalCashPaid.toFixed(2)),
+      balanceDue: parseFloat(finalBalanceDue.toFixed(2)),
+      account: selectedAccount,
     };
 
     return payload;
   };
 
-  // Handle client selection
   const handleSelectClient = (client: Client) => {
     setSelectedClient(client);
     setSearchQuery(client.fullname);
     setShowClientDropdown(false);
+    toast.success(`Client selected: ${client.fullname}`);
   };
 
-  // Handle form submission
   const handleSave = async () => {
     setIsSubmitting(true);
 
     try {
-      // Validate client
       if (!selectedClient) {
-        alert('Please select a client');
+        toast.error('Please select a client');
         setIsSubmitting(false);
         return;
       }
 
-      // Validate metal items
-      if (metalItems.length === 0) {
-        alert('Please add at least one metal item');
+      if (!metalItem) {
+        toast.error('Please add metal item');
         setIsSubmitting(false);
         return;
       }
 
-      // Build payload
+      if (
+        (paymentMode === 'EXCHANGE' || paymentMode === 'SPLIT') &&
+        !exchangeMetalType
+      ) {
+        toast.error('Please fill metal exchange details');
+        setIsSubmitting(false);
+        return;
+      }
+
       const payload = buildPayload();
 
-      console.log('='.repeat(80));
-      console.log('📋 INVOICE PAYLOAD (Backend Format)');
-      console.log('='.repeat(80));
-      console.log(JSON.stringify(payload, null, 2));
-      console.log('='.repeat(80));
+      const result = await savebill.mutateAsync(payload);
 
-      // Submit bill
-      await savebill.mutateAsync(payload);
+      // Prepare receipt data
+      const receiptDataObj = {
+        invoiceNo:
+          result?.data?.id?.slice(0, 8).toUpperCase() || `INV-${Date.now()}`,
+        date: new Date().toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }),
+        client: {
+          name: selectedClient.fullname,
+          phone: selectedClient.phoneNumber,
+          address: selectedClient.address,
+          gst: selectedClient.GST,
+        },
+        items: metalItem
+          ? [
+              {
+                metalName: metalItem.metalType,
+                weight: metalItem.fineWeight,
+                rate: metalItem.rate,
+                amount: metalItem.amount,
+              },
+            ]
+          : [],
+        makingFees: makingFees,
+        gstPercent: parseFloat(gstPercent),
+        gstAmount: gstAmount,
+        exchangeValue: exchangeValue,
+        previousBalance: parseFloat(previousBalance) || 0,
+        subTotal: subtotal,
+        totalWithTax: totalWithTax,
+        netPayable: safeNetPayable,
+        cashPaid: safeCashPaid,
+        balanceDue: balanceDue,
+        transactionType: transactionType,
+        billingMode: billingMode,
+        paymentMode: paymentMode,
+      };
 
-      // Reset form after successful submission
+      setReceiptData(receiptDataObj);
+      setShowPrintReceipt(true);
+
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving invoice:', error);
-      alert('Failed to save invoice. Please try again.');
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.errors?.map((e: any) => e.message).join(', ') ||
+        'Failed to save invoice. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Reset form
   const resetForm = () => {
-    setMetalItems([]);
+    setMetalItem(null);
     setSelectedClient(null);
     setSearchQuery('');
     setValue('metalType', '');
@@ -403,58 +425,32 @@ export default function Billing() {
     setValue('cashPaid', '');
     setValue('exchangeMetalType', '');
     setValue('exchangeGrossWeight', '');
-    setValue('exchangePurity', '75.00');
+    setValue('exchangePurity', '');
     setValue('exchangeRate', '');
     setValue('previousBalance', '0');
     setTransactionType('SELL');
     setBillingMode('CASH_BILL');
-    setPaymentMode('CASH');
+    setPaymentMode('CASH_UPI');
+    setSelectedAccount('cash');
     setValidationErrors({});
   };
-
-  // Table columns
-  const metalTableColumns: Column<MetalItem>[] = [
-    {
-      header: 'Metal Name',
-      accessor: 'metalType',
-      sortable: true,
-      align: 'center',
-    },
-    {
-      header: 'Fine Wt (g)',
-      accessor: (item) => formatWeight(item.fineWeight),
-      sortable: true,
-      align: 'center',
-    },
-    {
-      header: 'Rate / Gram',
-      accessor: (item) => formatRate(item.rate),
-      sortable: true,
-      align: 'center',
-    },
-    {
-      header: 'Amount',
-      accessor: (item) => formatCurrency(item.amount),
-      sortable: true,
-      align: 'center',
-    },
-  ];
 
   return (
     <FormProvider {...methods}>
       <div className="min-h-screen bg-[#f9f9f7]">
         <div className="px-4 py-4 md:px-8 md:py-6">
-          <PageHeader
-            title="Billing Dashboard"
-            subtitle="Create and manage invoices"
-          />
+          <button
+            className="flex items-center gap-2 text-[#785600] transition-colors hover:text-[#5d4200]"
+            onClick={() => navigate({to: '/billing/Billing'})}
+          >
+            ← Back to Bills
+          </button>
         </div>
 
         <div className="flex flex-col gap-6 overflow-hidden px-4 pb-8 md:flex-row md:gap-8 md:p-8 md:pt-0">
           <div className="flex flex-1 flex-col gap-6 overflow-y-auto scroll-smooth">
             {/* Billing Controls */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              {/* Transaction Type */}
               <div className="flex flex-col gap-4 rounded-xl border border-[#d3c4af]/10 bg-white p-4 shadow-sm md:p-6">
                 <h3 className="font-['Manrope'] text-xs font-bold uppercase tracking-widest text-[#4f4535]">
                   Transaction Type
@@ -485,7 +481,6 @@ export default function Billing() {
                 </div>
               </div>
 
-              {/* Billing Mode */}
               <div className="flex flex-col gap-4 rounded-xl border border-[#d3c4af]/10 bg-white p-4 shadow-sm md:p-6">
                 <h3 className="font-['Manrope'] text-xs font-bold uppercase tracking-widest text-[#4f4535]">
                   Billing Mode
@@ -516,7 +511,6 @@ export default function Billing() {
                 </div>
               </div>
 
-              {/* Payment Mode */}
               <div className="flex flex-col gap-4 rounded-xl border border-[#d3c4af]/10 bg-white p-4 shadow-sm md:p-6">
                 <h3 className="font-['Manrope'] text-xs font-bold uppercase tracking-widest text-[#4f4535]">
                   Payment Mode
@@ -524,9 +518,9 @@ export default function Billing() {
                 <div className="flex w-full flex-col gap-2 rounded-lg bg-[#f4f4f2] p-1 md:flex-row">
                   <button
                     type="button"
-                    onClick={() => setPaymentMode('CASH')}
+                    onClick={() => setPaymentMode('CASH_UPI')}
                     className={`rounded-md px-3 py-2 text-xs font-bold transition-all md:flex-1 md:rounded-full md:px-4 ${
-                      paymentMode === 'CASH'
+                      paymentMode === 'CASH_UPI'
                         ? 'bg-[#785600] text-white shadow-sm'
                         : 'text-[#4f4535] hover:bg-[#e8e8e6]'
                     }`}
@@ -535,14 +529,14 @@ export default function Billing() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPaymentMode('METAL')}
+                    onClick={() => setPaymentMode('EXCHANGE')}
                     className={`rounded-md px-3 py-2 text-xs font-bold transition-all md:flex-1 md:rounded-full md:px-4 ${
-                      paymentMode === 'METAL'
+                      paymentMode === 'EXCHANGE'
                         ? 'bg-[#785600] text-white shadow-sm'
                         : 'text-[#4f4535] hover:bg-[#e8e8e6]'
                     }`}
                   >
-                    Metal Exchange
+                    Exchange
                   </button>
                   <button
                     type="button"
@@ -553,70 +547,75 @@ export default function Billing() {
                         : 'text-[#4f4535] hover:bg-[#e8e8e6]'
                     }`}
                   >
-                    Part/Split
+                    Split
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Client Search with Dropdown */}
+            {/* Client Search */}
             <div className="rounded-xl border border-[#d3c4af]/10 bg-white p-4 md:p-6">
               <h3 className="mb-4 font-['Noto_Serif'] text-lg font-bold text-[#785600] md:mb-6 md:text-xl">
                 Client Details
               </h3>
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f4535] md:h-5 md:w-5" />
-                <input
-                  className="w-full rounded-lg border-0 bg-[#f4f4f2] py-3 pl-10 pr-3 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 md:py-4 md:pl-12 md:pr-4"
-                  placeholder="Search by name or phone..."
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setShowClientDropdown(true);
-                    if (e.target.value === '') {
-                      setSelectedClient(null);
-                    }
-                  }}
-                  onFocus={() => setShowClientDropdown(true)}
-                />
-                {showClientDropdown && filteredClients.length > 0 && (
-                  <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-[#d3c4af]/30 bg-white shadow-lg">
-                    {filteredClients.map((client: Client) => (
-                      <div
-                        key={client.id}
-                        className="cursor-pointer border-b border-[#f4f4f2] p-3 hover:bg-[#f4f4f2]"
-                        onClick={() => handleSelectClient(client)}
-                      >
-                        <p className="text-sm font-bold text-[#1a1c1b]">
-                          {client.fullname}
-                        </p>
-                        <p className="text-xs text-[#4f4535]">
-                          {client.phoneNumber}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {selectedClient && (
-                <div className="mt-3 flex gap-3 md:mt-4 md:gap-4">
-                  <div className="flex flex-1 items-center gap-2 rounded-lg border border-[#785600]/10 bg-[#785600]/5 p-2 md:gap-3 md:p-3">
-                    <div>
-                      <p className="text-xs font-bold text-[#1a1c1b] md:text-sm">
-                        {selectedClient.fullname}
-                      </p>
-                      <p className="text-[10px] text-[#4f4535] md:text-xs">
-                        {selectedClient.phoneNumber}
+                {selectedClient ? (
+                  <div className="flex items-center justify-between rounded-lg bg-[#f4f4f2] py-3 pl-10 pr-3 md:py-4 md:pl-12 md:pr-4">
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-[#1a1c1b]">
+                        {selectedClient.fullname} - {selectedClient.phoneNumber}
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedClient(null);
+                        setSearchQuery('');
+                      }}
+                      className="ml-2 rounded-full p-1 transition-colors hover:bg-[#e8e8e6]"
+                    >
+                      <X size={16} className="text-[#4f4535]" />
+                    </button>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <input
+                    className="w-full rounded-lg border-0 bg-[#f4f4f2] py-3 pl-10 pr-3 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 md:py-4 md:pl-12 md:pr-4"
+                    placeholder="Search by name or phone..."
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setShowClientDropdown(true);
+                    }}
+                    onFocus={() => setShowClientDropdown(true)}
+                  />
+                )}
+                {!selectedClient &&
+                  showClientDropdown &&
+                  filteredClients.length > 0 && (
+                    <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-[#d3c4af]/30 bg-white shadow-lg">
+                      {filteredClients.map((client: Client) => (
+                        <div
+                          key={client.id}
+                          className="cursor-pointer border-b border-[#f4f4f2] p-3 hover:bg-[#f4f4f2]"
+                          onClick={() => handleSelectClient(client)}
+                        >
+                          <p className="text-sm font-bold text-[#1a1c1b]">
+                            {client.fullname}
+                          </p>
+                          <p className="text-xs text-[#4f4535]">
+                            {client.phoneNumber}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+              </div>
             </div>
 
             {/* Metal Exchange Section */}
-            {(paymentMode === 'METAL' || paymentMode === 'SPLIT') && (
+            {(paymentMode === 'EXCHANGE' || paymentMode === 'SPLIT') && (
               <div className="rounded-xl border border-l-4 border-[#d3c4af]/10 border-l-[#785600] bg-white p-4 md:p-6">
                 <h3 className="mb-4 font-['Noto_Serif'] text-lg font-bold text-[#785600] md:mb-6 md:text-xl">
                   Metal Exchange Details
@@ -629,7 +628,7 @@ export default function Billing() {
                     <input
                       type="text"
                       {...register('exchangeMetalType')}
-                      placeholder="Gold Old, Silver"
+                      placeholder="Gold Old Ornament"
                       className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2 text-sm focus:ring-2 focus:ring-[#785600]/20 md:px-4 md:py-3"
                     />
                   </div>
@@ -653,7 +652,7 @@ export default function Billing() {
                       type="number"
                       step="0.01"
                       {...register('exchangePurity')}
-                      placeholder="75.00"
+                      placeholder=""
                       className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2 text-sm focus:ring-2 focus:ring-[#785600]/20 md:px-4 md:py-3"
                     />
                   </div>
@@ -703,21 +702,11 @@ export default function Billing() {
               </div>
             )}
 
-            {/* Items Sold Section */}
+            {/* Item Entry Section - Fields remain visible */}
             <div className="rounded-xl border border-l-4 border-[#d3c4af]/10 border-l-[#785600] bg-white p-4 md:p-6">
-              <div className="mb-4 flex flex-col gap-3 md:mb-6 md:flex-row md:items-center md:justify-between">
-                <h3 className="font-['Noto_Serif'] text-lg font-bold text-[#785600] md:text-xl">
-                  Items Sold (Metal Entry)
-                </h3>
-                <GenericButton
-                  type="button"
-                  onClick={handleAddMetalItem}
-                  className="flex w-full items-center justify-center gap-2 !px-3 !py-2 text-sm md:w-auto"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Item
-                </GenericButton>
-              </div>
+              <h3 className="mb-4 font-['Noto_Serif'] text-lg font-bold text-[#785600] md:mb-6 md:text-xl">
+                Item Sold (Metal Entry)
+              </h3>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-4 md:gap-4">
                 <div>
@@ -727,7 +716,7 @@ export default function Billing() {
                   <input
                     type="text"
                     {...register('metalType')}
-                    placeholder="e.g., Gold 22K (91.6)"
+                    placeholder="Gold 22K (91.6)"
                     className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2 text-sm focus:ring-2 focus:ring-[#785600]/20 md:px-4 md:py-3 ${
                       validationErrors.metalName
                         ? 'border-2 border-red-300 bg-red-50'
@@ -750,21 +739,8 @@ export default function Billing() {
                     {...register('fineWeight')}
                     onChange={handleFineWeightChange}
                     placeholder="9.572"
-                    className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2 text-sm focus:ring-2 focus:ring-[#785600]/20 md:px-4 md:py-3 ${
-                      validationErrors.fineWeight
-                        ? 'border-2 border-red-300 bg-red-50'
-                        : ''
-                    }`}
+                    className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2 text-sm focus:ring-2 focus:ring-[#785600]/20 md:px-4 md:py-3"
                   />
-                  {validationErrors.fineWeight ? (
-                    <p className="mt-1 text-xs text-red-600">
-                      {validationErrors.fineWeight}
-                    </p>
-                  ) : (
-                    <span className="mt-1 text-[10px] text-[#817563]">
-                      3 decimal places
-                    </span>
-                  )}
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535]">
@@ -776,21 +752,8 @@ export default function Billing() {
                     {...register('rate')}
                     onChange={handleRateChange}
                     placeholder="7245.00"
-                    className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2 text-sm focus:ring-2 focus:ring-[#785600]/20 md:px-4 md:py-3 ${
-                      validationErrors.rate
-                        ? 'border-2 border-red-300 bg-red-50'
-                        : ''
-                    }`}
+                    className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2 text-sm focus:ring-2 focus:ring-[#785600]/20 md:px-4 md:py-3"
                   />
-                  {validationErrors.rate ? (
-                    <p className="mt-1 text-xs text-red-600">
-                      {validationErrors.rate}
-                    </p>
-                  ) : (
-                    <span className="mt-1 text-[10px] text-[#817563]">
-                      2 decimal places
-                    </span>
-                  )}
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535]">
@@ -808,27 +771,25 @@ export default function Billing() {
                 </div>
               </div>
 
-              {metalItems.length > 0 && (
-                <div className="mt-6">
-                  <GenericTable
-                    data={metalItems}
-                    columns={metalTableColumns}
-                    itemsPerPage={5}
-                    searchable={false}
-                    title="Added Items"
-                    action={true}
-                    onDelete={(item) => removeMetalItem(item.id)}
-                    paginationOff={metalItems.length <= 5}
-                  />
+              {/* Show added item info */}
+              {/* {metalItem && (
+                <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm">
+                  <p className="text-green-700">
+                    ✓ Item added: {metalItem.metalType} -{' '}
+                    {metalItem.fineWeight.toFixed(3)}g @ ₹
+                    {metalItem.rate.toFixed(2)} ={' '}
+                    {formatCurrency(metalItem.amount)}
+                  </p>
                 </div>
-              )}
+              )} */}
             </div>
-            
+
             {/* Payment Summary */}
             <div className="rounded-xl border border-[#d3c4af]/10 bg-white p-4 md:p-6">
               <h3 className="mb-4 font-['Noto_Serif'] text-lg font-bold text-[#785600] md:mb-6 md:text-xl">
                 Payment Summary
               </h3>
+
               <div className="flex flex-col gap-6 md:grid md:grid-cols-2 md:gap-8">
                 <div className="space-y-2 md:space-y-3">
                   <div className="flex items-center justify-between text-xs md:text-sm">
@@ -866,12 +827,12 @@ export default function Billing() {
                   </div>
 
                   {billingMode === 'GST_BILL' && (
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs md:text-sm">
+                    <div className="flex items-center justify-between text-xs md:text-sm">
                       <span className="font-medium text-[#4f4535]">
                         GST ({gstPercent}%)
                       </span>
-                      <span className="font-bold">
-                        {formatCurrency(gstAmount)}
+                      <span className="font-bold text-[#785600]">
+                        + {formatCurrency(gstAmount)}
                       </span>
                     </div>
                   )}
@@ -901,25 +862,7 @@ export default function Billing() {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs md:text-sm">
-                    <span className="font-medium text-[#4f4535]">
-                      Less Metal Adjustment
-                    </span>
-                    <div className="flex items-center gap-1 md:gap-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        {...register('metalAdjustment')}
-                        placeholder="0"
-                        className="w-20 rounded border-0 bg-[#f4f4f2] px-1 py-0.5 text-right text-xs md:w-24 md:px-2 md:py-1"
-                      />
-                      <span className="text-xs font-bold text-[#4f4535] md:text-sm">
-                        - {formatCurrency(metalAdjustmentAmount)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {(paymentMode === 'METAL' || paymentMode === 'SPLIT') &&
+                  {(paymentMode === 'EXCHANGE' || paymentMode === 'SPLIT') &&
                     exchangeValue > 0 && (
                       <div className="flex items-center justify-between text-xs md:text-sm">
                         <span className="font-medium text-[#5d5c74]">
@@ -930,17 +873,11 @@ export default function Billing() {
                         </span>
                       </div>
                     )}
-
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs md:text-sm">
+                  <div className="flex items-center justify-between text-xs md:text-sm">
                     <span className="font-medium text-[#4f4535]">
                       Previous Balance
                     </span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      {...register('previousBalance')}
-                      className="w-24 rounded border-0 bg-[#f4f4f2] px-1 py-0.5 text-right text-xs md:w-28 md:px-2 md:py-1"
-                    />
+                    <span className="font-bold">{previousBalance}</span>
                   </div>
 
                   <div className="flex items-center justify-between border-t border-[#d3c4af]/20 pt-3 md:pt-4">
@@ -948,49 +885,101 @@ export default function Billing() {
                       Net Payable
                     </span>
                     <span className="font-['Noto_Serif'] text-base font-black text-[#785600] md:text-xl">
-                      {formatCurrency(netPayable)}
+                      {formatCurrency(safeNetPayable)}
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-3 md:space-y-4">
+                  {/* Account Selection Dropdown */}
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase text-[#4f4535] md:mb-2 md:text-xs">
+                      Select Account
+                    </label>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowAccountDropdown(!showAccountDropdown)
+                        }
+                        className="flex w-full items-center justify-between rounded-lg border-0 bg-[#f4f4f2] px-4 py-3 text-sm text-[#1a1c1b] focus:ring-2 focus:ring-[#785600]/20 md:py-4"
+                      >
+                        <span>
+                          {accountOptions.find(
+                            (opt) => opt.value === selectedAccount,
+                          )?.label || 'Select Account'}
+                        </span>
+                        <ChevronDown
+                          className={`h-4 w-4 transition-transform ${showAccountDropdown ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+
+                      {showAccountDropdown && (
+                        <div className="absolute z-10 mt-1 w-full rounded-lg border border-[#d3c4af]/30 bg-white shadow-lg">
+                          {accountOptions.map((option) => (
+                            <div
+                              key={option.value}
+                              className="cursor-pointer px-4 py-2 transition-colors hover:bg-[#f4f4f2]"
+                              onClick={() => {
+                                setSelectedAccount(option.value);
+                                setShowAccountDropdown(false);
+                              }}
+                            >
+                              <span className="text-sm text-[#1a1c1b]">
+                                {option.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Cash Paid */}
                   <div>
                     <label className="mb-1 block text-[10px] font-bold uppercase text-[#4f4535] md:mb-2 md:text-xs">
                       Cash Paid (₹)
                     </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      {...register('cashPaid')}
-                      className="w-full rounded-lg border-0 border-[#785600]/30 bg-[#785600]/5 px-3 py-3 text-base font-black text-[#785600] focus:ring-4 focus:ring-[#785600]/10 md:px-4 md:py-4 md:text-xl"
-                      placeholder="Enter amount"
-                    />
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.01"
+                        {...register('cashPaid')}
+                        className="w-full rounded-lg border-0 border-[#785600]/30 bg-[#785600]/5 px-3 py-3 text-base font-black text-[#785600] focus:ring-4 focus:ring-[#785600]/10 md:px-4 md:py-4 md:text-xl"
+                        placeholder="Enter amount"
+                      />
+                    </div>
                   </div>
+
                   <div
                     className={`flex items-center justify-between rounded-lg p-3 md:p-4 ${
-                      balanceDue > 0
+                      rawBalanceDue > 0
                         ? 'bg-red-50'
-                        : balanceDue < 0
+                        : rawBalanceDue < 0
                           ? 'bg-green-50'
                           : 'bg-gray-50'
                     }`}
                   >
                     <span className="text-xs font-medium md:text-sm">
-                      Balance Due
+                      {rawBalanceDue > 0
+                        ? 'Balance Due'
+                        : rawBalanceDue < 0
+                          ? 'Payable'
+                          : 'Settled'}
                     </span>
                     <span
                       className={`text-sm font-bold md:text-lg ${
-                        balanceDue > 0
+                        rawBalanceDue > 0
                           ? 'text-[#ba1a1a]'
-                          : balanceDue < 0
+                          : rawBalanceDue < 0
                             ? 'text-green-600'
                             : 'text-[#1a1c1b]'
                       }`}
                     >
-                      {balanceDue > 0
+                      {rawBalanceDue > 0
                         ? formatCurrency(balanceDue)
-                        : balanceDue < 0
-                          ? formatCurrency(Math.abs(balanceDue)) + ' (Excess)'
+                        : rawBalanceDue < 0
+                          ? formatCurrency(overpaidAmount)
                           : formatCurrency(0)}
                     </span>
                   </div>
@@ -1012,12 +1001,22 @@ export default function Billing() {
               }`}
             >
               <MdSave className="h-4 w-4 md:h-5 md:w-5" />
-              {isSubmitting ? 'Saving...' : 'Save Invoice'}
+              {isSubmitting ? 'Saving...' : 'Save Bill'}
             </GenericButton>
           </div>
         </div>
         <div className="h-20 md:h-0"></div>
       </div>
+      {showPrintReceipt && receiptData && (
+        <BillingPrintReceipt
+          isOpen={showPrintReceipt}
+          onClose={() => {
+            setShowPrintReceipt(false);
+            setReceiptData(null);
+          }}
+          data={receiptData}
+        />
+      )}
     </FormProvider>
   );
 }

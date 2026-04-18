@@ -1,5 +1,5 @@
 import {api} from '@/utils/axios';
-import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export const useSubmitBill = () => {
@@ -22,6 +22,23 @@ export const saveBill = async (data: any) => {
     return response.data;
   } catch (error) {
     toast.error('Failed to submit bill');
+    throw error;
+  }
+};
+
+export const useGetSalesData = () => {
+  return useQuery({
+    queryKey: ['sales'],
+    queryFn: getSalesData,
+  });
+};
+
+const getSalesData = async () => {
+  try {
+    const response = await api.get(`shop/billing`);
+    return response.data;
+  } catch (error) {
+    toast.error('Failed to fetch clients');
     throw error;
   }
 };
