@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {
   Search,
   UserPlus,
@@ -12,6 +12,7 @@ import AddClient from './AddClient';
 import {useNavigate} from '@tanstack/react-router';
 import GenericTable, {Column} from '../Forms/Table/GenericTable';
 import PageHeader from '../Forms/Common/PageHeader';
+import { useGetClient } from './api';
 // Mock data
 const mockClients = [
   {
@@ -63,10 +64,10 @@ const mockClients = [
 
 interface Client {
   id: number;
-  name: string;
+  fullname: string;
   initials: string;
   tier: string;
-  phone: string;
+  phoneNumber: string;
   city: string;
   balance: number;
   gold: string;
@@ -79,20 +80,43 @@ interface Client {
 
 export default function ClientDirectory() {
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
-  const [clients, setClients] = useState<Client[]>(mockClients);
+  // const [clients, setClients] = useState<Client[]>(mockClients);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
+
+  
+    // In real implementation, fetch clients from API here
+   const {data}  =useGetClient()
+   console.log(data);
+
+
+ const clients: Client[] =
+  data?.map((item: any) => ({
+    fullname: item.fullname,
+    phoneNumber: item.phoneNumber,
+    city: item.city,
+    balance: item.balance,
+    gold: item.gold,
+    silver: item.silver,
+    initials: item.fullname
+      ?.split(" ")
+      .map((w: string) => w[0])
+      .join("")
+      .toUpperCase(),
+    tier: item.tier || "regular",
+  })) || [];
+  
 
   const handleAddClient = (newClientData: any) => {
     const newClient: Client = {
       id: clients.length + 1,
-      name: newClientData.name,
-      initials: newClientData.name
+      fullname: newClientData.name,
+      initials: newClientData.fullname
         .split(' ')
         .map((n: string) => n[0])
         .join(''),
       tier: 'Standard',
-      phone: newClientData.phone,
+      phoneNumber: newClientData.phone,
       city: newClientData.city,
       balance: 0,
       gold: '0.00',
@@ -103,13 +127,13 @@ export default function ClientDirectory() {
       address: newClientData.address,
     };
 
-    setClients([...clients, newClient]);
+    // setClients([...clients, newClient]);
   };
 
   const handleClientClick = (client: Client) => {
     navigate({
       to: '/client/clientdetails',
-      state: client,
+      // state: client,
     });
   };
 
@@ -119,31 +143,31 @@ export default function ClientDirectory() {
   };
 
   const handleDeleteClient = (client: Client) => {
-    if (confirm(`Are you sure you want to delete ${client.name}?`)) {
-      setClients(clients.filter((c) => c.id !== client.id));
+    if (confirm(`Are you sure you want to delete ${client.fullname}?`)) {
+      // setClients(clients.filter((c) => c.id !== client.id));
     }
   };
 
   const handleViewClient = (client: Client) => {
     navigate({
       to: '/client/clientdetails',
-      state: client,
+      // state: client,
     });
   };
 
   // Filter clients based on search
   const filteredClients = clients.filter(
     (client) =>
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.phone.includes(searchTerm),
+      client.phoneNumber.includes(searchTerm),
   );
 
   // Define table columns
   const columns: Column<Client>[] = [
     {
       header: 'Client Name',
-      accessor: 'name',
+      accessor: 'fullname',
       align: 'left',
       render: (item) => (
         <div className="flex items-center gap-3">
@@ -151,7 +175,7 @@ export default function ClientDirectory() {
             {item.initials}
           </div>
           <div>
-            <p className="font-bold text-[#1a1c1b]">{item.name}</p>
+            <p className="font-bold text-[#1a1c1b]">{item.fullname}</p>
             <p className="text-[10px] font-bold uppercase tracking-tighter text-[#785600]">
               {item.tier}
             </p>
@@ -161,11 +185,11 @@ export default function ClientDirectory() {
     },
     {
       header: 'Contact & City',
-      accessor: 'phone',
+      accessor: 'phoneNumber',
       align: 'left',
       render: (item) => (
         <div>
-          <p className="text-sm text-[#4f4535]">{item.phone}</p>
+          <p className="text-sm text-[#4f4535]">{item.phoneNumber}</p>
           <p className="text-xs text-[#4f4535]">{item.city}</p>
         </div>
       ),
@@ -183,7 +207,7 @@ export default function ClientDirectory() {
         >
           {item.balance < 0
             ? `-₹${Math.abs(item.balance).toLocaleString()}`
-            : `₹${item.balance.toLocaleString()}`}
+            : `₹${(item.balance ?? 0).toLocaleString()}`}
         </span>
       ),
     },
