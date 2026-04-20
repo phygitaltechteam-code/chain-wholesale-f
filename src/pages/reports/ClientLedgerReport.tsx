@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   Calendar,
   Search,
@@ -9,7 +9,7 @@ import {
   Plus,
   ArrowRight,
 } from 'lucide-react';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 
 interface SalesTransaction {
   id: string;
@@ -147,8 +147,12 @@ const ClientLedgerReport = () => {
       header: 'Client',
       accessor: (item) => (
         <div className="flex flex-col">
-          <span className="text-sm font-bold text-[#1A1C1B]">{item.client}</span>
-          <span className="text-[10px] text-[#5E5B56]/60">ID: {item.clientId}</span>
+          <span className="text-sm font-bold text-[#1A1C1B]">
+            {item.client}
+          </span>
+          <span className="text-[10px] text-[#5E5B56]/60">
+            ID: {item.clientId}
+          </span>
         </div>
       ),
       align: 'left',
@@ -159,7 +163,7 @@ const ClientLedgerReport = () => {
         <div className="flex items-center gap-2">
           <div
             className="h-2 w-2 rounded-full"
-            style={{ backgroundColor: item.metalColor }}
+            style={{backgroundColor: item.metalColor}}
           />
           <span className="text-sm text-[#1A1C1B]">{item.metalDetail}</span>
         </div>
@@ -176,7 +180,7 @@ const ClientLedgerReport = () => {
     {
       header: 'Taxable',
       accessor: (item) => (
-        <span className="text-sm font-medium text-[#5E5B56] text-right">
+        <span className="text-right text-sm font-medium text-[#5E5B56]">
           {item.taxable}
         </span>
       ),
@@ -185,7 +189,7 @@ const ClientLedgerReport = () => {
     {
       header: 'GST (3%)',
       accessor: (item) => (
-        <span className="text-sm font-medium text-[#5E5B56] text-right">
+        <span className="text-right text-sm font-medium text-[#5E5B56]">
           {item.gst}
         </span>
       ),
@@ -194,7 +198,7 @@ const ClientLedgerReport = () => {
     {
       header: 'Total',
       accessor: (item) => (
-        <span className="text-sm font-bold text-[#1A1C1B] text-right">
+        <span className="text-right text-sm font-bold text-[#1A1C1B]">
           {item.total}
         </span>
       ),
@@ -203,7 +207,7 @@ const ClientLedgerReport = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F9F7F3] font-sans p-8">
+    <div className="font-sans min-h-screen bg-[#F9F7F3] p-8">
       {/* Header Utilities */}
       <div className="mb-10 flex items-center justify-between">
         <div className="flex items-center gap-6">
@@ -311,7 +315,7 @@ const ClientLedgerReport = () => {
                 placeholder="Search name/ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg border border-[#D3C4AF]/5 bg-white px-4 py-2.5 text-sm font-medium placeholder:text-[#5E5B56]/30 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#785600]"
+                className="w-full rounded-lg border border-[#D3C4AF]/5 bg-white px-4 py-2.5 text-sm font-medium shadow-sm placeholder:text-[#5E5B56]/30 focus:outline-none focus:ring-1 focus:ring-[#785600]"
               />
               <Search className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-[#5E5B56]/40" />
             </div>
@@ -345,11 +349,11 @@ const ClientLedgerReport = () => {
                 </p>
                 <p className="font-serif text-2xl font-bold text-[#1A1C1B]">
                   {totalGoldWeight.toFixed(2)}g{' '}
-                  <span className="ml-1 font-sans text-xs font-medium text-[#5E5B56]/50">
+                  <span className="font-sans ml-1 text-xs font-medium text-[#5E5B56]/50">
                     Au
                   </span>{' '}
                   / {totalSilverWeight.toFixed(2)}g{' '}
-                  <span className="ml-1 font-sans text-xs font-medium text-[#5E5B56]/50">
+                  <span className="font-sans ml-1 text-xs font-medium text-[#5E5B56]/50">
                     Ag
                   </span>
                 </p>
@@ -364,7 +368,11 @@ const ClientLedgerReport = () => {
                   Consolidated GST
                 </p>
                 <p className="font-serif text-2xl font-bold text-[#1A1C1B]">
-                  ₹{totalGST.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₹
+                  {totalGST.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
               </div>
             </div>
@@ -374,7 +382,11 @@ const ClientLedgerReport = () => {
               Grand Total (Net Receivable)
             </p>
             <p className="font-serif text-4xl font-bold tracking-tighter text-[#785600]">
-              ₹{totalGrand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ₹
+              {totalGrand.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </p>
           </div>
         </div>

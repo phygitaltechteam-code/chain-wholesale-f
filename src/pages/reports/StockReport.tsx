@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   Search,
   RefreshCw,
@@ -10,14 +10,18 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from 'lucide-react';
-import { FaSync } from 'react-icons/fa';
-import { MdVerifiedUser } from 'react-icons/md';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {FaSync} from 'react-icons/fa';
+import {MdVerifiedUser} from 'react-icons/md';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 
 interface StockTransaction {
   id: string;
   date: string;
-  transactionType: 'Purchase' | 'Sales' | 'Internal Transfer' | 'Karigar Return';
+  transactionType:
+    | 'Purchase'
+    | 'Sales'
+    | 'Internal Transfer'
+    | 'Karigar Return';
   metal: string;
   purity: string;
   batchRef: string;
@@ -105,17 +109,17 @@ const stockData: StockTransaction[] = [
 ];
 
 const metalOptions = [
-  { value: 'all', label: 'All Metals' },
-  { value: 'gold_24k', label: 'Gold (24K)' },
-  { value: 'gold_22k', label: 'Gold (22K)' },
-  { value: 'silver', label: 'Silver (999)' },
+  {value: 'all', label: 'All Metals'},
+  {value: 'gold_24k', label: 'Gold (24K)'},
+  {value: 'gold_22k', label: 'Gold (22K)'},
+  {value: 'silver', label: 'Silver (999)'},
 ];
 
 const dateRangeOptions = [
-  { value: '30days', label: 'Last 30 Days' },
-  { value: 'quarter', label: 'This Quarter' },
-  { value: 'year', label: 'Financial Year' },
-  { value: 'custom', label: 'Custom Range' },
+  {value: '30days', label: 'Last 30 Days'},
+  {value: 'quarter', label: 'This Quarter'},
+  {value: 'year', label: 'Financial Year'},
+  {value: 'custom', label: 'Custom Range'},
 ];
 
 export default function StockReport() {
@@ -142,15 +146,15 @@ export default function StockReport() {
   // Calculate totals
   const totalGrossWeight = filteredData.reduce(
     (sum, item) => sum + item.grossWeight,
-    0
+    0,
   );
   const totalFineWeight = filteredData.reduce(
     (sum, item) => sum + item.fineWeight,
-    0
+    0,
   );
   const totalStockValue = filteredData.reduce(
     (sum, item) => sum + item.stockValue,
-    0
+    0,
   );
 
   // Summary stats
@@ -245,7 +249,7 @@ export default function StockReport() {
     {
       header: 'Batch Ref',
       accessor: (item) => (
-        <span className="rounded bg-[#F4F4F2] px-2 py-1 font-mono text-xs text-[#5E5B56]">
+        <span className="font-mono rounded bg-[#F4F4F2] px-2 py-1 text-xs text-[#5E5B56]">
           {item.batchRef}
         </span>
       ),
@@ -305,7 +309,7 @@ export default function StockReport() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F7F3] p-8 font-sans">
+    <div className="font-sans min-h-screen bg-[#F9F7F3] p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Header Section */}
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -330,7 +334,9 @@ export default function StockReport() {
               onClick={handleGenerate}
               className="rounded-full p-2 text-[#785600] transition-colors hover:bg-[#F4F4F2]"
             >
-              <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`}
+              />
             </button>
           </div>
         </div>
@@ -409,7 +415,7 @@ export default function StockReport() {
               placeholder="Search by Batch Ref or Transaction..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-[#D3C4AF]/20 bg-white py-3 pl-12 pr-4 text-[#1A1C1B] placeholder:text-[#5E5B56]/50 transition-all focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10"
+              className="w-full rounded-lg border border-[#D3C4AF]/20 bg-white py-3 pl-12 pr-4 text-[#1A1C1B] transition-all placeholder:text-[#5E5B56]/50 focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10"
             />
           </div>
           <div className="flex gap-2">

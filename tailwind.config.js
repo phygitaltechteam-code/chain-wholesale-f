@@ -15,6 +15,7 @@ export const theme = {
     robotoSlab: ['"Roboto Slab"', 'serif'],
     croissant: ['"Croissant One"', 'sans-serif'],
     lora: ['"Lora"', 'serif'],
+    headline: ['Poppins', 'Inter', 'system-ui', 'sans-serif'],
     marathi: ["'Noto Sans Devanagari'", 'sans-serif'],
   },
   screens: {

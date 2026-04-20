@@ -19,6 +19,7 @@ import {
 import GenericTable, {Column} from '../Forms/Table/GenericTable';
 import {MdAddBox, MdArrowOutward} from 'react-icons/md';
 import GenericButton from '../Forms/Buttons/GenericButton';
+import PageHeader from '../Forms/Common/PageHeader';
 
 interface InventoryItem {
   id: string;
@@ -298,12 +299,10 @@ export default function Inventory() {
         <div className="mb-6 lg:mb-8">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div>
-              <h2 className="font-headline mb-2 text-2xl font-black text-[#1a1c1b] sm:text-3xl lg:text-4xl">
-                Inventory & Accounts
-              </h2>
-              <p className="text-xs tracking-wide text-[#4f4535] sm:text-sm">
-                Manage real-time stock ledger and account balances.
-              </p>
+              <PageHeader
+                title="Inventory & Accounts"
+                subtitle="Manage real-time stock ledger and account balances."
+              />
             </div>
 
             {/* Search and Actions */}
@@ -329,7 +328,7 @@ export default function Inventory() {
         {/* Live Rates Bar */}
         <div className="mb-8 flex flex-wrap items-center gap-4 rounded-xl bg-[#f4f4f2]/50 p-3 sm:gap-6 sm:p-4">
           <div className="flex items-center gap-2">
-            <span className="font-headline border-b-2 border-[#785600] pb-1 text-sm font-semibold italic text-[#785600]">
+            <span className="border-b-2 border-[#785600] pb-1 font-headline text-sm font-semibold italic text-[#785600]">
               Live Gold: ₹72,450
             </span>
           </div>
@@ -523,7 +522,7 @@ export default function Inventory() {
           <div className="space-y-6">
             {/* Low Stock Alert */}
             <div className="rounded-xl border border-[#785600]/10 bg-[#785600]/5 p-5">
-              <h4 className="font-headline mb-2 font-bold italic text-[#785600]">
+              <h4 className="mb-2 font-headline font-bold italic text-[#785600]">
                 Low Stock Alert
               </h4>
               <p className="text-xs leading-relaxed text-[#4f4535] sm:text-sm">

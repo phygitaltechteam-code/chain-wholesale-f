@@ -367,7 +367,7 @@ export default function RateManagement() {
                   <Stars className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 <div>
-                  <h3 className="font-headline text-on-surface text-lg font-bold sm:text-xl">
+                  <h3 className="text-on-surface font-headline text-lg font-bold sm:text-xl">
                     Gold (24K)
                   </h3>
                   <p className="text-on-surface-variant text-[10px] font-medium sm:text-xs">
@@ -395,7 +395,7 @@ export default function RateManagement() {
                     type="number"
                     value={goldSellingRate}
                     onChange={(e) => setGoldSellingRate(Number(e.target.value))}
-                    className="font-headline text-on-surface w-full border-none bg-transparent p-0 pl-6 text-xl font-black focus:ring-0 sm:text-2xl"
+                    className="text-on-surface w-full border-none bg-transparent p-0 pl-6 font-headline text-xl font-black focus:ring-0 sm:text-2xl"
                   />
                 </div>
                 <p className="text-on-surface-variant mt-2 text-[10px]">
@@ -414,7 +414,7 @@ export default function RateManagement() {
                     type="number"
                     value={goldBuyingRate}
                     onChange={(e) => setGoldBuyingRate(Number(e.target.value))}
-                    className="font-headline text-on-surface w-full border-none bg-transparent p-0 pl-6 text-xl font-black focus:ring-0 sm:text-2xl"
+                    className="text-on-surface w-full border-none bg-transparent p-0 pl-6 font-headline text-xl font-black focus:ring-0 sm:text-2xl"
                   />
                 </div>
                 <p className="text-on-surface-variant mt-2 text-[10px]">
@@ -437,7 +437,7 @@ export default function RateManagement() {
                   <Diamond className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 <div>
-                  <h3 className="font-headline text-on-surface text-lg font-bold sm:text-xl">
+                  <h3 className="text-on-surface font-headline text-lg font-bold sm:text-xl">
                     Silver
                   </h3>
                   <p className="text-on-surface-variant text-[10px] font-medium sm:text-xs">
@@ -467,7 +467,7 @@ export default function RateManagement() {
                     onChange={(e) =>
                       setSilverSellingRate(Number(e.target.value))
                     }
-                    className="font-headline text-on-surface w-full border-none bg-transparent p-0 pl-6 text-xl font-black focus:ring-0 sm:text-2xl"
+                    className="text-on-surface w-full border-none bg-transparent p-0 pl-6 font-headline text-xl font-black focus:ring-0 sm:text-2xl"
                   />
                 </div>
                 <p className="text-on-surface-variant mt-2 text-[10px]">
@@ -488,7 +488,7 @@ export default function RateManagement() {
                     onChange={(e) =>
                       setSilverBuyingRate(Number(e.target.value))
                     }
-                    className="font-headline text-on-surface w-full border-none bg-transparent p-0 pl-6 text-xl font-black focus:ring-0 sm:text-2xl"
+                    className="text-on-surface w-full border-none bg-transparent p-0 pl-6 font-headline text-xl font-black focus:ring-0 sm:text-2xl"
                   />
                 </div>
                 <p className="text-on-surface-variant mt-2 text-[10px]">
@@ -508,7 +508,7 @@ export default function RateManagement() {
           <div className="bg-surface-container-lowest rounded-lg p-4 sm:p-6">
             <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <div>
-                <h3 className="font-headline text-on-surface text-xl font-bold">
+                <h3 className="text-on-surface font-headline text-xl font-bold">
                   Rate History Ledger
                 </h3>
                 <p className="text-on-surface-variant text-xs">

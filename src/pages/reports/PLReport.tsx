@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   TrendingUp,
   Calendar,
@@ -24,7 +24,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 
 interface RevenueItem {
   id: string;
@@ -46,16 +46,16 @@ interface ExpenseItem {
 
 const PLReport = () => {
   const [period, setPeriod] = useState<'monthly' | 'quarterly' | 'annual'>(
-    'monthly'
+    'monthly',
   );
 
   const chartData = [
-    { month: 'MAY', revenue: 60, expenses: 40 },
-    { month: 'JUN', revenue: 75, expenses: 45 },
-    { month: 'JUL', revenue: 65, expenses: 50 },
-    { month: 'AUG', revenue: 90, expenses: 55 },
-    { month: 'SEP', revenue: 80, expenses: 45 },
-    { month: 'OCT', revenue: 100, expenses: 60 },
+    {month: 'MAY', revenue: 60, expenses: 40},
+    {month: 'JUN', revenue: 75, expenses: 45},
+    {month: 'JUL', revenue: 65, expenses: 50},
+    {month: 'AUG', revenue: 90, expenses: 55},
+    {month: 'SEP', revenue: 80, expenses: 45},
+    {month: 'OCT', revenue: 100, expenses: 60},
   ];
 
   const revenuesData: RevenueItem[] = [
@@ -120,8 +120,14 @@ const PLReport = () => {
     },
   ];
 
-  const totalRevenue = revenuesData.reduce((sum, item) => sum + item.valueNum, 0);
-  const totalExpenses = expensesData.reduce((sum, item) => sum + item.valueNum, 0);
+  const totalRevenue = revenuesData.reduce(
+    (sum, item) => sum + item.valueNum,
+    0,
+  );
+  const totalExpenses = expensesData.reduce(
+    (sum, item) => sum + item.valueNum,
+    0,
+  );
   const netProfit = totalRevenue - totalExpenses;
   const netProfitLakhs = (netProfit / 100000).toFixed(2);
 
@@ -196,10 +202,11 @@ const PLReport = () => {
   ];
 
   // Custom row class for hover effects
-  const rowClassName = "group transition-all duration-300 hover:bg-white rounded-2xl cursor-pointer";
+  const rowClassName =
+    'group transition-all duration-300 hover:bg-white rounded-2xl cursor-pointer';
 
   return (
-    <div className="min-h-screen bg-[#F9F7F3] font-sans p-8">
+    <div className="font-sans min-h-screen bg-[#F9F7F3] p-8">
       {/* Header Utilities */}
       <div className="mb-10 flex items-center justify-between">
         <div className="flex items-center gap-6">
@@ -229,7 +236,7 @@ const PLReport = () => {
         {/* Main Title Section */}
         <div className="mb-12 flex flex-col justify-between gap-8 md:flex-row md:items-end">
           <div>
-            <h2 className="mb-3 font-serif text-5xl font-bold tracking-tight text-[#1A1C1B]">
+            <h2 className="font-serif mb-3 text-5xl font-bold tracking-tight text-[#1A1C1B]">
               Profit & Loss Statement
             </h2>
             <p className="text-lg font-medium text-[#5E5B56] opacity-70">
@@ -266,7 +273,10 @@ const PLReport = () => {
           {/* Net Profit Card */}
           <div className="relative col-span-12 flex flex-col justify-center overflow-hidden rounded-3xl border border-[#D3C4AF]/5 bg-white p-10 shadow-lg shadow-[#785600]/5 lg:col-span-4">
             <div className="absolute -right-6 -top-6">
-              <TrendingUp className="h-44 w-44 text-[#785600]/10" strokeWidth={1} />
+              <TrendingUp
+                className="h-44 w-44 text-[#785600]/10"
+                strokeWidth={1}
+              />
             </div>
             <h3 className="mb-8 text-[10px] font-black uppercase tracking-[0.3em] text-[#5E5B56]/50">
               Net Profit
@@ -309,7 +319,7 @@ const PLReport = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={chartData}
-                  margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
+                  margin={{top: 0, right: 0, left: -20, bottom: 0}}
                   barGap={8}
                 >
                   <XAxis
@@ -325,7 +335,7 @@ const PLReport = () => {
                     dy={16}
                   />
                   <Tooltip
-                    cursor={{ fill: '#F9F7F3', radius: 4 }}
+                    cursor={{fill: '#F9F7F3', radius: 4}}
                     contentStyle={{
                       borderRadius: '12px',
                       border: 'none',
@@ -337,11 +347,17 @@ const PLReport = () => {
                     {chartData.map((entry, index) => (
                       <Cell
                         key={`cell-rev-${index}`}
-                        fill={index === chartData.length - 1 ? '#785600' : '#D3C4AF'}
+                        fill={
+                          index === chartData.length - 1 ? '#785600' : '#D3C4AF'
+                        }
                       />
                     ))}
                   </Bar>
-                  <Bar dataKey="expenses" fill="#E2E3E1" radius={[4, 4, 0, 0]} />
+                  <Bar
+                    dataKey="expenses"
+                    fill="#E2E3E1"
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>

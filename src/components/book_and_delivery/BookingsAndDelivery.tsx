@@ -1,692 +1,737 @@
-import React, {useState} from 'react';
+// RegisterNewTrade.tsx - with Bank Account at the end and Notes section
+import React, {useState, useEffect} from 'react';
 import {
-  Calendar,
-  Info,
-  Lock,
-  TrendingUp,
-  Bell,
-  UserCircle,
-  Menu,
-  X,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  DollarSign,
-  Percent,
-  Shield,
-  ArrowRight,
-  Download,
-  Printer,
-  Eye,
-  Edit,
-  Trash2,
   Search,
-  Filter,
+  Lock,
+  Calendar,
+  Receipt,
+  ArrowDown,
+  ArrowUp,
+  Check,
+  User,
+  Building2,
+  Edit2,
+  FileText,
+  AlertCircle,
 } from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
+import toast from 'react-hot-toast';
+import GenericInputField from '@/components/Forms/Input/GenericInputField';
+import {FormProvider, useForm} from 'react-hook-form';
+import {useGetClient} from '../Client/api';
+import {useGetAccounts} from '../account/accountapi';
+import {useNewBooking} from './bookingapi';
 
-import {useForm} from 'react-hook-form';
-import GenericTable, {Column} from '../Forms/Table/GenericTable';
-import PageHeader from '../Forms/Common/PageHeader';
-
-interface Booking {
+interface Client {
   id: string;
+  name: string;
+  gstin: string;
+  phone: string;
+  email?: string;
+  address?: string;
+}
+
+interface Account {
+  id: string;
+  name: string;
+  balance: number;
+}
+
+interface TradeFormData {
+  clientLedger: string;
+  netWeight: number;
+  advanceToken: number;
+  accountId: string;
+  rate: number;
+  notes: string;
+}
+
+interface ClientApiResponse {
+  id: string;
+  fullname: string;
+  phoneNumber: string;
+  GST?: string;
+  city?: string;
+  address?: string;
+}
+
+interface BookingPayload {
+  clientId: string;
   clientName: string;
-  metal: 'Gold' | 'Silver';
-  weight: number;
-  purity: number;
+  accountId: string;
+  accountName: string;
+  transactionType: string;
+  commodity: string;
+  netWeight: number;
   rate: number;
   totalValue: number;
-  advancePaid: number;
-  dueDate: string;
-  status: 'Pending' | 'Confirmed' | 'Delivered' | 'Expired';
-  createdAt: string;
+  advanceToken: number;
+  balanceDue: number;
+  valueDate: string;
+  notes?: string;
+  status: string;
 }
 
-interface BookingFormData {
-  metal: string;
-  grossWeight: number;
-  purity: number;
-  gracePeriod: string;
-  advancePayment: number;
-  paymentMode: string;
-}
+const RegisterNewTrade: React.FC = () => {
+  const navigate = useNavigate();
+  const methods = useForm<TradeFormData>();
+  const {register, setValue, watch} = methods;
 
-const mockBookings: Booking[] = [
-  {
-    id: 'BK-1001',
-    clientName: 'Vikram Singh',
-    metal: 'Gold',
-    weight: 10.5,
-    purity: 99.9,
-    rate: 72450,
-    totalValue: 76072,
-    advancePaid: 10000,
-    dueDate: '2024-04-15',
-    status: 'Confirmed',
-    createdAt: '2024-03-25',
-  },
-  {
-    id: 'BK-1002',
-    clientName: 'Ananya Mehta',
-    metal: 'Silver',
-    weight: 500,
-    purity: 99.9,
-    rate: 8820,
-    totalValue: 44100,
-    advancePaid: 5000,
-    dueDate: '2024-04-20',
-    status: 'Pending',
-    createdAt: '2024-03-26',
-  },
-  {
-    id: 'BK-1003',
-    clientName: 'Rajesh Khanna',
-    metal: 'Gold',
-    weight: 25.75,
-    purity: 99.5,
-    rate: 72450,
-    totalValue: 186523,
-    advancePaid: 25000,
-    dueDate: '2024-04-10',
-    status: 'Delivered',
-    createdAt: '2024-03-20',
-  },
-];
+  // API Hooks
+  const {data: clientsData, isLoading: clientsLoading} = useGetClient();
+  const {
+    data: accountsData,
+    isLoading: accountsLoading,
+    refetch: refetchAccounts,
+  } = useGetAccounts();
 
-export default function BookingsAndDelivery() {
-  const [activeTab, setActiveTab] = useState<'new' | 'all' | 'process'>('new');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMetal, setSelectedMetal] = useState<'Gold' | 'Silver'>('Gold');
-  const [grossWeight, setGrossWeight] = useState<number>(0);
-  const [purity, setPurity] = useState<number>(99.9);
-  const [gracePeriod, setGracePeriod] = useState<string>('3');
-  const [advancePayment, setAdvancePayment] = useState<number>(0);
-  const [paymentMode, setPaymentMode] = useState<string>('BANK');
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const newbook = useNewBooking();
 
-  const {control, handleSubmit} = useForm<BookingFormData>();
+  const [transactionType, setTransactionType] = useState<'sale' | 'purchase'>(
+    'sale',
+  );
+  const [commodity, setCommodity] = useState<'gold' | 'silver'>('gold');
+  const [netWeight, setNetWeight] = useState<number>(0);
+  const [valueDate, setValueDate] = useState<string>(
+    new Date().toISOString().split('T')[0],
+  );
+  const [accountsList, setAccountsList] = useState<Account[]>([]);
+  const [advanceToken, setAdvanceToken] = useState<number>(0);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [accountSearchQuery, setAccountSearchQuery] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notes, setNotes] = useState<string>('');
 
-  // Calculate fine weight
-  const fineWeight = (grossWeight * purity) / 100;
+  // Rate state - made editable
+  const [rate, setRate] = useState<number>(72450); // Default gold rate
 
-  // Calculate total value (assuming rate per gram)
-  const currentRate = selectedMetal === 'Gold' ? 7245 : 88.2;
-  const totalValue = fineWeight * currentRate;
+  // Transform API client data to Client interface
+  const clients: Client[] =
+    clientsData?.map((client: ClientApiResponse) => ({
+      id: client.id,
+      name: client.fullname,
+      gstin: client.GST || '',
+      phone: client.phoneNumber,
+      email: '',
+      address: client.address,
+    })) || [];
 
-  // Calculate balance due
-  const balanceDue = totalValue - advancePayment;
+  // Transform API account data to Account interface
+  useEffect(() => {
+    if (accountsData && accountsData.data) {
+      const transformedAccounts: Account[] = accountsData.data.map(
+        (item: any) => ({
+          id: item.id,
+          name: item.name,
+          balance: item.balance,
+        }),
+      );
+      setAccountsList(transformedAccounts);
+    }
+  }, [accountsData]);
 
-  // Filter bookings based on search
-  const filteredBookings = mockBookings.filter(
-    (booking) =>
-      booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.clientName.toLowerCase().includes(searchTerm.toLowerCase()),
+  // Update rate when commodity changes
+  useEffect(() => {
+    if (commodity === 'gold') {
+      setRate(72450);
+    } else {
+      setRate(91200);
+    }
+  }, [commodity]);
+
+  // Filter clients based on search query
+  const filteredClients = clients.filter(
+    (client) =>
+      client.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.gstin?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.phone?.includes(searchQuery),
   );
 
-  const getStatusBadge = (status: Booking['status']) => {
-    switch (status) {
-      case 'Confirmed':
-        return 'bg-green-100 text-green-700';
-      case 'Pending':
-        return 'bg-amber-100 text-amber-700';
-      case 'Delivered':
-        return 'bg-blue-100 text-blue-700';
-      case 'Expired':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
+  // Filter accounts based on search query
+  const filteredAccounts = accountsList.filter((account) =>
+    account.name?.toLowerCase().includes(accountSearchQuery.toLowerCase()),
+  );
+
+  const ratePerUnit = commodity === 'gold' ? '/ 10g' : '/ kg';
+
+  // Calculate total value using editable rate
+  const totalValue = (netWeight * rate) / (commodity === 'gold' ? 10 : 1);
+  const balanceDue = totalValue - advanceToken;
+
+  const handleClientSelect = (client: Client) => {
+    setSelectedClient(client);
+    setSearchQuery(client.name);
+    setShowClientDropdown(false);
+    toast.success(`Client selected: ${client.name}`);
+  };
+
+  const handleAccountSelect = (account: Account) => {
+    setSelectedAccount(account);
+    setAccountSearchQuery(account.name);
+    setShowAccountDropdown(false);
+    toast.success(`Account selected: ${account.name}`);
+  };
+
+  const handleClearClient = () => {
+    setSelectedClient(null);
+    setSearchQuery('');
+    toast.success('Client cleared');
+  };
+
+  const handleClearAccount = () => {
+    setSelectedAccount(null);
+    setAccountSearchQuery('');
+    toast.success('Account cleared');
+  };
+
+  const handleRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newRate = Number(e.target.value);
+    if (!isNaN(newRate) && newRate >= 0) {
+      setRate(newRate);
     }
   };
 
-  // Table columns for all bookings
-  const columns: Column<Booking>[] = [
-    {
-      header: 'Booking ID',
-      accessor: 'id',
-      align: 'left',
-      render: (item) => (
-        <span className="font-bold text-[#785600]">{item.id}</span>
-      ),
-    },
-    {
-      header: 'Client Name',
-      accessor: 'clientName',
-      align: 'left',
-      render: (item) => (
-        <span className="font-medium text-[#1a1c1b]">{item.clientName}</span>
-      ),
-    },
-    {
-      header: 'Metal',
-      accessor: 'metal',
-      align: 'left',
-    },
-    {
-      header: 'Weight (g)',
-      accessor: 'weight',
-      align: 'right',
-      render: (item) => (
-        <span className="tabular-nums">{item.weight.toFixed(3)} g</span>
-      ),
-    },
-    {
-      header: 'Total Value (₹)',
-      accessor: 'totalValue',
-      align: 'right',
-      render: (item) => (
-        <span className="font-bold">₹{item.totalValue.toLocaleString()}</span>
-      ),
-    },
-    {
-      header: 'Advance (₹)',
-      accessor: 'advancePaid',
-      align: 'right',
-      render: (item) => (
-        <span className="text-green-600">
-          ₹{item.advancePaid.toLocaleString()}
-        </span>
-      ),
-    },
-    {
-      header: 'Due Date',
-      accessor: 'dueDate',
-      align: 'left',
-    },
-    {
-      header: 'Status',
-      accessor: 'status',
-      align: 'left',
-      render: (item) => (
-        <span
-          className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusBadge(item.status)}`}
-        >
-          {item.status}
-        </span>
-      ),
-    },
-  ];
+  const handleSubmit = async () => {
+    // Validation
+    if (!selectedClient) {
+      toast.error('Please select a client');
+      return;
+    }
+    if (!selectedAccount) {
+      toast.error('Please select an account');
+      return;
+    }
+    if (netWeight <= 0) {
+      toast.error('Please enter net weight');
+      return;
+    }
+    if (advanceToken <= 0) {
+      toast.error('Please enter advance token amount');
+      return;
+    }
+    if (advanceToken > totalValue) {
+      toast.error('Advance token cannot exceed total value');
+      return;
+    }
 
-  const handleViewBooking = (booking: Booking) => {
-    setSelectedBooking(booking);
-    setShowDetailsModal(true);
+    setIsSubmitting(true);
+
+    try {
+      // Prepare payload for API
+      const payload: BookingPayload = {
+        clientId: selectedClient.id,
+        clientName: selectedClient.name,
+        accountId: selectedAccount.id,
+        accountName: selectedAccount.name,
+        transactionType: transactionType,
+        commodity: commodity,
+        netWeight: netWeight,
+        rate: rate,
+        totalValue: totalValue,
+        advanceToken: advanceToken,
+        balanceDue: balanceDue,
+        valueDate: valueDate,
+        notes: notes.trim() || undefined,
+        status: 'PENDING',
+      };
+
+      console.log('Submitting payload:', payload);
+
+      // Call API
+      const result = await newbook.mutateAsync(payload);
+
+      console.log('API Response:', result);
+
+      toast.success('Trade confirmed successfully!');
+
+      // Reset form after successful submission
+      resetForm();
+
+      // Navigate after delay
+      setTimeout(() => {
+        navigate({to: '/bookdelivery/bookings-delivery'});
+      }, 1500);
+    } catch (error: any) {
+      console.error('Error submitting trade:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to register trade. Please try again.';
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
+    setSelectedClient(null);
+    setSelectedAccount(null);
+    setSearchQuery('');
+    setAccountSearchQuery('');
+    setNetWeight(0);
+    setAdvanceToken(0);
+    setValueDate(new Date().toISOString().split('T')[0]);
+    setTransactionType('sale');
+    setCommodity('gold');
+    setRate(72450);
+    setNotes('');
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
   };
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7]">
-      <div className="p-4 sm:p-6 lg:p-8">
-        {/* Header */}
-        <div className="mb-6 lg:mb-8">
-          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end lg:gap-6">
-            <div>
-              <PageHeader
-                title="Bookings & Delivery"
-                subtitle="Manage client bookings, deliveries, and rate locking."
-              />
-            </div>
+    <FormProvider {...methods}>
+      <div className="min-h-screen bg-[#f9f9f7]">
+        {/* Back Button */}
+        <div className="px-3 pt-3 md:px-4 md:pt-4">
+          <button
+            className="flex items-center gap-2 text-xs text-[#785600] transition-colors hover:text-[#5d4200] md:text-sm"
+            onClick={() => navigate({to: '/bookdelivery/bookings-delivery'})}
+          >
+            ← Back to Bookings
+          </button>
+        </div>
 
-            {/* Search Bar */}
-            {activeTab !== 'new' && (
-              <div className="group relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563] sm:left-4 sm:h-5 sm:w-5" />
-                <input
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2.5 pl-9 pr-4 text-sm outline-none transition-all placeholder:text-[#817563] focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 sm:w-72 sm:py-3 sm:pl-11"
-                  placeholder="Search bookings..."
-                  type="text"
-                />
+        {/* Main Content */}
+        <div className="px-3 py-4 md:px-4 md:py-6">
+          <div className="mx-auto max-w-3xl">
+            {/* Form Card */}
+            <div className="overflow-hidden rounded-xl bg-white shadow-[0px_10px_40px_rgba(121,88,0,0.06)]">
+              <div className="border-b border-[#d3c4af]/15 px-4 py-4 md:px-6 md:py-5">
+                <h1 className="font-headline text-xl font-bold text-[#1a1c1b] md:text-2xl">
+                  Register New Trade
+                </h1>
+                <p className="font-body mt-1 text-xs text-[#4f4535]">
+                  Log a new bullion transaction against current verified market
+                  rates.
+                </p>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Segmented Control Tabs */}
-        <div className="mb-8">
-          <div className="flex w-full gap-1 rounded-full bg-[#f4f4f2] p-1 sm:w-auto">
-            <button
-              onClick={() => setActiveTab('new')}
-              className={`flex-1 rounded-full px-6 py-2 text-xs font-semibold tracking-tight transition-all sm:flex-initial sm:text-sm ${
-                activeTab === 'new'
-                  ? 'bg-white text-[#785600] shadow-sm'
-                  : 'text-[#4f4535] hover:bg-[#eeeeec]'
-              }`}
-            >
-              New Booking
-            </button>
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`flex-1 rounded-full px-6 py-2 text-xs font-semibold tracking-tight transition-all sm:flex-initial sm:text-sm ${
-                activeTab === 'all'
-                  ? 'bg-white text-[#785600] shadow-sm'
-                  : 'text-[#4f4535] hover:bg-[#eeeeec]'
-              }`}
-            >
-              All Bookings
-            </button>
-            <button
-              onClick={() => setActiveTab('process')}
-              className={`flex-1 rounded-full px-6 py-2 text-xs font-semibold tracking-tight transition-all sm:flex-initial sm:text-sm ${
-                activeTab === 'process'
-                  ? 'bg-white text-[#785600] shadow-sm'
-                  : 'text-[#4f4535] hover:bg-[#eeeeec]'
-              }`}
-            >
-              Process Delivery
-            </button>
-          </div>
-        </div>
-
-        {/* Notice Area */}
-        <div className="mb-8 flex items-start gap-3 rounded-xl border border-[#d3c4af]/10 bg-[#f4f4f2] p-4 sm:gap-4 sm:p-6">
-          <div className="flex-shrink-0 rounded-lg bg-[#785600]/10 p-2">
-            <Info className="h-5 w-5 text-[#785600]" />
-          </div>
-          <div>
-            <h4 className="text-sm font-medium text-[#1a1c1b] sm:text-base">
-              Sale Booking Notice
-            </h4>
-            <p className="mt-1 text-xs text-[#4f4535] sm:text-sm">
-              Client is locking a rate to buy gold from you later. This
-              transaction will create a liability until the physical delivery is
-              fulfilled.
-            </p>
-          </div>
-        </div>
-
-        {/* New Booking Form */}
-        {activeTab === 'new' && (
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Left Form Column */}
-            <div className="space-y-8 lg:col-span-2">
-              <div>
-                <h3 className="font-headline mb-6 text-2xl text-[#1a1c1b] sm:text-3xl">
-                  Booking Details
-                </h3>
-
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  {/* Metal Toggle */}
-                  <div className="sm:col-span-2">
-                    <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-[#4f4535]">
-                      Select Metal
-                    </label>
-                    <div className="flex gap-4">
+              <form
+                className="space-y-4 p-4 md:p-6"
+                onSubmit={(e) => e.preventDefault()}
+              >
+                {/* Client Selection */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4f4535]">
+                    Client Ledger <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setShowClientDropdown(true);
+                        if (e.target.value === '') setSelectedClient(null);
+                      }}
+                      onFocus={() => setShowClientDropdown(true)}
+                      className="w-full rounded-lg border-0 bg-[#f4f4f2] py-2.5 pl-9 pr-10 text-sm text-[#1a1c1b] outline-none placeholder:text-xs focus:ring-2 focus:ring-[#785600]/20"
+                      placeholder="Search client name, GSTIN or phone..."
+                      disabled={clientsLoading}
+                    />
+                    {selectedClient && searchQuery && (
                       <button
-                        onClick={() => setSelectedMetal('Gold')}
-                        className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-3 transition-all sm:gap-3 sm:py-4 ${
-                          selectedMetal === 'Gold'
-                            ? 'border-2 border-[#785600] bg-white font-bold text-[#785600] shadow-sm'
-                            : 'border border-[#d3c4af]/20 bg-[#f4f4f2] font-medium text-[#4f4535] hover:bg-[#eeeeec]'
+                        type="button"
+                        onClick={handleClearClient}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#817563] hover:text-red-500"
+                      >
+                        ✕
+                      </button>
+                    )}
+                    {clientsLoading && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#785600] border-t-transparent"></div>
+                      </div>
+                    )}
+                    {showClientDropdown &&
+                      !clientsLoading &&
+                      filteredClients.length > 0 && (
+                        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-[#d3c4af]/30 bg-white shadow-lg">
+                          {filteredClients.map((client) => (
+                            <div
+                              key={client.id}
+                              className="cursor-pointer border-b border-[#f4f4f2] p-3 transition-colors hover:bg-[#f4f4f2]"
+                              onClick={() => handleClientSelect(client)}
+                            >
+                              <p className="text-sm font-bold text-[#1a1c1b]">
+                                {client.name}
+                              </p>
+                              <p className="text-xs text-[#4f4535]">
+                                GST: {client.gstin || 'N/A'}
+                              </p>
+                              <p className="text-xs text-[#4f4535]">
+                                {client.phone || 'No phone'}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    {showClientDropdown &&
+                      !clientsLoading &&
+                      filteredClients.length === 0 &&
+                      searchQuery && (
+                        <div className="absolute z-10 mt-1 w-full rounded-lg border border-[#d3c4af]/30 bg-white p-4 text-center shadow-lg">
+                          <p className="text-sm text-[#4f4535]">
+                            No clients found
+                          </p>
+                        </div>
+                      )}
+                  </div>
+                </div>
+
+                {/* Gridded Toggles */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4f4535]">
+                      Transaction Nature
+                    </label>
+                    <div className="flex rounded-lg bg-[#f4f4f2] p-1">
+                      <button
+                        type="button"
+                        onClick={() => setTransactionType('sale')}
+                        className={`flex-1 rounded-md py-2 text-xs font-medium transition-all ${
+                          transactionType === 'sale'
+                            ? 'bg-white text-[#785600] shadow-sm'
+                            : 'text-[#4f4535] hover:text-[#1a1c1b]'
                         }`}
                       >
-                        <span className="text-amber-600">✨</span>
-                        Gold 24K
+                        Sale (Outward)
                       </button>
                       <button
-                        onClick={() => setSelectedMetal('Silver')}
-                        className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-3 transition-all sm:gap-3 sm:py-4 ${
-                          selectedMetal === 'Silver'
-                            ? 'border-2 border-[#785600] bg-white font-bold text-[#785600] shadow-sm'
-                            : 'border border-[#d3c4af]/20 bg-[#f4f4f2] font-medium text-[#4f4535] hover:bg-[#eeeeec]'
+                        type="button"
+                        onClick={() => setTransactionType('purchase')}
+                        className={`flex-1 rounded-md py-2 text-xs font-medium transition-all ${
+                          transactionType === 'purchase'
+                            ? 'bg-white text-[#785600] shadow-sm'
+                            : 'text-[#4f4535] hover:text-[#1a1c1b]'
                         }`}
                       >
-                        <span className="text-gray-500">⚪</span>
-                        Silver 999
+                        Purchase (Inward)
                       </button>
                     </div>
                   </div>
 
-                  {/* Gross Weight */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-[#4f4535]">
-                      Gross Weight (g)
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4f4535]">
+                      Commodity Class
                     </label>
-                    <input
-                      type="number"
-                      value={grossWeight}
-                      onChange={(e) => setGrossWeight(Number(e.target.value))}
-                      placeholder="0.000"
-                      className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-4 py-3 text-base font-medium outline-none transition-all focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 sm:text-lg"
-                    />
-                  </div>
-
-                  {/* Purity */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-[#4f4535]">
-                      Purity (%)
-                    </label>
-                    <input
-                      type="number"
-                      value={purity}
-                      onChange={(e) => setPurity(Number(e.target.value))}
-                      step="0.01"
-                      className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-4 py-3 text-base font-medium outline-none transition-all focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 sm:text-lg"
-                    />
-                  </div>
-
-                  {/* Fine Weight Display */}
-                  <div className="flex items-center justify-between rounded-lg border border-[#d3c4af]/10 bg-[#f4f4f2] p-4 sm:col-span-2 sm:p-5">
-                    <div>
-                      <span className="block text-xs font-bold uppercase tracking-widest text-[#4f4535]">
-                        Calculated Fine Weight
-                      </span>
-                      <span className="text-xs text-[#4f4535]">
-                        Standardized 24K equivalent
-                      </span>
-                    </div>
-                    <span className="text-xl font-bold text-[#1a1c1b] sm:text-2xl">
-                      {fineWeight.toFixed(3)} g
-                    </span>
-                  </div>
-
-                  {/* Grace Period */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-[#4f4535]">
-                      Grace Period
-                    </label>
-                    <select
-                      value={gracePeriod}
-                      onChange={(e) => setGracePeriod(e.target.value)}
-                      className="w-full appearance-none rounded-lg border border-[#d3c4af]/30 bg-white px-4 py-3 text-sm font-medium outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10"
-                    >
-                      <option value="3">3 Days</option>
-                      <option value="7">7 Days</option>
-                      <option value="15">15 Days</option>
-                      <option value="30">30 Days</option>
-                    </select>
-                  </div>
-
-                  {/* Advance Payment */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-[#4f4535]">
-                      Advance Payment (₹)
-                    </label>
-                    <input
-                      type="number"
-                      value={advancePayment}
-                      onChange={(e) =>
-                        setAdvancePayment(Number(e.target.value))
-                      }
-                      placeholder="Enter Amount"
-                      className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-4 py-3 text-sm font-medium outline-none transition-all focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10"
-                    />
-                  </div>
-
-                  {/* Payment Mode */}
-                  <div className="sm:col-span-2">
-                    <label className="mb-3 block text-xs font-bold uppercase tracking-widest text-[#4f4535]">
-                      Payment Mode
-                    </label>
-                    <div className="flex flex-wrap gap-3">
-                      {['CASH', 'BANK', 'UPI'].map((mode) => (
-                        <button
-                          key={mode}
-                          onClick={() => setPaymentMode(mode)}
-                          className={`rounded-full px-5 py-2 text-xs font-bold transition-all sm:px-6 ${
-                            paymentMode === mode
-                              ? 'bg-[#785600] text-white shadow-md'
-                              : 'border border-[#d3c4af]/30 bg-white text-[#4f4535] hover:bg-[#f4f4f2]'
-                          }`}
-                        >
-                          {mode}
-                        </button>
-                      ))}
+                    <div className="flex rounded-lg bg-[#f4f4f2] p-1">
+                      <button
+                        type="button"
+                        onClick={() => setCommodity('gold')}
+                        className={`flex-1 rounded-md py-2 text-xs font-medium transition-all ${
+                          commodity === 'gold'
+                            ? 'bg-white text-[#785600] shadow-sm'
+                            : 'text-[#4f4535] hover:text-[#1a1c1b]'
+                        }`}
+                      >
+                        Gold (AU)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCommodity('silver')}
+                        className={`flex-1 rounded-md py-2 text-xs font-medium transition-all ${
+                          commodity === 'silver'
+                            ? 'bg-white text-[#785600] shadow-sm'
+                            : 'text-[#4f4535] hover:text-[#1a1c1b]'
+                        }`}
+                      >
+                        Silver (AG)
+                      </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Right Summary Panel */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-32 space-y-6">
-                {/* Booking Summary Card */}
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#1a1a2e] to-[#1a1a2e]/95 p-6 text-white shadow-2xl">
-                  <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#785600]/20 blur-3xl"></div>
-
-                  <h3 className="font-headline relative z-10 mb-6 text-xl">
-                    Live Booking Summary
-                  </h3>
-
-                  <div className="relative z-10 space-y-5">
-                    <div>
-                      <p className="mb-1 text-xs font-bold uppercase tracking-widest text-zinc-400">
-                        Current {selectedMetal} Rate (per g)
-                      </p>
-                      <p className="font-headline text-3xl italic text-[#f7bd48] sm:text-4xl">
-                        ₹{currentRate.toFixed(2)}
-                      </p>
+                {/* Weights & Rates - Rate is now editable */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4f4535]">
+                      Net Weight <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <input
+                        type="number"
+                        value={netWeight || ''}
+                        onChange={(e) => setNetWeight(Number(e.target.value))}
+                        step="0.001"
+                        className="w-full rounded-lg border-0 bg-[#f4f4f2] py-2.5 pl-3 pr-16 text-right text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20"
+                        placeholder="0.000"
+                      />
+                      <span className="absolute right-3 text-xs font-medium text-[#4f4535]">
+                        Grams
+                      </span>
                     </div>
+                  </div>
 
-                    <div className="h-px bg-white/10"></div>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-zinc-400">Total Weight</span>
-                        <span className="font-medium">
-                          {grossWeight.toFixed(3)} g
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-zinc-400">Purity Adjustment</span>
-                        <span className="font-medium">{purity}%</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-zinc-400">Fine Weight</span>
-                        <span className="font-medium">
-                          {fineWeight.toFixed(3)} g
-                        </span>
-                      </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4f4535]">
+                      Rate <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <Edit2 className="absolute left-3 h-4 w-4 text-[#817563]" />
+                      <input
+                        type="number"
+                        value={rate}
+                        onChange={handleRateChange}
+                        step="0.01"
+                        className="w-full rounded-lg border-0 bg-[#f4f4f2] py-2.5 pl-9 pr-16 text-sm font-bold text-[#785600] outline-none focus:ring-2 focus:ring-[#785600]/20"
+                        placeholder="Enter rate"
+                      />
+                      <span className="absolute right-3 text-[10px] font-medium text-[#4f4535]">
+                        {ratePerUnit}
+                      </span>
                     </div>
+                    <p className="mt-1 text-[10px] text-[#4f4535]">
+                      * Editable - Current{' '}
+                      {commodity === 'gold' ? 'Gold' : 'Silver'} rate: ₹
+                      {commodity === 'gold' ? '72,450' : '91,200'} {ratePerUnit}
+                    </p>
+                  </div>
+                </div>
 
-                    <div className="mt-4 border-t border-white/20 pt-4">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-xs font-bold uppercase tracking-widest text-amber-100/60">
-                          Total Booking Value
-                        </span>
-                        <span className="text-xl font-bold text-[#f7bd48] sm:text-2xl">
-                          ₹{totalValue.toFixed(2)}
+                {/* Financials */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4f4535]">
+                      Value Date
+                    </label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+                      <input
+                        type="date"
+                        value={valueDate}
+                        onChange={(e) => setValueDate(e.target.value)}
+                        className="w-full rounded-lg border-0 bg-[#f4f4f2] py-2.5 pl-9 pr-3 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4f4535]">
+                      Advance Token <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-[#4f4535]">
+                        ₹
+                      </span>
+                      <input
+                        type="number"
+                        value={advanceToken || ''}
+                        onChange={(e) =>
+                          setAdvanceToken(Number(e.target.value))
+                        }
+                        step="0.01"
+                        className="w-full rounded-lg border-0 bg-[#f4f4f2] py-2.5 pl-7 pr-3 text-right text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bank Account Selection - Moved to the end */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4f4535]">
+                    Bank Account <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+                    <input
+                      type="text"
+                      value={accountSearchQuery}
+                      onChange={(e) => {
+                        setAccountSearchQuery(e.target.value);
+                        setShowAccountDropdown(true);
+                        if (e.target.value === '') setSelectedAccount(null);
+                      }}
+                      onFocus={() => setShowAccountDropdown(true)}
+                      className="w-full rounded-lg border-0 bg-[#f4f4f2] py-2.5 pl-9 pr-10 text-sm text-[#1a1c1b] outline-none placeholder:text-xs focus:ring-2 focus:ring-[#785600]/20"
+                      placeholder="Search account name..."
+                      disabled={accountsLoading}
+                    />
+                    {selectedAccount && accountSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={handleClearAccount}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#817563] hover:text-red-500"
+                      >
+                        ✕
+                      </button>
+                    )}
+                    {accountsLoading && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#785600] border-t-transparent"></div>
+                      </div>
+                    )}
+                    {showAccountDropdown &&
+                      !accountsLoading &&
+                      filteredAccounts.length > 0 && (
+                        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-[#d3c4af]/30 bg-white shadow-lg">
+                          {filteredAccounts.map((account) => (
+                            <div
+                              key={account.id}
+                              className="cursor-pointer border-b border-[#f4f4f2] p-3 transition-colors hover:bg-[#f4f4f2]"
+                              onClick={() => handleAccountSelect(account)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm font-bold text-[#1a1c1b]">
+                                    {account.name}
+                                  </p>
+                                  <p className="text-xs text-[#4f4535]">
+                                    Balance: {formatCurrency(account.balance)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    {showAccountDropdown &&
+                      !accountsLoading &&
+                      filteredAccounts.length === 0 &&
+                      accountSearchQuery && (
+                        <div className="absolute z-10 mt-1 w-full rounded-lg border border-[#d3c4af]/30 bg-white p-4 text-center shadow-lg">
+                          <p className="text-sm text-[#4f4535]">
+                            No accounts found
+                          </p>
+                        </div>
+                      )}
+                  </div>
+                </div>
+
+                {/* Notes Section */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#4f4535]">
+                    Notes{' '}
+                    <span className="font-normal text-[#4f4535]">
+                      (Optional)
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <FileText className="absolute left-3 top-3 h-4 w-4 text-[#817563]" />
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={3}
+                      className="w-full rounded-lg border-0 bg-[#f4f4f2] py-2.5 pl-9 pr-3 text-sm text-[#1a1c1b] outline-none placeholder:text-xs focus:ring-2 focus:ring-[#785600]/20"
+                      placeholder="Add any additional notes or instructions..."
+                    />
+                  </div>
+                  <p className="flex items-center gap-1 text-[10px] text-[#4f4535]">
+                    <AlertCircle className="h-3 w-3" />
+                    Include delivery instructions, special requests, or any
+                    other relevant information
+                  </p>
+                </div>
+
+                {/* Summary Card */}
+                {(netWeight > 0 || advanceToken > 0) && (
+                  <div className="rounded-xl bg-gradient-to-br from-[#1a1a2e] to-[#1a1a2e]/95 p-4 text-white">
+                    <h3 className="mb-2 font-headline text-sm font-bold">
+                      Booking Summary
+                    </h3>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-zinc-400">Net Weight</span>
+                        <span className="font-medium">
+                          {netWeight.toFixed(3)} g
                         </span>
                       </div>
-                      {advancePayment > 0 && (
-                        <div className="mt-2 flex items-baseline justify-between">
-                          <span className="text-xs font-bold uppercase tracking-widest text-amber-100/60">
-                            Balance Due
-                          </span>
-                          <span className="text-lg font-bold text-white">
-                            ₹{balanceDue.toFixed(2)}
+                      <div className="flex justify-between text-xs">
+                        <span className="text-zinc-400">Rate</span>
+                        <span className="font-medium">
+                          ₹ {rate.toFixed(2)} {ratePerUnit}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-zinc-400">Total Value</span>
+                        <span className="font-medium">
+                          {formatCurrency(totalValue)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-zinc-400">Advance Paid</span>
+                        <span className="font-medium text-emerald-400">
+                          {formatCurrency(advanceToken)}
+                        </span>
+                      </div>
+                      {notes && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-zinc-400">Notes</span>
+                          <span className="max-w-[200px] text-right text-xs font-medium">
+                            {notes.length > 30
+                              ? notes.substring(0, 30) + '...'
+                              : notes}
                           </span>
                         </div>
                       )}
+                      <div className="my-1.5 h-px bg-white/10"></div>
+                      <div className="flex justify-between text-sm">
+                        <span className="font-bold">Balance Due</span>
+                        <span className="font-bold text-[#f7bd48]">
+                          {formatCurrency(balanceDue)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Rate Difference Engine */}
-                <div className="rounded-xl border border-[#d3c4af]/10 bg-white p-5">
-                  <div className="mb-4 flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-[#785600]" />
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-[#1a1c1b]">
-                      Rate Difference Engine
-                    </h4>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="rounded-lg bg-[#f4f4f2] p-4">
-                      <p className="text-[11px] leading-relaxed text-[#4f4535]">
-                        If the market rate exceeds{' '}
-                        <span className="font-bold text-[#1a1c1b]">
-                          ₹{currentRate.toFixed(2)}
-                        </span>{' '}
-                        after {gracePeriod} days, the client pays the difference
-                        or the booking expires.
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="italic text-[#4f4535] underline decoration-dotted underline-offset-4">
-                        View Volatility Protection Clause
-                      </span>
-                      <ArrowRight className="h-3 w-3 text-[#817563]" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Primary Action Button */}
-                <button className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[#785600] to-[#986d00] py-4 text-base font-bold text-white shadow-lg shadow-[#785600]/20 transition-all hover:opacity-90 sm:py-5 sm:text-lg">
-                  Confirm & Lock Booking
-                  <Lock className="h-5 w-5" />
-                </button>
-                <p className="text-center text-[10px] uppercase tracking-widest text-[#817563]">
-                  Digital signature required upon confirmation
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* All Bookings Table */}
-        {activeTab === 'all' && (
-          <GenericTable
-            data={filteredBookings}
-            columns={columns}
-            title=""
-            searchable={false}
-            itemsPerPage={10}
-            onView={handleViewBooking}
-            onEdit={(booking) => console.log('Edit', booking)}
-            emptyMessage="No bookings found"
-          />
-        )}
-
-        {/* Process Delivery Tab */}
-        {activeTab === 'process' && (
-          <div className="space-y-6">
-            <div className="rounded-xl border border-[#d3c4af]/10 bg-white p-6">
-              <h3 className="font-headline mb-4 text-xl">Pending Deliveries</h3>
-              <GenericTable
-                data={mockBookings.filter(
-                  (b) => b.status === 'Confirmed' || b.status === 'Pending',
                 )}
-                columns={columns}
-                title=""
-                searchable={false}
-                itemsPerPage={10}
-                onView={handleViewBooking}
-                emptyMessage="No pending deliveries"
-              />
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* Booking Details Modal */}
-      {showDetailsModal && selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white">
-            <div className="sticky top-0 flex items-center justify-between border-b border-[#f4f4f2] bg-white p-6">
-              <div>
-                <h3 className="font-headline text-xl font-bold text-[#1a1c1b]">
-                  Booking Details
-                </h3>
-                <p className="mt-1 text-xs text-[#4f4535]">
-                  {selectedBooking.id}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="rounded-lg p-2 transition-colors hover:bg-[#f4f4f2]"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="space-y-6 p-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#4f4535]">
-                    Client Name
-                  </label>
-                  <p className="mt-1 font-medium text-[#1a1c1b]">
-                    {selectedBooking.clientName}
-                  </p>
+                {/* Submit Button */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={
+                      !selectedClient ||
+                      !selectedAccount ||
+                      netWeight <= 0 ||
+                      advanceToken <= 0 ||
+                      isSubmitting
+                    }
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Receipt className="h-4 w-4" />
+                        Execute Trade Confirmation
+                      </>
+                    )}
+                  </button>
                 </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#4f4535]">
-                    Metal
-                  </label>
-                  <p className="mt-1 font-medium text-[#1a1c1b]">
-                    {selectedBooking.metal}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#4f4535]">
-                    Weight
-                  </label>
-                  <p className="mt-1 font-medium text-[#1a1c1b]">
-                    {selectedBooking.weight} g
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#4f4535]">
-                    Purity
-                  </label>
-                  <p className="mt-1 font-medium text-[#1a1c1b]">
-                    {selectedBooking.purity}%
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#4f4535]">
-                    Rate
-                  </label>
-                  <p className="mt-1 font-medium text-[#1a1c1b]">
-                    ₹{selectedBooking.rate}/g
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#4f4535]">
-                    Total Value
-                  </label>
-                  <p className="mt-1 font-bold text-[#785600]">
-                    ₹{selectedBooking.totalValue.toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#4f4535]">
-                    Advance Paid
-                  </label>
-                  <p className="mt-1 font-medium text-green-600">
-                    ₹{selectedBooking.advancePaid.toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#4f4535]">
-                    Due Date
-                  </label>
-                  <p className="mt-1 font-medium text-[#1a1c1b]">
-                    {selectedBooking.dueDate}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button className="flex-1 rounded-lg bg-[#785600] py-2.5 font-semibold text-white">
-                  Process Delivery
-                </button>
-                <button className="flex-1 rounded-lg border border-[#d3c4af]/30 py-2.5 font-semibold hover:bg-[#f4f4f2]">
-                  Close
-                </button>
-              </div>
+              </form>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;0,800;0,900;1,400&family=Manrope:wght@400;500;600;700&display=swap');
-        
         .font-headline {
           font-family: 'Noto Serif', serif;
         }
+        .font-body {
+          font-family: 'Manrope', sans-serif;
+        }
       `}</style>
-    </div>
+    </FormProvider>
   );
-}
+};
+
+export default RegisterNewTrade;

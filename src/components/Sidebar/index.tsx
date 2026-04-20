@@ -138,12 +138,6 @@ const Sidebar = ({
       roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
     {
-      label: 'Accounts',
-      path: '/account',
-      icon: <MdAccountBalanceWallet size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN','SHOP'],
-    },
-    {
       label: 'Jewellery Job Work',
       path: '/JewlleryWork/jewelleryworkdata',
       icon: <MdPrecisionManufacturing size={22} />,
@@ -153,7 +147,7 @@ const Sidebar = ({
       label: 'Karigars',
       path: '/kariger/karigers',
       icon: <MdEngineering size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN'],
+      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
     {
       label: 'Reports',
@@ -234,11 +228,11 @@ const Sidebar = ({
     return 'BullionPro ERP';
   };
 
-  // Mobile menu button - Now positioned at top of sidebar
+  // Mobile menu button
   const MobileMenuButton = () => (
     <button
       onClick={toggleMobileMenu}
-      className="absolute left-4 top-4 z-50 flex items-center justify-center rounded-lg bg-[#1a1a2e] p-2.5 text-white shadow-lg transition-all hover:bg-[#2a2a3e] active:scale-95 md:hidden"
+      className="fixed left-4 top-4 z-50 flex items-center justify-center rounded-lg bg-[#1a1a2e] p-2.5 text-white shadow-lg transition-all hover:bg-[#2a2a3e] active:scale-95 md:hidden"
       aria-label="Toggle menu"
     >
       {isMobileMenuOpen ? <MdClose size={22} /> : <MdMenu size={22} />}
@@ -258,11 +252,13 @@ const Sidebar = ({
   // Sidebar content
   const SidebarContent = () => (
     <>
-      {/* Logo Section - Add padding-top on mobile to account for menu button */}
+      {/* Logo Section */}
       <div
-        className={`mb-6 transition-all duration-300 ${isMobileDevice ? 'px-4 pt-16' : ''} ${!isMobileDevice && isCollapsed ? 'px-2' : 'px-4'} md:mb-8 md:pt-6`}
+        className={`mb-6 mt-6 transition-all duration-300 ${
+          isMobileDevice ? 'px-4' : isCollapsed ? 'px-2' : 'px-4'
+        }`}
       >
-        {!isMobileDevice && isCollapsed ? (
+        {isCollapsed && !isMobileDevice ? (
           <div className="flex justify-center">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#B8860B]/20">
               <span className="font-['Playfair_Display'] text-lg font-bold text-[#B8860B]">
@@ -282,11 +278,11 @@ const Sidebar = ({
         )}
       </div>
 
-      {/* Collapse Toggle Button (Desktop only) */}
+      {/* Collapse Toggle Button */}
       {!isMobileDevice && !isTablet && (
         <button
           onClick={toggleCollapse}
-          className="absolute -right-3 top-20 hidden rounded-full bg-[#B8860B] p-1 text-white shadow-md transition-all hover:bg-[#B8860B]/80 md:block"
+          className="absolute -right-3 top-20 z-10 rounded-full bg-[#B8860B] p-1 text-white shadow-md transition-all hover:bg-[#B8860B]/80"
         >
           {isCollapsed ? (
             <MdChevronRight className="h-4 w-4" />
@@ -297,7 +293,7 @@ const Sidebar = ({
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 overflow-y-auto px-2 md:px-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-2">
         {menuItems.map((item, index) => (
           <Link
             key={index}
@@ -305,27 +301,33 @@ const Sidebar = ({
             onClick={() => {
               if (isMobileDevice) toggleMobileMenu();
             }}
-            className={`group relative flex items-center rounded-lg px-3 py-2.5 font-['DM_Sans'] text-xs font-medium tracking-wide transition-all duration-200 md:px-4 md:py-3 md:text-sm ${
+            className={`group relative flex items-center rounded-lg transition-all duration-200 ${
               isActive(item.path)
-                ? 'bg-[#B8860B]/10 text-[#B8860B] shadow-sm'
+                ? 'bg-[#B8860B]/10 text-[#B8860B]'
                 : 'text-slate-400 hover:bg-white/5 hover:text-white'
-            } ${!isMobileDevice && isCollapsed ? 'justify-center' : ''}`}
-            title={!isMobileDevice && isCollapsed ? item.label : ''}
+            } ${
+              isCollapsed && !isMobileDevice
+                ? 'justify-center px-2 py-3'
+                : 'px-3 py-2.5 md:px-4 md:py-3'
+            }`}
+            title={isCollapsed && !isMobileDevice ? item.label : ''}
           >
             <span
-              className={`shrink-0 ${!isMobileDevice && isCollapsed ? 'mr-0' : 'mr-3'}`}
+              className={`shrink-0 ${isCollapsed && !isMobileDevice ? '' : 'mr-3'}`}
             >
               {item.icon}
             </span>
-            {(!isMobileDevice || !isCollapsed) && (
-              <span className="whitespace-nowrap">{item.label}</span>
+            {(!isCollapsed || isMobileDevice) && (
+              <span className="whitespace-nowrap text-xs font-medium tracking-wide md:text-sm">
+                {item.label}
+              </span>
             )}
             {/* Active indicator */}
             {isActive(item.path) && (
               <span className="absolute left-0 top-1/2 h-8 w-0.5 -translate-y-1/2 rounded-r-full bg-[#B8860B]"></span>
             )}
             {/* Tooltip for collapsed state */}
-            {!isMobileDevice && isCollapsed && (
+            {isCollapsed && !isMobileDevice && (
               <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg bg-[#1a1a2e] px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-xl transition-opacity duration-200 group-hover:opacity-100">
                 {item.label}
               </div>
@@ -335,16 +337,16 @@ const Sidebar = ({
       </nav>
 
       {/* User Info Section */}
-      <div className="border-t border-white/10 px-3 py-3 md:px-4 md:py-4">
+      <div className="border-t border-white/10 px-3 py-4">
         <div
-          className={`flex items-center ${!isMobileDevice && isCollapsed ? 'justify-center' : 'gap-3'}`}
+          className={`flex items-center ${isCollapsed && !isMobileDevice ? 'justify-center' : 'gap-3'}`}
         >
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#B8860B]/20 md:h-10 md:w-10">
             <span className="text-sm font-semibold text-[#B8860B] md:text-base">
               {getUserInitials()}
             </span>
           </div>
-          {(!isMobileDevice || !isCollapsed) && (
+          {(!isCollapsed || isMobileDevice) && (
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-white">
                 {user?.fullname || user?.username || 'User'}
@@ -356,19 +358,25 @@ const Sidebar = ({
       </div>
 
       {/* Logout Button */}
-      <div className="border-t border-white/5 px-2 py-3 md:px-3 md:py-4">
+      <div className="border-t border-white/5 px-2 py-4">
         <button
           onClick={handleLogout}
-          className={`flex w-full items-center rounded-lg px-3 py-2.5 font-['DM_Sans'] text-xs font-medium tracking-wide text-slate-400 transition-all duration-200 hover:bg-white/5 hover:text-white md:px-4 md:py-3 md:text-sm ${
-            !isMobileDevice && isCollapsed ? 'justify-center' : ''
-          }`}
-          title={!isMobileDevice && isCollapsed ? 'Logout' : ''}
+          className={`flex w-full items-center rounded-lg transition-all duration-200 ${
+            isCollapsed && !isMobileDevice
+              ? 'justify-center px-2 py-3'
+              : 'px-3 py-2.5 md:px-4 md:py-3'
+          } text-slate-400 hover:bg-white/5 hover:text-white`}
+          title={isCollapsed && !isMobileDevice ? 'Logout' : ''}
         >
           <MdLogout
             size={20}
-            className={`shrink-0 ${!isMobileDevice && isCollapsed ? 'mr-0' : 'mr-3'}`}
+            className={`shrink-0 ${isCollapsed && !isMobileDevice ? '' : 'mr-3'}`}
           />
-          {(!isMobileDevice || !isCollapsed) && 'Logout'}
+          {(!isCollapsed || isMobileDevice) && (
+            <span className="text-xs font-medium tracking-wide md:text-sm">
+              Logout
+            </span>
+          )}
         </button>
       </div>
     </>
@@ -387,7 +395,7 @@ const Sidebar = ({
 
   return (
     <>
-      {/* Mobile menu button - rendered outside sidebar */}
+      {/* Mobile menu button */}
       {isMobileDevice && <MobileMenuButton />}
       <MobileOverlay />
 

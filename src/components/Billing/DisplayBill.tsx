@@ -1,8 +1,10 @@
-// DisplayBill.tsx - Fixed Client column with proper alignment
+// DisplayBill.tsx - Original columns preserved, with exact print design
 import {useGetSalesData} from '@/components/Billing/billapi';
 import GenericTable, {Column} from '@/components/Forms/Table/GenericTable';
 import React, {useState} from 'react';
-import PageHeader from '../Forms/Common/PageHeader';
+import {Printer} from 'lucide-react';
+import toast from 'react-hot-toast';
+import {useAuthContext} from '@/context/AuthContext';
 
 // Sale Record Type Definition based on API response
 interface SaleRecord {
@@ -39,9 +41,17 @@ interface SaleRecord {
 }
 
 // Filter Options
-const transactionTypeOptions = ['All', 'SELL', 'BUY'];
-const billingModeOptions = ['All', 'CASH_BILL', 'GST_BILL'];
+const metalOptions = ['All', 'Gold', 'Silver'];
+const billingTypeOptions = ['All', 'GST_BILL', 'CASH_BILL'];
 const paymentModeOptions = ['All', 'CASH_UPI', 'EXCHANGE', 'SPLIT'];
+
+// Date Range Options
+const dateRangeOptions = [
+  {value: 'today', label: 'Today'},
+  {value: 'weekly', label: 'Weekly'},
+  {value: 'monthly', label: 'Monthly'},
+  {value: 'custom', label: 'Custom'},
+];
 
 // Helper for number formatting
 const formatCurrency = (value: number) => {
@@ -68,58 +78,94 @@ interface DisplayBillProps {
 const DisplayBill: React.FC<DisplayBillProps> = ({hideHeader = false}) => {
   // State Management
   const [searchTerm, setSearchTerm] = useState('');
-  const [dateRange, setDateRange] = useState({
-    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-      .toISOString()
-      .split('T')[0],
-    end: new Date().toISOString().split('T')[0],
-  });
-  const [selectedClient, setSelectedClient] = useState('');
-  const [selectedTransactionType, setSelectedTransactionType] = useState('All');
-  const [selectedBillingMode, setSelectedBillingMode] = useState('All');
+  const [selectedDateRange, setSelectedDateRange] = useState('today');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [selectedMetal, setSelectedMetal] = useState('All');
+  const [selectedBillingType, setSelectedBillingType] = useState('All');
   const [selectedPaymentMode, setSelectedPaymentMode] = useState('All');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [showCustomDate, setShowCustomDate] = useState(false);
+  const {user: currentUser} = useAuthContext();
 
   // Get sales data from API
-  const {data: salesDataResponse, isLoading: isDataLoading} = useGetSalesData();
+  const {
+    data: salesDataResponse,
+    isLoading: isDataLoading,
+    refetch,
+  } = useGetSalesData();
 
   // Extract data array from response
   const salesData: SaleRecord[] = salesDataResponse || [];
+
+  // Calculate date range based on selection
+  const getDateRange = () => {
+    const today = new Date();
+    const start = new Date();
+    const end = new Date();
+
+    switch (selectedDateRange) {
+      case 'today':
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case 'weekly':
+        start.setDate(today.getDate() - 7);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case 'monthly':
+        start.setMonth(today.getMonth() - 1);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return {
+            start: new Date(customStartDate),
+            end: new Date(customEndDate),
+          };
+        }
+        return {start: new Date(0), end: new Date()};
+      default:
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+    }
+    return {start, end};
+  };
+
+  const {start: startDate, end: endDate} = getDateRange();
 
   // Filter Logic
   const filteredData = salesData.filter((item) => {
     const matchesSearch =
       searchTerm === '' ||
       item.client?.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.client?.phoneNumber?.includes(searchTerm);
+      item.client?.phoneNumber?.includes(searchTerm) ||
+      item.id?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesClient =
-      selectedClient === '' ||
-      item.client?.fullname
-        ?.toLowerCase()
-        .includes(selectedClient.toLowerCase());
+    let matchesMetal = selectedMetal === 'All';
+    if (!matchesMetal && item.items && item.items.length > 0) {
+      matchesMetal = item.items.some((i) =>
+        selectedMetal === 'Gold'
+          ? i.metalName.toLowerCase().includes('gold')
+          : selectedMetal === 'Silver'
+            ? i.metalName.toLowerCase().includes('silver')
+            : false,
+      );
+    }
 
-    const matchesTransactionType =
-      selectedTransactionType === 'All' ||
-      item.transactionType === selectedTransactionType;
-
-    const matchesBillingMode =
-      selectedBillingMode === 'All' || item.billingMode === selectedBillingMode;
-
+    const matchesBillingType =
+      selectedBillingType === 'All' || item.billingMode === selectedBillingType;
     const matchesPaymentMode =
       selectedPaymentMode === 'All' || item.paymentMode === selectedPaymentMode;
-
     const itemDate = new Date(item.createdAt);
-    const startDate = new Date(dateRange.start);
-    const endDate = new Date(dateRange.end);
-    endDate.setHours(23, 59, 59);
     const matchesDate = itemDate >= startDate && itemDate <= endDate;
 
     return (
       matchesSearch &&
-      matchesClient &&
-      matchesTransactionType &&
-      matchesBillingMode &&
+      matchesMetal &&
+      matchesBillingType &&
       matchesPaymentMode &&
       matchesDate
     );
@@ -130,69 +176,361 @@ const DisplayBill: React.FC<DisplayBillProps> = ({hideHeader = false}) => {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
-  // Handlers
-  const handleExportCSV = () => {
-    const headers = [
-      'Invoice Date',
-      'Client Name',
-      'Phone',
-      'Transaction Type',
-      'Billing Mode',
-      'Payment Mode',
-      'Sub Total',
-      'Making Fees',
-      'GST',
-      'Discount',
-      'Exchange Value',
-      'Net Payable',
-      'Cash Paid',
-      'Balance Due',
-    ];
+  // Handle date range change
+  const handleDateRangeChange = (value: string) => {
+    setSelectedDateRange(value);
+    setShowCustomDate(value === 'custom');
+  };
 
-    const csvData = filteredData.map((item) => [
-      formatDate(item.createdAt),
-      item.client?.fullname || 'N/A',
-      item.client?.phoneNumber || 'N/A',
-      item.transactionType,
-      item.billingMode,
-      item.paymentMode,
-      item.subTotal,
-      item.makingFees,
-      item.totalTax,
-      item.discount,
-      item.exchangeValue,
-      item.netPayable,
-      item.cashPaid,
-      item.balanceDue,
-    ]);
+  // Direct print bill with exact design matching image
+  const handlePrintBill = (item: SaleRecord) => {
+    // Calculate totals
+    const itemsSubtotal =
+      item.items?.reduce((sum, i) => sum + i.amount, 0) || 0;
+    const totalWithTax = itemsSubtotal + item.makingFees + item.totalTax;
+    const afterExchange = totalWithTax - item.exchangeValue;
+    const finalTotal =
+      afterExchange + (item.previousBalance || 0) - (item.discount || 0);
 
-    const csvContent = [headers, ...csvData]
-      .map((row) => row.join(','))
-      .join('\n');
-    const blob = new Blob([csvContent], {type: 'text/csv'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `bills_report_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Invoice ${item.id.slice(0, 8).toUpperCase()}</title>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: 'Times New Roman', Times, serif;
+              background: #e0e0e0;
+              padding: 30px 20px;
+              display: flex;
+              justify-content: center;
+              min-height: 100vh;
+            }
+            .invoice-container {
+              max-width: 800px;
+              width: 100%;
+              margin: 0 auto;
+              background: white;
+              box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            }
+            .invoice-header {
+              background: #1a1a2e;
+              color: white;
+              text-align: center;
+              padding: 25px 30px;
+            }
+            .invoice-header h1 {
+              font-size: 28px;
+              color: #B8860B;
+              margin-bottom: 5px;
+              letter-spacing: 1px;
+            }
+            .invoice-header .tagline {
+              font-size: 9px;
+              letter-spacing: 2px;
+              opacity: 0.7;
+              margin-bottom: 8px;
+            }
+            .invoice-header .address {
+              font-size: 8px;
+              opacity: 0.6;
+              line-height: 1.4;
+            }
+            .invoice-body {
+              padding: 25px 30px;
+            }
+            .client-info {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 25px;
+              padding-bottom: 15px;
+              border-bottom: 1px solid #ddd;
+            }
+            .client-info h4 {
+              font-size: 10px;
+              font-weight: bold;
+              text-transform: uppercase;
+              color: #666;
+              margin-bottom: 8px;
+              letter-spacing: 0.5px;
+            }
+            .client-info p {
+              font-size: 11px;
+              margin-bottom: 3px;
+            }
+            .client-name {
+              font-weight: bold;
+              font-size: 13px;
+              color: #1a1a2e;
+            }
+            .invoice-details {
+              text-align: right;
+            }
+            .invoice-details p {
+              font-size: 11px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 20px;
+            }
+            th {
+              text-align: left;
+              font-size: 10px;
+              font-weight: bold;
+              text-transform: uppercase;
+              color: #666;
+              border-bottom: 1px solid #ddd;
+              padding-bottom: 8px;
+            }
+            td {
+              font-size: 11px;
+              padding: 8px 0;
+              border-bottom: 1px solid #eee;
+            }
+            .text-right {
+              text-align: right;
+            }
+            .summary {
+              margin-top: 15px;
+              border-top: 1px solid #ddd;
+              padding-top: 15px;
+            }
+            .summary-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 8px;
+              font-size: 11px;
+            }
+            .summary-row.total {
+              border-top: 1px solid #ddd;
+              margin-top: 10px;
+              padding-top: 10px;
+              font-weight: bold;
+              font-size: 14px;
+            }
+            .summary-row.total .value {
+              color: #B8860B;
+              font-size: 16px;
+              font-weight: bold;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 25px;
+              padding-top: 15px;
+              border-top: 1px solid #ddd;
+            }
+            .signature {
+              margin-top: 20px;
+              text-align: center;
+            }
+            .signature hr {
+              width: 150px;
+              margin: 0 auto;
+              border: none;
+              border-top: 1px solid #ccc;
+            }
+            .signature p {
+              font-size: 9px;
+              color: #666;
+              margin-top: 5px;
+            }
+            .thankyou {
+              text-align: center;
+              margin-top: 12px;
+              font-size: 9px;
+              color: #B8860B;
+              font-style: italic;
+            }
+            @media print {
+              body {
+                background: white;
+                padding: 0;
+              }
+            }
+            @media (max-width: 600px) {
+              body {
+                padding: 15px 10px;
+              }
+              .invoice-header h1 {
+                font-size: 22px;
+              }
+              .invoice-body {
+                padding: 15px 20px;
+              }
+              .client-info {
+                flex-direction: column;
+                gap: 10px;
+              }
+              .invoice-details {
+                text-align: left;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-container">
+            <div class="invoice-header">
+              <h1>${currentUser?.fullname?.toUpperCase() || 'VIKAS JEWELLERS'}</h1>
+              <div class="tagline">EXQUISITE CRAFTSMANSHIP SINCE 1988</div>
+              <div class="address">
+                ${currentUser?.address || 'Goldsmith Street, Jewel Bazaar, Zaveri Mandi, Mumbai-400002'}
+              </div>
+              
+            </div>
+
+            <div class="invoice-body">
+              <div class="client-info">
+                <div>
+                  <h4>BILLED TO</h4>
+                  <p class="client-name">${item.client?.fullname || 'N/A'}</p>
+                  <p>${item.client?.phoneNumber || 'N/A'}</p>
+                  ${item.client?.address ? `<p>${item.client.address}</p>` : ''}
+                </div>
+                <div class="invoice-details">
+                  <h4>INVOICE DETAILS</h4>
+                  <p><strong>No:</strong> #${item.id.slice(0, 8).toUpperCase()}</p>
+                  <p><strong>Date:</strong> ${formatDate(item.createdAt)}</p>
+                  <p><strong>Payment:</strong> ${item.paymentMode}</p>
+                </div>
+              </div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>DESCRIPTION</th>
+                    <th class="text-right">WEIGHT</th>
+                    <th class="text-right">RATE</th>
+                    <th class="text-right">AMOUNT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${item.items
+                    ?.map(
+                      (i) => `
+                    <tr>
+                      <td>${i.metalName}</td>
+                      <td class="text-right">${i.weight.toFixed(3)}g</td>
+                      <td class="text-right">₹${i.rate.toFixed(2)}</td>
+                      <td class="text-right"><strong>${formatCurrency(i.amount)}</strong></td>
+                    </tr>
+                  `,
+                    )
+                    .join('')}
+                  <tr>
+                    <td colspan="3" class="text-right">Making Charges</td>
+                    <td class="text-right">${formatCurrency(item.makingFees)}</td>
+                  </tr>
+                  ${
+                    item.totalTax > 0
+                      ? `
+                    <tr>
+                      <td colspan="3" class="text-right">GST (${item.gstPercentage}%)</td>
+                      <td class="text-right">${formatCurrency(item.totalTax)}</td>
+                    </tr>
+                  `
+                      : ''
+                  }
+                  ${
+                    item.exchangeValue > 0
+                      ? `
+                    <tr>
+                      <td colspan="3" class="text-right">Less: Metal Exchange</td>
+                      <td class="text-right" style="color: #5d5c74;">- ${formatCurrency(item.exchangeValue)}</td>
+                    </tr>
+                  `
+                      : ''
+                  }
+                </tbody>
+              </table>
+
+              <div class="summary">
+                <div class="summary-row">
+                  <span>Bill Balance</span>
+                  <span>${formatCurrency(item.subTotal + item.makingFees + item.totalTax - item.exchangeValue)}</span>
+                </div>
+                ${
+                  item.previousBalance > 0
+                    ? `
+                  <div class="summary-row">
+                    <span>Add Old Balance</span>
+                    <span>+ ${formatCurrency(item.previousBalance)}</span>
+                  </div>
+                `
+                    : ''
+                }
+                ${
+                  item.discount > 0
+                    ? `
+                  <div class="summary-row">
+                    <span>Less Discount</span>
+                    <span style="color: #ba1a1a;">- ${formatCurrency(item.discount)}</span>
+                  </div>
+                `
+                    : ''
+                }
+                <div class="summary-row total">
+                  <span>NET PAYABLE</span>
+                  <span class="value">${formatCurrency(item.netPayable)}</span>
+                </div>
+                <div class="summary-row">
+                  <span>Cash Paid</span>
+                  <span>${formatCurrency(item.cashPaid)}</span>
+                </div>
+                <div class="summary-row">
+                  <span>Balance Due</span>
+                  <span style="${item.balanceDue > 0 ? 'color: #ba1a1a;' : 'color: green;'}">
+                    ${item.balanceDue > 0 ? formatCurrency(item.balanceDue) : 'Settled'}
+                  </span>
+                </div>
+              </div>
+
+              <div class="footer">
+                <div class="signature">
+                  <hr />
+                  <p>AUTHORIZED SIGNATORY</p>
+                </div>
+                <p style="font-size: 7px; color: #999; margin-top: 8px;">
+                  This is a computer generated invoice
+                </p>
+              </div>
+            </div>
+          </div>
+          <script>
+            window.print();
+            setTimeout(function() { window.close(); }, 1000);
+          </script>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      toast.error('Please allow pop-ups to print');
+      return;
+    }
+    printWindow.document.write(printContent);
+    printWindow.document.close();
   };
 
   const resetFilters = () => {
     setSearchTerm('');
-    setSelectedClient('');
-    setSelectedTransactionType('All');
-    setSelectedBillingMode('All');
+    setSelectedMetal('All');
+    setSelectedBillingType('All');
     setSelectedPaymentMode('All');
-    setDateRange({
-      start: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-        .toISOString()
-        .split('T')[0],
-      end: new Date().toISOString().split('T')[0],
-    });
+    setSelectedDateRange('today');
+    setCustomStartDate('');
+    setCustomEndDate('');
   };
 
-  // Define table columns with proper styling
+  // Original table columns - UNCHANGED
   const columns: Column<SaleRecord>[] = [
     {
       header: 'Invoice Date',
@@ -201,24 +539,30 @@ const DisplayBill: React.FC<DisplayBillProps> = ({hideHeader = false}) => {
       align: 'left',
     },
     {
+      header: 'Invoice No',
+      accessor: (item) => item.id.slice(0, 8).toUpperCase(),
+      sortable: true,
+      align: 'left',
+    },
+    {
       header: 'Client Details',
       accessor: (item) => item.client?.fullname || 'N/A',
       sortable: true,
       align: 'left',
-      render: (item) => {
-        const clientName = item.client?.fullname || 'N/A';
-        const phoneNumber = item.client?.phoneNumber || 'N/A';
-        return (
-          <div>
-            <div className="font-semibold text-[#1a1c1b]">{clientName}</div>
-            <div className="text-xs text-[#4f4535]">{phoneNumber}</div>
+      render: (item) => (
+        <div>
+          <div className="font-semibold text-[#1a1c1b]">
+            {item.client?.fullname || 'N/A'}
           </div>
-        );
-      },
+          <div className="text-xs text-[#4f4535]">
+            {item.client?.phoneNumber || 'N/A'}
+          </div>
+        </div>
+      ),
     },
     {
-      header: 'Billing',
-      accessor: (item) => (item.billingMode === 'GST_BILL' ? 'GST' : 'Cash'),
+      header: 'Billing Type',
+      accessor: (item) => item.billingMode,
       sortable: true,
       align: 'center',
       render: (item) => (
@@ -236,54 +580,53 @@ const DisplayBill: React.FC<DisplayBillProps> = ({hideHeader = false}) => {
       ),
     },
     {
-      header: 'Sub Total',
-      accessor: (item) => item.subTotal,
+      header: 'Metal',
+      accessor: (item) => item.items?.[0]?.metalName || 'N/A',
       sortable: true,
-      align: 'right',
-      render: (item) => (
-        <div className="text-right">₹{formatCurrency(item.subTotal)}</div>
-      ),
+      align: 'left',
+      render: (item) => {
+        const metals = item.items?.map((i) => i.metalName).join(', ') || 'N/A';
+        return <div className="text-sm">{metals}</div>;
+      },
     },
     {
-      header: 'Making Fees',
-      accessor: (item) => item.makingFees,
+      header: 'Given Metal (g)',
+      accessor: (item) =>
+        item.items?.reduce((sum, i) => sum + i.weight, 0) || 0,
       sortable: true,
       align: 'right',
-      render: (item) => (
-        <div className="text-right">₹{formatCurrency(item.makingFees)}</div>
-      ),
+      render: (item) => {
+        const totalWeight =
+          item.items?.reduce((sum, i) => sum + i.weight, 0) || 0;
+        return <div className="text-right">{totalWeight.toFixed(3)} g</div>;
+      },
     },
     {
-      header: 'GST',
-      accessor: (item) => item.totalTax,
-      sortable: true,
-      align: 'right',
-      render: (item) => (
-        <div className="text-right">₹{formatCurrency(item.totalTax)}</div>
-      ),
-    },
-    {
-      header: 'Discount',
-      accessor: (item) => item.discount,
-      sortable: true,
-      align: 'right',
-      render: (item) => (
-        <div className="text-right text-red-600">
-          -₹{formatCurrency(item.discount)}
-        </div>
-      ),
-    },
-    {
-      header: 'Exchange',
+      header: 'Exchange Metal (₹)',
       accessor: (item) => item.exchangeValue,
       sortable: true,
       align: 'right',
       render: (item) => (
-        <div className="text-right">-₹{formatCurrency(item.exchangeValue)}</div>
+        <div className="text-right text-[#5d5c74]">
+          {item.exchangeValue > 0
+            ? `-₹${formatCurrency(item.exchangeValue)}`
+            : '-'}
+        </div>
       ),
     },
     {
-      header: 'Net Payable',
+      header: 'Total Amount (₹)',
+      accessor: (item) => item.subTotal,
+      sortable: true,
+      align: 'right',
+      render: (item) => (
+        <div className="text-right font-semibold text-[#1a1c1b]">
+          ₹{formatCurrency(item.subTotal)}
+        </div>
+      ),
+    },
+    {
+      header: 'Total Bill Value (₹)',
       accessor: (item) => item.netPayable,
       sortable: true,
       align: 'right',
@@ -294,13 +637,21 @@ const DisplayBill: React.FC<DisplayBillProps> = ({hideHeader = false}) => {
       ),
     },
     {
-      header: 'Balance',
-      accessor: (item) => item.balanceDue,
-      sortable: true,
-      align: 'right',
+      header: 'Bill',
+      accessor: (item) => item.id,
+      align: 'center',
       render: (item) => (
-        <div className="text-right font-bold text-[#ba1a1a]">
-          ₹{formatCurrency(item.balanceDue)}
+        <div className="flex justify-center">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePrintBill(item);
+            }}
+            className="rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#f4f4f2]"
+            title="Print Bill"
+          >
+            <Printer size={18} />
+          </button>
         </div>
       ),
     },
@@ -308,22 +659,8 @@ const DisplayBill: React.FC<DisplayBillProps> = ({hideHeader = false}) => {
 
   return (
     <div className="min-h-screen w-full bg-[#f9f9f7]">
-      {/* Header Section - Only show if hideHeader is false */}
-      {!hideHeader && (
-        <div>
-          <div className="">
-            <div>
-              <PageHeader
-                title="Sales Bills"
-                subtitle="View and manage all sales transactions"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Mobile Filter Toggle Button */}
-      <div className="mt-3 px-4 md:hidden">
+      <div className="mt-1 px-4 md:hidden">
         <button
           onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#eeeeec] py-2.5 text-xs font-bold text-[#4f4535]"
@@ -338,44 +675,58 @@ const DisplayBill: React.FC<DisplayBillProps> = ({hideHeader = false}) => {
         className={`mt-3 px-4 transition-all duration-300 ${mobileFiltersOpen ? 'block' : 'hidden md:block'}`}
       >
         <div className="rounded-xl border border-[#d3c4af]/10 bg-[#eeeeec] p-4 shadow-sm md:p-5">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {/* Date Range Tabs */}
             <div className="flex flex-col gap-1.5">
               <label className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#4f4535]/70">
                 Date Range
               </label>
-              <div className="flex rounded-lg border border-[#d3c4af]/20 bg-white p-1">
-                <input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(e) =>
-                    setDateRange({...dateRange, start: e.target.value})
-                  }
-                  className="w-full border-none bg-transparent p-1.5 text-xs focus:ring-0"
-                />
-                <span className="flex items-center px-1 text-xs text-[#817563]">
-                  →
-                </span>
-                <input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(e) =>
-                    setDateRange({...dateRange, end: e.target.value})
-                  }
-                  className="w-full border-none bg-transparent p-1.5 text-xs focus:ring-0"
-                />
+              <div className="flex flex-wrap gap-1">
+                {dateRangeOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleDateRangeChange(option.value)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                      selectedDateRange === option.value
+                        ? 'bg-[#785600] text-white shadow-sm'
+                        : 'bg-white text-[#4f4535] hover:bg-[#e8e8e6]'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
+              {showCustomDate && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="flex-1 rounded-lg border border-[#d3c4af]/20 bg-white px-2 py-1.5 text-xs focus:border-[#785600] focus:outline-none"
+                    placeholder="Start Date"
+                  />
+                  <span className="text-xs text-[#4f4535]">to</span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="flex-1 rounded-lg border border-[#d3c4af]/20 bg-white px-2 py-1.5 text-xs focus:border-[#785600] focus:outline-none"
+                    placeholder="End Date"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#4f4535]/70">
-                Transaction Type
+                Metal
               </label>
               <select
-                value={selectedTransactionType}
-                onChange={(e) => setSelectedTransactionType(e.target.value)}
+                value={selectedMetal}
+                onChange={(e) => setSelectedMetal(e.target.value)}
                 className="h-[38px] w-full rounded-lg border border-[#d3c4af]/20 bg-white px-3 py-2 text-xs focus:border-[#785600] focus:ring-[#785600]/20"
               >
-                {transactionTypeOptions.map((opt) => (
+                {metalOptions.map((opt) => (
                   <option key={opt} value={opt}>
                     {opt}
                   </option>
@@ -385,16 +736,20 @@ const DisplayBill: React.FC<DisplayBillProps> = ({hideHeader = false}) => {
 
             <div className="flex flex-col gap-1.5">
               <label className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#4f4535]/70">
-                Billing Mode
+                Billing Type
               </label>
               <select
-                value={selectedBillingMode}
-                onChange={(e) => setSelectedBillingMode(e.target.value)}
+                value={selectedBillingType}
+                onChange={(e) => setSelectedBillingType(e.target.value)}
                 className="h-[38px] w-full rounded-lg border border-[#d3c4af]/20 bg-white px-3 py-2 text-xs focus:border-[#785600] focus:ring-[#785600]/20"
               >
-                {billingModeOptions.map((opt) => (
+                {billingTypeOptions.map((opt) => (
                   <option key={opt} value={opt}>
-                    {opt}
+                    {opt === 'GST_BILL'
+                      ? 'GST'
+                      : opt === 'CASH_BILL'
+                        ? 'Cash'
+                        : opt}
                   </option>
                 ))}
               </select>
@@ -420,37 +775,34 @@ const DisplayBill: React.FC<DisplayBillProps> = ({hideHeader = false}) => {
         </div>
       </div>
 
-      {/* Search and Reset */}
+      {/* Search Bar */}
       <div className="mt-4 px-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-md">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-[#817563]">
-              search
-            </span>
-            <input
-              type="text"
-              placeholder="Search by Client Name or Phone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border border-[#d3c4af]/20 bg-white py-2.5 pl-10 pr-3 text-sm transition-all focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 md:py-3"
-            />
-          </div>
-          <button
-            onClick={resetFilters}
-            className="flex items-center justify-center gap-2 rounded-lg bg-[#eeeeec] px-3 py-2 text-xs font-bold transition-colors hover:bg-[#e2e3e1]"
-          >
-            <span className="material-symbols-outlined text-sm">clear_all</span>
-            Reset Filters
-          </button>
+        <div className="relative w-full">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-[#817563]">
+            search
+          </span>
+          <input
+            type="text"
+            placeholder="Search by Client Name, Phone, or Invoice No..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full rounded-xl border border-[#d3c4af]/20 bg-white py-2.5 pl-10 pr-3 text-sm transition-all focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 md:py-3"
+          />
         </div>
       </div>
 
       {/* Results Count */}
-      <div className="mt-4 px-4">
+      <div className="mt-4 flex items-center justify-between px-4">
         <p className="text-xs text-[#4f4535]">
           Showing {filteredData.length} record
           {filteredData.length !== 1 ? 's' : ''}
         </p>
+        <button
+          onClick={resetFilters}
+          className="text-xs text-[#785600] hover:underline"
+        >
+          Reset All
+        </button>
       </div>
 
       {/* Generic Table */}

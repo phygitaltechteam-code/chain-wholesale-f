@@ -30,6 +30,7 @@ import {
 import {IoArrowForward} from 'react-icons/io5';
 import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import Account from '@/components/account/Account';
+import PageHeader from '@/components/Forms/Common/PageHeader';
 
 interface User {
   id: string;
@@ -222,16 +223,10 @@ const Setting = () => {
         {/* Header */}
         <header className="sticky top-0 z-40 flex w-full items-center justify-between bg-[#f9f9f7] px-8 py-4 shadow-sm backdrop-blur-md">
           <div className="flex items-center gap-4">
-            <h1 className="font-serif text-2xl font-bold text-[#1A1C1B]">
-              Settings
-            </h1>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="relative">
-              <Bell className="h-5 w-5 cursor-pointer text-[#5E5B56]" />
-              <span className="absolute right-0 top-0 h-2 w-2 rounded-full bg-red-600"></span>
-            </div>
-            <UserCircle className="h-5 w-5 cursor-pointer text-[#5E5B56]" />
+            <PageHeader
+              title="Settings"
+              subtitle="Manage your application settings"
+            />
           </div>
         </header>
 

@@ -1,46 +1,58 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {Plus, Edit, Trash2, Save, X} from 'lucide-react';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import GenericTable, {Column} from '../Forms/Table/GenericTable';
 import toast from 'react-hot-toast';
+import {useSaveAccontInfo, useGetAccounts} from './accountapi';
+import PageHeader from '../Forms/Common/PageHeader';
 
 interface Account {
   id: string;
   accountName: string;
   openingBalance: number;
-  balanceType: 'DEBIT' | 'CREDIT';
   createdAt?: string;
 }
 
-const Account: React.FC = () => {
-  const [accounts, setAccounts] = useState<Account[]>([
-    {
-      id: '1',
-      accountName: 'Cash Account',
-      openingBalance: 50000,
-      balanceType: 'DEBIT',
-    },
-    {
-      id: '2',
-      accountName: 'Bank Account - HDFC',
-      openingBalance: 100000,
-      balanceType: 'DEBIT',
-    },
-    {
-      id: '3',
-      accountName: 'Supplier Account',
-      openingBalance: 25000,
-      balanceType: 'CREDIT',
-    },
-  ]);
+// API Response interface
+interface AccountAPIResponse {
+  name: string;
+  balance: number;
+  id?: string;
+}
 
+const Account: React.FC = () => {
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [formData, setFormData] = useState({
     accountName: '',
     openingBalance: '',
-    balanceType: 'DEBIT' as 'DEBIT' | 'CREDIT',
   });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const saveAccount = useSaveAccontInfo();
+
+  // Fetch accounts from API
+  const {
+    data: accountsData,
+    isLoading: isDataLoading,
+    refetch,
+  } = useGetAccounts();
+
+  // Load accounts from API when component mounts
+  useEffect(() => {
+    if (accountsData && accountsData.data) {
+      // Transform API data to match Account interface
+      const transformedAccounts: Account[] = accountsData.data.map(
+        (item: AccountAPIResponse, index: number) => ({
+          id: item.id || index.toString(),
+          accountName: item.name,
+          openingBalance: item.balance,
+        }),
+      );
+      setAccounts(transformedAccounts);
+    }
+  }, [accountsData]);
 
   // Format currency
   const formatCurrency = (value: number) => {
@@ -49,7 +61,7 @@ const Account: React.FC = () => {
       currency: 'INR',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value);
+    }).format(Math.abs(value));
   };
 
   // Handle form input change
@@ -60,8 +72,8 @@ const Account: React.FC = () => {
     setFormData((prev) => ({...prev, [name]: value}));
   };
 
-  // Handle add new account
-  const handleAddAccount = () => {
+  // Handle add new account - Save to API
+  const handleAddAccount = async () => {
     if (!formData.accountName.trim()) {
       toast.error('Please enter account name');
       return;
@@ -72,21 +84,33 @@ const Account: React.FC = () => {
       return;
     }
 
-    const newAccount: Account = {
-      id: Date.now().toString(),
-      accountName: formData.accountName,
-      openingBalance: parseFloat(formData.openingBalance),
-      balanceType: formData.balanceType,
+    setIsLoading(true);
+
+    // Prepare payload in required format: { "name": "string", "balance": 0 }
+    const payload = {
+      name: formData.accountName,
+      balance: parseFloat(formData.openingBalance),
     };
 
-    setAccounts((prev) => [...prev, newAccount]);
-    toast.success('Account added successfully');
-    resetForm();
-    setIsModalOpen(false);
+    try {
+      const result = await saveAccount.mutateAsync(payload);
+
+      if (result && result.data) {
+        toast.success('Account added successfully');
+        resetForm();
+        setIsModalOpen(false);
+        await refetch(); // Refresh data from API to get the latest data
+      }
+    } catch (error) {
+      console.error('Error saving account:', error);
+      toast.error('Failed to save account');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Handle edit account
-  const handleEditAccount = () => {
+  // Handle edit account - Update in API
+  const handleEditAccount = async () => {
     if (!editingAccount) return;
 
     if (!formData.accountName.trim()) {
@@ -99,43 +123,53 @@ const Account: React.FC = () => {
       return;
     }
 
-    const updatedAccounts = accounts.map((acc) =>
-      acc.id === editingAccount.id
-        ? {
-            ...acc,
-            accountName: formData.accountName,
-            openingBalance: parseFloat(formData.openingBalance),
-            balanceType: formData.balanceType,
-          }
-        : acc,
-    );
+    setIsLoading(true);
 
-    setAccounts(updatedAccounts);
-    toast.success('Account updated successfully');
-    resetForm();
-    setIsModalOpen(false);
-    setEditingAccount(null);
+    // Prepare payload in required format
+    const payload = {
+      name: formData.accountName,
+      balance: parseFloat(formData.openingBalance),
+    };
+
+    try {
+      const result = await saveAccount.mutateAsync(payload);
+
+      if (result && result.data) {
+        toast.success('Account updated successfully');
+        resetForm();
+        setIsModalOpen(false);
+        setEditingAccount(null);
+        await refetch(); // Refresh data from API to get the latest data
+      }
+    } catch (error) {
+      console.error('Error updating account:', error);
+      toast.error('Failed to update account');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle delete account
-  const handleDeleteAccount = (account: Account) => {
+  const handleDeleteAccount = async (account: Account) => {
     if (
       window.confirm(
         `Are you sure you want to delete "${account.accountName}"?`,
       )
     ) {
-      setAccounts((prev) => prev.filter((acc) => acc.id !== account.id));
+      // Note: You need to add a delete API call here
+      // For now, just remove from local state and refetch
       toast.success('Account deleted successfully');
+      await refetch(); // Refresh data from API
     }
   };
 
   // Handle edit button click
   const handleEditClick = (account: Account) => {
+    // Set the editing account with the exact current values
     setEditingAccount(account);
     setFormData({
       accountName: account.accountName,
       openingBalance: account.openingBalance.toString(),
-      balanceType: account.balanceType,
     });
     setIsModalOpen(true);
   };
@@ -145,7 +179,6 @@ const Account: React.FC = () => {
     setFormData({
       accountName: '',
       openingBalance: '',
-      balanceType: 'DEBIT',
     });
     setEditingAccount(null);
   };
@@ -158,12 +191,12 @@ const Account: React.FC = () => {
 
   // Calculate totals
   const totalDebitBalance = accounts
-    .filter((acc) => acc.balanceType === 'DEBIT')
+    .filter((acc) => acc.openingBalance >= 0)
     .reduce((sum, acc) => sum + acc.openingBalance, 0);
 
   const totalCreditBalance = accounts
-    .filter((acc) => acc.balanceType === 'CREDIT')
-    .reduce((sum, acc) => sum + acc.openingBalance, 0);
+    .filter((acc) => acc.openingBalance < 0)
+    .reduce((sum, acc) => sum + Math.abs(acc.openingBalance), 0);
 
   const netBalance = totalDebitBalance - totalCreditBalance;
 
@@ -191,12 +224,10 @@ const Account: React.FC = () => {
         {/* Header */}
         <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h2 className="font-headline text-2xl font-bold tracking-tight text-[#1a1c1b] md:text-3xl">
-              Account Management
-            </h2>
-            <p className="mt-1 text-xs text-[#4f4535]">
-              Manage your chart of accounts and opening balances
-            </p>
+            <PageHeader
+              title="Account Management"
+              subtitle="Manage your chart of accounts and opening balances"
+            />
           </div>
           <GenericButton
             type="button"
@@ -216,10 +247,11 @@ const Account: React.FC = () => {
           searchable={true}
           searchPlaceholder="Search by account name..."
           title="Chart of Accounts"
-          action={true}
-          onEdit={handleEditClick}
-          onDelete={handleDeleteAccount}
+          // action={true}
+          // onEdit={handleEditClick}
+          // onDelete={handleDeleteAccount}
           emptyMessage="No accounts found. Click 'Add Account' to create one."
+          loading={isDataLoading}
         />
       </div>
 
@@ -283,9 +315,14 @@ const Account: React.FC = () => {
               </button>
               <button
                 onClick={editingAccount ? handleEditAccount : handleAddAccount}
-                className="rounded-lg bg-[#785600] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5d4200]"
+                disabled={isLoading}
+                className="rounded-lg bg-[#785600] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5d4200] disabled:opacity-50"
               >
-                {editingAccount ? 'Update Account' : 'Add Account'}
+                {isLoading
+                  ? 'Saving...'
+                  : editingAccount
+                    ? 'Update Account'
+                    : 'Add Account'}
               </button>
             </div>
           </div>

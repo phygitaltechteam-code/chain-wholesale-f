@@ -47,7 +47,7 @@ const GenericInputField: React.FC<InputProps> = ({
     }
   };
 
-  const baseInputClasses = `w-full rounded-lg border border-stroke bg-surface-container-lowest px-4 py-3 text-on-surface outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-default disabled:bg-whiter disabled:opacity-50 dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary ${
+  const baseInputClasses = `w-full rounded-lg border-0 bg-[#f4f4f2] py-2.5 pl-7 pr-3 text-right text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 ${
     uppercase ? 'uppercase' : ''
   }`;
 

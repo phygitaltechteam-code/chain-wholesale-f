@@ -1,20 +1,5 @@
 import React, {useState} from 'react';
-import {
-  Search,
-  Verified,
-  Edit,
-  MoreVertical,
-  TrendingUp,
-  TrendingDown,
-  Calendar,
-  Filter,
-  Download,
-  Printer,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Plus,
-} from 'lucide-react';
+import {Search, Plus, Edit, MoreVertical, Verified} from 'lucide-react';
 import GenericTable, {Column} from '../Forms/Table/GenericTable';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import {MdEngineering, MdPayments, MdReceiptLong} from 'react-icons/md';
@@ -167,19 +152,19 @@ export default function KarigarManagement() {
       case 'Settled':
         return 'bg-amber-100 text-amber-800';
       case 'Idle':
-        return 'bg-surface-container-high text-on-surface-variant';
+        return 'bg-gray-100 text-gray-600';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getGoldBalanceColor = (balance: number) => {
-    if (balance > 0) return 'text-on-surface';
-    if (balance < 0) return 'text-error';
-    return 'text-on-surface-variant';
+    if (balance > 0) return 'text-[#1a1c1b]';
+    if (balance < 0) return 'text-[#ba1a1a]';
+    return 'text-[#4f4535]';
   };
 
-  // Table columns for Karigar list
+  // Table columns for Karigar list - NO ACTION COLUMN
   const karigarColumns: Column<Karigar>[] = [
     {
       header: 'Artisan Name',
@@ -190,17 +175,15 @@ export default function KarigarManagement() {
           <div
             className={`flex h-10 w-10 items-center justify-center rounded-lg font-bold transition-colors ${
               selectedKarigar?.id === item.id
-                ? 'bg-primary text-white'
-                : 'bg-surface-container text-primary group-hover:bg-primary group-hover:text-white'
+                ? 'bg-[#785600] text-white'
+                : 'bg-[#eeeeec] text-[#785600] group-hover:bg-[#785600] group-hover:text-white'
             }`}
           >
             {item.initials}
           </div>
           <div>
-            <p className="text-on-surface font-bold">{item.name}</p>
-            <p className="text-on-surface-variant text-xs">
-              {item.specialization}
-            </p>
+            <p className="font-bold text-[#1a1c1b]">{item.name}</p>
+            <p className="text-xs text-[#4f4535]">{item.specialization}</p>
           </div>
         </div>
       ),
@@ -210,9 +193,7 @@ export default function KarigarManagement() {
       accessor: 'phone',
       align: 'left',
       render: (item) => (
-        <span className="text-on-surface-variant text-sm font-medium">
-          {item.phone}
-        </span>
+        <span className="text-sm font-medium text-[#4f4535]">{item.phone}</span>
       ),
     },
     {
@@ -231,7 +212,7 @@ export default function KarigarManagement() {
       accessor: 'labourDue',
       align: 'right',
       render: (item) => (
-        <span className="text-on-surface font-bold">
+        <span className="font-bold text-[#1a1c1b]">
           ₹{item.labourDue.toLocaleString()}
         </span>
       ),
@@ -261,7 +242,7 @@ export default function KarigarManagement() {
       render: (item) => (
         <div>
           <p className="text-sm font-bold">{item.date}</p>
-          <p className="text-on-surface-variant text-[10px]">
+          <p className="text-[10px] text-[#4f4535]">
             {item.jobNo} ({item.jobName})
           </p>
         </div>
@@ -274,15 +255,13 @@ export default function KarigarManagement() {
       render: (item) => (
         <div>
           <p
-            className={`font-bold ${item.goldInOut > 0 ? 'text-green-600' : item.goldInOut < 0 ? 'text-error' : 'text-on-surface-variant'}`}
+            className={`font-bold ${item.goldInOut > 0 ? 'text-green-600' : item.goldInOut < 0 ? 'text-[#ba1a1a]' : 'text-[#4f4535]'}`}
           >
             {item.goldInOut > 0 ? '+' : ''}
             {item.goldInOut.toFixed(2)}g
           </p>
           {item.wastage !== undefined && item.wastage > 0 && (
-            <p className="text-on-surface-variant text-[9px]">
-              Wst: {item.wastage}%
-            </p>
+            <p className="text-[9px] text-[#4f4535]">Wst: {item.wastage}%</p>
           )}
         </div>
       ),
@@ -293,13 +272,11 @@ export default function KarigarManagement() {
       align: 'left',
       render: (item) => (
         <div>
-          <p className={item.labour > 0 ? 'text-on-surface' : 'text-error'}>
+          <p className={item.labour > 0 ? 'text-[#1a1c1b]' : 'text-[#ba1a1a]'}>
             {item.labour > 0 ? '₹' : '-₹'}
             {Math.abs(item.labour).toLocaleString()}
           </p>
-          <p className="text-on-surface-variant text-[9px]">
-            {item.labourType}
-          </p>
+          <p className="text-[9px] text-[#4f4535]">{item.labourType}</p>
         </div>
       ),
     },
@@ -310,7 +287,7 @@ export default function KarigarManagement() {
       render: (item) => (
         <div>
           <p className="font-bold">{item.balanceGold.toFixed(2)}g</p>
-          <p className="text-on-surface-variant text-xs font-medium">
+          <p className="text-xs font-medium text-[#4f4535]">
             ₹{item.balanceLabour.toLocaleString()}
           </p>
         </div>
@@ -341,12 +318,12 @@ export default function KarigarManagement() {
   ).toFixed(1);
 
   return (
-    <div className="bg-background min-h-screen">
-      <div className="p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#f9f9f7]">
+      <div className="px-4 py-6 md:px-6 lg:px-8">
         {/* Header Action Row */}
         <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <PageHeader title="Kariger Management" />
+            <PageHeader title="Karigar Management" />
           </div>
           <GenericButton onClick={handleAddKarigar}>
             <Plus className="h-4 w-4" />
@@ -355,61 +332,61 @@ export default function KarigarManagement() {
         </div>
 
         {/* Dashboard Bento Summary */}
-        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="bg-surface-container-lowest rounded-xl border border-stroke p-5 shadow-sm">
+        <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-[#d3c4af]/10 bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between">
-              <span className="text-on-surface-variant text-xs font-bold uppercase tracking-tighter">
+              <span className="text-[10px] font-bold uppercase tracking-tighter text-[#4f4535]">
                 Total Active Karigars
               </span>
-              <MdEngineering className="h-5 w-5 text-primary" />
+              <MdEngineering className="h-5 w-5 text-[#785600]" />
             </div>
-            <div className="mt-3">
-              <h3 className="serif-heading text-3xl font-bold">
+            <div className="mt-4">
+              <h3 className="font-headline text-3xl font-bold text-[#1a1c1b]">
                 {totalActiveKarigars}
               </h3>
-              <p className="text-on-surface-variant mt-1 text-xs">
+              <p className="mt-1 text-xs text-[#4f4535]">
                 12 currently on high-priority jobs
               </p>
             </div>
           </div>
 
-          <div className="bg-surface-container-lowest rounded-xl border border-stroke p-5 shadow-sm">
+          <div className="rounded-xl border border-[#d3c4af]/10 bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between">
-              <span className="text-on-surface-variant text-xs font-bold uppercase tracking-tighter">
+              <span className="text-[10px] font-bold uppercase tracking-tighter text-[#4f4535]">
                 Gold Outstanding
               </span>
-              <MdPayments className="h-5 w-5 text-primary" />
+              <MdPayments className="h-5 w-5 text-[#785600]" />
             </div>
-            <div className="mt-3">
-              <h3 className="serif-heading text-3xl font-bold">
+            <div className="mt-4">
+              <h3 className="font-headline text-3xl font-bold text-[#1a1c1b]">
                 {totalGoldOutstanding.toFixed(2)}
                 <span className="ml-1 text-base">g</span>
               </h3>
-              <p className="mt-1 text-xs font-bold text-primary">
+              <p className="mt-1 text-xs font-bold text-[#785600]">
                 Value: ₹{(totalGoldOutstanding * 7245).toLocaleString()} approx
               </p>
             </div>
           </div>
 
-          <div className="bg-surface-container-lowest rounded-xl border border-stroke p-5 shadow-sm">
+          <div className="rounded-xl border border-[#d3c4af]/10 bg-white p-6 shadow-sm">
             <div className="flex items-start justify-between">
-              <span className="text-on-surface-variant text-xs font-bold uppercase tracking-tighter">
+              <span className="text-[10px] font-bold uppercase tracking-tighter text-[#4f4535]">
                 Labour Dues
               </span>
-              <MdReceiptLong className="h-5 w-5 text-primary" />
+              <MdReceiptLong className="h-5 w-5 text-[#785600]" />
             </div>
-            <div className="mt-3">
-              <h3 className="serif-heading text-3xl font-bold">
+            <div className="mt-4">
+              <h3 className="font-headline text-3xl font-bold text-[#1a1c1b]">
                 ₹{totalLabourDues.toLocaleString()}
               </h3>
-              <p className="text-on-surface-variant mt-1 text-xs">
+              <p className="mt-1 text-xs text-[#4f4535]">
                 Pending payout this cycle
               </p>
             </div>
           </div>
 
-          <div className="bg-surface-container-lowest relative overflow-hidden rounded-xl border border-stroke p-5 shadow-sm">
-            <div className="absolute inset-0 opacity-10">
+          <div className="relative overflow-hidden rounded-xl border border-[#d3c4af]/10 bg-white p-6 shadow-sm">
+            <div className="absolute inset-0 opacity-5">
               <img
                 className="h-full w-full object-cover"
                 src="https://images.unsplash.com/photo-1612033442165-2b5c7f7d9e5e?w=400&h=300&fit=crop"
@@ -417,16 +394,16 @@ export default function KarigarManagement() {
               />
             </div>
             <div className="relative z-10 flex items-start justify-between">
-              <span className="text-on-surface-variant text-xs font-bold uppercase tracking-tighter">
+              <span className="text-[10px] font-bold uppercase tracking-tighter text-[#4f4535]">
                 Job Completion Rate
               </span>
-              <Verified className="h-5 w-5 text-primary" />
+              <Verified className="h-5 w-5 text-[#785600]" />
             </div>
-            <div className="relative z-10 mt-3">
-              <h3 className="serif-heading text-3xl font-bold">
+            <div className="relative z-10 mt-4">
+              <h3 className="font-headline text-3xl font-bold text-[#1a1c1b]">
                 {avgEfficiency}%
               </h3>
-              <p className="text-on-surface-variant mt-1 text-xs">
+              <p className="mt-1 text-xs text-[#4f4535]">
                 Last 30 days performance
               </p>
             </div>
@@ -439,17 +416,17 @@ export default function KarigarManagement() {
           <div className="flex-1 space-y-4">
             {/* Search Bar */}
             <div className="relative">
-              <Search className="text-on-surface-variant absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f4535]" />
               <input
                 type="text"
                 placeholder="Search artisans..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-surface-container w-full rounded-full border border-stroke px-10 py-2.5 text-sm focus:ring-0 focus:ring-primary"
+                className="w-full rounded-full border border-[#d3c4af]/20 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]/20"
               />
             </div>
 
-            {/* Karigar Table */}
+            {/* Karigar Table - NO ACTION COLUMN */}
             <GenericTable
               data={filteredKarigars}
               columns={karigarColumns}
@@ -458,28 +435,29 @@ export default function KarigarManagement() {
               itemsPerPage={10}
               onRowClick={handleKarigarClick}
               className="cursor-pointer"
+              action={false}
             />
           </div>
 
           {/* Right Sidebar Detail View */}
           {selectedKarigar && (
-            <div className="bg-surface-container-lowest sticky top-28 max-h-[calc(100vh-160px)] w-full overflow-hidden rounded-xl border border-stroke/20 shadow-xl lg:w-[450px]">
+            <div className="sticky top-28 w-full overflow-hidden rounded-xl border border-[#d3c4af]/20 bg-white shadow-xl lg:w-[450px]">
               {/* Profile Header */}
-              <div className="bg-on-secondary-fixed p-5 text-white">
+              <div className="bg-[#1a1a2e] p-6 text-white">
                 <div className="absolute right-4 top-4 flex gap-2">
-                  <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20">
+                  <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20">
                     <Edit className="h-4 w-4" />
                   </button>
-                  <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20">
+                  <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20">
                     <MoreVertical className="h-4 w-4" />
                   </button>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="border-primary-fixed bg-primary-container/30 flex h-16 w-16 items-center justify-center rounded-xl border-2 text-2xl font-bold">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-[#ffdea6] bg-[#986d00]/30 text-2xl font-bold">
                     {selectedKarigar.initials}
                   </div>
                   <div>
-                    <h3 className="serif-heading text-xl font-bold">
+                    <h3 className="font-headline text-xl font-bold">
                       {selectedKarigar.name}
                     </h3>
                     <p className="text-xs tracking-widest text-white/60">
@@ -487,12 +465,12 @@ export default function KarigarManagement() {
                     </p>
                   </div>
                 </div>
-                <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="mt-6 grid grid-cols-2 gap-4">
                   <div className="rounded-lg bg-white/5 p-3">
                     <p className="text-[10px] font-bold uppercase tracking-tighter text-white/50">
                       Gold Balance
                     </p>
-                    <p className="text-primary-fixed text-xl font-bold">
+                    <p className="text-xl font-bold text-[#ffdea6]">
                       {selectedKarigar.goldBalance.toFixed(3)}g
                     </p>
                   </div>
@@ -500,7 +478,7 @@ export default function KarigarManagement() {
                     <p className="text-[10px] font-bold uppercase tracking-tighter text-white/50">
                       Labour Due
                     </p>
-                    <p className="text-primary-fixed text-xl font-bold">
+                    <p className="text-xl font-bold text-[#ffdea6]">
                       ₹{selectedKarigar.labourDue.toLocaleString()}
                     </p>
                   </div>
@@ -508,33 +486,33 @@ export default function KarigarManagement() {
               </div>
 
               {/* Detail Tabs */}
-              <div className="border-b border-stroke">
+              <div className="flex border-b border-[#d3c4af]/10">
                 <button
                   onClick={() => setActiveTab('jobHistory')}
-                  className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${
+                  className={`flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-colors ${
                     activeTab === 'jobHistory'
-                      ? 'border-b-2 border-primary text-primary'
-                      : 'text-on-surface-variant hover:text-primary'
+                      ? 'border-b-2 border-[#785600] text-[#785600]'
+                      : 'text-[#4f4535] hover:text-[#785600]'
                   }`}
                 >
                   Job History
                 </button>
                 <button
                   onClick={() => setActiveTab('ledger')}
-                  className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${
+                  className={`flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-colors ${
                     activeTab === 'ledger'
-                      ? 'border-b-2 border-primary text-primary'
-                      : 'text-on-surface-variant hover:text-primary'
+                      ? 'border-b-2 border-[#785600] text-[#785600]'
+                      : 'text-[#4f4535] hover:text-[#785600]'
                   }`}
                 >
                   Ledger
                 </button>
                 <button
                   onClick={() => setActiveTab('settlements')}
-                  className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${
+                  className={`flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-colors ${
                     activeTab === 'settlements'
-                      ? 'border-b-2 border-primary text-primary'
-                      : 'text-on-surface-variant hover:text-primary'
+                      ? 'border-b-2 border-[#785600] text-[#785600]'
+                      : 'text-[#4f4535] hover:text-[#785600]'
                   }`}
                 >
                   Settlements
@@ -543,22 +521,35 @@ export default function KarigarManagement() {
 
               {/* Ledger Table Content */}
               <div className="max-h-[400px] overflow-y-auto">
-                <GenericTable
-                  data={transactionsData}
-                  columns={transactionColumns}
-                  title=""
-                  searchable={false}
-                  itemsPerPage={10}
-                  paginationOff={true}
-                />
+                {activeTab === 'ledger' && (
+                  <GenericTable
+                    data={transactionsData}
+                    columns={transactionColumns}
+                    title=""
+                    searchable={false}
+                    itemsPerPage={10}
+                    paginationOff={true}
+                    action={false}
+                  />
+                )}
+                {activeTab === 'jobHistory' && (
+                  <div className="p-8 text-center text-[#4f4535]">
+                    Job history content will appear here
+                  </div>
+                )}
+                {activeTab === 'settlements' && (
+                  <div className="p-8 text-center text-[#4f4535]">
+                    Settlements content will appear here
+                  </div>
+                )}
               </div>
 
               {/* Footer Action */}
-              <div className="bg-surface-container-low flex gap-3 border-t border-stroke p-4">
-                <button className="bg-surface-container-highest text-on-secondary-fixed hover:bg-surface-variant flex-1 rounded-lg border border-stroke py-2 text-xs font-bold uppercase tracking-widest transition-colors">
+              <div className="flex gap-3 border-t border-[#d3c4af]/10 bg-[#f4f4f2] p-4">
+                <button className="flex-1 rounded-lg border border-[#d3c4af]/20 bg-white py-2 text-xs font-bold uppercase tracking-widest text-[#45455b] transition-colors hover:bg-[#e8e8e6]">
                   Issue Gold
                 </button>
-                <button className="flex-1 rounded-lg bg-primary py-2 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-primary/20 transition-transform hover:scale-[1.02]">
+                <button className="flex-1 rounded-lg bg-[#785600] py-2 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-[#785600]/20 transition-transform hover:scale-[1.02]">
                   Settle Dues
                 </button>
               </div>
@@ -567,51 +558,53 @@ export default function KarigarManagement() {
         </div>
 
         {/* Specialized Reporting Card */}
-        <div className="bg-surface-container-lowest mt-8 grid grid-cols-1 gap-8 rounded-xl border border-stroke p-6 shadow-sm md:grid-cols-3">
+        <div className="mt-8 grid grid-cols-1 gap-8 rounded-xl border border-[#d3c4af]/10 bg-white p-6 shadow-sm md:grid-cols-3">
           <div className="space-y-3">
-            <h4 className="serif-heading text-lg font-bold">Top Performers</h4>
+            <h4 className="font-headline text-lg font-bold text-[#1a1c1b]">
+              Top Performers
+            </h4>
             <ul className="space-y-2">
               <li className="flex items-center justify-between text-sm">
-                <span className="text-on-surface-variant">1. Sanjay Khan</span>
+                <span className="text-[#4f4535]">1. Sanjay Khan</span>
                 <span className="font-bold text-green-600">
                   99.8% Efficiency
                 </span>
               </li>
               <li className="flex items-center justify-between text-sm">
-                <span className="text-on-surface-variant">
-                  2. Rajesh Maurya
-                </span>
+                <span className="text-[#4f4535]">2. Rajesh Maurya</span>
                 <span className="font-bold text-green-600">
                   97.2% Efficiency
                 </span>
               </li>
             </ul>
           </div>
-          <div className="space-y-3 border-l border-stroke pl-6">
-            <h4 className="serif-heading text-lg font-bold">
+          <div className="space-y-3 border-l border-[#d3c4af]/10 pl-6">
+            <h4 className="font-headline text-lg font-bold text-[#1a1c1b]">
               Wastage Analysis
             </h4>
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-primary border-t-transparent font-bold text-primary">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-[#785600] border-t-transparent font-bold text-[#785600]">
                 0.8%
               </div>
               <div>
-                <p className="text-on-surface-variant text-xs font-bold uppercase tracking-tighter">
+                <p className="text-xs font-bold uppercase tracking-tighter text-[#4f4535]">
                   Avg. Gold Loss
                 </p>
-                <p className="text-on-surface-variant text-[10px] opacity-60">
+                <p className="text-[10px] text-[#4f4535] opacity-60">
                   Optimized by 0.2% this month
                 </p>
               </div>
             </div>
           </div>
-          <div className="space-y-3 border-l border-stroke pl-6">
-            <h4 className="serif-heading text-lg font-bold">Quick Action</h4>
-            <p className="text-on-surface-variant text-xs leading-relaxed">
+          <div className="space-y-3 border-l border-[#d3c4af]/10 pl-6">
+            <h4 className="font-headline text-lg font-bold text-[#1a1c1b]">
+              Quick Action
+            </h4>
+            <p className="text-xs leading-relaxed text-[#4f4535]">
               Download a comprehensive ledger report for all active karigars in
               PDF/XLS format.
             </p>
-            <button className="border-b border-primary/30 pb-1 text-xs font-bold uppercase tracking-widest text-primary transition-all hover:border-primary">
+            <button className="border-b border-[#785600]/30 pb-1 text-xs font-bold uppercase tracking-widest text-[#785600] transition-all hover:border-[#785600]">
               Export Ledger Suite
             </button>
           </div>
@@ -652,7 +645,7 @@ export default function KarigarManagement() {
                 </label>
                 <input
                   type="text"
-                  className="w-full rounded-lg border border-[#d3c4af]/30 px-4 py-2 outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10"
+                  className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-4 py-2 outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10"
                   placeholder="Enter karigar name"
                 />
               </div>
@@ -662,7 +655,7 @@ export default function KarigarManagement() {
                 </label>
                 <input
                   type="text"
-                  className="w-full rounded-lg border border-[#d3c4af]/30 px-4 py-2 outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10"
+                  className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-4 py-2 outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10"
                   placeholder="e.g., Master Casting Specialist"
                 />
               </div>
@@ -672,7 +665,7 @@ export default function KarigarManagement() {
                 </label>
                 <input
                   type="tel"
-                  className="w-full rounded-lg border border-[#d3c4af]/30 px-4 py-2 outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10"
+                  className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-4 py-2 outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10"
                   placeholder="+91 98765 43210"
                 />
               </div>
@@ -680,7 +673,7 @@ export default function KarigarManagement() {
             <div className="flex gap-3 border-t border-[#f4f4f2] bg-[#f4f4f2]/30 p-6">
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="flex-1 rounded-lg border border-[#d3c4af]/30 py-2.5 font-semibold transition-all hover:bg-[#f4f4f2]"
+                className="flex-1 rounded-lg border border-[#d3c4af]/30 bg-white py-2.5 font-semibold transition-all hover:bg-[#f4f4f2]"
               >
                 Cancel
               </button>
@@ -696,34 +689,8 @@ export default function KarigarManagement() {
       )}
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800;900&family=Manrope:wght@400;500;600;700&display=swap');
-        
-        .serif-heading {
+        .font-headline {
           font-family: 'Playfair Display', serif;
-        }
-        
-        .bg-on-secondary-fixed {
-          background-color: #1a1a2e;
-        }
-        
-        .bg-primary-container {
-          background-color: #986d00;
-        }
-        
-        .bg-primary-container\/30 {
-          background-color: rgba(120, 86, 0, 0.3);
-        }
-        
-        .text-primary-fixed {
-          color: #ffdea6;
-        }
-        
-        .bg-primary-fixed {
-          background-color: #ffdea6;
-        }
-        
-        .border-primary-fixed {
-          border-color: #ffdea6;
         }
       `}</style>
     </div>

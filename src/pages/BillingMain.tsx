@@ -15,7 +15,7 @@ const BillingMain = () => {
   return (
     <div className="min-h-screen bg-[#f9f9f7]">
       {/* Header with Add Bill Button - Now on same line */}
-      <div className="sticky top-0 z-10 bg-[#f9f9f7] px-4 py-4 md:px-6 lg:px-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <PageHeader

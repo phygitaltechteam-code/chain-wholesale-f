@@ -12,7 +12,7 @@ import AddClient from './AddClient';
 import {useNavigate} from '@tanstack/react-router';
 import GenericTable, {Column} from '../Forms/Table/GenericTable';
 import PageHeader from '../Forms/Common/PageHeader';
-import { useGetClient } from './api';
+import {useGetClient} from './api';
 // Mock data
 const mockClients = [
   {
@@ -84,28 +84,25 @@ export default function ClientDirectory() {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
-  
-    // In real implementation, fetch clients from API here
-   const {data}  =useGetClient()
-   console.log(data);
+  // In real implementation, fetch clients from API here
+  const {data} = useGetClient();
+  console.log(data);
 
-
- const clients: Client[] =
-  data?.map((item: any) => ({
-    fullname: item.fullname,
-    phoneNumber: item.phoneNumber,
-    city: item.city,
-    balance: item.balance,
-    gold: item.gold,
-    silver: item.silver,
-    initials: item.fullname
-      ?.split(" ")
-      .map((w: string) => w[0])
-      .join("")
-      .toUpperCase(),
-    tier: item.tier || "regular",
-  })) || [];
-  
+  const clients: Client[] =
+    data?.map((item: any) => ({
+      fullname: item.fullname,
+      phoneNumber: item.phoneNumber,
+      city: item.city,
+      balance: item.balance,
+      gold: item.gold,
+      silver: item.silver,
+      initials: item.fullname
+        ?.split(' ')
+        .map((w: string) => w[0])
+        .join('')
+        .toUpperCase(),
+      tier: item.tier || 'regular',
+    })) || [];
 
   const handleAddClient = (newClientData: any) => {
     const newClient: Client = {

@@ -1,5 +1,5 @@
 // BookingReport.tsx - Complete Booking Ledger matching image design exactly
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 
 interface Booking {
   id: string;
@@ -132,12 +132,15 @@ const BookingReport = () => {
   const filteredBookings = bookingsData.filter(
     (booking) =>
       booking.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.bookingId.toLowerCase().includes(searchTerm.toLowerCase())
+      booking.bookingId.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentBookings = filteredBookings.slice(indexOfFirstItem, indexOfLastItem);
+  const currentBookings = filteredBookings.slice(
+    indexOfFirstItem,
+    indexOfLastItem,
+  );
   const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
 
   const getStatusStyles = (status: string) => {
@@ -174,7 +177,7 @@ const BookingReport = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F7F3] p-8 font-sans">
+    <div className="font-sans min-h-screen bg-[#F9F7F3] p-8">
       {/* Main Content */}
       <div className="mx-auto max-w-7xl">
         {/* Page Header */}
@@ -183,7 +186,8 @@ const BookingReport = () => {
             Booking Ledger
           </h2>
           <p className="mt-2 max-w-md font-medium text-[#5E5B56] opacity-70">
-            Oversee pending metal deliveries, locked rates, and customer accounts in real-time.
+            Oversee pending metal deliveries, locked rates, and customer
+            accounts in real-time.
           </p>
         </div>
 
@@ -208,8 +212,19 @@ const BookingReport = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-64 rounded-full border border-[#5E5B56]/10 bg-white px-6 py-2 text-sm placeholder:text-[#5E5B56]/50 focus:border-[#B88A44] focus:outline-none focus:ring-1 focus:ring-[#B88A44]/20"
             />
-            <svg xmlns="http://www.w3.org/2000/svg" className="absolute right-4 top-2.5 h-4 w-4 text-[#5E5B56]/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="absolute right-4 top-2.5 h-4 w-4 text-[#5E5B56]/60"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           </div>
         </div>
@@ -221,8 +236,12 @@ const BookingReport = () => {
               Total Active Volume
             </p>
             <div className="flex items-baseline gap-2">
-              <span className="font-serif text-2xl font-bold text-[#2B2A28]">14.850</span>
-              <span className="text-sm font-medium text-[#5E5B56]">kg Gold</span>
+              <span className="font-serif text-2xl font-bold text-[#2B2A28]">
+                14.850
+              </span>
+              <span className="text-sm font-medium text-[#5E5B56]">
+                kg Gold
+              </span>
             </div>
             <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-[#F3F0EA]">
               <div className="h-full w-2/3 bg-[#B88A44]"></div>
@@ -239,8 +258,19 @@ const BookingReport = () => {
               </span>
             </div>
             <p className="mt-2 flex items-center gap-1 text-[10px] font-medium text-green-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-3 w-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                />
               </svg>
               6.2% up from last week
             </p>
@@ -251,7 +281,9 @@ const BookingReport = () => {
               Exposure Limit
             </p>
             <div className="flex items-baseline gap-2">
-              <span className="font-serif text-2xl font-bold text-[#2B2A28]">₹24.5</span>
+              <span className="font-serif text-2xl font-bold text-[#2B2A28]">
+                ₹24.5
+              </span>
               <span className="text-sm font-medium text-[#5E5B56]">M INR</span>
             </div>
             <p className="mt-2 text-[10px] font-medium text-[#5E5B56]">
@@ -264,12 +296,25 @@ const BookingReport = () => {
               Overdue Deliveries
             </p>
             <div className="flex items-baseline gap-2">
-              <span className="font-serif text-2xl font-bold text-red-600">04</span>
+              <span className="font-serif text-2xl font-bold text-red-600">
+                04
+              </span>
               <span className="text-sm font-medium text-[#5E5B56]">Orders</span>
             </div>
             <p className="mt-2 flex items-center gap-1 text-[10px] font-medium text-red-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-3 w-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
               </svg>
               Action Required
             </p>
@@ -316,7 +361,9 @@ const BookingReport = () => {
                 }`}
               >
                 <div className="col-span-2">
-                  <p className="text-sm font-bold text-[#2B2A28]">{booking.clientName}</p>
+                  <p className="text-sm font-bold text-[#2B2A28]">
+                    {booking.clientName}
+                  </p>
                   <p className="text-[10px] text-[#5E5B56]">
                     #{booking.bookingId} | {booking.date}
                   </p>
@@ -328,7 +375,9 @@ const BookingReport = () => {
                 </div>
 
                 <div className="col-span-2 text-center">
-                  <p className="text-sm font-bold text-[#2B2A28]">{booking.metalType}</p>
+                  <p className="text-sm font-bold text-[#2B2A28]">
+                    {booking.metalType}
+                  </p>
                   <p className="text-xs text-[#5E5B56]">
                     {formatWeight(booking.weight, booking.metalType)}
                   </p>
@@ -339,14 +388,17 @@ const BookingReport = () => {
                     ₹{booking.lockedRate.toLocaleString()}
                   </p>
                   <p className="text-[10px] text-[#5E5B56]">
-                    Initial Value: ₹{formatCurrency(booking.initialValue / 100000)}L
+                    Initial Value: ₹
+                    {formatCurrency(booking.initialValue / 100000)}L
                   </p>
                 </div>
 
                 <div className="col-span-2 text-right">
                   <p
                     className={`text-sm font-bold ${
-                      booking.currentRate !== booking.lockedRate ? 'text-[#B88A44]' : 'text-[#5E5B56]'
+                      booking.currentRate !== booking.lockedRate
+                        ? 'text-[#B88A44]'
+                        : 'text-[#5E5B56]'
                     }`}
                   >
                     ₹{booking.currentRate.toLocaleString()}
@@ -371,20 +423,25 @@ const BookingReport = () => {
                 </div>
 
                 <div className="col-span-2 px-4">
-                  <div className={`h-1.5 w-full overflow-hidden rounded-full ${progressBg}`}>
+                  <div
+                    className={`h-1.5 w-full overflow-hidden rounded-full ${progressBg}`}
+                  >
                     <div
                       className={`h-full ${progressColor}`}
-                      style={{ width: `${booking.pnlPercentage}%` }}
+                      style={{width: `${booking.pnlPercentage}%`}}
                     ></div>
                   </div>
-                  <p className={`mt-1 text-center text-[10px] font-bold ${pnlColor}`}>
-                    {isPositivePNL ? '+' : ''}₹{formatCurrency(Math.abs(booking.pnl))}
+                  <p
+                    className={`mt-1 text-center text-[10px] font-bold ${pnlColor}`}
+                  >
+                    {isPositivePNL ? '+' : ''}₹
+                    {formatCurrency(Math.abs(booking.pnl))}
                   </p>
                 </div>
 
                 <div className="col-span-2 text-right">
                   {booking.status === 'overdue' && (
-                    <button className="rounded-full bg-black text-white px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white transition-opacity hover:opacity-90">
+                    <button className="rounded-full bg-black px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white transition-opacity hover:opacity-90">
                       Deliver Now
                     </button>
                   )}
@@ -393,7 +450,8 @@ const BookingReport = () => {
                       Manage
                     </button>
                   )}
-                  {(booking.status === 'delivered' || booking.status === 'pending') && (
+                  {(booking.status === 'delivered' ||
+                    booking.status === 'pending') && (
                     <button className="text-[10px] font-bold uppercase tracking-wider text-[#B88A44] hover:underline">
                       View Ledger
                     </button>
@@ -408,8 +466,8 @@ const BookingReport = () => {
             <div className="flex flex-wrap items-center justify-between gap-4 pt-8">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#5E5B56]">
                 Showing {indexOfFirstItem + 1} to{' '}
-                {Math.min(indexOfLastItem, filteredBookings.length)} of {filteredBookings.length}{' '}
-                bookings
+                {Math.min(indexOfLastItem, filteredBookings.length)} of{' '}
+                {filteredBookings.length} bookings
               </span>
               <div className="flex gap-2">
                 <button
@@ -417,8 +475,19 @@ const BookingReport = () => {
                   disabled={currentPage === 1}
                   className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3F0EA] text-[#5E5B56] transition-colors hover:bg-[#E8E4DC] disabled:opacity-50"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 19l-7-7 7-7"
+                    />
                   </svg>
                 </button>
                 {[...Array(totalPages)].map((_, i) => (
@@ -435,12 +504,25 @@ const BookingReport = () => {
                   </button>
                 ))}
                 <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
                   disabled={currentPage === totalPages}
                   className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F3F0EA] text-[#5E5B56] transition-colors hover:bg-[#E8E4DC] disabled:opacity-50"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 </button>
               </div>

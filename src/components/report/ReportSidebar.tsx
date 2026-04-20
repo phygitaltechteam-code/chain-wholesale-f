@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronRight, Menu, X } from 'lucide-react';
+import React, {useState, useEffect} from 'react';
+import {ChevronRight, Menu, X} from 'lucide-react';
 
 export interface ReportCategory {
   id: string;
@@ -70,7 +70,7 @@ export const ReportSidebar: React.FC<ReportSidebarProps> = ({
   const MobileOverlay = () => (
     <div
       className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-all duration-300 md:hidden ${
-        isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+        isMobileMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
       }`}
       onClick={toggleMobileMenu}
     />
@@ -81,7 +81,9 @@ export const ReportSidebar: React.FC<ReportSidebarProps> = ({
     <>
       <div className="mb-6 border-b border-primary/10 pb-4">
         <h3 className="text-lg font-bold text-primary">Reports</h3>
-        <p className="text-xs text-on-surface-variant/60 mt-1">Select a report category</p>
+        <p className="text-on-surface-variant/60 mt-1 text-xs">
+          Select a report category
+        </p>
       </div>
       <nav className="space-y-2">
         {categories.map((category) => (
@@ -105,8 +107,8 @@ export const ReportSidebar: React.FC<ReportSidebarProps> = ({
                 >
                   {category.icon}
                 </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <div className="flex items-center gap-2 flex-wrap">
+                <div className="min-w-0 flex-1 text-left">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span
                       className={`text-sm font-semibold ${
                         activeCategory === category.id
@@ -117,20 +119,20 @@ export const ReportSidebar: React.FC<ReportSidebarProps> = ({
                       {category.label}
                     </span>
                     {category.badge !== undefined && category.badge > 0 && (
-                      <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary whitespace-nowrap">
+                      <span className="whitespace-nowrap rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">
                         {category.badge}
                       </span>
                     )}
                   </div>
                   {category.preview && (
-                    <p className="text-on-surface-variant/50 mt-0.5 text-[10px] truncate">
+                    <p className="text-on-surface-variant/50 mt-0.5 truncate text-[10px]">
                       {category.preview}
                     </p>
                   )}
                 </div>
               </div>
               {activeCategory === category.id && (
-                <ChevronRight className="h-4 w-4 text-primary shrink-0 ml-2" />
+                <ChevronRight className="ml-2 h-4 w-4 shrink-0 text-primary" />
               )}
             </div>
           </button>
@@ -147,28 +149,25 @@ export const ReportSidebar: React.FC<ReportSidebarProps> = ({
 
       {/* Sidebar - Desktop: always visible, Mobile: slide from left */}
       <aside
-        className={`
-          ${className}
-          transition-all duration-300 ease-in-out
-          ${isMobile 
-            ? `fixed left-0 top-0 z-50 h-full w-80 transform bg-white shadow-2xl overflow-hidden ${
+        className={` ${className} transition-all duration-300 ease-in-out ${
+          isMobile
+            ? `fixed left-0 top-0 z-50 h-full w-80 transform overflow-hidden bg-white shadow-2xl ${
                 isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
               }`
             : 'relative w-full lg:w-80'
-          }
-        `}
+        } `}
       >
-        <div className="h-full overflow-y-auto p-5 scroll-smooth">
+        <div className="h-full overflow-y-auto scroll-smooth p-5">
           {/* Close button inside sidebar for mobile */}
           {isMobile && (
             <button
               onClick={toggleMobileMenu}
-              className="absolute right-4 top-4 z-10 rounded-lg p-2 text-on-surface-variant hover:bg-surface-container-low active:bg-surface-container-low transition-colors"
+              className="text-on-surface-variant hover:bg-surface-container-low active:bg-surface-container-low absolute right-4 top-4 z-10 rounded-lg p-2 transition-colors"
             >
               <X size={20} />
             </button>
           )}
-          
+
           <SidebarContent />
         </div>
       </aside>
@@ -246,7 +245,7 @@ export const MobileHorizontalReportSidebar: React.FC<ReportSidebarProps> = ({
                 <div className="flex items-center justify-center">
                   {category.icon}
                 </div>
-                <span className="text-sm font-medium truncate">
+                <span className="truncate text-sm font-medium">
                   {category.label}
                 </span>
                 {category.badge !== undefined && category.badge > 0 && (
@@ -265,7 +264,7 @@ export const MobileHorizontalReportSidebar: React.FC<ReportSidebarProps> = ({
           ))}
         </div>
       ) : (
-        <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-primary/20">
+        <div className="scrollbar-thin scrollbar-thumb-primary/20 flex gap-2 overflow-x-auto pb-3">
           {displayedCategories.map((category) => (
             <button
               key={category.id}
@@ -336,27 +335,27 @@ export const BottomSheetReportSidebar: React.FC<ReportSidebarProps> = ({
     );
   }
 
-  const activeCategoryData = categories.find(c => c.id === activeCategory);
+  const activeCategoryData = categories.find((c) => c.id === activeCategory);
 
   return (
     <div className={`w-full ${className}`}>
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="flex w-full items-center justify-between rounded-xl bg-surface-container p-4 transition-all active:scale-[0.98]"
+        className="bg-surface-container flex w-full items-center justify-between rounded-xl p-4 transition-all active:scale-[0.98]"
       >
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-primary/10 p-2 text-primary">
             {activeCategoryData?.icon}
           </div>
           <div className="text-left">
-            <p className="text-xs text-on-surface-variant/60">Current Report</p>
-            <p className="font-semibold text-on-surface">
+            <p className="text-on-surface-variant/60 text-xs">Current Report</p>
+            <p className="text-on-surface font-semibold">
               {activeCategoryData?.label || 'Select Report'}
             </p>
           </div>
         </div>
-        <ChevronRight className="h-5 w-5 text-on-surface-variant" />
+        <ChevronRight className="text-on-surface-variant h-5 w-5" />
       </button>
 
       {/* Bottom Sheet Overlay */}
@@ -366,12 +365,12 @@ export const BottomSheetReportSidebar: React.FC<ReportSidebarProps> = ({
             className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-all"
             onClick={() => setIsOpen(false)}
           />
-          <div className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up rounded-t-2xl bg-white shadow-2xl">
+          <div className="animate-slide-up fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-primary/10 p-4">
               <h3 className="text-lg font-bold text-primary">{title}</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="rounded-lg p-2 hover:bg-surface-container-low"
+                className="hover:bg-surface-container-low rounded-lg p-2"
               >
                 <X size={20} />
               </button>
@@ -412,11 +411,12 @@ export const BottomSheetReportSidebar: React.FC<ReportSidebarProps> = ({
                           >
                             {category.label}
                           </span>
-                          {category.badge !== undefined && category.badge > 0 && (
-                            <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">
-                              {category.badge}
-                            </span>
-                          )}
+                          {category.badge !== undefined &&
+                            category.badge > 0 && (
+                              <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+                                {category.badge}
+                              </span>
+                            )}
                         </div>
                         {category.preview && (
                           <p className="text-on-surface-variant/50 mt-0.5 text-[10px]">

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import {string, z} from 'zod';
 
 // Metal Item Schema (for API submission)
 export const MetalItemAPISchema = z.object({
@@ -35,6 +35,7 @@ export const BillingFormSchema = z.object({
   metalType: z.string().optional(),
   fineWeight: z.string().optional(),
   rate: z.string().optional(),
+  exchangeFineWeight: z.string().optional(),
 
   // Making Charges
   makingChargeType: z.enum(['g', 'amount']),
@@ -59,21 +60,21 @@ export const BillingFormSchema = z.object({
 export const InvoicePayloadSchema = z.object({
   // Client Information
   clientId: z.string().uuid('Invalid client ID'),
-  
+
   // Transaction Details
   transactionType: z.enum(['SELL', 'BUY']),
   billingMode: z.enum(['CASH_BILL', 'GST_BILL']),
   paymentMode: z.enum(['CASH', 'METAL', 'SPLIT']),
-  
+
   // Items
   items: z.array(MetalItemAPISchema),
   exchangeItems: z.array(ExchangeItemSchema),
-  
+
   // Charges & Fees
   makingFees: z.number().min(0, 'Making fees cannot be negative'),
   hsnCode: z.string().optional(),
   gstPercentage: z.number().min(0).max(100),
-  
+
   // Financial Calculations
   totalTax: z.number().min(0),
   subTotal: z.number().min(0),

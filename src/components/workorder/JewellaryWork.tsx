@@ -234,7 +234,7 @@ export default function JewelleryWork() {
         <div className="mb-6 lg:mb-8">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end lg:gap-6">
             <div>
-              <h2 className="font-headline mb-2 text-2xl font-black text-[#1a1c1b] sm:text-3xl lg:text-4xl">
+              <h2 className="mb-2 font-headline text-2xl font-black text-[#1a1c1b] sm:text-3xl lg:text-4xl">
                 Jewellery Job Work
               </h2>
               <p className="text-xs tracking-wide text-[#4f4535] sm:text-sm">

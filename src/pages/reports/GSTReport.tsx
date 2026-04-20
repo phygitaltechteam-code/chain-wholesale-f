@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   Search,
   Filter,
@@ -11,8 +11,8 @@ import {
   Clock,
   FileText,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {motion} from 'framer-motion';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 
 // Define the ledger entry type
 interface LedgerEntry {
@@ -110,7 +110,8 @@ const GSTReport = () => {
     {
       header: 'Invoice #',
       accessor: 'invoice',
-      className: 'font-mono text-[#785600] text-[11px] font-bold tracking-tight',
+      className:
+        'font-mono text-[#785600] text-[11px] font-bold tracking-tight',
       align: 'left',
     },
     {
@@ -123,10 +124,12 @@ const GSTReport = () => {
       header: 'GSTIN / Client',
       accessor: (item) => (
         <div className="flex flex-col gap-0.5">
-          <span className={`text-sm font-bold ${item.isError ? 'text-red-700' : 'text-[#1a1c1b]'}`}>
+          <span
+            className={`text-sm font-bold ${item.isError ? 'text-red-700' : 'text-[#1a1c1b]'}`}
+          >
             {item.gstin}
           </span>
-          <span className="text-[#817563]/50 text-[10px] font-bold uppercase tracking-wide">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-[#817563]/50">
             {item.client}
           </span>
         </div>
@@ -142,52 +145,56 @@ const GSTReport = () => {
     {
       header: 'Taxable Amt',
       accessor: 'taxable',
-      className: (item) => `text-right text-sm font-bold ${item.isError ? 'text-red-700' : 'text-[#1a1c1b]'}`,
+      className: (item) =>
+        `text-right text-sm font-bold ${item.isError ? 'text-red-700' : 'text-[#1a1c1b]'}`,
       align: 'right',
     },
     {
       header: 'CGST (1.5%)',
       accessor: 'cgst',
-      className: (item) => `text-right text-xs font-bold ${item.isError ? 'text-red-700' : 'text-[#817563]/60'}`,
+      className: (item) =>
+        `text-right text-xs font-bold ${item.isError ? 'text-red-700' : 'text-[#817563]/60'}`,
       align: 'right',
     },
     {
       header: 'SGST (1.5%)',
       accessor: 'sgst',
-      className: (item) => `text-right text-xs font-bold ${item.isError ? 'text-red-700' : 'text-[#817563]/60'}`,
+      className: (item) =>
+        `text-right text-xs font-bold ${item.isError ? 'text-red-700' : 'text-[#817563]/60'}`,
       align: 'right',
     },
     {
       header: 'Total GST (3%)',
       accessor: 'totalGst',
-      className: (item) => `text-right text-sm font-black ${item.isError ? 'text-red-700' : 'text-[#1a1c1b]'}`,
+      className: (item) =>
+        `text-right text-sm font-black ${item.isError ? 'text-red-700' : 'text-[#1a1c1b]'}`,
       align: 'right',
     },
   ];
 
   return (
-    <div className="bg-[#faf9f7] font-sans min-h-screen p-8">
+    <div className="font-sans min-h-screen bg-[#faf9f7] p-8">
       {/* Top Utility Nav */}
       <div className="mb-10 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <span className="font-serif text-[#785600] text-xl font-bold">
+          <span className="font-serif text-xl font-bold text-[#785600]">
             GST & Tax Compliance
           </span>
           <div className="font-serif flex items-center gap-3 text-sm font-medium">
-            <span className="bg-white border-[#d3c4af]/10 text-[#1a1c1b] rounded-xl border px-4 py-1.5">
+            <span className="rounded-xl border border-[#d3c4af]/10 bg-white px-4 py-1.5 text-[#1a1c1b]">
               Gold: ₹6,245
             </span>
-            <span className="bg-white border-[#d3c4af]/10 text-[#1a1c1b] rounded-xl border px-4 py-1.5">
+            <span className="rounded-xl border border-[#d3c4af]/10 bg-white px-4 py-1.5 text-[#1a1c1b]">
               Silver: ₹74,200
             </span>
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button className="bg-white text-[#1a1c1b] hover:bg-[#f4f4f2] flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-all">
+          <button className="flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-bold text-[#1a1c1b] transition-all hover:bg-[#f4f4f2]">
             <Printer className="h-4 w-4" />
             Print View
           </button>
-          <button className="bg-gradient-to-br from-[#785600] to-[#5a4000] flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold text-white shadow-lg">
+          <button className="flex items-center gap-2 rounded-full bg-gradient-to-br from-[#785600] to-[#5a4000] px-5 py-2 text-sm font-bold text-white shadow-lg">
             <Download className="h-4 w-4" />
             Export All
           </button>
@@ -198,20 +205,20 @@ const GSTReport = () => {
         {/* Header & Toggle */}
         <div className="mb-12 flex flex-col justify-between gap-8 md:flex-row md:items-end">
           <div className="space-y-3">
-            <h1 className="font-serif text-[#1a1c1b] text-5xl font-bold tracking-tight">
+            <h1 className="font-serif text-5xl font-bold tracking-tight text-[#1a1c1b]">
               Tax Compliance Suite
             </h1>
-            <p className="text-[#4f4535] font-medium opacity-70">
+            <p className="font-medium text-[#4f4535] opacity-70">
               Compliance oversight for the current financial year 2023-24.
             </p>
           </div>
-          <div className="bg-white border-[#d3c4af]/5 flex items-center rounded-2xl border p-1.5">
+          <div className="flex items-center rounded-2xl border border-[#d3c4af]/5 bg-white p-1.5">
             <button
               onClick={() => setPeriod('monthly')}
               className={
                 'rounded-xl px-8 py-2.5 text-sm font-bold transition-all' +
                 (period === 'monthly'
-                  ? ' text-[#785600] bg-white shadow-md'
+                  ? ' bg-white text-[#785600] shadow-md'
                   : ' text-[#4f4535] hover:text-[#1a1c1b]')
               }
             >
@@ -222,7 +229,7 @@ const GSTReport = () => {
               className={
                 'rounded-xl px-8 py-2.5 text-sm font-bold transition-all' +
                 (period === 'quarterly'
-                  ? ' text-[#785600] bg-white shadow-md'
+                  ? ' bg-white text-[#785600] shadow-md'
                   : ' text-[#4f4535] hover:text-[#1a1c1b]')
               }
             >
@@ -235,71 +242,71 @@ const GSTReport = () => {
         <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-3">
           {/* Output GST */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="border-[#d3c4af]/10 shadow-[#785600]/5 flex flex-col justify-between rounded-2xl border bg-white p-8 shadow-xl"
+            initial={{opacity: 0, y: 20}}
+            animate={{opacity: 1, y: 0}}
+            className="flex flex-col justify-between rounded-2xl border border-[#d3c4af]/10 bg-white p-8 shadow-xl shadow-[#785600]/5"
           >
             <div>
               <div className="mb-6 flex items-start justify-between">
-                <span className="text-[#4f4535]/60 text-[10px] font-bold uppercase tracking-[0.2em]">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#4f4535]/60">
                   Total Sales GST (Output)
                 </span>
-                <TrendingUp className="text-[#785600] h-5 w-5" />
+                <TrendingUp className="h-5 w-5 text-[#785600]" />
               </div>
-              <h2 className="font-serif text-[#1a1c1b] text-4xl font-bold">
+              <h2 className="font-serif text-4xl font-bold text-[#1a1c1b]">
                 ₹4,82,450.00
               </h2>
             </div>
-            <div className="border-[#d3c4af]/5 text-[#4f4535] mt-8 flex items-center gap-2 border-t pt-6 text-xs">
-              <span className="text-[#785600] font-bold">+12.5%</span> from
-              last period
+            <div className="mt-8 flex items-center gap-2 border-t border-[#d3c4af]/5 pt-6 text-xs text-[#4f4535]">
+              <span className="font-bold text-[#785600]">+12.5%</span> from last
+              period
             </div>
           </motion.div>
 
           {/* Input ITC */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="border-[#d3c4af]/10 shadow-[#785600]/5 flex flex-col justify-between rounded-2xl border bg-white p-8 shadow-xl"
+            initial={{opacity: 0, y: 20}}
+            animate={{opacity: 1, y: 0}}
+            transition={{delay: 0.1}}
+            className="flex flex-col justify-between rounded-2xl border border-[#d3c4af]/10 bg-white p-8 shadow-xl shadow-[#785600]/5"
           >
             <div>
               <div className="mb-6 flex items-start justify-between">
-                <span className="text-[#4f4535]/60 text-[10px] font-bold uppercase tracking-[0.2em]">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#4f4535]/60">
                   Purchase ITC (Input)
                 </span>
-                <Landmark className="text-[#785600] h-5 w-5" />
+                <Landmark className="h-5 w-5 text-[#785600]" />
               </div>
-              <h2 className="font-serif text-[#1a1c1b] text-4xl font-bold">
+              <h2 className="font-serif text-4xl font-bold text-[#1a1c1b]">
                 ₹3,15,800.00
               </h2>
             </div>
-            <div className="border-[#d3c4af]/5 text-[#4f4535] mt-8 border-t pt-6 text-xs">
+            <div className="mt-8 border-t border-[#d3c4af]/5 pt-6 text-xs text-[#4f4535]">
               Eligible ITC based on GSTR-2B
             </div>
           </motion.div>
 
           {/* Net Payable */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-[#1a2a3a] group relative flex flex-col justify-between overflow-hidden rounded-2xl p-8 shadow-2xl"
+            initial={{opacity: 0, y: 20}}
+            animate={{opacity: 1, y: 0}}
+            transition={{delay: 0.2}}
+            className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-[#1a2a3a] p-8 shadow-2xl"
           >
-            <div className="bg-[#785600]/20 group-hover:bg-[#785600]/30 absolute -right-4 -top-4 h-32 w-32 rounded-full blur-3xl transition-all" />
+            <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-[#785600]/20 blur-3xl transition-all group-hover:bg-[#785600]/30" />
             <div className="relative z-10">
               <div className="mb-6 flex items-start justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
                   Net GST Payable
                 </span>
-                <Landmark className="text-[#a07c2e] h-5 w-5" />
+                <Landmark className="h-5 w-5 text-[#a07c2e]" />
               </div>
               <h2 className="font-serif text-4xl font-bold tracking-tight text-white">
                 ₹1,66,650.00
               </h2>
             </div>
             <div className="relative z-10 mt-8">
-              <button className="bg-[#785600] hover:bg-[#a07c2e] hover:text-[#5a4000] w-full transform rounded-xl py-3 text-xs font-bold tracking-[0.2em] text-white transition-all active:scale-95">
+              <button className="w-full transform rounded-xl bg-[#785600] py-3 text-xs font-bold tracking-[0.2em] text-white transition-all hover:bg-[#a07c2e] hover:text-[#5a4000] active:scale-95">
                 FILE RETURN NOW
               </button>
             </div>
@@ -307,7 +314,7 @@ const GSTReport = () => {
         </div>
 
         {/* GenericTable Component */}
-        <div className="border-[#d3c4af]/15 shadow-[#785600]/5 overflow-hidden rounded-2xl border bg-white shadow-2xl">
+        <div className="overflow-hidden rounded-2xl border border-[#d3c4af]/15 bg-white shadow-2xl shadow-[#785600]/5">
           <GenericTable
             data={ledgerData}
             columns={columns}
@@ -318,7 +325,7 @@ const GSTReport = () => {
             paginationOff={false}
             className="border-0 shadow-none"
           />
-          
+
           {/* Custom Footer with Total Values */}
           <div className="border-t border-[#d3c4af]/10 bg-[#f4f4f2]/30 px-8 py-6">
             <div className="flex flex-wrap items-center justify-end gap-8">
@@ -329,15 +336,21 @@ const GSTReport = () => {
                 <div className="flex gap-8">
                   <div className="text-right">
                     <div className="text-xs text-[#4f4535]/60">Taxable Amt</div>
-                    <div className="text-sm font-bold text-[#1a1c1b]">{totals.taxable}</div>
+                    <div className="text-sm font-bold text-[#1a1c1b]">
+                      {totals.taxable}
+                    </div>
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-[#4f4535]/60">CGST</div>
-                    <div className="text-xs font-bold text-[#817563]/80">{totals.cgst}</div>
+                    <div className="text-xs font-bold text-[#817563]/80">
+                      {totals.cgst}
+                    </div>
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-[#4f4535]/60">SGST</div>
-                    <div className="text-xs font-bold text-[#817563]/80">{totals.sgst}</div>
+                    <div className="text-xs font-bold text-[#817563]/80">
+                      {totals.sgst}
+                    </div>
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-[#4f4535]/60">Total GST</div>
@@ -352,37 +365,37 @@ const GSTReport = () => {
         </div>
 
         {/* Audit Trail Footer */}
-        <div className="border-[#d3c4af]/20 mt-16 grid grid-cols-1 items-end gap-16 border-t pt-10 md:grid-cols-2">
+        <div className="mt-16 grid grid-cols-1 items-end gap-16 border-t border-[#d3c4af]/20 pt-10 md:grid-cols-2">
           <div className="space-y-6">
-            <h4 className="text-[#4f4535]/40 text-[10px] font-black uppercase tracking-[0.3em]">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#4f4535]/40">
               Report Audit Information
             </h4>
-            <div className="text-[#1a1c1b]/70 grid grid-cols-1 gap-x-12 gap-y-4 text-[11px] font-bold sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-x-12 gap-y-4 text-[11px] font-bold text-[#1a1c1b]/70 sm:grid-cols-2">
               <div className="flex items-center gap-3">
-                <User className="text-[#785600] h-3.5 w-3.5" /> Generated by:
+                <User className="h-3.5 w-3.5 text-[#785600]" /> Generated by:
                 Rajesh K. (Admin)
               </div>
               <div className="flex items-center gap-3">
-                <Clock className="text-[#785600] h-3.5 w-3.5" /> Timestamp:
-                18 Oct 2023, 10:42 AM
+                <Clock className="h-3.5 w-3.5 text-[#785600]" /> Timestamp: 18
+                Oct 2023, 10:42 AM
               </div>
               <div className="flex items-center gap-3">
-                <ShieldCheck className="text-[#785600] h-3.5 w-3.5" />{' '}
-                Integrity Check: SHA-256 Validated
+                <ShieldCheck className="h-3.5 w-3.5 text-[#785600]" /> Integrity
+                Check: SHA-256 Validated
               </div>
               <div className="flex items-center gap-3">
-                <FileText className="text-[#785600] h-3.5 w-3.5" /> Format:
+                <FileText className="h-3.5 w-3.5 text-[#785600]" /> Format:
                 GST-B2B-V2.1
               </div>
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="w-full max-w-xs space-y-3 text-right">
-              <p className="text-[#4f4535]/40 text-[10px] font-black uppercase tracking-[0.3em]">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#4f4535]/40">
                 Authorized Signature
               </p>
-              <div className="bg-[#1a1c1b]/80 h-0.5 w-full" />
-              <p className="font-serif text-[#4f4535] text-sm italic">
+              <div className="h-0.5 w-full bg-[#1a1c1b]/80" />
+              <p className="font-serif text-sm italic text-[#4f4535]">
                 The Atelier Jewellery ERP — Private Registry
               </p>
             </div>

@@ -51,7 +51,37 @@ const BillingPrintReceipt: React.FC<PrintReceiptProps> = ({
   data,
   user,
 }) => {
+  // Add safety checks and default values
+  const safeData = {
+    invoiceNo: data?.invoiceNo || 'N/A',
+    date: data?.date || new Date().toLocaleDateString(),
+    client: {
+      name: data?.client?.name || 'Walk-in Customer',
+      phone: data?.client?.phone || 'N/A',
+      address: data?.client?.address || '',
+      gst: data?.client?.gst || '',
+    },
+    items: data?.items || [],
+    makingFees: data?.makingFees || 0,
+    gstPercent: data?.gstPercent || 0,
+    gstAmount: data?.gstAmount || 0,
+    exchangeValue: data?.exchangeValue || 0,
+    previousBalance: data?.previousBalance || 0,
+    subTotal: data?.subTotal || 0,
+    totalWithTax: data?.totalWithTax || 0,
+    netPayable: data?.netPayable || 0,
+    cashPaid: data?.cashPaid || 0,
+    balanceDue: data?.balanceDue || 0,
+    transactionType: data?.transactionType || 'SELL',
+    billingMode: data?.billingMode || 'CASH_BILL',
+    paymentMode: data?.paymentMode || 'CASH_UPI',
+    shopName: data?.shopName,
+    shopAddress: data?.shopAddress,
+    gstin: data?.gstin,
+  };
+
   const formatCurrency = (value: number) => {
+    if (isNaN(value)) value = 0;
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
@@ -61,6 +91,7 @@ const BillingPrintReceipt: React.FC<PrintReceiptProps> = ({
   };
 
   const formatNumber = (value: number, decimals: number = 3) => {
+    if (isNaN(value)) value = 0;
     return value.toFixed(decimals);
   };
 
@@ -69,7 +100,7 @@ const BillingPrintReceipt: React.FC<PrintReceiptProps> = ({
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Invoice ${data.invoiceNo}</title>
+          <title>Invoice ${safeData.invoiceNo}</title>
           <meta charset="utf-8" />
           <style>
             * {
@@ -222,17 +253,17 @@ const BillingPrintReceipt: React.FC<PrintReceiptProps> = ({
         <body>
           <div class="invoice-container">
             <div class="invoice-header">
-              <h1>${data.shopName || user?.fullname || 'VIKAS JEWELLERS'}</h1>
+              <h1>${safeData.shopName || user?.fullname || 'VIKAS JEWELLERS'}</h1>
               <p>Exquisite Craftsmanship Since 1988</p>
               <div class="address">
-                ${data.shopAddress || user?.address || 'Goldsmith Street, Jewel Bazaar, Zaveri Mandi, Mumbai - 400002'}
+                ${safeData.shopAddress || user?.address || 'Goldsmith Street, Jewel Bazaar, Zaveri Mandi, Mumbai - 400002'}
               </div>
               <div class="address" style="margin-top: 5px;">
                 ${user?.phoneNumber ? `Mob: ${user.phoneNumber}` : ''}
                 ${user?.email ? ` | Email: ${user.email}` : ''}
               </div>
               <div class="address" style="margin-top: 2px;">
-                GSTIN: ${data.gstin || '27AABCV1234F1Z1'}
+                GSTIN: ${safeData.gstin || '27AABCV1234F1Z1'}
               </div>
             </div>
 
@@ -240,16 +271,16 @@ const BillingPrintReceipt: React.FC<PrintReceiptProps> = ({
               <div class="client-info">
                 <div>
                   <h4>Billed To</h4>
-                  <p class="client-name">${data.client.name}</p>
-                  <p>${data.client.phone}</p>
-                  ${data.client.address ? `<p>${data.client.address}</p>` : ''}
-                  ${data.client.gst ? `<p>GST: ${data.client.gst}</p>` : ''}
+                  <p class="client-name">${safeData.client.name}</p>
+                  <p>${safeData.client.phone}</p>
+                  ${safeData.client.address ? `<p>${safeData.client.address}</p>` : ''}
+                  ${safeData.client.gst ? `<p>GST: ${safeData.client.gst}</p>` : ''}
                 </div>
                 <div style="text-align: right;">
                   <h4>Invoice Details</h4>
-                  <p><strong>No:</strong> ${data.invoiceNo}</p>
-                  <p><strong>Date:</strong> ${data.date}</p>
-                  <p><strong>Payment Mode:</strong> ${data.paymentMode}</p>
+                  <p><strong>No:</strong> ${safeData.invoiceNo}</p>
+                  <p><strong>Date:</strong> ${safeData.date}</p>
+                  <p><strong>Payment Mode:</strong> ${safeData.paymentMode}</p>
                 </div>
               </div>
 
@@ -260,41 +291,49 @@ const BillingPrintReceipt: React.FC<PrintReceiptProps> = ({
                     <th class="text-right">Weight (g)</th>
                     <th class="text-right">Rate (₹)</th>
                     <th class="text-right">Amount (₹)</th>
-                   </tr>
+                  </tr>
                 </thead>
                 <tbody>
-                  ${data.items
-                    .map(
-                      (item) => `
+                  ${
+                    safeData.items.length > 0
+                      ? safeData.items
+                          .map(
+                            (item) => `
+                      <tr>
+                        <td>${item.metalName || 'N/A'}</td>
+                        <td class="text-right">${formatNumber(item.weight || 0, 3)}</td>
+                        <td class="text-right">₹${formatNumber(item.rate || 0, 2)}</td>
+                        <td class="text-right"><strong>${formatCurrency(item.amount || 0)}</strong></td>
+                      </tr>
+                    `,
+                          )
+                          .join('')
+                      : `
                     <tr>
-                      <td>${item.metalName}</td>
-                      <td class="text-right">${formatNumber(item.weight, 3)}</td>
-                      <td class="text-right">₹${formatNumber(item.rate, 2)}</td>
-                      <td class="text-right"><strong>${formatCurrency(item.amount)}</strong></td>
+                      <td colspan="4" class="text-right">No items</td>
                     </tr>
-                  `,
-                    )
-                    .join('')}
+                  `
+                  }
                   <tr>
                     <td colspan="3" class="text-right">Making Charges</td>
-                    <td class="text-right">${formatCurrency(data.makingFees)}</td>
+                    <td class="text-right">${formatCurrency(safeData.makingFees)}</td>
                   </tr>
                   ${
-                    data.gstAmount > 0
+                    safeData.gstAmount > 0
                       ? `
                     <tr>
-                      <td colspan="3" class="text-right">GST (${data.gstPercent}%)</td>
-                      <td class="text-right">${formatCurrency(data.gstAmount)}</td>
+                      <td colspan="3" class="text-right">GST (${safeData.gstPercent}%)</td>
+                      <td class="text-right">${formatCurrency(safeData.gstAmount)}</td>
                     </tr>
                   `
                       : ''
                   }
                   ${
-                    data.exchangeValue > 0
+                    safeData.exchangeValue > 0
                       ? `
                     <tr style="color: #5d5c74; font-weight: bold;">
                       <td colspan="3" class="text-right">Less: Metal Exchange</td>
-                      <td class="text-right">- ${formatCurrency(data.exchangeValue)}</td>
+                      <td class="text-right">- ${formatCurrency(safeData.exchangeValue)}</td>
                     </tr>
                   `
                       : ''
@@ -305,40 +344,40 @@ const BillingPrintReceipt: React.FC<PrintReceiptProps> = ({
               <div class="summary">
                 <div class="summary-row">
                   <span>Subtotal (Items + Tax)</span>
-                  <span>${formatCurrency(data.totalWithTax)}</span>
+                  <span>${formatCurrency(safeData.totalWithTax)}</span>
                 </div>
                 ${
-                  data.exchangeValue > 0
+                  safeData.exchangeValue > 0
                     ? `
                   <div class="summary-row">
                     <span>Less: Metal Exchange</span>
-                    <span style="color: #5d5c74;">- ${formatCurrency(data.exchangeValue)}</span>
+                    <span style="color: #5d5c74;">- ${formatCurrency(safeData.exchangeValue)}</span>
                   </div>
                 `
                     : ''
                 }
                 ${
-                  data.previousBalance > 0
+                  safeData.previousBalance > 0
                     ? `
                   <div class="summary-row">
                     <span>Add: Previous Balance</span>
-                    <span style="color: #ba1a1a;">+ ${formatCurrency(data.previousBalance)}</span>
+                    <span style="color: #ba1a1a;">+ ${formatCurrency(safeData.previousBalance)}</span>
                   </div>
                 `
                     : ''
                 }
                 <div class="summary-row total">
                   <span class="label">Net Payable</span>
-                  <span class="value">${formatCurrency(data.netPayable)}</span>
+                  <span class="value">${formatCurrency(safeData.netPayable)}</span>
                 </div>
                 <div class="summary-row">
                   <span>Cash Paid</span>
-                  <span>${formatCurrency(data.cashPaid)}</span>
+                  <span>${formatCurrency(safeData.cashPaid)}</span>
                 </div>
                 <div class="summary-row">
                   <span>Balance Due</span>
-                  <span style="${data.balanceDue > 0 ? 'color: #ba1a1a;' : 'color: green;'}">
-                    ${data.balanceDue > 0 ? formatCurrency(data.balanceDue) : 'Settled'}
+                  <span style="${safeData.balanceDue > 0 ? 'color: #ba1a1a;' : 'color: green;'}">
+                    ${safeData.balanceDue > 0 ? formatCurrency(safeData.balanceDue) : 'Settled'}
                   </span>
                 </div>
               </div>
@@ -407,7 +446,6 @@ const BillingPrintReceipt: React.FC<PrintReceiptProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
-        {/* Simple Header */}
         <div className="flex items-center justify-between border-b border-[#d3c4af]/20 p-4">
           <h3 className="text-lg font-bold text-[#1a1c1b]">Invoice Actions</h3>
           <button
@@ -418,36 +456,34 @@ const BillingPrintReceipt: React.FC<PrintReceiptProps> = ({
           </button>
         </div>
 
-        {/* Invoice Summary */}
         <div className="p-6">
           <div className="mb-4 text-center">
             <div className="inline-block rounded-full bg-[#785600]/10 px-3 py-1 text-xs font-medium text-[#785600]">
-              Invoice #{data.invoiceNo}
+              Invoice #{safeData.invoiceNo}
             </div>
           </div>
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-[#4f4535]">Client:</span>
-              <span className="font-medium">{data.client.name}</span>
+              <span className="font-medium">{safeData.client.name}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-[#4f4535]">Amount:</span>
               <span className="font-bold text-[#785600]">
-                {formatCurrency(data.netPayable)}
+                {formatCurrency(safeData.netPayable)}
               </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-[#4f4535]">Date:</span>
-              <span>{data.date}</span>
+              <span>{safeData.date}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-[#4f4535]">Items:</span>
-              <span>{data.items.length} item(s)</span>
+              <span>{safeData.items.length} item(s)</span>
             </div>
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex gap-3 border-t border-[#d3c4af]/20 p-4">
           <button
             onClick={handlePrint}

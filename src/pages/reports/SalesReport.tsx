@@ -95,7 +95,9 @@ const SalesReport: React.FC = () => {
 
     const matchesClient =
       selectedClient === '' ||
-      item.client?.fullname?.toLowerCase().includes(selectedClient.toLowerCase());
+      item.client?.fullname
+        ?.toLowerCase()
+        .includes(selectedClient.toLowerCase());
 
     const matchesTransactionType =
       selectedTransactionType === 'All' ||
@@ -129,15 +131,21 @@ const SalesReport: React.FC = () => {
   );
 
   // Overall totals
-  const overallTotalSales = salesData.reduce((sum, item) => sum + item.netPayable, 0);
+  const overallTotalSales = salesData.reduce(
+    (sum, item) => sum + item.netPayable,
+    0,
+  );
   const overallTotalInvoices = salesData.length;
-  const averageTicketSize = overallTotalInvoices > 0 ? overallTotalSales / overallTotalInvoices : 0;
+  const averageTicketSize =
+    overallTotalInvoices > 0 ? overallTotalSales / overallTotalInvoices : 0;
   const totalDiscount = salesData.reduce((sum, item) => sum + item.discount, 0);
   const totalGST = salesData.reduce((sum, item) => sum + item.totalTax, 0);
 
   // Get unique clients for filter dropdown
   const uniqueClients = [
-    ...new Map(salesData.map((item) => [item.client?.id, item.client?.fullname])).entries(),
+    ...new Map(
+      salesData.map((item) => [item.client?.id, item.client?.fullname]),
+    ).entries(),
   ]
     .filter(([_, name]) => name)
     .map(([id, name]) => ({id, name}));
@@ -151,9 +159,20 @@ const SalesReport: React.FC = () => {
 
   const handleExportCSV = () => {
     const headers = [
-      'Invoice Date', 'Client Name', 'Phone', 'Transaction Type',
-      'Billing Mode', 'Payment Mode', 'Sub Total', 'Making Fees',
-      'GST', 'Discount', 'Exchange Value', 'Net Payable', 'Cash Paid', 'Balance Due',
+      'Invoice Date',
+      'Client Name',
+      'Phone',
+      'Transaction Type',
+      'Billing Mode',
+      'Payment Mode',
+      'Sub Total',
+      'Making Fees',
+      'GST',
+      'Discount',
+      'Exchange Value',
+      'Net Payable',
+      'Cash Paid',
+      'Balance Due',
     ];
 
     const csvData = filteredData.map((item) => [
@@ -173,7 +192,9 @@ const SalesReport: React.FC = () => {
       item.balanceDue,
     ]);
 
-    const csvContent = [headers, ...csvData].map((row) => row.join(',')).join('\n');
+    const csvContent = [headers, ...csvData]
+      .map((row) => row.join(','))
+      .join('\n');
     const blob = new Blob([csvContent], {type: 'text/csv'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -280,33 +301,43 @@ const SalesReport: React.FC = () => {
   ];
 
   return (
-    <div className="w-full bg-[#f9f9f7] min-h-screen">
+    <div className="min-h-screen w-full bg-[#f9f9f7]">
       {/* Header Section - Responsive */}
       <div className="px-4 py-4 md:px-6 lg:px-8">
-        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-end">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm font-medium text-[#785600]">
-              <span className="material-symbols-outlined text-base">receipt_long</span>
-              <span className="text-xs uppercase tracking-wider">Sales Analysis</span>
+              <span className="material-symbols-outlined text-base">
+                receipt_long
+              </span>
+              <span className="text-xs uppercase tracking-wider">
+                Sales Analysis
+              </span>
             </div>
             <h2 className="font-headline text-2xl font-bold tracking-tight text-[#1a1c1b] md:text-3xl lg:text-4xl">
               Sales Ledger & Report
             </h2>
-            <p className="text-xs text-[#4f4535] md:text-sm">Real-time sales performance and transaction summary</p>
+            <p className="text-xs text-[#4f4535] md:text-sm">
+              Real-time sales performance and transaction summary
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
               className="flex items-center gap-1 rounded-full border border-[#d3c4af]/30 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-[#eeeeec] md:gap-2 md:px-4 md:py-2"
             >
-              <span className="material-symbols-outlined text-sm md:text-base">print</span>
+              <span className="material-symbols-outlined text-sm md:text-base">
+                print
+              </span>
               <span className="hidden sm:inline">Print</span>
             </button>
             <button
               onClick={handleExportCSV}
               className="flex items-center gap-1 rounded-full bg-[#785600] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-[#5d4200] md:gap-2 md:px-4 md:py-2"
             >
-              <span className="material-symbols-outlined text-sm md:text-base">download</span>
+              <span className="material-symbols-outlined text-sm md:text-base">
+                download
+              </span>
               <span className="hidden sm:inline">Export</span>
             </button>
           </div>
@@ -318,13 +349,21 @@ const SalesReport: React.FC = () => {
         {/* Total Sales Card */}
         <div className="relative overflow-hidden rounded-xl border border-[#d3c4af]/10 bg-white p-4 shadow-sm md:p-5 lg:p-6">
           <div className="absolute right-0 top-0 p-2 opacity-10 md:p-3 lg:p-4">
-            <span className="material-symbols-outlined text-4xl md:text-5xl lg:text-6xl">paid</span>
+            <span className="material-symbols-outlined text-4xl md:text-5xl lg:text-6xl">
+              paid
+            </span>
           </div>
           <div className="relative z-10">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#4f4535] md:text-xs">Total Sales</p>
-            <h3 className="text-xl font-bold text-[#785600] md:text-2xl lg:text-3xl">₹{formatCurrency(overallTotalSales)}</h3>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#4f4535] md:text-xs">
+              Total Sales
+            </p>
+            <h3 className="text-xl font-bold text-[#785600] md:text-2xl lg:text-3xl">
+              ₹{formatCurrency(overallTotalSales)}
+            </h3>
             <div className="mt-2 flex items-center gap-2 text-[10px] md:mt-3 md:text-xs">
-              <span className="rounded-full bg-green-50 px-2 py-0.5 font-bold text-green-600">{salesData.length} Invoices</span>
+              <span className="rounded-full bg-green-50 px-2 py-0.5 font-bold text-green-600">
+                {salesData.length} Invoices
+              </span>
             </div>
           </div>
         </div>
@@ -332,36 +371,52 @@ const SalesReport: React.FC = () => {
         {/* Total Invoices Card */}
         <div className="relative overflow-hidden rounded-xl border border-[#d3c4af]/10 bg-white p-4 shadow-sm md:p-5 lg:p-6">
           <div className="absolute right-0 top-0 p-2 opacity-10 md:p-3 lg:p-4">
-            <span className="material-symbols-outlined text-4xl md:text-5xl lg:text-6xl">receipt</span>
+            <span className="material-symbols-outlined text-4xl md:text-5xl lg:text-6xl">
+              receipt
+            </span>
           </div>
           <div className="relative z-10">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#4f4535] md:text-xs">Total Invoices</p>
-            <h3 className="text-xl font-bold text-[#1a1c1b] md:text-2xl lg:text-3xl">{overallTotalInvoices}</h3>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#4f4535] md:text-xs">
+              Total Invoices
+            </p>
+            <h3 className="text-xl font-bold text-[#1a1c1b] md:text-2xl lg:text-3xl">
+              {overallTotalInvoices}
+            </h3>
             <div className="mt-2 flex items-center gap-2 text-[10px] md:mt-3 md:text-xs">
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 font-bold text-blue-600">{filteredData.length} filtered</span>
+              <span className="rounded-full bg-blue-50 px-2 py-0.5 font-bold text-blue-600">
+                {filteredData.length} filtered
+              </span>
             </div>
           </div>
         </div>
 
         {/* Average Ticket Size Card */}
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#785600] to-[#986d00] p-4 text-white shadow-sm md:p-5 lg:p-6 sm:col-span-2 md:col-span-1">
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#785600] to-[#986d00] p-4 text-white shadow-sm sm:col-span-2 md:col-span-1 md:p-5 lg:p-6">
           <div className="absolute inset-0 bg-gradient-to-br from-[#785600] to-[#986d00] opacity-90"></div>
           <div className="relative z-10">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/70 md:text-xs">Avg. Ticket Size</p>
-            <h3 className="text-xl font-bold md:text-2xl lg:text-3xl">₹{formatCurrency(averageTicketSize)}</h3>
-            <p className="mt-2 text-[10px] font-medium italic text-white/60 md:mt-3">Weighted average per transaction</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/70 md:text-xs">
+              Avg. Ticket Size
+            </p>
+            <h3 className="text-xl font-bold md:text-2xl lg:text-3xl">
+              ₹{formatCurrency(averageTicketSize)}
+            </h3>
+            <p className="mt-2 text-[10px] font-medium italic text-white/60 md:mt-3">
+              Weighted average per transaction
+            </p>
           </div>
           <div className="absolute -bottom-4 -right-4 opacity-20">
-            <span className="material-symbols-outlined text-6xl md:text-7xl lg:text-8xl">analytics</span>
+            <span className="material-symbols-outlined text-6xl md:text-7xl lg:text-8xl">
+              analytics
+            </span>
           </div>
         </div>
       </div>
 
       {/* Mobile Filter Toggle Button */}
-      <div className="px-4 mt-4 md:hidden">
+      <div className="mt-4 px-4 md:hidden">
         <button
           onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#eeeeec] py-2 text-xs font-bold text-[#4f4535]"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#eeeeec] py-2 text-xs font-bold text-[#4f4535]"
         >
           <span className="material-symbols-outlined text-sm">filter_list</span>
           {mobileFiltersOpen ? 'Hide Filters' : 'Show Filters'}
@@ -369,63 +424,85 @@ const SalesReport: React.FC = () => {
       </div>
 
       {/* Filters Section - Responsive */}
-      <div className={`px-4 mt-4 transition-all duration-300 ${mobileFiltersOpen ? 'block' : 'hidden md:block'}`}>
+      <div
+        className={`mt-4 px-4 transition-all duration-300 ${mobileFiltersOpen ? 'block' : 'hidden md:block'}`}
+      >
         <div className="rounded-xl border border-[#d3c4af]/10 bg-[#eeeeec] p-4 shadow-sm md:p-5">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#4f4535]/70">Date Range</label>
+              <label className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#4f4535]/70">
+                Date Range
+              </label>
               <div className="flex rounded-lg border border-[#d3c4af]/20 bg-white p-1">
                 <input
                   type="date"
                   value={dateRange.start}
-                  onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+                  onChange={(e) =>
+                    setDateRange({...dateRange, start: e.target.value})
+                  }
                   className="w-full border-none bg-transparent p-1.5 text-xs focus:ring-0"
                 />
-                <span className="flex items-center px-1 text-[#817563] text-xs">→</span>
+                <span className="flex items-center px-1 text-xs text-[#817563]">
+                  →
+                </span>
                 <input
                   type="date"
                   value={dateRange.end}
-                  onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+                  onChange={(e) =>
+                    setDateRange({...dateRange, end: e.target.value})
+                  }
                   className="w-full border-none bg-transparent p-1.5 text-xs focus:ring-0"
                 />
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#4f4535]/70">Transaction Type</label>
+              <label className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#4f4535]/70">
+                Transaction Type
+              </label>
               <select
                 value={selectedTransactionType}
                 onChange={(e) => setSelectedTransactionType(e.target.value)}
                 className="h-[38px] w-full rounded-lg border border-[#d3c4af]/20 bg-white px-3 py-2 text-xs focus:border-[#785600] focus:ring-[#785600]/20"
               >
                 {transactionTypeOptions.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#4f4535]/70">Billing Mode</label>
+              <label className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#4f4535]/70">
+                Billing Mode
+              </label>
               <select
                 value={selectedBillingMode}
                 onChange={(e) => setSelectedBillingMode(e.target.value)}
                 className="h-[38px] w-full rounded-lg border border-[#d3c4af]/20 bg-white px-3 py-2 text-xs focus:border-[#785600] focus:ring-[#785600]/20"
               >
                 {billingModeOptions.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#4f4535]/70">Payment Mode</label>
+              <label className="ml-1 text-[10px] font-bold uppercase tracking-wider text-[#4f4535]/70">
+                Payment Mode
+              </label>
               <select
                 value={selectedPaymentMode}
                 onChange={(e) => setSelectedPaymentMode(e.target.value)}
                 className="h-[38px] w-full rounded-lg border border-[#d3c4af]/20 bg-white px-3 py-2 text-xs focus:border-[#785600] focus:ring-[#785600]/20"
               >
                 {paymentModeOptions.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
                 ))}
               </select>
             </div>
@@ -434,9 +511,11 @@ const SalesReport: React.FC = () => {
               <button
                 onClick={handleGenerate}
                 disabled={isGenerating || isDataLoading}
-                className="flex-1 rounded-full bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-2 text-xs font-bold text-white shadow-md transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-1"
+                className="flex flex-1 items-center justify-center gap-1 rounded-full bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-2 text-xs font-bold text-white shadow-md transition-all hover:scale-[1.02] active:scale-95"
               >
-                <span className="material-symbols-outlined text-sm">refresh</span>
+                <span className="material-symbols-outlined text-sm">
+                  refresh
+                </span>
                 {isGenerating || isDataLoading ? 'Loading...' : 'Generate'}
               </button>
             </div>
@@ -445,10 +524,12 @@ const SalesReport: React.FC = () => {
       </div>
 
       {/* Search and Reset - Responsive */}
-      <div className="px-4 mt-4">
+      <div className="mt-4 px-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-md">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-[#817563]">search</span>
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-[#817563]">
+              search
+            </span>
             <input
               type="text"
               placeholder="Search by Client Name or Phone..."
@@ -468,7 +549,7 @@ const SalesReport: React.FC = () => {
       </div>
 
       {/* Generic Table - Responsive */}
-      <div className="px-4 mt-4 pb-8">
+      <div className="mt-4 px-4 pb-8">
         <GenericTable
           data={sortedData}
           columns={columns}

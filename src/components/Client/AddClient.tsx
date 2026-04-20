@@ -72,7 +72,7 @@ export default function AddClient({isOpen, onClose, onSave}: AddClientProps) {
               >
                 <div className="flex items-center justify-between border-b border-stroke bg-white p-8">
                   <div>
-                    <h3 className="font-headline text-on-surface text-2xl font-black">
+                    <h3 className="text-on-surface font-headline text-2xl font-black">
                       Add New Client
                     </h3>
                     <p className="text-on-surface-variant mt-1 text-xs uppercase tracking-widest">
