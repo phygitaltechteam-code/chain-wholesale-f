@@ -8,3 +8,4 @@ export const Route = createFileRoute('/_app/setting')({
 function RouteComponent() {
   return <Setting />;
 }
+  

@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import { useGetClient } from './api';
 import {
   Phone,
   MapPin,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 import {motion, AnimatePresence} from 'framer-motion';
 import GenericTable, {Column} from '../Forms/Table/GenericTable';
+import { Client } from './types';
 // Mock transactions data
 const mockTransactions = [
   {
@@ -161,6 +163,26 @@ export default function ClientProfile() {
         return 'bg-gray-50 text-gray-700 border border-gray-200';
     }
   };
+
+  const {data}  =useGetClient()
+     console.log(data);
+  
+  
+   const clients: Client[] =
+    data?.map((item: any) => ({
+      fullname: item.fullname,
+      phoneNumber: item.phoneNumber,
+      city: item.city,
+      balance: item.balance,
+      gold: item.gold,
+      silver: item.silver,
+      initials: item.fullname
+        ?.split(" ")
+        .map((w: string) => w[0])
+        .join("")
+        .toUpperCase(),
+      tier: item.tier || "regular",
+    })) || [];
 
   const handleBack = () => {
     window.history.back();
