@@ -76,7 +76,7 @@ export const Card: React.FC<CardProps> = ({
 
       {/* Card Body */}
       <div className={noPadding ? '' : 'p-5'}>{children}</div>
-    </div>
+      </div>
   );
 };
 
