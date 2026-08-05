@@ -21,7 +21,19 @@ const GenericButton: React.FC<GenericButtonProps> = ({
     <button
       type={type}
       onClick={onClick}
-      className={`mx-1 items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-6 py-1 text-sm font-semibold text-white shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      className={`
+        inline-flex items-center justify-center gap-1.5 
+        px-2 py-1 sm:px-2.5 sm:py-1.5 
+        text-[10px] sm:text-xs font-semibold 
+        bg-gradient-to-br from-[#785600] to-[#986d00] 
+        text-white 
+        shadow-sm hover:shadow-md 
+        transition-all duration-200 
+        hover:scale-[1.02] active:scale-[0.98] 
+        disabled:cursor-not-allowed disabled:opacity-50 
+        whitespace-nowrap rounded-lg
+        ${className}
+      `}
       disabled={disabled}
     >
       {children}

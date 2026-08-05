@@ -1,7 +1,7 @@
 // pages/SignInPage.tsx
-import {Link, useNavigate} from '@tanstack/react-router';
-import React, {useState, useEffect} from 'react';
-import {motion, AnimatePresence} from 'framer-motion';
+import { Link, useNavigate } from '@tanstack/react-router';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Gem,
   Lock,
@@ -13,9 +13,9 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
-import {useLogin} from '@/lib/api/auth';
+import { useLogin } from '@/lib/api/auth';
 import toast from 'react-hot-toast';
-import {useAuthContext} from '@/context/AuthContext';
+import { useAuthContext } from '@/context/AuthContext';
 
 type Tab = 'LOGIN' | 'REGISTER';
 
@@ -35,14 +35,15 @@ const SignIn: React.FC = () => {
     confirmPassword: '',
   });
 
-  const {mutateAsync: login, isPending, isSuccess} = useLogin();
-  const {user, isAuthenticated} = useAuthContext();
+  const { mutateAsync: login, isPending, isSuccess } = useLogin();
+  const { user, isAuthenticated } = useAuthContext();
 
   useEffect(() => {
     if (isSuccess || isAuthenticated) {
       window.location.href = '/dashboard';
     }
   }, [isSuccess, isAuthenticated]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -53,9 +54,6 @@ const SignIn: React.FC = () => {
       return;
     }
 
-    //  navigate({to: '/dashboard'});
-
-    // Comment out or remove the API call for now
     try {
       await login({
         username: credentials.username,
@@ -72,58 +70,56 @@ const SignIn: React.FC = () => {
       toast.error('Passwords do not match');
       return;
     }
-    // Add your registration logic here
     toast.success('Registration successful! Please login.');
     setActiveTab('LOGIN');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const {name, value} = e.target;
-    setCredentials((prev) => ({...prev, [name]: value}));
+    const { name, value } = e.target;
+    setCredentials((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const {name, value} = e.target;
-    setRegisterData((prev) => ({...prev, [name]: value}));
+    const { name, value } = e.target;
+    setRegisterData((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 selection:bg-amber-500/30 sm:p-8">
-      {/* Header / Logo Section */}
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 selection:bg-amber-500/30 overflow-hidden">
+      {/* Header / Logo Section - Compact */}
       <motion.div
-        initial={{opacity: 0, y: -20}}
-        animate={{opacity: 1, y: 0}}
-        className="mb-10 text-center"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6 text-center flex-shrink-0"
       >
-        <div className="mb-2 flex items-center justify-center gap-3">
-          <Gem className="h-10 w-10 text-amber-500" />
-          <h1 className="font-serif text-5xl font-bold tracking-tight text-amber-400">
+        <div className="mb-1 flex items-center justify-center gap-2">
+          <Gem className="h-8 w-8 text-amber-500" />
+          <h1 className="font-serif text-3xl font-bold tracking-tight text-amber-400">
             Sona ERP
           </h1>
         </div>
-        <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-slate-400">
+        <p className="text-[8px] font-medium uppercase tracking-[0.3em] text-slate-400">
           The Gilded Ledger
         </p>
       </motion.div>
 
-      {/* Main Card */}
+      {/* Main Card - Compact */}
       <motion.div
-        initial={{opacity: 0, scale: 0.95}}
-        animate={{opacity: 1, scale: 1}}
-        transition={{delay: 0.1}}
-        className="w-full max-w-[480px] overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-900/50 shadow-2xl backdrop-blur-xl"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.1 }}
+        className="w-full max-w-[400px] overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-900/50 shadow-2xl backdrop-blur-xl flex-shrink-0"
       >
-        {/* Tabs */}
+        {/* Tabs - Compact */}
         <div className="flex border-b border-slate-700/50">
           {(['LOGIN', 'REGISTER'] as Tab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`relative flex-1 py-5 text-xs font-semibold tracking-widest transition-all ${
-                activeTab === tab
+              className={`relative flex-1 py-3 text-[10px] font-semibold tracking-widest transition-all ${activeTab === tab
                   ? 'text-amber-400'
                   : 'text-slate-500 hover:text-slate-300'
-              }`}
+                }`}
             >
               {tab}
               {activeTab === tab && (
@@ -136,36 +132,37 @@ const SignIn: React.FC = () => {
           ))}
         </div>
 
-        <div className="p-8 sm:p-10">
+        <div className="p-5 sm:p-6">
           <AnimatePresence mode="wait">
             {activeTab === 'LOGIN' ? (
               <motion.div
                 key="login"
-                initial={{opacity: 0, x: -20}}
-                animate={{opacity: 1, x: 0}}
-                exit={{opacity: 0, x: 20}}
-                className="space-y-6"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="space-y-4"
               >
-                <div className="mb-6 text-center">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10">
-                    <Lock className="h-8 w-8 text-amber-500" />
+                <div className="mb-3 text-center">
+                  <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
+                    <Lock className="h-6 w-6 text-amber-500" />
                   </div>
-                  <h3 className="text-xl font-medium text-slate-200">
+                  <h3 className="text-base font-medium text-slate-200">
                     Welcome Back
                   </h3>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <p className="text-xs text-slate-400">
                     Sign in to your account
                   </p>
                 </div>
 
-                <form onSubmit={handleLogin} className="space-y-5">
+                <form onSubmit={handleLogin} className="space-y-3">
                   <InputField
                     label="USERNAME / PHONE"
                     name="username"
                     placeholder="Enter your username"
-                    icon={<User className="h-4 w-4" />}
+                    icon={<User className="h-3.5 w-3.5" />}
                     value={credentials.username}
                     onChange={handleInputChange}
+                    autoComplete="username"
                   />
 
                   <InputField
@@ -173,9 +170,10 @@ const SignIn: React.FC = () => {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
-                    icon={<Lock className="h-4 w-4" />}
+                    icon={<Lock className="h-3.5 w-3.5" />}
                     value={credentials.password}
                     onChange={handleInputChange}
+                    autoComplete="current-password"
                     rightIcon={
                       <button
                         type="button"
@@ -183,9 +181,9 @@ const SignIn: React.FC = () => {
                         className="focus:outline-none"
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-slate-500 hover:text-amber-400" />
+                          <EyeOff className="h-3.5 w-3.5 text-slate-500 hover:text-amber-400" />
                         ) : (
-                          <Eye className="h-4 w-4 text-slate-500 hover:text-amber-400" />
+                          <Eye className="h-3.5 w-3.5 text-slate-500 hover:text-amber-400" />
                         )}
                       </button>
                     }
@@ -194,75 +192,75 @@ const SignIn: React.FC = () => {
                   <div className="flex items-center justify-end">
                     <a
                       href="#"
-                      className="text-[10px] text-amber-500/70 transition-colors hover:text-amber-400"
+                      className="text-[9px] text-amber-500/70 transition-colors hover:text-amber-400"
                     >
                       Forgot Password?
                     </a>
                   </div>
 
                   <motion.button
-                    onClick={() => {
-                      handleLogin;
-                    }}
-                    whileHover={{scale: 1.02}}
-                    whileTap={{scale: 0.98}}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     type="submit"
                     disabled={isPending}
-                    className="group mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 py-4 font-bold text-amber-950 shadow-lg shadow-amber-900/20 transition-all hover:from-amber-500 hover:to-amber-400"
+                    className="group mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 py-3 font-bold text-amber-950 shadow-lg shadow-amber-900/20 transition-all hover:from-amber-500 hover:to-amber-400"
                   >
-                    <span className="text-sm uppercase tracking-widest">
+                    <span className="text-xs uppercase tracking-widest">
                       {isPending ? 'Signing in...' : 'Sign In'}
                     </span>
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                   </motion.button>
                 </form>
               </motion.div>
             ) : (
               <motion.div
                 key="register"
-                initial={{opacity: 0, x: 20}}
-                animate={{opacity: 1, x: 0}}
-                exit={{opacity: 0, x: -20}}
-                className="space-y-6"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-4"
               >
-                <div className="mb-2 text-center">
-                  <h3 className="text-xl font-medium text-slate-200">
+                <div className="mb-1 text-center">
+                  <h3 className="text-base font-medium text-slate-200">
                     Register Company
                   </h3>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <p className="text-xs text-slate-400">
                     Create your business account
                   </p>
                 </div>
 
-                <form onSubmit={handleRegister} className="space-y-4">
+                <form onSubmit={handleRegister} className="space-y-2.5">
                   <InputField
                     label="COMPANY NAME"
                     name="companyName"
                     placeholder="Goldsmith & Co."
-                    icon={<Building2 className="h-4 w-4" />}
+                    icon={<Building2 className="h-3.5 w-3.5" />}
                     value={registerData.companyName}
                     onChange={handleRegisterChange}
                     required
+                    autoComplete="organization"
                   />
 
                   <InputField
                     label="OWNER NAME"
                     name="ownerName"
                     placeholder="Julian Sterling"
-                    icon={<User className="h-4 w-4" />}
+                    icon={<User className="h-3.5 w-3.5" />}
                     value={registerData.ownerName}
                     onChange={handleRegisterChange}
                     required
+                    autoComplete="name"
                   />
 
                   <InputField
                     label="MOBILE NUMBER"
                     name="mobileNumber"
                     placeholder="+91 98765 43210"
-                    icon={<Smartphone className="h-4 w-4" />}
+                    icon={<Smartphone className="h-3.5 w-3.5" />}
                     value={registerData.mobileNumber}
                     onChange={handleRegisterChange}
                     required
+                    autoComplete="tel"
                   />
 
                   <InputField
@@ -270,10 +268,11 @@ const SignIn: React.FC = () => {
                     name="password"
                     type="password"
                     placeholder="••••••••"
-                    icon={<Lock className="h-4 w-4" />}
+                    icon={<Lock className="h-3.5 w-3.5" />}
                     value={registerData.password}
                     onChange={handleRegisterChange}
                     required
+                    autoComplete="new-password"
                   />
 
                   <InputField
@@ -281,26 +280,26 @@ const SignIn: React.FC = () => {
                     name="confirmPassword"
                     type="password"
                     placeholder="••••••••"
-                    icon={<Lock className="h-4 w-4" />}
+                    icon={<Lock className="h-3.5 w-3.5" />}
                     value={registerData.confirmPassword}
                     onChange={handleRegisterChange}
                     required
+                    autoComplete="new-password"
                   />
 
                   <motion.button
-                    onClick={() => navigate({to: '/dashboard'})}
-                    whileHover={{scale: 1.02}}
-                    whileTap={{scale: 0.98}}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     type="submit"
-                    className="group mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 py-4 font-bold text-amber-950 shadow-lg shadow-amber-900/20 transition-all hover:from-amber-500 hover:to-amber-400"
+                    className="group mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 py-3 font-bold text-amber-950 shadow-lg shadow-amber-900/20 transition-all hover:from-amber-500 hover:to-amber-400"
                   >
-                    <span className="text-sm uppercase tracking-widest">
+                    <span className="text-xs uppercase tracking-widest">
                       Register
                     </span>
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                   </motion.button>
 
-                  <p className="mt-4 text-center text-[10px] text-slate-500">
+                  <p className="mt-2 text-center text-[8px] text-slate-500">
                     By registering, you agree to our{' '}
                     <a
                       href="#"
@@ -316,16 +315,16 @@ const SignIn: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Decorative Footer Element */}
+      {/* Decorative Footer - Compact */}
       <motion.div
-        initial={{opacity: 0}}
-        animate={{opacity: 1}}
-        transition={{delay: 0.5}}
-        className="mt-12 flex items-center gap-4 opacity-30"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="mt-6 flex items-center gap-4 opacity-30 flex-shrink-0"
       >
-        <div className="h-[1px] w-12 bg-slate-600" />
-        <LayoutGrid className="h-4 w-4 text-slate-500" />
-        <div className="h-[1px] w-12 bg-slate-600" />
+        <div className="h-[1px] w-10 bg-slate-600" />
+        <LayoutGrid className="h-3 w-3 text-slate-500" />
+        <div className="h-[1px] w-10 bg-slate-600" />
       </motion.div>
     </div>
   );
@@ -341,6 +340,7 @@ interface InputFieldProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   rightIcon?: React.ReactNode;
   required?: boolean;
+  autoComplete?: string;
 }
 
 function InputField({
@@ -353,14 +353,15 @@ function InputField({
   onChange,
   rightIcon,
   required = false,
+  autoComplete,
 }: InputFieldProps) {
   return (
-    <div className="space-y-2">
-      <label className="ml-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+    <div className="space-y-1.5">
+      <label className="ml-1 text-[8px] font-bold uppercase tracking-widest text-slate-400">
         {label}
       </label>
       <div className="group relative">
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 transition-colors group-focus-within:text-amber-500">
+        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 transition-colors group-focus-within:text-amber-500">
           {icon}
         </div>
         <input
@@ -370,10 +371,11 @@ function InputField({
           onChange={onChange}
           placeholder={placeholder}
           required={required}
-          className="w-full rounded-xl border border-slate-700/50 bg-slate-800/50 py-3.5 pl-12 pr-12 text-sm text-slate-200 transition-all placeholder:text-slate-600 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+          autoComplete={autoComplete}
+          className="w-full rounded-xl border border-slate-700/50 bg-slate-800/50 py-2.5 pl-10 pr-10 text-sm text-slate-200 transition-all placeholder:text-slate-600 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/20"
         />
         {rightIcon && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
             {rightIcon}
           </div>
         )}

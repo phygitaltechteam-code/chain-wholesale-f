@@ -1,15 +1,17 @@
-import React, {useState, useEffect} from 'react';
-import {Link, useLocation} from '@tanstack/react-router';
+// components/Sidebar.tsx
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from '@tanstack/react-router';
 import {
   MdDashboard,
-  MdTrendingUp,
-  MdGroup,
-  MdReceiptLong,
-  MdLocalShipping,
+  MdCategory,
+  MdStraighten,
+  MdDiamond,
   MdInventory2,
-  MdAccountBalanceWallet,
   MdPrecisionManufacturing,
+  MdProductionQuantityLimits,
+  MdBuild,
   MdEngineering,
+  MdHandyman,
   MdAssessment,
   MdSettings,
   MdLogout,
@@ -17,14 +19,33 @@ import {
   MdClose,
   MdChevronLeft,
   MdChevronRight,
+  MdExpandMore,
+  MdGroups,
+  MdStore,
+  MdReceiptLong,
 } from 'react-icons/md';
-import {useAuthContext} from '@/context/AuthContext';
+import { useAuthContext } from '@/context/AuthContext';
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
   isMobile?: boolean;
   sidebarOpen?: boolean;
   setSidebarOpen?: (open: boolean) => void;
+}
+
+interface MenuItem {
+  label: string;
+  path?: string;
+  icon?: React.ReactNode;
+  roles: string[];
+  subroutes?: SubMenuItem[];
+}
+
+interface SubMenuItem {
+  label: string;
+  path: string;
+  roles: string[];
+  icon?: React.ReactNode;
 }
 
 const Sidebar = ({
@@ -34,28 +55,24 @@ const Sidebar = ({
   setSidebarOpen,
 }: SidebarProps) => {
   const location = useLocation();
-  const {pathname} = location;
-  const {user, isAuthenticated} = useAuthContext();
+  const { pathname } = location;
+  const { user, isAuthenticated } = useAuthContext();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
 
-  // Get user role from context
   const role = user?.role;
-
-  // Use prop isMobile or calculate
   const isMobileDevice = propIsMobile !== undefined ? propIsMobile : isMobile;
 
-  // Check screen size
   useEffect(() => {
     const checkScreenSize = () => {
       const width = window.innerWidth;
       setIsMobile(width < 640);
       setIsTablet(width >= 640 && width < 1024);
 
-      // Auto-close mobile menu on larger screens
       if (width >= 640 && isMobileMenuOpen) {
         setIsMobileMenuOpen(false);
         if (setSidebarOpen) setSidebarOpen(false);
@@ -64,11 +81,9 @@ const Sidebar = ({
 
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
-
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  // Close mobile menu when route changes
   useEffect(() => {
     if (isMobileDevice) {
       setIsMobileMenuOpen(false);
@@ -76,14 +91,12 @@ const Sidebar = ({
     }
   }, [pathname, isMobileDevice]);
 
-  // Sync with parent sidebarOpen state
   useEffect(() => {
     if (sidebarOpen !== undefined) {
       setIsMobileMenuOpen(sidebarOpen);
     }
   }, [sidebarOpen]);
 
-  // Load collapsed state from localStorage
   useEffect(() => {
     const savedState = localStorage.getItem('sidebar-collapsed');
     if (savedState !== null) {
@@ -91,7 +104,6 @@ const Sidebar = ({
     }
   }, []);
 
-  // Save collapsed state
   useEffect(() => {
     localStorage.setItem('sidebar-collapsed', String(isCollapsed));
     if (onCollapseChange) {
@@ -99,71 +111,112 @@ const Sidebar = ({
     }
   }, [isCollapsed, onCollapseChange]);
 
-  // All menu items with role-based visibility
-  const allMenuItems = [
+  // Auto expand menu if subroute is active
+  useEffect(() => {
+    allMenuItems.forEach((item) => {
+      if (item.subroutes) {
+        const isSubrouteActive = item.subroutes.some(
+          (subroute) => subroute.path && pathname.startsWith(subroute.path)
+        );
+        if (isSubrouteActive && !isCollapsed && !isMobileDevice) {
+          setExpandedMenus((prev) => new Set(prev).add(item.label));
+        }
+      }
+    });
+  }, [pathname, isCollapsed, isMobileDevice]);
+
+  const toggleSubmenu = (label: string) => {
+    if (isCollapsed) return;
+    setExpandedMenus((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(label)) {
+        newSet.delete(label);
+      } else {
+        newSet.add(label);
+      }
+      return newSet;
+    });
+  };
+
+  // Menu items with Gold Chain Manufacturing ERP flow
+  const allMenuItems: MenuItem[] = [
     {
       label: 'Dashboard',
       path: '/dashboard',
       icon: <MdDashboard size={22} />,
       roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
+    // Masters Section
+    // {
+    //   label: 'Item Master',
+    //   path: '/master/additems',
+    //   icon: <MdCategory size={22} />,
+    //   roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+    // },
+    // {
+    //   label: 'Size Master',
+    //   path: '/master/size',
+    //   icon: <MdStraighten size={22} />,
+    //   roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+    // },
     {
-      label: 'Rate Management',
-      path: '/rate/ratemanagement',
-      icon: <MdTrendingUp size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-    },
-    {
-      label: 'Clients',
-      path: '/client/clientdirectory',
-      icon: <MdGroup size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-    },
-    {
-      label: 'Billing',
-      path: '/billing/Billing',
-      icon: <MdReceiptLong size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-    },
-    {
-      label: 'Bookings & Delivery',
-      path: '/bookdelivery/bookings-delivery',
-      icon: <MdLocalShipping size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-    },
-    {
-      label: 'Inventory',
-      path: '/inventory/Inventory',
+      label: 'Opening Stocks',
+      path: '/stock/openingstock',
       icon: <MdInventory2 size={22} />,
       roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
     {
-      label: 'Jewellery Job Work',
-      path: '/JewlleryWork/jewelleryworkdata',
+      label: 'Stocks',
+      path: '/Stocks/stockpage',
+      icon: <MdInventory2 size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+    },
+    {
+      label: 'Process',
+      path: '/manufacturingprocess/process',
       icon: <MdPrecisionManufacturing size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN'],
-    },
-    {
-      label: 'Karigars',
-      path: '/kariger/karigers',
-      icon: <MdEngineering size={22} />,
       roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
+
     {
-      label: 'Reports',
-      path: '/report',
-      icon: <MdAssessment size={22} />,
+      label: 'Manufacturing Process',
+      icon: <MdPrecisionManufacturing size={22} />,
       roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-    },
-    {
-      label: 'Settings',
-      path: '/setting',
-      icon: <MdSettings size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+      subroutes: [
+        {
+          label: 'Tar',
+          path: '/manufacturingprocess/AddTar',
+          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+          icon: <MdPrecisionManufacturing size={18} />,
+        },
+        {
+          label: 'Box',
+          path: '/manufacturingprocess/box/boxdept',
+          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+          icon: <MdProductionQuantityLimits size={18} />,
+        },
+        {
+          label: 'Soldering',
+          path: '/manufacturingprocess/solding/soldingpage',
+          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+          icon: <MdBuild size={18} />,
+        },
+        {
+          label: 'Joint',
+          path: '/manufacturingprocess/joint/JointDept',
+          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+          icon: <MdEngineering size={18} />,
+        },
+        {
+          label: 'Cutting',
+          path: '/manufacturingprocess/cutting/cuttingdept',
+          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+          icon: <MdHandyman size={18} />,
+        },
+      ],
     },
   ];
 
-  // Filter menu items based on user role
   const menuItems = allMenuItems.filter((item) => {
     if (!role) return false;
     return item.roles.includes(role);
@@ -177,6 +230,10 @@ const Sidebar = ({
       return pathname.startsWith(itemPath);
     }
     return pathname === itemPath;
+  };
+
+  const isSubrouteActive = (subroutePath: string) => {
+    return pathname === subroutePath || pathname.startsWith(subroutePath + '/');
   };
 
   const handleLogout = () => {
@@ -195,7 +252,6 @@ const Sidebar = ({
     if (setSidebarOpen) setSidebarOpen(newState);
   };
 
-  // Get user initials
   const getUserInitials = () => {
     const name = user?.fullname || user?.username || 'User';
     return name
@@ -206,29 +262,23 @@ const Sidebar = ({
       .slice(0, 2);
   };
 
-  // Get role display name
   const getRoleDisplay = () => {
     if (role === 'SUPERADMIN') return 'Super Admin';
-    if (role === 'ADMIN') return 'Mall Admin';
+    if (role === 'ADMIN') return 'Admin';
     if (role === 'SHOP') return 'Shop Owner';
     return 'User';
   };
 
-  // Get logo letter
   const getLogoLetter = () => {
     if (role === 'SUPERADMIN') return 'S';
     if (role === 'ADMIN') return 'M';
-    return 'B';
+    return 'G';
   };
 
-  // Get portal name
   const getPortalName = () => {
-    if (role === 'SUPERADMIN') return 'Super Admin';
-    if (role === 'ADMIN') return 'Mall Admin';
-    return 'BullionPro ERP';
+    return 'Sona Gold';
   };
 
-  // Mobile menu button
   const MobileMenuButton = () => (
     <button
       onClick={toggleMobileMenu}
@@ -239,24 +289,128 @@ const Sidebar = ({
     </button>
   );
 
-  // Mobile overlay
   const MobileOverlay = () => (
     <div
-      className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-all duration-300 md:hidden ${
-        isMobileMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
-      }`}
+      className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-all duration-300 md:hidden ${isMobileMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
+        }`}
       onClick={toggleMobileMenu}
     />
   );
 
-  // Sidebar content
+  // Render menu item with subroutes support
+  const renderMenuItem = (item: MenuItem) => {
+    const hasSubroutes = item.subroutes && item.subroutes.length > 0;
+    const isExpanded = expandedMenus.has(item.label);
+    const isItemActive = item.path ? isActive(item.path) : false;
+    const isAnySubrouteActive =
+      hasSubroutes &&
+      item.subroutes?.some((subroute) => isSubrouteActive(subroute.path));
+
+    const isActuallyCollapsed = isCollapsed && !isMobileDevice;
+
+    if (hasSubroutes) {
+      return (
+        <div key={item.label} className="mb-1">
+          <button
+            onClick={() => {
+              if (!isActuallyCollapsed) {
+                toggleSubmenu(item.label);
+              }
+            }}
+            className={`group flex w-full items-center justify-between rounded-lg transition-all duration-200 ${isItemActive || isAnySubrouteActive
+              ? 'bg-[#B8860B]/10 text-[#B8860B]'
+              : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              } ${isActuallyCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}`}
+            title={isActuallyCollapsed ? item.label : ''}
+          >
+            <div className={`flex items-center ${isActuallyCollapsed ? 'w-full justify-center' : ''}`}>
+              <span className={`shrink-0 ${isActuallyCollapsed ? '' : 'mr-3'}`}>
+                {item.icon}
+              </span>
+              {!isActuallyCollapsed && (
+                <span className="whitespace-nowrap text-sm font-medium">
+                  {item.label}
+                </span>
+              )}
+            </div>
+            {!isActuallyCollapsed && (
+              <MdExpandMore
+                className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
+                  }`}
+                size={18}
+              />
+            )}
+          </button>
+
+          {!isActuallyCollapsed && isExpanded && (
+            <div className="ml-4 mt-1 space-y-1 border-l border-white/10 pl-2">
+              {item.subroutes
+                .filter((subroute) => !role || subroute.roles.includes(role))
+                .map((subroute) => {
+                  const isSubActive = isSubrouteActive(subroute.path);
+                  return (
+                    <Link
+                      key={subroute.label}
+                      to={subroute.path}
+                      onClick={() => {
+                        if (isMobileDevice) toggleMobileMenu();
+                      }}
+                      className={`flex items-center gap-2 rounded-lg py-2 pl-4 pr-3 text-sm transition-all duration-200 ${isSubActive
+                        ? 'bg-[#B8860B]/10 text-[#B8860B]'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                        }`}
+                    >
+                      <span className="shrink-0">{subroute.icon}</span>
+                      <span>{subroute.label}</span>
+                    </Link>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // For items without subroutes
+    return (
+      <div key={item.label}>
+        <Link
+          to={item.path!}
+          onClick={() => {
+            if (isMobileDevice) toggleMobileMenu();
+          }}
+          className={`group flex items-center rounded-lg transition-all duration-200 ${isActive(item.path!)
+            ? 'bg-[#B8860B]/10 text-[#B8860B]'
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            } ${isActuallyCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}`}
+          title={isActuallyCollapsed ? item.label : ''}
+        >
+          <span className={`shrink-0 ${isActuallyCollapsed ? '' : 'mr-3'}`}>
+            {item.icon}
+          </span>
+          {!isActuallyCollapsed && (
+            <span className="whitespace-nowrap text-sm font-medium">
+              {item.label}
+            </span>
+          )}
+          {isActive(item.path!) && (
+            <span className="absolute left-0 top-1/2 h-8 w-0.5 -translate-y-1/2 rounded-r-full bg-[#B8860B]"></span>
+          )}
+          {isCollapsed && !isMobileDevice && (
+            <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg bg-[#1a1a2e] px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-xl transition-opacity duration-200 group-hover:opacity-100">
+              {item.label}
+            </div>
+          )}
+        </Link>
+      </div>
+    );
+  };
+
   const SidebarContent = () => (
     <>
-      {/* Logo Section */}
       <div
-        className={`mb-6 mt-6 transition-all duration-300 ${
-          isMobileDevice ? 'px-4' : isCollapsed ? 'px-2' : 'px-4'
-        }`}
+        className={`mb-6 mt-6 transition-all duration-300 ${isMobileDevice ? 'px-4' : isCollapsed ? 'px-2' : 'px-4'
+          }`}
       >
         {isCollapsed && !isMobileDevice ? (
           <div className="flex justify-center">
@@ -272,13 +426,12 @@ const Sidebar = ({
               {getPortalName()}
             </h1>
             <p className="mt-1 font-['DM_Sans'] text-[8px] uppercase tracking-[0.2em] text-slate-400 md:text-[10px]">
-              {role === 'ADMIN' ? 'Mall Management' : 'The Digital Goldsmith'}
+              Gold Chain Manufacturing ERP
             </p>
           </div>
         )}
       </div>
 
-      {/* Collapse Toggle Button */}
       {!isMobileDevice && !isTablet && (
         <button
           onClick={toggleCollapse}
@@ -292,51 +445,10 @@ const Sidebar = ({
         </button>
       )}
 
-      {/* Navigation */}
       <nav className="flex-1 space-y-1 overflow-y-auto px-2">
-        {menuItems.map((item, index) => (
-          <Link
-            key={index}
-            to={item.path}
-            onClick={() => {
-              if (isMobileDevice) toggleMobileMenu();
-            }}
-            className={`group relative flex items-center rounded-lg transition-all duration-200 ${
-              isActive(item.path)
-                ? 'bg-[#B8860B]/10 text-[#B8860B]'
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-            } ${
-              isCollapsed && !isMobileDevice
-                ? 'justify-center px-2 py-3'
-                : 'px-3 py-2.5 md:px-4 md:py-3'
-            }`}
-            title={isCollapsed && !isMobileDevice ? item.label : ''}
-          >
-            <span
-              className={`shrink-0 ${isCollapsed && !isMobileDevice ? '' : 'mr-3'}`}
-            >
-              {item.icon}
-            </span>
-            {(!isCollapsed || isMobileDevice) && (
-              <span className="whitespace-nowrap text-xs font-medium tracking-wide md:text-sm">
-                {item.label}
-              </span>
-            )}
-            {/* Active indicator */}
-            {isActive(item.path) && (
-              <span className="absolute left-0 top-1/2 h-8 w-0.5 -translate-y-1/2 rounded-r-full bg-[#B8860B]"></span>
-            )}
-            {/* Tooltip for collapsed state */}
-            {isCollapsed && !isMobileDevice && (
-              <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg bg-[#1a1a2e] px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-xl transition-opacity duration-200 group-hover:opacity-100">
-                {item.label}
-              </div>
-            )}
-          </Link>
-        ))}
+        {menuItems.map((item) => renderMenuItem(item))}
       </nav>
 
-      {/* User Info Section */}
       <div className="border-t border-white/10 px-3 py-4">
         <div
           className={`flex items-center ${isCollapsed && !isMobileDevice ? 'justify-center' : 'gap-3'}`}
@@ -357,15 +469,13 @@ const Sidebar = ({
         </div>
       </div>
 
-      {/* Logout Button */}
       <div className="border-t border-white/5 px-2 py-4">
         <button
           onClick={handleLogout}
-          className={`flex w-full items-center rounded-lg transition-all duration-200 ${
-            isCollapsed && !isMobileDevice
-              ? 'justify-center px-2 py-3'
-              : 'px-3 py-2.5 md:px-4 md:py-3'
-          } text-slate-400 hover:bg-white/5 hover:text-white`}
+          className={`flex w-full items-center rounded-lg transition-all duration-200 ${isCollapsed && !isMobileDevice
+            ? 'justify-center px-2 py-3'
+            : 'px-3 py-2.5 md:px-4 md:py-3'
+            } text-slate-400 hover:bg-white/5 hover:text-white`}
           title={isCollapsed && !isMobileDevice ? 'Logout' : ''}
         >
           <MdLogout
@@ -382,7 +492,6 @@ const Sidebar = ({
     </>
   );
 
-  // Sidebar width classes
   const getSidebarWidth = () => {
     if (isMobileDevice) return 'w-72';
     if (isTablet) return 'w-64';
@@ -395,17 +504,14 @@ const Sidebar = ({
 
   return (
     <>
-      {/* Mobile menu button */}
       {isMobileDevice && <MobileMenuButton />}
       <MobileOverlay />
 
-      {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-full flex-col bg-[#1a1a2e] shadow-2xl transition-all duration-300 ease-in-out ${getSidebarWidth()} ${
-          isMobileDevice && !isMobileMenuOpen
-            ? '-translate-x-full'
-            : 'translate-x-0'
-        }`}
+        className={`fixed left-0 top-0 z-50 flex h-full flex-col bg-[#1a1a2e] shadow-2xl transition-all duration-300 ease-in-out ${getSidebarWidth()} ${isMobileDevice && !isMobileMenuOpen
+          ? '-translate-x-full'
+          : 'translate-x-0'
+          }`}
       >
         <SidebarContent />
       </aside>
