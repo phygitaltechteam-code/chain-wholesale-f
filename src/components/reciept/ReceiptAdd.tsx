@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X, Save, Edit, Trash2,
   Plus, Minus, ArrowLeft, Loader2
@@ -35,6 +35,7 @@ interface ReceiptFormData {
   clientName: string;
   date: string;
   items: ReceiptItem[];
+  customerWeight: number; // Added customer weight field
   goldInfo: {
     karat: string;
     rate: number;
@@ -59,6 +60,7 @@ const ReceiptAdd: React.FC = () => {
     clientName: '',
     date: new Date().toISOString().split('T')[0],
     items: [],
+    customerWeight: 0,
     goldInfo: {
       karat: '22K',
       rate: 0,
@@ -79,6 +81,10 @@ const ReceiptAdd: React.FC = () => {
     address?: string;
     openingBalance?: string;
   }>({});
+
+  // Refs for debounce
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchRef = useRef<{ item: string; size: string; purity: number } | null>(null);
 
   // Fetch data from API
   const { data: clients = [], refetch: refetchClients } = useGetClients();
@@ -151,7 +157,7 @@ const ReceiptAdd: React.FC = () => {
     }
   };
 
-  // Add new row
+  // Add new row - called from plus button in action
   const handleAddItem = () => {
     const newItem: ReceiptItem = {
       id: `item-${Date.now()}`,
@@ -206,6 +212,17 @@ const ReceiptAdd: React.FC = () => {
       return;
     }
 
+    // Check if this is a duplicate request
+    const currentFetch = { item, size, purity };
+    if (lastFetchRef.current &&
+      lastFetchRef.current.item === currentFetch.item &&
+      lastFetchRef.current.size === currentFetch.size &&
+      lastFetchRef.current.purity === currentFetch.purity) {
+      console.log('Skipping duplicate fetch request');
+      return;
+    }
+    lastFetchRef.current = currentFetch;
+
     // Set loading state
     setFormData(prev => ({
       ...prev,
@@ -229,38 +246,47 @@ const ReceiptAdd: React.FC = () => {
 
       // Check different possible response structures
       if (response?.data?.weight !== undefined && response.data.weight !== null) {
-        weight = response.data.weight;
+        weight = Number(response.data.weight);
       } else if (response?.weight !== undefined && response.weight !== null) {
-        weight = response.weight;
+        weight = Number(response.weight);
       } else if (response?.data?.quantity !== undefined && response.data.quantity !== null) {
-        weight = response.data.quantity;
+        weight = Number(response.data.quantity);
       } else if (response?.quantity !== undefined && response.quantity !== null) {
-        weight = response.quantity;
+        weight = Number(response.quantity);
       }
 
       console.log('Extracted weight:', weight);
 
-      // Update the available quantity with the weight
-      setFormData(prev => ({
-        ...prev,
-        items: prev.items.map((entry, i) =>
-          i === index ? {
-            ...entry,
-            availableQty: weight,
-            isLoadingQty: false
-          } : entry
-        )
-      }));
+      // Only update if weight is valid
+      if (!isNaN(weight) && weight >= 0) {
+        // Update the available quantity with the weight
+        setFormData(prev => ({
+          ...prev,
+          items: prev.items.map((entry, i) =>
+            i === index ? {
+              ...entry,
+              availableQty: weight,
+              isLoadingQty: false
+            } : entry
+          )
+        }));
 
-      // Show appropriate message based on weight
-      if (weight > 0) {
-        toast.success(`Available quantity: ${weight}`);
+        if (weight > 0) {
+          toast.success(`Available quantity: ${weight}`);
+        } else {
+          toast('No quantity available for this combination', {
+            icon: 'ℹ️',
+            duration: 3000,
+          });
+        }
       } else {
-        // Don't show error, just show info
-        toast('No quantity available for this combination', {
-          icon: 'ℹ️',
-          duration: 3000,
-        });
+        setFormData(prev => ({
+          ...prev,
+          items: prev.items.map((entry, i) =>
+            i === index ? { ...entry, isLoadingQty: false } : entry
+          )
+        }));
+        toast.error('Invalid quantity received from server');
       }
 
     } catch (error: any) {
@@ -287,15 +313,44 @@ const ReceiptAdd: React.FC = () => {
   const handleItemChange = (index: number, field: keyof ReceiptItem, value: any) => {
     const updatedItems = [...formData.items];
     const item = updatedItems[index];
-    updatedItems[index] = {
-      ...item,
-      [field]: value
-    };
+
+    // Handle grossWt with 3 decimal validation
+    if (field === 'grossWt') {
+      // Convert to string to check decimal places
+      const strValue = String(value);
+      if (strValue.includes('.')) {
+        const decimalPlaces = strValue.split('.')[1]?.length || 0;
+        if (decimalPlaces > 3) {
+          toast.error('Gross weight can have maximum 3 decimal places');
+          return;
+        }
+      }
+      // Parse the value and round to 3 decimal places
+      const numValue = parseFloat(strValue);
+      if (!isNaN(numValue)) {
+        // Round to 3 decimal places
+        const roundedValue = Math.round(numValue * 1000) / 1000;
+        updatedItems[index] = {
+          ...item,
+          [field]: roundedValue
+        };
+      } else {
+        updatedItems[index] = {
+          ...item,
+          [field]: 0
+        };
+      }
+    } else {
+      updatedItems[index] = {
+        ...item,
+        [field]: value
+      };
+    }
 
     // Auto-calculate fine weight: fineWt = (purity% * grossWt) + srp
     if (field === 'purity' || field === 'grossWt' || field === 'srp') {
       const purity = field === 'purity' ? value : updatedItems[index].purity;
-      const grossWt = field === 'grossWt' ? value : updatedItems[index].grossWt;
+      const grossWt = field === 'grossWt' ? updatedItems[index].grossWt : updatedItems[index].grossWt;
       const srp = field === 'srp' ? value : updatedItems[index].srp;
 
       updatedItems[index].fineWt = calculateFineWeight(
@@ -310,17 +365,19 @@ const ReceiptAdd: React.FC = () => {
       items: updatedItems
     });
 
-    // If purity is changed, fetch quantity
+    // If purity is changed, fetch quantity with debounce
     if (field === 'purity') {
       const currentItem = updatedItems[index];
       if (currentItem.item && currentItem.size && currentItem.purity > 0) {
-        // Debounce the API call
-        const timeoutId = setTimeout(() => {
-          fetchQuantity(index, currentItem.item, currentItem.size, currentItem.purity);
-        }, 500);
+        // Clear previous timer
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+        }
 
-        // Store timeout ID for cleanup
-        (window as any)[`timeout-${index}`] = timeoutId;
+        // Set new timer
+        debounceTimerRef.current = setTimeout(() => {
+          fetchQuantity(index, currentItem.item, currentItem.size, currentItem.purity);
+        }, 800);
       }
     }
   };
@@ -328,12 +385,17 @@ const ReceiptAdd: React.FC = () => {
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
-      Object.keys(window).forEach(key => {
-        if (key.startsWith('timeout-')) {
-          clearTimeout((window as any)[key]);
-        }
-      });
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
     };
+  }, []);
+
+  // Initialize with one empty row
+  useEffect(() => {
+    if (formData.items.length === 0) {
+      handleAddItem();
+    }
   }, []);
 
   // Validate all items before submit
@@ -380,10 +442,31 @@ const ReceiptAdd: React.FC = () => {
     });
   };
 
+  // Handle customer weight change
+  const handleCustomerWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value) && value >= 0) {
+      setFormData({
+        ...formData,
+        customerWeight: value
+      });
+    } else {
+      setFormData({
+        ...formData,
+        customerWeight: 0
+      });
+    }
+  };
+
   // Calculate total bill amount
   const calculateTotalBill = () => {
     // Total Bill = Total SRP + Total Labor
     return calculateTotalSRP() + calculateTotalLabor();
+  };
+
+  // Calculate remaining weight
+  const calculateRemainingWeight = () => {
+    return calculateTotalGrossWt() - formData.customerWeight;
   };
 
   const handleSaveReceipt = async () => {
@@ -401,6 +484,17 @@ const ReceiptAdd: React.FC = () => {
       return;
     }
 
+    // Validate customer weight
+    if (formData.customerWeight <= 0) {
+      toast.error('Please enter customer weight');
+      return;
+    }
+
+    if (formData.customerWeight > calculateTotalGrossWt()) {
+      toast.error('Customer weight cannot be greater than total gross weight');
+      return;
+    }
+
     try {
       // Calculate all totals
       const totalGrossWt = calculateTotalGrossWt();
@@ -408,8 +502,9 @@ const ReceiptAdd: React.FC = () => {
       const totalSRP = calculateTotalSRP();
       const totalLabor = calculateTotalLabor();
       const totalBill = calculateTotalBill();
+      const remainingWeight = calculateRemainingWeight();
 
-      // Prepare data for API - exactly as requested
+      // Prepare data for API - Exactly as requested
       const billData = {
         clientId: formData.clientId,
         datetime: formData.date,
@@ -420,18 +515,14 @@ const ReceiptAdd: React.FC = () => {
           size: item.size,
           purity: item.purity,
           availableQty: item.availableQty,
-          grossWt: item.grossWt,
+          grossWt: Number(item.grossWt.toFixed(3)),
           srp: item.srp,
-          fineWt: item.fineWt,
+          fineWt: Number(item.fineWt.toFixed(3)),
           laborRate: item.laborRate || 0
         })),
-        totals: {
-          totalGrossWt: totalGrossWt,
-          totalFineWt: totalFineWt,
-          totalSRP: totalSRP,
-          totalLabor: totalLabor,
-          totalItems: formData.items.length
-        }
+        customerWeight: Number(formData.customerWeight.toFixed(3)),
+        remainingWeight: Number(remainingWeight.toFixed(3)),
+        totalGrossWt: Number(totalGrossWt.toFixed(3))
       };
 
       console.log('Sending to backend:', billData);
@@ -445,6 +536,7 @@ const ReceiptAdd: React.FC = () => {
         clientName: '',
         date: new Date().toISOString().split('T')[0],
         items: [],
+        customerWeight: 0,
         goldInfo: {
           karat: '22K',
           rate: 0,
@@ -452,6 +544,11 @@ const ReceiptAdd: React.FC = () => {
           totalAmount: 0
         }
       });
+
+      // Add initial empty row after reset
+      setTimeout(() => {
+        handleAddItem();
+      }, 100);
 
       // Navigate back to billing page
       navigate({ to: '/billing' });
@@ -488,12 +585,11 @@ const ReceiptAdd: React.FC = () => {
   };
 
   const formatNumberThreeDecimals = (value: number) => {
-    if (value === 0 || !value) return '0';
-    const str = value.toFixed(3);
-    return str.replace(/\.?0+$/, '');
+    if (value === 0 || !value) return '0.000';
+    return value.toFixed(3);
   };
 
-  // Custom action renderer for GenericTable - Now shows Add/Remove buttons
+  // Custom action renderer for GenericTable - Shows Add/Remove buttons
   const renderActions = (item: ReceiptItem, index: number) => {
     const actualIndex = formData.items.indexOf(item);
 
@@ -572,7 +668,7 @@ const ReceiptAdd: React.FC = () => {
               max="100"
               value={item.purity || ''}
               onChange={(e) => handleItemChange(actualIndex, 'purity', parseFloat(e.target.value) || 0)}
-              placeholder="91.6"
+              placeholder="0"
               className="flex-1 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
             />
             {item.isLoadingQty && (
@@ -610,7 +706,22 @@ const ReceiptAdd: React.FC = () => {
             step="0.001"
             min="0"
             value={item.grossWt || ''}
-            onChange={(e) => handleItemChange(actualIndex, 'grossWt', parseFloat(e.target.value) || 0)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '') {
+                handleItemChange(actualIndex, 'grossWt', 0);
+                return;
+              }
+              const num = parseFloat(val);
+              if (!isNaN(num)) {
+                const decimalPart = val.split('.')[1];
+                if (decimalPart && decimalPart.length > 3) {
+                  toast.error('Gross weight can have maximum 3 decimal places');
+                  return;
+                }
+                handleItemChange(actualIndex, 'grossWt', num);
+              }
+            }}
             placeholder="0.000"
             className="w-24 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
           />
@@ -667,7 +778,7 @@ const ReceiptAdd: React.FC = () => {
   return (
     <div className="bg-[#f9f9f7] dark:bg-slate-950">
       <div className="px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8 pb-32">
-        {/* Header - Removed top save button */}
+        {/* Header */}
         <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <div className="flex items-center gap-3">
             <button
@@ -678,8 +789,8 @@ const ReceiptAdd: React.FC = () => {
               <span className="text-sm font-medium">Back</span>
             </button>
             <PageHeader
-              title="Create Receipt"
-              subtitle="Add new receipt with items and gold information"
+              title="Create Bill"
+              subtitle="Add items and generate bill"
             />
           </div>
         </div>
@@ -724,25 +835,19 @@ const ReceiptAdd: React.FC = () => {
 
         {/* Items Section */}
         <div className="mb-4 rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm dark:bg-slate-900 dark:border-slate-700">
-          <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="mb-4">
             <h3 className="text-sm font-bold text-[#4f4535] dark:text-slate-300 uppercase tracking-wider">
               Items
             </h3>
-            <div className="flex gap-2">
-              <GenericButton
-                onClick={handleAddItem}
-                className="!bg-[#785600] hover:!bg-[#5d4200] !text-white !px-4 !py-2 !text-sm"
-              >
-                <Plus className="h-4 w-4" />
-                Add Item
-              </GenericButton>
-            </div>
+            <p className="text-xs text-[#4f4535]/60 dark:text-slate-400 mt-1">
+              Use + button to add more items, - button to remove
+            </p>
           </div>
 
           <GenericTable<ReceiptItem>
             data={formData.items}
             columns={columns}
-            emptyMessage="No items added yet. Click 'Add Item' to start."
+            emptyMessage="No items added yet."
             isLoading={false}
             renderActions={renderActions}
             showSrNo={true}
@@ -750,59 +855,60 @@ const ReceiptAdd: React.FC = () => {
           />
         </div>
 
-        {/* Totals Section */}
+        {/* Receipt Summary */}
         {formData.items.length > 0 && (
           <div className="mb-4 rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm dark:bg-slate-900 dark:border-slate-700">
-            <h3 className="text-sm font-bold text-[#4f4535] dark:text-slate-300 uppercase tracking-wider mb-3">
-              Receipt Summary
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-[#4f4535] dark:text-slate-400 mb-1">
-                  Total Gross Wt
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              {/* Customer Weight - Editable Field */}
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <label className="text-sm font-semibold text-[#4f4535] dark:text-slate-300 whitespace-nowrap">
+                  Customer Weight (G) <span className="text-red-500">*</span>
                 </label>
-                <div className="w-full rounded-lg bg-[#f4f4f2] px-4 py-2.5 text-sm font-bold text-[#1a1c1b] dark:bg-slate-800 dark:text-white font-mono">
-                  {formatNumberThreeDecimals(calculateTotalGrossWt())} G
-                </div>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  value={formData.customerWeight || ''}
+                  onChange={handleCustomerWeightChange}
+                  placeholder="Enter weight"
+                  className="w-32 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                />
+                {formData.customerWeight > 0 && formData.customerWeight > calculateTotalGrossWt() && (
+                  <p className="text-xs text-red-500 whitespace-nowrap">
+                    Exceeds total ({formatNumberThreeDecimals(calculateTotalGrossWt())}G)
+                  </p>
+                )}
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-[#4f4535] dark:text-slate-400 mb-1">
-                  Total Fine Wt
-                </label>
-                <div className="w-full rounded-lg bg-[#f4f4f2] px-4 py-2.5 text-sm font-bold text-[#785600] dark:bg-slate-800 dark:text-amber-400 font-mono">
-                  {formatNumberThreeDecimals(calculateTotalFineWt())} G
+
+              {/* Summary Stats in One Line */}
+              <div className="flex flex-wrap items-center gap-4 sm:gap-6 w-full sm:w-auto">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#4f4535] dark:text-slate-400">Total Gross:</span>
+                  <span className="text-sm font-bold text-[#1a1c1b] dark:text-white font-mono">
+                    {formatNumberThreeDecimals(calculateTotalGrossWt())} G
+                  </span>
                 </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[#4f4535] dark:text-slate-400 mb-1">
-                  Net Weight
-                </label>
-                <div className="w-full rounded-lg bg-[#f4f4f2] px-4 py-2.5 text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                  {formatNumberThreeDecimals(calculateTotalGrossWt() - calculateTotalFineWt())} G
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#4f4535] dark:text-slate-400">Customer:</span>
+                  <span className="text-sm font-bold text-[#1a1c1b] dark:text-white font-mono">
+                    {formatNumberThreeDecimals(formData.customerWeight)} G
+                  </span>
                 </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[#4f4535] dark:text-slate-400 mb-1">
-                  Total SRP
-                </label>
-                <div className="w-full rounded-lg bg-[#f4f4f2] px-4 py-2.5 text-sm font-bold text-[#1a1c1b] dark:bg-slate-800 dark:text-white font-mono">
-                  ₹{calculateTotalSRP().toFixed(2)}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[#4f4535] dark:text-slate-400 mb-1">
-                  Total Labor
-                </label>
-                <div className="w-full rounded-lg bg-[#f4f4f2] px-4 py-2.5 text-sm font-bold text-[#1a1c1b] dark:bg-slate-800 dark:text-white font-mono">
-                  ₹{calculateTotalLabor().toFixed(2)}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[#4f4535] dark:text-slate-400 mb-1">
-                  Total Bill
-                </label>
-                <div className="w-full rounded-lg bg-[#785600] px-4 py-2.5 text-sm font-bold text-white dark:bg-amber-600 font-mono">
-                  ₹{calculateTotalBill().toFixed(2)}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#4f4535] dark:text-slate-400">Remaining:</span>
+                  <span className="text-sm font-bold text-[#1a1c1b] dark:text-white font-mono">
+                    {formatNumberThreeDecimals(calculateRemainingWeight())} G
+                    {calculateRemainingWeight() > 0 && (
+                      <span className="ml-1 text-xs font-normal text-[#4f4535] dark:text-slate-400">
+                        (Pending)
+                      </span>
+                    )}
+                    {calculateRemainingWeight() === 0 && (
+                      <span className="ml-1 text-xs font-normal text-[#4f4535] dark:text-slate-400">
+                        (Settled)
+                      </span>
+                    )}
+                  </span>
                 </div>
               </div>
             </div>
@@ -816,14 +922,13 @@ const ReceiptAdd: React.FC = () => {
               type="button"
               onClick={handleSaveReceipt}
               disabled={savebill.isPending}
-              className="!bg-[#785600] hover:!bg-[#5d4200] !text-white !px-8 !py-3 !text-base !font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg"
             >
               {savebill.isPending ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <Save className="h-5 w-5" />
               )}
-              {savebill.isPending ? 'Saving...' : 'Save Receipt'}
+              {savebill.isPending ? 'Saving...' : 'Save Bill'}
             </GenericButton>
           </div>
         </div>

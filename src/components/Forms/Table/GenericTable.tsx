@@ -187,7 +187,7 @@ export function GenericTable<T extends { id: string | number }>({
                 )}
 
                 {/* Table */}
-                <div className="overflow-hidden rounded-xl border border-[#d3c4af]/10 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
+                <div className="overflow-hidden  border border-[#d3c4af]/10 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
                             <thead>
