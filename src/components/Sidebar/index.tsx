@@ -159,12 +159,19 @@ const Sidebar = ({
     //   icon: <MdStraighten size={22} />,
     //   roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     // },
+    // client
     {
-      label: 'Opening Stocks',
-      path: '/stock/openingstock',
-      icon: <MdInventory2 size={22} />,
+      label: 'Client',
+      path: '/client/client',
+      icon: <MdGroups size={22} />,
       roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
+    // {
+    //   label: 'Opening Stocks',
+    //   path: '/stock/openingstock',
+    //   icon: <MdInventory2 size={22} />,
+    //   roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+    // },
     {
       label: 'Stocks',
       path: '/Stocks/stockpage',
@@ -177,43 +184,17 @@ const Sidebar = ({
       icon: <MdPrecisionManufacturing size={22} />,
       roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
-
     {
-      label: 'Manufacturing Process',
+      label: 'Billing',
+      path: '/billing',
       icon: <MdPrecisionManufacturing size={22} />,
       roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-      subroutes: [
-        {
-          label: 'Tar',
-          path: '/manufacturingprocess/AddTar',
-          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-          icon: <MdPrecisionManufacturing size={18} />,
-        },
-        {
-          label: 'Box',
-          path: '/manufacturingprocess/box/boxdept',
-          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-          icon: <MdProductionQuantityLimits size={18} />,
-        },
-        {
-          label: 'Soldering',
-          path: '/manufacturingprocess/solding/soldingpage',
-          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-          icon: <MdBuild size={18} />,
-        },
-        {
-          label: 'Joint',
-          path: '/manufacturingprocess/joint/JointDept',
-          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-          icon: <MdEngineering size={18} />,
-        },
-        {
-          label: 'Cutting',
-          path: '/manufacturingprocess/cutting/cuttingdept',
-          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-          icon: <MdHandyman size={18} />,
-        },
-      ],
+    },
+    {
+      label: 'Settlement',
+      path: '/setlment/settlement',
+      icon: <MdPrecisionManufacturing size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
   ];
 

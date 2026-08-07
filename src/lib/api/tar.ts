@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { api } from "@/utils/axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -12,8 +11,8 @@ export interface Tar {
   fine: number;
   tar: number;
   scrap: number;
-  lossWeight: number;
-  purity: string;
+  loss: number;
+  purity: number;
   isSaved?: boolean;
   itemId?: string;
   sizeId?: string;
@@ -42,12 +41,19 @@ const createTarApi = async (data: {
   size: string;
   tar: number;
   scrap: number;
-  lossWeight: number;
+  loss: number;
   purity: string;
   isSaved: boolean;
 }) => {
   try {
-    const response = await api.post("/admin/tar", data);
+    const payload = {
+      ...data,
+      fine: Number(data.fine),
+      tar: Number(data.tar || 0),
+      scrap: Number(data.scrap || 0),
+      loss: Number(data.loss || 0),
+    };
+    const response = await api.post("/admin/tar", payload);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -59,18 +65,24 @@ const createTarApi = async (data: {
 
 const saveTarApi = async ({ id, data }: { id: string; data: Partial<Tar> }) => {
   try {
-    // Ensure number fields are actually numbers
+    // Include all required fields in the payload
     const payload = {
-      ...data,
       id: id,
-      fine: data.fine !== undefined ? Number(data.fine) : undefined,
-      tar: data.tar !== undefined ? Number(data.tar) : undefined,
-      scrap: data.scrap !== undefined ? Number(data.scrap) : undefined,
-      lossWeight: data.lossWeight !== undefined ? Number(data.lossWeight) : undefined,
+      itemId: data.itemId || '',
+      sizeId: data.sizeId || '',
+      fine: data.fine !== undefined ? Number(data.fine) : 0,
+      item: data.item || '',
+      size: data.size || '',
+      tar: data.tar !== undefined ? Number(data.tar) : 0,
+      scrap: data.scrap !== undefined ? Number(data.scrap) : 0,
+      loss: data.loss !== undefined ? Number(data.loss) : 0,
+      purity: data.purity || '',
+      isSaved: data.isSaved || false,
     };
     
     console.log('Saving payload:', payload);
-    const response = await api.post(`/admin/tar`, payload);
+    // Use PUT with ID in the URL path
+    const response = await api.put(`/admin/tar/${id}`, payload);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -79,6 +91,7 @@ const saveTarApi = async ({ id, data }: { id: string; data: Partial<Tar> }) => {
     throw error;
   }
 };
+
 const getTarByIdApi = async (id: string) => {
   try {
     const response = await api.get(`/admin/tar/${id}`);

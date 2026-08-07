@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, X, ArrowLeft } from 'lucide-react';
+import { Plus, X, ArrowLeft, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import PageHeader from '@/components/Forms/Common/PageHeader';
 import { useNavigate } from '@tanstack/react-router';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import { z } from 'zod';
@@ -23,6 +22,7 @@ const SizeMaster: React.FC = () => {
     size: '',
   });
   const [formErrors, setFormErrors] = useState<{ size?: string }>({});
+  const [searchTerm, setSearchTerm] = useState('');
 
   // React Query hooks
   const { data: sizes = [], isLoading, refetch } = useGetSizes();
@@ -30,18 +30,19 @@ const SizeMaster: React.FC = () => {
   const updateSize = useUpdateSize();
   const deleteSize = useDeleteSize();
 
-  // Handle form input change
+  // Filter data based on search term
+  const filteredData = searchTerm
+    ? sizes.filter(item =>
+        item.size.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : sizes;
+
+  // Handle form input change - REMOVED number-only validation
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
-    // Allow only numbers and decimal point
-    const sanitized = value.replace(/[^0-9.]/g, '');
-    const parts = sanitized.split('.');
-    const formatted = parts.length > 2
-      ? `${parts[0]}.${parts.slice(1).join('')}`
-      : sanitized;
-
-    setFormData((prev) => ({ ...prev, [name]: formatted }));
+    
+    // Allow any character (no sanitization)
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (formErrors.size) {
       setFormErrors({});
     }
@@ -133,12 +134,11 @@ const SizeMaster: React.FC = () => {
     resetForm();
   };
 
-  // Table columns
+  // Table columns - removed align property
   const columns: Column<Size>[] = [
     {
       key: 'size',
       header: 'Size',
-      align: 'left',
       className: 'font-medium',
       render: (item) => (
         <span className="text-xs sm:text-sm font-medium text-[#1a1c1b] dark:text-white">
@@ -151,12 +151,12 @@ const SizeMaster: React.FC = () => {
   const isSubmitting = createSize.isPending || updateSize.isPending || deleteSize.isPending;
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-      {/* Header - Back Button, Title, and Add Button on Same Line */}
+    <div className=" bg-[#f9f9f7] dark:bg-slate-950">
+      {/* Header - Back Button, Title, Search, and Add Button on Same Line */}
       <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
-        <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6 gap-3">
           {/* Left side - Back button and Title */}
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
             <button
               onClick={() => navigate({ to: '/Stocks/stockpage' })}
               className="flex items-center gap-1 text-[#785600] hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300 transition-colors flex-shrink-0"
@@ -165,35 +165,44 @@ const SizeMaster: React.FC = () => {
               <span className="text-xs sm:text-sm font-medium">Back</span>
             </button>
             <div className="h-5 w-px bg-[#d3c4af]/30 dark:bg-slate-600 flex-shrink-0" />
-            <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
+            <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Size Master
-            </h1>
+            </h2>
           </div>
 
-          {/* Right side - Add Size Button */}
-          <GenericButton
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !bg-amber-600 hover:!bg-amber-700 !text-white whitespace-nowrap shadow-sm hover:shadow-md transition-all flex-shrink-0"
-          >
-            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Add Size</span>
-            <span className="xs:hidden">Add</span>
-          </GenericButton>
+          {/* Right side - Search and Add Size Button */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            {/* Search Bar */}
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+              <input
+                type="text"
+                placeholder="Search by size..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+              />
+            </div>
+
+            {/* Add Size Button */}
+            <GenericButton
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="xs:hidden">Add Size</span>
+            </GenericButton>
+          </div>
         </div>
       </div>
 
       <div className="px-3 sm:px-4 md:px-6 pb-4">
-
-
         {/* Sizes Table - Full width */}
         <div className="-mx-3 sm:-mx-4 md:mx-0">
           <GenericTable
-            data={sizes}
+            data={filteredData}
             showSrNo={true}
             columns={columns}
-            searchFields={['size']}
-            searchPlaceholder="Search by size..."
             onSave={(item) => {
               console.log('Save size:', item);
             }}
@@ -237,7 +246,7 @@ const SizeMaster: React.FC = () => {
                   name="size"
                   value={formData.size}
                   onChange={handleInputChange}
-                  placeholder="e.g., 16, 18.5, 20"
+                  placeholder="Enter size (e.g., 16, Small, Large, XL)"
                   className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white ${formErrors.size ? 'ring-2 ring-red-500' : ''
                     }`}
                   autoFocus
@@ -246,7 +255,7 @@ const SizeMaster: React.FC = () => {
                   <p className="mt-1 text-[10px] sm:text-xs text-red-500">{formErrors.size}</p>
                 )}
                 <p className="mt-1 text-[8px] sm:text-[10px] text-[#4f4535]/60 dark:text-slate-500">
-                  Enter decimal numbers only (e.g., 16, 16.5, 0.5)
+                  Enter any size (numbers, text, or alphanumeric)
                 </p>
               </div>
             </div>

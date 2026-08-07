@@ -1,5 +1,5 @@
 import React from 'react';
-import {useFormContext, RegisterOptions} from 'react-hook-form';
+import { useFormContext, RegisterOptions } from 'react-hook-form';
 
 interface InputProps {
   name: string;
@@ -13,7 +13,10 @@ interface InputProps {
   as?: 'input' | 'textarea' | 'select';
   rows?: number;
   uppercase?: boolean;
-  children?: React.ReactNode; // For select options
+  children?: React.ReactNode;
+  className?: string;
+  readOnly?: boolean;
+  value?: string | number;
 }
 
 const GenericInputField: React.FC<InputProps> = ({
@@ -29,10 +32,13 @@ const GenericInputField: React.FC<InputProps> = ({
   rows = 3,
   uppercase = false,
   children,
+  className = '',
+  readOnly = false,
+  value,
 }) => {
   const {
     register,
-    formState: {errors},
+    formState: { errors },
     setValue,
   } = useFormContext();
 
@@ -41,22 +47,29 @@ const GenericInputField: React.FC<InputProps> = ({
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
-    const {value} = e.target;
+    const { value } = e.target;
     if (type === 'number') {
       setValue(name, Number(value));
     }
   };
 
-  const baseInputClasses = `w-full rounded-lg border-0 bg-[#f4f4f2] py-2.5 pl-7 pr-3 text-right text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 ${
+  // Check if field is read-only or disabled
+  const isReadOnly = readOnly || disabled;
+
+  const baseInputClasses = `w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-left text-[#1a1c1b] outline-none transition-all duration-200 focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700 ${
     uppercase ? 'uppercase' : ''
-  }`;
+  } ${
+    isReadOnly 
+      ? 'bg-gray-50 text-slate-600 dark:bg-slate-700 dark:text-slate-300 cursor-default border-transparent' 
+      : 'hover:border-[#785600]/50'
+  } ${className}`;
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 w-full">
       {label && (
-        <label className="text-on-surface-variant ml-1 text-xs font-semibold uppercase tracking-wider">
+        <label className="mb-1 block text-xs font-medium text-[#4f4535] dark:text-slate-400">
           {label}
-          {required && <span className="ml-1 text-red-600">*</span>}
+          {required && <span className="ml-1 text-red-500">*</span>}
         </label>
       )}
 
@@ -64,7 +77,7 @@ const GenericInputField: React.FC<InputProps> = ({
         <textarea
           placeholder={placeholder}
           className={`${baseInputClasses} resize-none`}
-          disabled={disabled}
+          disabled={disabled || readOnly}
           defaultValue={defaultValue}
           rows={rows}
           {...register(name, validation)}
@@ -73,7 +86,7 @@ const GenericInputField: React.FC<InputProps> = ({
       ) : as === 'select' ? (
         <select
           className={baseInputClasses}
-          disabled={disabled}
+          disabled={disabled || readOnly}
           defaultValue={defaultValue}
           {...register(name, validation)}
           onChange={handleInputChange}
@@ -85,15 +98,20 @@ const GenericInputField: React.FC<InputProps> = ({
           type={type}
           placeholder={placeholder}
           className={baseInputClasses}
-          disabled={disabled}
+          disabled={disabled || readOnly}
           defaultValue={defaultValue}
+          value={value}
+          readOnly={readOnly}
           {...register(name, validation)}
-          onChange={handleInputChange}
+          onChange={(e) => {
+            register(name).onChange(e);
+            handleInputChange(e);
+          }}
         />
       )}
 
       {errors[name] && (
-        <p className="mt-1 text-sm text-red-500">
+        <p className="mt-1 text-xs text-red-500">
           {errors[name]?.message as string}
         </p>
       )}

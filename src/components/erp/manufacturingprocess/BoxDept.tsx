@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Edit, Trash2, X, Search, Save } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Save } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
-import PageHeader from '@/components/Forms/Common/PageHeader';
 import toast from 'react-hot-toast';
-import { manufacturingStore } from '@/utils/manufacturingStore';
-
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import { useGetBox, useSubmitBox } from '@/lib/api/box';
 
 interface BoxEntry {
   id: string;
@@ -15,73 +14,89 @@ interface BoxEntry {
   tarWeight: number;
   chainWeight: number;
   scrap: number;
-  lossWeight: number;
-  purity: string;
+  loss: number;
   isEditing?: boolean;
   isSaved?: boolean;
   chainWeightRaw?: string;
   scrapRaw?: string;
+  itemId?: string;
+  sizeId?: string;
+  isCompleted?: boolean;
 }
 
 const BoxDept: React.FC = () => {
   const navigate = useNavigate();
   const [boxEntries, setBoxEntries] = useState<BoxEntry[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [saveIndex, setSaveIndex] = useState<number | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const isInitialMount = useRef(true);
 
-  // Load data from store
+  // Fetch data from API
+  const { data: boxData = [], isLoading: boxLoading, refetch } = useGetBox();
+  const submitBox = useSubmitBox();
+
+  // Load data from API
   useEffect(() => {
-    loadData();
-  }, []);
+    // Skip if still loading
+    if (boxLoading) {
+      return;
+    }
 
-  const loadData = () => {
-    const entries = manufacturingStore.getEntries();
-    console.log('📦 Box - Store entries:', entries);
+    // Skip on initial mount to prevent double render
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+    }
 
-    const boxData = entries.map((entry, index) => ({
-      id: entry.id,
-      srNo: index + 1,
-      dateTime: entry.dateTime || new Date().toLocaleString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      }),
-      item: entry.item || 'N/A',
-      size: entry.size || 'N/A',
-      purity: entry.purity || '22K',
-      tarWeight: entry.tarWeight || entry.tar || 0,
-      chainWeight: entry.chainWeight || 0,
-      scrap: entry.scrap || 0,
-      lossWeight: entry.lossWeight || 0,
-      isEditing: !entry.isSaved,
-      isSaved: entry.isSaved || false,
-      chainWeightRaw: entry.chainWeight && entry.chainWeight !== 0 ? entry.chainWeight.toString() : '',
-      scrapRaw: entry.scrap && entry.scrap !== 0 ? entry.scrap.toString() : '',
-    }));
+    if (boxData.length > 0) {
+      const entries: BoxEntry[] = boxData.map((box: any, index: number) => {
+        // Get item name from nested object or fallback
+        const itemName = box.item?.name || box.itemId || 'N/A';
+        // Get size from nested object or fallback
+        const sizeName = box.size?.size || box.sizeId || 'N/A';
 
-    setBoxEntries(boxData);
-  };
+        // Calculate loss: tarWeight - chainWeight
+        const chainWeight = box.chainWeight || 0;
+        const tarWeight = box.tarWeight || 0;
+        const loss = tarWeight - chainWeight;
 
-  // Handle row edit toggle
-  const handleRowEdit = (index: number) => {
-    setBoxEntries(prev => prev.map((entry, i) => {
-      if (i === index) {
+        // Format date time
+        const dateTime = new Date(box.createdAt).toLocaleString('en-IN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+
         return {
-          ...entry,
-          isEditing: !entry.isEditing,
-          chainWeightRaw: entry.chainWeight !== 0 ? entry.chainWeight.toString() : '',
-          scrapRaw: entry.scrap !== 0 ? entry.scrap.toString() : '',
+          id: box.id,
+          srNo: index + 1,
+          dateTime: dateTime,
+          item: itemName,
+          size: sizeName,
+          tarWeight: tarWeight,
+          chainWeight: chainWeight,
+          scrap: box.scrap || 0,
+          loss: loss,
+          isEditing: box.chainWeight === null || box.chainWeight === undefined,
+          isSaved: box.chainWeight !== null && box.chainWeight !== undefined,
+          chainWeightRaw: box.chainWeight ? box.chainWeight.toString() : '',
+          scrapRaw: box.scrap ? box.scrap.toString() : '',
+          itemId: box.itemId,
+          sizeId: box.sizeId,
+          isCompleted: box.isCompleted || false,
         };
-      }
-      return entry;
-    }));
-  };
+      });
+      setBoxEntries(entries);
+    } else {
+      setBoxEntries([]);
+    }
+  }, [boxData, boxLoading]);
 
   // Handle inline field change
-  const handleInlineChange = (index: number, field: 'chainWeight' | 'scrap', value: string) => {
+  const handleInlineChange = useCallback((index: number, field: 'chainWeight' | 'scrap', value: string) => {
     setBoxEntries(prev => prev.map((entry, i) => {
       if (i === index) {
         const updated = { ...entry };
@@ -94,7 +109,8 @@ const BoxDept: React.FC = () => {
             const numValue = parseFloat(value);
             updated.chainWeight = isNaN(numValue) ? 0 : numValue;
           }
-          updated.lossWeight = Math.max(0, entry.tarWeight - (updated.chainWeight || 0));
+          // Calculate loss: tarWeight - chainWeight
+          updated.loss = Math.max(0, entry.tarWeight - updated.chainWeight);
         } else if (field === 'scrap') {
           updated.scrapRaw = value;
           if (value === '' || value === '.' || value === '-') {
@@ -109,10 +125,10 @@ const BoxDept: React.FC = () => {
       }
       return entry;
     }));
-  };
+  }, []);
 
-  // Handle row save - Update store and navigate to Soldering
-  const handleRowSave = (index: number) => {
+  // Open confirmation popup before saving
+  const handleSaveClick = useCallback((index: number) => {
     const entry = boxEntries[index];
 
     if (!entry.chainWeight || entry.chainWeight < 0) {
@@ -125,46 +141,61 @@ const BoxDept: React.FC = () => {
       return;
     }
 
-    if (entry.lossWeight < 0) {
+    if (entry.loss < 0) {
       toast.error('Loss Weight cannot be negative. Chain weight must be less than or equal to Tar Weight.');
       return;
     }
 
+    setSaveIndex(index);
+    setShowConfirmModal(true);
+  }, [boxEntries]);
+
+  // Confirm and save
+  const confirmSave = useCallback(async () => {
+    if (saveIndex === null) return;
+
+    const index = saveIndex;
+    const entry = boxEntries[index];
+
     setIsLoading(true);
 
     try {
-      // Update the store with box data
-      manufacturingStore.updateEntry(entry.id, {
-        tarWeight: entry.tarWeight,
-        chainWeight: entry.chainWeight,
-        lossWeight: entry.lossWeight,
-        scrap: entry.scrap,
-        isSaved: true,
+      await submitBox.mutateAsync({
+        id: entry.id,
+        data: {
+          chainWeight: entry.chainWeight,
+          scrap: entry.scrap,
+          loss: entry.loss,
+          isCompleted: true,
+        }
       });
 
-      toast.success('Box entry saved successfully! Moving to Soldering...');
-      setIsLoading(false);
+      setBoxEntries(prev => prev.map((s, i) =>
+        i === index ? { ...s, isEditing: false, isSaved: true, isCompleted: true } : s
+      ));
 
-      // Navigate to Soldering after successful save
-      navigate({ to: '/manufacturingprocess/solding/soldingpage' });
+      // toast.success('Box entry saved successfully!');
+      setIsLoading(false);
+      setShowConfirmModal(false);
+      setSaveIndex(null);
+      await refetch();
+
+      // Navigate to Process page with Soldering tab selected
+      navigate({
+        to: '/manufacturingprocess/process',
+        state: { selectedTab: 'soldering' }
+      });
     } catch (error) {
       console.error('Error saving box:', error);
       toast.error('Failed to save box entry');
       setIsLoading(false);
+      setShowConfirmModal(false);
+      setSaveIndex(null);
     }
-  };
-
-  // Handle delete
-  const handleDelete = (index: number) => {
-    const entry = boxEntries[index];
-    if (window.confirm(`Are you sure you want to delete box entry for "${entry.item}"?`)) {
-      setBoxEntries(prev => prev.filter((_, i) => i !== index));
-      toast.success('Box entry deleted successfully');
-    }
-  };
+  }, [saveIndex, boxEntries, submitBox, navigate, refetch]);
 
   const formatNumber = (value: number) => {
-    if (value === 0) return '0';
+    if (value === 0 || !value) return '0';
     const str = value.toString();
     if (str.includes('.')) {
       return str.replace(/\.?0+$/, '');
@@ -172,170 +203,189 @@ const BoxDept: React.FC = () => {
     return str;
   };
 
-  const filteredEntries = boxEntries.filter(entry =>
-    entry.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.purity.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Check if all entries are saved
+  const allSaved = boxEntries.every(entry => entry.isSaved);
 
-  return (
-    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-      <div className="px-4 py-4 md:px-8 md:py-6">
-        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <PageHeader
-              title="Box Department"
-              subtitle="Manage box entries - Tar Weight, Chain Weight, Loss Weight, Scrap (स्क्रॅप)"
-            />
+  // Custom action renderer
+  const renderActions = useCallback((item: BoxEntry, index: number) => {
+    if (item.isEditing) {
+      return (
+        <button
+          onClick={() => handleSaveClick(index)}
+          disabled={isLoading}
+          className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          title="Save Entry"
+        >
+          <Save className="h-3 w-3" />
+          <span>Save</span>
+        </button>
+      );
+    }
+    return null;
+  }, [isLoading, handleSaveClick]);
+
+  // Define columns for GenericTable
+  const columns: Column<BoxEntry>[] = [
+    {
+      key: 'dateTime',
+      header: 'Date & Time',
+      render: (item) => {
+        // Split dateTime into date and time parts
+        const parts = item.dateTime ? item.dateTime.split(', ') : ['', ''];
+        const datePart = parts[0] || '';
+        const timePart = parts[1] || '';
+
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {datePart}
+            </span>
+            <span className="text-xs text-[#4f4535] dark:text-slate-400">
+              {timePart}
+            </span>
           </div>
-        </div>
-
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+        );
+      },
+    },
+    {
+      key: 'item',
+      header: 'Item',
+      render: (item) => (
+        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
+          {item.item}
+        </span>
+      ),
+    },
+    {
+      key: 'size',
+      header: 'Size',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {item.size}
+        </span>
+      ),
+    },
+    {
+      key: 'tarWeight',
+      header: 'Tar(तार)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.tarWeight)}
+        </span>
+      ),
+    },
+    {
+      key: 'chainWeight',
+      header: 'Chain Weight(G)',
+      render: (item, index) => {
+        if (item.isEditing) {
+          return (
             <input
               type="text"
-              placeholder="Search by item, size or purity..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+              value={item.chainWeightRaw !== undefined ? item.chainWeightRaw : (item.chainWeight === 0 ? '' : item.chainWeight)}
+              onChange={(e) => handleInlineChange(index, 'chainWeight', e.target.value)}
+              placeholder="0.000"
+              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             />
-          </div>
-        </div>
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumber(item.chainWeight)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'scrap',
+      header: 'Scrap (स्क्रॅप)',
+      render: (item, index) => {
+        if (item.isEditing) {
+          return (
+            <input
+              type="text"
+              value={item.scrapRaw !== undefined ? item.scrapRaw : (item.scrap === 0 ? '' : item.scrap)}
+              onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
+              placeholder="0.000"
+              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+            />
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumber(item.scrap)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'loss',
+      header: 'Loss',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.loss)}
+        </span>
+      ),
+    },
+  ];
 
-        <div className="overflow-hidden rounded-xl border border-[#d3c4af]/10 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-[#f4f4f2] text-xs uppercase tracking-[0.15em] text-[#4f4535] dark:bg-slate-800 dark:text-slate-400">
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Sr No</th>
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Date & Time</th>
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Item</th>
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Size</th>
-                  <th className="px-3 py-3 text-right font-semibold lg:px-4">Tar Weight</th>
-                  <th className="px-3 py-3 text-right font-semibold lg:px-4">Chain Weight</th>
-                  <th className="px-3 py-3 text-right font-semibold lg:px-4">Scrap (स्क्रॅप)</th>
-                  <th className="px-3 py-3 text-right font-semibold lg:px-4">Loss Weight</th>
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Purity (टंच)</th>
-                  <th className="px-3 py-3 text-center font-semibold lg:px-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
-                {filteredEntries.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} className="py-12 text-center text-[#4f4535] dark:text-slate-400">
-                      No box entries found. Please save Tar entry first.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredEntries.map((entry, index) => (
-                    <tr key={entry.id} className="group transition-colors hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50">
-                      <td className="px-3 py-3 text-sm text-[#4f4535] dark:text-slate-400 lg:px-4">
-                        {entry.srNo}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-[#1a1c1b] dark:text-white lg:px-4">
-                        {entry.dateTime}
-                      </td>
-                      <td className="px-3 py-3 text-sm font-medium text-[#1a1c1b] dark:text-white lg:px-4">
-                        {entry.item}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-[#1a1c1b] dark:text-white lg:px-4">
-                        {entry.size}
-                      </td>
-                      <td className="px-3 py-3 text-right font-mono text-sm text-[#1a1c1b] dark:text-white lg:px-4">
-                        {formatNumber(entry.tarWeight)}
-                      </td>
-                      <td className="px-3 py-3 text-right lg:px-4">
-                        {entry.isEditing ? (
-                          <input
-                            type="text"
-                            value={entry.chainWeightRaw !== undefined ? entry.chainWeightRaw : (entry.chainWeight === 0 ? '' : entry.chainWeight)}
-                            onChange={(e) => handleInlineChange(index, 'chainWeight', e.target.value)}
-                            placeholder="0.000"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                          />
-                        ) : (
-                          <span className="font-mono text-[#1a1c1b] dark:text-white">
-                            {formatNumber(entry.chainWeight)}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-right lg:px-4">
-                        {entry.isEditing ? (
-                          <input
-                            type="text"
-                            value={entry.scrapRaw !== undefined ? entry.scrapRaw : (entry.scrap === 0 ? '' : entry.scrap)}
-                            onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
-                            placeholder="0.000"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                          />
-                        ) : (
-                          <span className="font-mono text-[#1a1c1b] dark:text-white">
-                            {formatNumber(entry.scrap)}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-right lg:px-4">
-                        <span className={`font-mono ${entry.lossWeight < 0 ? 'text-red-600 font-bold' : 'text-blue-600 dark:text-blue-400'}`}>
-                          {formatNumber(entry.lossWeight)}
-                        </span>
-                        {entry.isEditing && (
-                          <span className="ml-1 text-[10px] text-green-600 dark:text-green-400">(auto)</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-sm font-semibold text-amber-600 dark:text-amber-400 lg:px-4">
-                        {entry.purity}
-                      </td>
-                      <td className="px-3 py-3 text-center lg:px-4">
-                        {entry.isEditing ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleRowSave(index)}
-                              disabled={isLoading}
-                              className="rounded-lg bg-emerald-600 p-1.5 text-white hover:bg-emerald-700 disabled:opacity-50"
-                              title="Save"
-                            >
-                              <Save className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleRowEdit(index)}
-                              className="rounded-lg bg-gray-400 p-1.5 text-white hover:bg-gray-500"
-                              title="Cancel"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleRowEdit(index)}
-                              className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                              title="Edit Chain Weight & Scrap"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(index)}
-                              className="rounded-lg p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+  const isSubmitting = submitBox.isPending;
 
-        <div className="mt-3 text-xs text-[#4f4535] dark:text-slate-400">
-          Showing {filteredEntries.length} of {boxEntries.length} entries
-        </div>
+  return (
+    <div className="bg-[#f9f9f7] dark:bg-slate-950">
+      <div>
+        {/* Generic Table */}
+
+        <GenericTable<BoxEntry>
+          data={boxEntries}
+          columns={columns}
+          onSave={(item, index) => handleSaveClick(index)}
+          emptyMessage="No box entries found."
+          isLoading={boxLoading || isSubmitting}
+          renderActions={!allSaved ? renderActions : undefined}
+          showSrNo={true}
+          srNoLabel="Sr No."
+        />
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
+                  <Save className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+              </div>
+              <h3 className="text-center text-lg font-bold text-[#1a1c1b] dark:text-white mb-2">
+                Confirm Save
+              </h3>
+              <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
+                Are you sure you want to save this tar entry? This will move to the <strong className="text-[#785600] dark:text-amber-400">Soldering Department</strong>.
+              </p>
+              <div className="mt-6 flex justify-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setSaveIndex(null);
+                  }}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmSave}
+                  disabled={isLoading}
+                  className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isLoading ? 'Saving...' : 'Confirm Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

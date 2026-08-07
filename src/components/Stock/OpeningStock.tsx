@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Save, X, Edit, Trash2 } from 'lucide-react';
+import { Plus, Save, X, Edit, Trash2, Search, ArrowLeft } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
@@ -12,8 +12,8 @@ import { z } from 'zod';
 // Zod Schema for validation
 const OpeningStockSchema = z.object({
   itemId: z.string().min(1, "Please select an item"),
-  sizeId: z.string().min(1, "Please select a size"),
-  grams: z.number().min(0.001, "Please enter a valid weight in grams"),
+  sizeId: z.string().min(1, "Please select a size").optional(),
+  grams: z.number().min(0.001, "Please enter a valid weight in grams").optional(),
   purity: z.number().min(1, "Please enter purity percentage")
     .max(100, "Purity cannot exceed 100%"),
 });
@@ -33,12 +33,14 @@ interface OpeningStockEntry {
   purityRaw?: string;
   itemId?: string;
   sizeId?: string;
+  isGoldRow?: boolean;
 }
 
 const OpeningStock: React.FC = () => {
   const navigate = useNavigate();
   const [openingEntries, setOpeningEntries] = useState<OpeningStockEntry[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch items and sizes from API
   const { data: items = [], isLoading: itemsLoading } = useGetItems();
@@ -64,42 +66,62 @@ const OpeningStock: React.FC = () => {
 
     if (stockData.length > 0) {
       const entries: OpeningStockEntry[] = stockData.map((stock, index) => {
-        // Find the item and size from the IDs
         const item = items.find(i => i.id === stock.itemId);
         const size = sizes.find(s => s.id === stock.sizeId);
+
+        // Check if this is a gold row
+        const isGold = item?.name?.toLowerCase() === 'gold' || index === 0;
+
+        // Handle null values with fallbacks
+        const weight = stock.weight || 0;
+        const purity = stock.purity || 0;
 
         return {
           id: stock.id,
           srNo: index + 1,
-          item: item?.name || '',
-          size: size?.size || '',
-          purity: typeof stock.purity === 'string' ? parseFloat(stock.purity) : stock.purity,
-          grams: stock.weight,
+          item: isGold ? 'Gold' : (item?.name || ''),
+          size: isGold ? '-' : (size?.size || ''),
+          purity: isGold ? 0 : (typeof purity === 'string' ? parseFloat(purity) : purity),
+          grams: isGold ? weight : weight,
           isEditing: false,
           isSaved: true,
-          gramsRaw: stock.weight.toString(),
-          purityRaw: typeof stock.purity === 'string' ? stock.purity : stock.purity?.toString() || '',
-          itemId: stock.itemId,
-          sizeId: stock.sizeId,
+          gramsRaw: weight ? weight.toString() : '0',
+          purityRaw: isGold ? '' : (purity ? purity.toString() : ''),
+          itemId: stock.itemId || '',
+          sizeId: stock.sizeId || '',
+          isGoldRow: isGold,
         };
       });
       setOpeningEntries(entries);
     } else {
-      // Start with empty state - no initial row
       setOpeningEntries([]);
     }
 
     setIsInitialized(true);
   }, [stockData, items, sizes, itemsLoading, sizesLoading, stockLoading, isInitialized]);
 
-  // Validate form data
+  // Filter data based on search term
+  const filteredData = searchTerm
+    ? openingEntries.filter(item =>
+      item.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.purity.toString().includes(searchTerm)
+    )
+    : openingEntries;
+
+  // Validate form data - Skip validation for gold row
   const validateEntry = (entry: OpeningStockEntry): boolean => {
+    // Skip validation for gold row
+    if (isGoldRow(entry)) {
+      return true;
+    }
+
     try {
       OpeningStockSchema.parse({
         itemId: entry.itemId || '',
         sizeId: entry.sizeId || '',
-        grams: entry.grams,
-        purity: typeof entry.purity === 'string' ? parseFloat(entry.purity) : entry.purity,
+        grams: entry.grams || 0,
+        purity: typeof entry.purity === 'string' ? parseFloat(entry.purity) : (entry.purity || 0),
       });
       return true;
     } catch (error) {
@@ -186,7 +208,6 @@ const OpeningStock: React.FC = () => {
   // Helper function to format grams without trailing zeros
   const formatGrams = (value: number): string => {
     if (value === 0) return '0';
-    // Remove trailing zeros after decimal
     const str = value.toString();
     if (str.includes('.')) {
       return str.replace(/\.?0+$/, '');
@@ -198,17 +219,27 @@ const OpeningStock: React.FC = () => {
   const handleRowSave = async (index: number) => {
     const entry = openingEntries[index];
 
-    // Validate using Zod schema
+    // Validate using Zod schema (skips validation for gold row)
     if (!validateEntry(entry)) {
       return;
     }
 
-    const stockDataPayload = {
-      itemId: entry.itemId,
-      sizeId: entry.sizeId,
-      weight: entry.grams,
-      purity: typeof entry.purity === 'string' ? parseFloat(entry.purity) : entry.purity,
-    };
+    let stockDataPayload;
+
+    // For gold row, only send id and weight
+    if (isGoldRow(entry)) {
+      stockDataPayload = {
+        id: entry.id,
+        weight: entry.grams || 0,
+      };
+    } else {
+      stockDataPayload = {
+        itemId: entry.itemId || '',
+        sizeId: entry.sizeId || '',
+        weight: entry.grams || 0,
+        purity: typeof entry.purity === 'string' ? parseFloat(entry.purity) : (entry.purity || 0),
+      };
+    }
 
     try {
       if (entry.isSaved) {
@@ -217,7 +248,7 @@ const OpeningStock: React.FC = () => {
       } else {
         const result = await createStock.mutateAsync(stockDataPayload);
         entry.id = result.id;
-        toast.success('Opening stock saved successfully!');
+        // toast.success('Opening stock saved successfully!');
       }
 
       setOpeningEntries(prev => prev.map((s, i) => {
@@ -226,8 +257,8 @@ const OpeningStock: React.FC = () => {
             ...s,
             isEditing: false,
             isSaved: true,
-            gramsRaw: formatGrams(entry.grams),
-            purityRaw: entry.purity.toString(),
+            gramsRaw: formatGrams(entry.grams || 0),
+            purityRaw: (entry.purity || 0).toString(),
           };
         }
         return s;
@@ -274,6 +305,7 @@ const OpeningStock: React.FC = () => {
       purityRaw: '',
       itemId: '',
       sizeId: '',
+      isGoldRow: false,
     };
     setOpeningEntries(prev => [...prev, newEntry]);
   };
@@ -285,6 +317,11 @@ const OpeningStock: React.FC = () => {
       return str.replace(/\.?0+$/, '');
     }
     return str;
+  };
+
+  // Check if a row is the gold row
+  const isGoldRow = (entry: OpeningStockEntry) => {
+    return entry.isGoldRow || (entry.item === 'Gold' && entry.srNo === 1);
   };
 
   // Custom action renderer for GenericTable with matching theme
@@ -312,7 +349,22 @@ const OpeningStock: React.FC = () => {
       );
     }
 
-    // Show Edit and Delete for saved rows
+    // For gold row (saved), only show Edit button (no Delete)
+    if (isGoldRow(item)) {
+      return (
+        <div className="flex">
+          <button
+            onClick={() => handleRowEdit(index)}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:bg-[#785600]/10 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
+            title="Edit"
+          >
+            <Edit className="h-4 w-4" />
+          </button>
+        </div>
+      );
+    }
+
+    // Show Edit and Delete for saved rows (non-gold)
     return (
       <div className="flex">
         <button
@@ -338,8 +390,16 @@ const OpeningStock: React.FC = () => {
     {
       key: 'item',
       header: 'Item',
-      align: 'left',
+
       render: (item, index) => {
+        // If it's a gold row, show "Gold" as read-only
+        if (isGoldRow(item) && item.isSaved) {
+          return (
+            <span className="font-medium text-[#785600] dark:text-amber-400">
+              Gold
+            </span>
+          );
+        }
         if (item.isEditing) {
           return (
             <select
@@ -366,8 +426,16 @@ const OpeningStock: React.FC = () => {
     {
       key: 'size',
       header: 'Size',
-      align: 'left',
+
       render: (item, index) => {
+        // If it's a gold row, show "-" as read-only
+        if (isGoldRow(item) && item.isSaved) {
+          return (
+            <span className="text-[#4f4535] dark:text-slate-400">
+              -
+            </span>
+          );
+        }
         if (item.isEditing) {
           return (
             <select
@@ -394,7 +462,7 @@ const OpeningStock: React.FC = () => {
     {
       key: 'grams',
       header: 'Weight (G)',
-      align: 'center',
+
       render: (item, index) => {
         if (item.isEditing) {
           return (
@@ -409,7 +477,7 @@ const OpeningStock: React.FC = () => {
         }
         return (
           <span className="font-mono text-[#1a1c1b] dark:text-white">
-            {formatGrams(item.grams)}
+            {formatGrams(item.grams || 0)}
           </span>
         );
       },
@@ -417,8 +485,16 @@ const OpeningStock: React.FC = () => {
     {
       key: 'purity',
       header: 'Purity (%)',
-      align: 'center',
+
       render: (item, index) => {
+        // If it's a gold row, show "-" as read-only
+        if (isGoldRow(item) && item.isSaved) {
+          return (
+            <span className="text-[#4f4535] dark:text-slate-400">
+              -
+            </span>
+          );
+        }
         if (item.isEditing) {
           return (
             <input
@@ -442,32 +518,56 @@ const OpeningStock: React.FC = () => {
   const isSubmitting = createStock.isPending || updateStock.isPending || deleteStock.isPending;
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-      {/* Header with Title */}
+    <div className="bg-[#f9f9f7] dark:bg-slate-950">
+      {/* Header with Title, Search and Add Button */}
       <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
-        <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="flex flex-col sm:flex-row items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6 gap-3">
+          <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
+            <button
+              onClick={() => navigate({ to: '/Stocks/stockpage' })}
+              className="flex items-center gap-1 text-[#785600] hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300 transition-colors flex-shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-xs sm:text-sm font-medium">Back</span>
+            </button>
+            <div className="h-5 w-px bg-[#d3c4af]/30 dark:bg-slate-600 flex-shrink-0" />
             <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Opening Stock
             </h2>
           </div>
 
-          <GenericButton
-            type="button"
-            onClick={handleAddRow}
-          >
-            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Add Row</span>
-            <span className="xs:hidden">Add</span>
-          </GenericButton>
+
+          {/* Search and Add Button - Same Line */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            {/* Search Bar */}
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+              <input
+                type="text"
+                placeholder="Search by item, size or purity..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+              />
+            </div>
+
+            {/* Add Button */}
+            <GenericButton
+              type="button"
+              onClick={handleAddRow}
+            >
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden xs:inline">Add Row</span>
+              <span className="xs:hidden">Add Row</span>
+            </GenericButton>
+
+          </div>
         </div>
       </div>
-
       <div className="px-3 sm:px-4 md:px-6 pb-4">
         {/* Generic Table */}
         <div className="-mx-3 sm:-mx-4 md:mx-0">
           <GenericTable
-            data={openingEntries}
+            data={filteredData}
             columns={columns}
             onSave={(item, index) => handleRowSave(index)}
             emptyMessage="No opening stock entries found. Click 'Add Row' to create one."
@@ -477,15 +577,6 @@ const OpeningStock: React.FC = () => {
             srNoLabel="Sr No."
           />
         </div>
-
-        {/* Footer */}
-        {openingEntries.length > 0 && (
-          <div className="mt-3 flex items-center justify-end border-t border-[#d3c4af]/10 pt-3 text-xs text-[#4f4535] dark:border-slate-700 dark:text-slate-400">
-            <span className="font-medium text-amber-600 dark:text-amber-400">
-              Total Weight: {openingEntries.reduce((sum, entry) => sum + entry.grams, 0).toFixed(4)} G
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );

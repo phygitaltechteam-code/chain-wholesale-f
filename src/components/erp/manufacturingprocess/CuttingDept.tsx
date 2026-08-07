@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Edit, Trash2, X, Search, Save } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Save } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
-import PageHeader from '@/components/Forms/Common/PageHeader';
 import toast from 'react-hot-toast';
-import { manufacturingStore } from '@/utils/manufacturingStore';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import { useGetCutting, useSubmitCutting } from '@/lib/api/cutting';
 
 interface CuttingEntry {
   id: string;
@@ -11,7 +11,7 @@ interface CuttingEntry {
   dateTime: string;
   item: string;
   size: string;
-  purity: string;
+  purity: number;
   chainGiven: number;
   chainReceived: number;
   scrap: number;
@@ -19,68 +19,89 @@ interface CuttingEntry {
   isSaved?: boolean;
   chainReceivedRaw?: string;
   scrapRaw?: string;
+  purityRaw?: string;
+  itemId?: string;
+  sizeId?: string;
+  isCompleted?: boolean;
 }
 
 const CuttingDept: React.FC = () => {
   const navigate = useNavigate();
   const [cuttingEntries, setCuttingEntries] = useState<CuttingEntry[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [saveIndex, setSaveIndex] = useState<number | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const isInitialMount = useRef(true);
 
-  // Load data from store
+  // Fetch data from API
+  const { data: cuttingData = [], isLoading: cuttingLoading, refetch, error } = useGetCutting();
+  const submitCutting = useSubmitCutting();
+
+  // Load data from API - FIXED
   useEffect(() => {
-    loadData();
-  }, []);
+    // Skip if still loading
+    if (cuttingLoading) {
+      return;
+    }
 
-  const loadData = () => {
-    const entries = manufacturingStore.getEntries();
-    console.log('📦 Cutting - Store entries:', entries);
-    
-    const cuttingData = entries.map((entry, index) => ({
-      id: entry.id,
-      srNo: index + 1,
-      dateTime: entry.dateTime || new Date().toLocaleString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      }),
-      item: entry.item || 'N/A',
-      size: entry.size || 'N/A',
-      purity: entry.purity || '22K',
-      // Chain Given should come from Joint's chainGiven (which is from Soldering)
-      // Or from the entry's chainGiven if already set
-      chainGiven: entry.chainGiven || entry.chainWeight || 0,
-      chainReceived: entry.chainReceived || 0,
-      scrap: entry.scrap || 0,
-      isEditing: !entry.isSaved,
-      isSaved: entry.isSaved || false,
-      chainReceivedRaw: entry.chainReceived && entry.chainReceived !== 0 ? entry.chainReceived.toString() : '',
-      scrapRaw: entry.scrap && entry.scrap !== 0 ? entry.scrap.toString() : '',
-    }));
-    
-    setCuttingEntries(cuttingData);
-  };
+    // Handle error
+    if (error) {
+      console.error('Error fetching cutting data:', error);
+      setCuttingEntries([]);
+      return;
+    }
 
-  // Handle row edit toggle
-  const handleRowEdit = (index: number) => {
-    setCuttingEntries(prev => prev.map((entry, i) => {
-      if (i === index) {
+    // If we have data, process it
+    if (cuttingData && cuttingData.length > 0) {
+      const entries: CuttingEntry[] = cuttingData.map((cutting: any, index: number) => {
+        const itemName = cutting.item?.name || cutting.itemId || 'N/A';
+        const sizeName = cutting.size?.size || cutting.sizeId || 'N/A';
+
+        // Check if all required fields are filled AND isCompleted is true
+        const isSaved = cutting.isCompleted === true &&
+          cutting.chainReceived !== null &&
+          cutting.chainReceived !== undefined &&
+          cutting.scrap !== null &&
+          cutting.scrap !== undefined &&
+          cutting.purity !== null &&
+          cutting.purity !== undefined;
+
         return {
-          ...entry,
-          isEditing: !entry.isEditing,
-          chainReceivedRaw: entry.chainReceived !== 0 ? entry.chainReceived.toString() : '',
-          scrapRaw: entry.scrap !== 0 ? entry.scrap.toString() : '',
+          id: cutting.id,
+          srNo: index + 1,
+          dateTime: new Date(cutting.createdAt).toLocaleString('en-IN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }),
+          item: itemName,
+          size: sizeName,
+          purity: cutting.purity || 0,
+          chainGiven: cutting.chainWeight || 0,
+          chainReceived: cutting.chainReceived || 0,
+          scrap: cutting.scrap || 0,
+          isEditing: !isSaved,
+          isSaved: isSaved,
+          chainReceivedRaw: cutting.chainReceived ? cutting.chainReceived.toString() : '',
+          scrapRaw: cutting.scrap ? cutting.scrap.toString() : '',
+          purityRaw: cutting.purity ? cutting.purity.toString() : '',
+          itemId: cutting.itemId,
+          sizeId: cutting.sizeId,
+          isCompleted: cutting.isCompleted || false,
         };
-      }
-      return entry;
-    }));
-  };
+      });
+      setCuttingEntries(entries);
+    } else {
+      // No data - set empty array
+      setCuttingEntries([]);
+    }
+  }, [cuttingData, cuttingLoading, error]);
 
   // Handle inline field change
-  const handleInlineChange = (index: number, field: 'chainReceived' | 'scrap', value: string) => {
+  const handleInlineChange = useCallback((index: number, field: 'chainReceived' | 'scrap' | 'purity', value: string) => {
     setCuttingEntries(prev => prev.map((entry, i) => {
       if (i === index) {
         const updated = { ...entry };
@@ -101,16 +122,24 @@ const CuttingDept: React.FC = () => {
             const numValue = parseFloat(value);
             updated.scrap = isNaN(numValue) ? 0 : numValue;
           }
+        } else if (field === 'purity') {
+          updated.purityRaw = value;
+          if (value === '' || value === '.' || value === '-') {
+            updated.purity = 0;
+          } else {
+            const numValue = parseFloat(value);
+            updated.purity = isNaN(numValue) ? 0 : numValue;
+          }
         }
 
         return updated;
       }
       return entry;
     }));
-  };
+  }, []);
 
-  // Handle row save - Update store and show success
-  const handleRowSave = (index: number) => {
+  // Open confirmation popup before saving
+  const handleSaveClick = useCallback((index: number) => {
     const entry = cuttingEntries[index];
 
     if (!entry.chainReceived || entry.chainReceived < 0) {
@@ -123,42 +152,59 @@ const CuttingDept: React.FC = () => {
       return;
     }
 
+    if (!entry.purity || entry.purity < 0 || entry.purity > 100) {
+      toast.error('Please enter a valid purity percentage (1-100)');
+      return;
+    }
+
+    setSaveIndex(index);
+    setShowConfirmModal(true);
+  }, [cuttingEntries]);
+
+  // Confirm and save
+  const confirmSave = useCallback(async () => {
+    if (saveIndex === null) return;
+
+    const index = saveIndex;
+    const entry = cuttingEntries[index];
+
     setIsLoading(true);
 
     try {
-      // Update the store with cutting data
-      manufacturingStore.updateEntry(entry.id, {
-        chainGiven: entry.chainGiven,
-        chainReceived: entry.chainReceived,
-        scrap: entry.scrap,
-        isSaved: true,
+      await submitCutting.mutateAsync({
+        id: entry.id,
+        data: {
+          chainReceived: entry.chainReceived,
+          scrap: entry.scrap,
+          purity: entry.purity,
+          isCompleted: true,
+        }
       });
 
-      toast.success('Cutting entry saved successfully!');
-      setIsLoading(false);
-
-      // Update the entry to show saved state
       setCuttingEntries(prev => prev.map((s, i) =>
-        i === index ? { ...s, isEditing: false, isSaved: true } : s
+        i === index ? { ...s, isEditing: false, isSaved: true, isCompleted: true } : s
       ));
+
+      // toast.success('Cutting entry saved successfully! Process completed! 🎉');
+      setIsLoading(false);
+      setShowConfirmModal(false);
+      setSaveIndex(null);
+      await refetch();
+
+      navigate({
+        to: '/Stocks/stockpage'
+      });
     } catch (error) {
       console.error('Error saving cutting:', error);
       toast.error('Failed to save cutting entry');
       setIsLoading(false);
+      setShowConfirmModal(false);
+      setSaveIndex(null);
     }
-  };
-
-  // Handle delete
-  const handleDelete = (index: number) => {
-    const entry = cuttingEntries[index];
-    if (window.confirm(`Are you sure you want to delete cutting entry for "${entry.item}"?`)) {
-      setCuttingEntries(prev => prev.filter((_, i) => i !== index));
-      toast.success('Cutting entry deleted successfully');
-    }
-  };
+  }, [saveIndex, cuttingEntries, submitCutting, navigate, refetch]);
 
   const formatNumber = (value: number) => {
-    if (value === 0) return '0';
+    if (value === 0 || !value) return '0';
     const str = value.toString();
     if (str.includes('.')) {
       return str.replace(/\.?0+$/, '');
@@ -166,161 +212,205 @@ const CuttingDept: React.FC = () => {
     return str;
   };
 
-  const filteredEntries = cuttingEntries.filter(entry =>
-    entry.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.purity.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Check if all entries are saved
+  const allSaved = cuttingEntries.every(entry => entry.isSaved);
 
-  return (
-    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-      <div className="px-4 py-4 md:px-8 md:py-6">
-        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <PageHeader
-              title="Cutting Department"
-              subtitle="Manage cutting entries - Chain Given, Chain Received, Scrap"
-            />
+  // Custom action renderer
+  const renderActions = useCallback((item: CuttingEntry, index: number) => {
+    if (item.isEditing && !item.isSaved) {
+      return (
+        <button
+          onClick={() => handleSaveClick(index)}
+          disabled={isLoading}
+          className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          title="Save Entry"
+        >
+          <Save className="h-3 w-3" />
+          <span>Save</span>
+        </button>
+      );
+    }
+    return (
+      <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+        ✓ Completed
+      </span>
+    );
+  }, [isLoading, handleSaveClick]);
+
+  // Define columns for GenericTable
+  const columns: Column<CuttingEntry>[] = [
+    {
+      key: 'dateTime',
+      header: 'Date & Time',
+      render: (item) => {
+        // Split dateTime into date and time parts
+        const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
+        const datePart = parts[0] || '';
+        const timePart = parts.slice(1).join(' ') || '';
+
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {datePart}
+            </span>
+            <span className="text-xs text-[#4f4535] dark:text-slate-400">
+              {timePart}
+            </span>
           </div>
-        </div>
-
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+        );
+      },
+    },
+    {
+      key: 'item',
+      header: 'Item',
+      render: (item) => (
+        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
+          {item.item}
+        </span>
+      ),
+    },
+    {
+      key: 'size',
+      header: 'Size',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {item.size}
+        </span>
+      ),
+    },
+    {
+      key: 'chainGiven',
+      header: 'Chain Given (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.chainGiven)}
+        </span>
+      ),
+    },
+    {
+      key: 'chainReceived',
+      header: 'Chain Received (G)',
+      render: (item, index) => {
+        if (item.isEditing && !item.isSaved) {
+          return (
             <input
               type="text"
-              placeholder="Search by item, size or purity..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+              value={item.chainReceivedRaw !== undefined ? item.chainReceivedRaw : (item.chainReceived === 0 ? '' : item.chainReceived)}
+              onChange={(e) => handleInlineChange(index, 'chainReceived', e.target.value)}
+              placeholder="0.000"
+              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             />
-          </div>
-        </div>
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumber(item.chainReceived)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'scrap',
+      header: 'Scrap (G)',
+      render: (item, index) => {
+        if (item.isEditing && !item.isSaved) {
+          return (
+            <input
+              type="text"
+              value={item.scrapRaw !== undefined ? item.scrapRaw : (item.scrap === 0 ? '' : item.scrap)}
+              onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
+              placeholder="0.000"
+              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+            />
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumber(item.scrap)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'purity',
+      header: 'Purity (%)',
+      render: (item, index) => {
+        if (item.isEditing && !item.isSaved) {
+          return (
+            <input
+              type="text"
+              value={item.purityRaw !== undefined ? item.purityRaw : (item.purity === 0 ? '' : item.purity)}
+              onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
+              placeholder="e.g., 91.6"
+              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+            />
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumber(item.purity)}%
+          </span>
+        );
+      },
+    },
+  ];
 
-        <div className="overflow-hidden rounded-xl border border-[#d3c4af]/10 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-[#f4f4f2] text-xs uppercase tracking-[0.15em] text-[#4f4535] dark:bg-slate-800 dark:text-slate-400">
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Sr No</th>
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Date & Time</th>
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Item</th>
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Size</th>
-                  <th className="px-3 py-3 text-right font-semibold lg:px-4">Chain Given</th>
-                  <th className="px-3 py-3 text-right font-semibold lg:px-4">Chain Received</th>
-                  <th className="px-3 py-3 text-right font-semibold lg:px-4">Scrap</th>
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Purity (टंच)</th>
-                  <th className="px-3 py-3 text-center font-semibold lg:px-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
-                {filteredEntries.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="py-12 text-center text-[#4f4535] dark:text-slate-400">
-                      No cutting entries found. Please save Joint entry first.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredEntries.map((entry, index) => (
-                    <tr key={entry.id} className="group transition-colors hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50">
-                      <td className="px-3 py-3 text-sm text-[#4f4535] dark:text-slate-400 lg:px-4">
-                        {entry.srNo}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-[#1a1c1b] dark:text-white lg:px-4">
-                        {entry.dateTime}
-                      </td>
-                      <td className="px-3 py-3 text-sm font-medium text-[#1a1c1b] dark:text-white lg:px-4">
-                        {entry.item}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-[#1a1c1b] dark:text-white lg:px-4">
-                        {entry.size}
-                      </td>
-                      <td className="px-3 py-3 text-right font-mono text-sm text-[#1a1c1b] dark:text-white lg:px-4">
-                        {formatNumber(entry.chainGiven)}
-                      </td>
-                      <td className="px-3 py-3 text-right lg:px-4">
-                        {entry.isEditing ? (
-                          <input
-                            type="text"
-                            value={entry.chainReceivedRaw !== undefined ? entry.chainReceivedRaw : (entry.chainReceived === 0 ? '' : entry.chainReceived)}
-                            onChange={(e) => handleInlineChange(index, 'chainReceived', e.target.value)}
-                            placeholder="0.000"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                          />
-                        ) : (
-                          <span className="font-mono text-[#1a1c1b] dark:text-white">
-                            {formatNumber(entry.chainReceived)}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-right lg:px-4">
-                        {entry.isEditing ? (
-                          <input
-                            type="text"
-                            value={entry.scrapRaw !== undefined ? entry.scrapRaw : (entry.scrap === 0 ? '' : entry.scrap)}
-                            onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
-                            placeholder="0.000"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                          />
-                        ) : (
-                          <span className="font-mono text-[#1a1c1b] dark:text-white">
-                            {formatNumber(entry.scrap)}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-sm font-semibold text-amber-600 dark:text-amber-400 lg:px-4">
-                        {entry.purity}
-                      </td>
-                      <td className="px-3 py-3 text-center lg:px-4">
-                        {entry.isEditing ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleRowSave(index)}
-                              disabled={isLoading}
-                              className="rounded-lg bg-emerald-600 p-1.5 text-white hover:bg-emerald-700 disabled:opacity-50"
-                              title="Save"
-                            >
-                              <Save className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleRowEdit(index)}
-                              className="rounded-lg bg-gray-400 p-1.5 text-white hover:bg-gray-500"
-                              title="Cancel"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleRowEdit(index)}
-                              className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                              title="Edit"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(index)}
-                              className="rounded-lg p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+  const isSubmitting = submitCutting.isPending;
 
-        <div className="mt-3 text-xs text-[#4f4535] dark:text-slate-400">
-          Showing {filteredEntries.length} of {cuttingEntries.length} entries
-        </div>
+  return (
+    <div className="bg-[#f9f9f7] dark:bg-slate-950">
+      <div >
+
+        <GenericTable<CuttingEntry>
+          data={cuttingEntries}
+          columns={columns}
+          onSave={(item, index) => handleSaveClick(index)}
+          emptyMessage="No cutting entries found."
+          isLoading={cuttingLoading || isSubmitting}
+          renderActions={!allSaved ? renderActions : undefined}
+          showSrNo={true}
+          srNoLabel="Sr No."
+        />
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
+                  <Save className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+              </div>
+              <h3 className="text-center text-lg font-bold text-[#1a1c1b] dark:text-white mb-2">
+                Confirm Save
+              </h3>
+              <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
+                Are you sure you want to save this cutting entry? This will complete the process.
+              </p>
+              <div className="mt-6 flex justify-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setSaveIndex(null);
+                  }}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmSave}
+                  disabled={isLoading}
+                  className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isLoading ? 'Saving...' : 'Confirm Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

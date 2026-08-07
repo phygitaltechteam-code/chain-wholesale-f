@@ -1,6 +1,7 @@
-import React, {useEffect} from 'react';
+import React, { useEffect } from 'react';
 import flatpickr from 'flatpickr';
-import {CalendarIcon} from '../../../icons';
+import { Calendar } from 'lucide-react';
+import 'flatpickr/dist/flatpickr.min.css';
 
 interface GenericDatePickerProps {
   id: string;
@@ -8,21 +9,28 @@ interface GenericDatePickerProps {
   dateFormat?: string;
   initialDate?: Date | string;
   onDateChange?: (selectedDate: Date[]) => void;
+  label?: string;
+  required?: boolean;
+  className?: string;
+  value?: string;
 }
 
 const GenericDatePicker: React.FC<GenericDatePickerProps> = ({
   id,
-  placeholder = 'mm/dd/yyyy',
-  dateFormat = 'M j, Y',
+  placeholder = 'DD/MM/YYYY',
+  dateFormat = 'd/m/Y',
   initialDate,
   onDateChange,
+  label,
+  required = false,
+  className = '',
+  value,
 }) => {
   useEffect(() => {
-    // Initialize flatpickr
-    flatpickr(`#${id}`, {
+    const fp = flatpickr(`#${id}`, {
       mode: 'single',
       static: true,
-      defaultDate: initialDate,
+      defaultDate: initialDate || value,
       dateFormat: dateFormat,
       onChange: onDateChange,
       monthSelectorType: 'static',
@@ -31,25 +39,30 @@ const GenericDatePicker: React.FC<GenericDatePickerProps> = ({
       nextArrow:
         '<svg class="fill-current" width="7" height="11" viewBox="0 0 7 11"><path d="M1.4 10.8L0 9.4l4-4-4-4L1.4 0l5.4 5.4z" /></svg>',
     });
-  }, [id, initialDate, dateFormat, onDateChange]);
+
+    return () => {
+      fp.destroy();
+    };
+  }, [id, initialDate, dateFormat, onDateChange, value]);
 
   return (
-    <div>
-      <label
-        htmlFor={id}
-        className="mb-3 block text-sm font-medium text-black dark:text-white"
-      >
-        Date picker
-      </label>
+    <div className={className}>
+      {label && (
+        <label
+          htmlFor={id}
+          className="mb-1 block text-[9px] sm:text-[10px] font-bold uppercase text-[#4f4535] dark:text-slate-400"
+        >
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+      )}
       <div className="relative">
         <input
           id={id}
-          className="form-datepicker w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-normal outline-none transition focus:border-primary active:border-primary dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
+          className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
           placeholder={placeholder}
         />
-
-        <div className="pointer-events-none absolute inset-0 left-auto right-5 flex items-center">
-          <CalendarIcon />
+        <div className="pointer-events-none absolute inset-0 left-auto right-3 flex items-center">
+          <Calendar className="h-4 w-4 text-[#817563]" />
         </div>
       </div>
     </div>

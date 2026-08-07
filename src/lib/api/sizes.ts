@@ -6,7 +6,7 @@ import { z } from "zod";
 
 // Zod Schema for validation
 export const SizeSchema = z.object({
-  size: z.string().min(1, "Size is required").regex(/^\d+(\.\d+)?$/, "Please enter a valid number (e.g., 16, 16.5)"),
+  size: z.string().min(1, "Size is required"),
 });
 
 export type SizeFormData = z.infer<typeof SizeSchema>;
@@ -44,17 +44,7 @@ const getSizesApi = async () => {
   }
 };
 
-const getSizeByIdApi = async (id: string) => {
-  try {
-    const response = await api.get(`/admin/size/${id}`);
-    return response.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message || `Failed to fetch size with ID: ${id}`);
-    }
-    throw error;
-  }
-};
+
 
 const updateSizeApi = async ({ id, data }: { id: string; data: SizeFormData }) => {
   try {
@@ -84,7 +74,6 @@ const deleteSizeApi = async (id: string) => {
 export {
   createSizeApi,
   getSizesApi,
-  getSizeByIdApi,
   updateSizeApi,
   deleteSizeApi,
 };
@@ -97,17 +86,11 @@ export const useGetSizes = () => {
   });
 };
 
-export const useSizeById = (id: string) => {
-  return useQuery({
-    queryKey: ['sizes', id],
-    queryFn: () => getSizeByIdApi(id),
-    enabled: !!id,
-  });
-};
+
 
 export const useCreateSize = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: createSizeApi,
     onSuccess: () => {
@@ -122,7 +105,7 @@ export const useCreateSize = () => {
 
 export const useUpdateSize = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: updateSizeApi,
     onSuccess: () => {
@@ -137,7 +120,7 @@ export const useUpdateSize = () => {
 
 export const useDeleteSize = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: deleteSizeApi,
     onSuccess: () => {

@@ -33,8 +33,8 @@ export interface GenericTableProps<T> {
     showEdit?: boolean;
     showDelete?: boolean;
     enableInlineEdit?: boolean;
-    showSrNo?: boolean; // New prop to show/hide SR No column
-    srNoLabel?: string; // Custom label for SR No column
+    showSrNo?: boolean;
+    srNoLabel?: string;
 }
 
 export function GenericTable<T extends { id: string | number }>({
@@ -125,10 +125,11 @@ export function GenericTable<T extends { id: string | number }>({
             {
                 key: '__srNo' as keyof T,
                 header: srNoLabel,
-                align: 'left' as const,
+                align: 'center' as const,
                 width: '60px',
+                className: 'text-center font-semibold text-white dark:text-[#986d00]',
                 render: (_: T, index: number) => (
-                    <span className="text-xs sm:text-sm text-[#4f4535] dark:text-slate-400">
+                    <span className="text-xs sm:text-sm font-semibold text-[#1a1c1b]  dark:text-[#986d00]">
                         {index + 1}
                     </span>
                 ),
@@ -137,9 +138,13 @@ export function GenericTable<T extends { id: string | number }>({
         ]
         : columns;
 
+    const getColumnAlign = (column: Column<T>) => {
+        return column.align || 'center';
+    };
+
     return (
-        <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-            <div className="px-4 py-4 md:px-8 md:py-6">
+        <div className=" bg-[#f9f9f7] dark:bg-slate-950">
+            <div >
                 {/* Header with Title, Search and Add Button */}
                 {(title || onAdd || searchFields.length > 0) && (
                     <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -150,28 +155,28 @@ export function GenericTable<T extends { id: string | number }>({
                             </h2>
                         )}
 
-                        {/* Right side - Search and Add Button */}
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                        {/* Right side - Search and Add Button on same line */}
+                        <div className="flex flex-col sm:flex-row items-center gap-3">
                             {/* Search */}
                             {searchFields.length > 0 && (
-                                <div className="relative">
+                                <div className="relative w-full sm:w-auto">
                                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
                                     <input
                                         type="text"
                                         placeholder={searchPlaceholder}
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700 sm:w-64"
+                                        className="w-full sm:w-64 rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
                                     />
                                 </div>
                             )}
 
-                            {/* Add Button */}
+                            {/* Add Button - same line as search */}
                             {onAdd && (
                                 <GenericButton
                                     type="button"
                                     onClick={onAdd}
-                                    className="flex items-center gap-2 !px-4 !py-2 !bg-amber-600 hover:!bg-amber-700 !text-white"
+                                    className="flex items-center gap-2 !px-4 !py-2 !bg-amber-600 hover:!bg-amber-700 !text-white whitespace-nowrap"
                                 >
                                     <span className="text-lg leading-none">+</span>
                                     {addButtonLabel}
@@ -186,18 +191,18 @@ export function GenericTable<T extends { id: string | number }>({
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
                             <thead>
-                                <tr className="bg-[#f4f4f2] text-xs uppercase tracking-[0.15em] text-[#4f4535] dark:bg-slate-800 dark:text-slate-400">
+                                <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-xs uppercase tracking-[0.15em] text-white">
                                     {allColumns.map((column, idx) => (
                                         <th
                                             key={idx}
-                                            className={`px-3 py-3 text-${column.align || 'left'} font-semibold lg:px-4 ${column.className || ''}`}
+                                            className={`px-3 py-3 text-center font-semibold lg:px-4 ${column.className || ''}`}
                                             style={{ width: column.width }}
                                         >
                                             {column.header}
                                         </th>
                                     ))}
                                     {showActionsColumn && (
-                                        <th className="px-3 py-3 text-center font-semibold lg:px-4">Actions</th>
+                                        <th className="px-3 py-3 text-center font-semibold lg:px-4 text-white">Actions</th>
                                     )}
                                 </tr>
                             </thead>
@@ -217,19 +222,20 @@ export function GenericTable<T extends { id: string | number }>({
                                 ) : (
                                     filteredData.map((item, index) => {
                                         const isItemEditing = isEditing(index);
-                                        const originalIndex = data.indexOf(item); // Get original index for SR No
+                                        const originalIndex = data.indexOf(item);
 
                                         return (
                                             <tr key={item.id} className="group transition-colors hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50">
                                                 {allColumns.map((column, colIdx) => {
                                                     const value = getCellValue(item, column, index);
                                                     const isEditable = column.editable && isItemEditing;
+                                                    const align = getColumnAlign(column);
 
                                                     return (
                                                         <td
                                                             key={colIdx}
                                                             className={`px-3 py-3 text-sm lg:px-4 ${column.className || ''}`}
-                                                            style={{ textAlign: column.align || 'left' }}
+                                                            style={{ textAlign: align }}
                                                         >
                                                             {isEditable ? (
                                                                 column.inputType === 'select' && column.options ? (
@@ -268,14 +274,14 @@ export function GenericTable<T extends { id: string | number }>({
                                                             <div className="flex items-center justify-center gap-2">
                                                                 <button
                                                                     onClick={() => handleSave(item, index)}
-                                                                    className="rounded-lg bg-emerald-600 p-1.5 text-white hover:bg-emerald-700"
+                                                                    className="rounded-lg bg-emerald-600 p-1.5 text-white hover:bg-emerald-700 transition-colors"
                                                                     title="Save"
                                                                 >
                                                                     <Save className="h-4 w-4" />
                                                                 </button>
                                                                 <button
                                                                     onClick={handleCancelEdit}
-                                                                    className="rounded-lg bg-gray-400 p-1.5 text-white hover:bg-gray-500"
+                                                                    className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
                                                                     title="Cancel"
                                                                 >
                                                                     <X className="h-4 w-4" />
@@ -290,7 +296,7 @@ export function GenericTable<T extends { id: string | number }>({
                                                                         {showEdit && onEdit && (
                                                                             <button
                                                                                 onClick={() => handleEdit(item, index)}
-                                                                                className="rounded-lg p-1.5 text-gray-600 hover:bg-gray-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                                                                className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
                                                                                 title="Edit"
                                                                             >
                                                                                 <Edit className="h-4 w-4" />
@@ -299,7 +305,7 @@ export function GenericTable<T extends { id: string | number }>({
                                                                         {showDelete && onDelete && (
                                                                             <button
                                                                                 onClick={() => onDelete(item, index)}
-                                                                                className="rounded-lg p-1.5 text-gray-600 hover:bg-gray-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                                                                className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
                                                                                 title="Delete"
                                                                             >
                                                                                 <Trash2 className="h-4 w-4" />

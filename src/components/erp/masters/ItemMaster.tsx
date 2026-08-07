@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X, ArrowLeft } from 'lucide-react';
+import { Plus, X, ArrowLeft, Search, Edit, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import { useNavigate } from '@tanstack/react-router';
@@ -22,12 +22,27 @@ const ItemMaster: React.FC = () => {
     name: '',
   });
   const [formErrors, setFormErrors] = useState<{ name?: string }>({});
+  const [searchTerm, setSearchTerm] = useState('');
 
   // React Query hooks
   const { data: items = [], isLoading, refetch } = useGetItems();
   const createItem = useCreateItem();
   const updateItem = useUpdateItem();
   const deleteItem = useDeleteItem();
+
+  // Sort items to show "GOLD" first
+  const sortedItems = [...items].sort((a, b) => {
+    if (a.name?.toUpperCase() === 'GOLD') return -1;
+    if (b.name?.toUpperCase() === 'GOLD') return 1;
+    return 0;
+  });
+
+  // Filter data based on search term
+  const filteredData = searchTerm
+    ? sortedItems.filter(item =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    : sortedItems;
 
   // Handle form input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,6 +108,11 @@ const ItemMaster: React.FC = () => {
 
   // Handle delete item
   const handleDeleteItem = async (item: Item) => {
+    // Prevent deletion of GOLD
+    if (item.name?.toUpperCase() === 'GOLD') {
+      toast.error('Cannot delete GOLD item');
+      return;
+    }
     if (window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
       try {
         await deleteItem.mutateAsync(item.id);
@@ -105,6 +125,11 @@ const ItemMaster: React.FC = () => {
 
   // Handle edit button click
   const handleEditClick = (item: Item) => {
+    // Prevent editing of GOLD
+    if (item.name?.toUpperCase() === 'GOLD') {
+      toast.error('Cannot edit GOLD item');
+      return;
+    }
     setEditingItem(item);
     setFormData({ name: item.name });
     setFormErrors({});
@@ -124,30 +149,64 @@ const ItemMaster: React.FC = () => {
     resetForm();
   };
 
-  // Table columns
+  // Table columns - removed align property
   const columns: Column<Item>[] = [
     {
       key: 'name',
       header: 'Item Name',
-      align: 'left',
       className: 'font-medium',
-      render: (item) => (
-        <span className="text-xs sm:text-sm font-medium text-[#1a1c1b] dark:text-white">
-          {item.name}
-        </span>
-      ),
+      render: (item) => {
+        const isGold = item.name?.toUpperCase() === 'GOLD';
+        return (
+          <span className={`text-xs sm:text-sm font-medium ${isGold ? 'text-[#785600] dark:text-amber-400' : 'text-[#1a1c1b] dark:text-white'}`}>
+            {item.name}
+          </span>
+        );
+      },
     },
   ];
 
   const isSubmitting = createItem.isPending || updateItem.isPending || deleteItem.isPending;
 
+  // Custom actions renderer - hide Edit and Delete for GOLD
+  const renderActions = (item: Item, index: number) => {
+    const isGold = item.name?.toUpperCase() === 'GOLD';
+    
+    if (isGold) {
+      return (
+        <span className="text-xs text-[#4f4535] dark:text-slate-400 italic">
+          Default
+        </span>
+      );
+    }
+    
+    return (
+      <div className="flex items-center justify-center gap-2">
+        <button
+          onClick={() => handleEditClick(item)}
+          className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:bg-[#785600]/10 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
+          title="Edit"
+        >
+          <Edit className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => handleDeleteItem(item)}
+          className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:bg-[#785600]/10 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
+          title="Delete"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-      {/* Header - Back Button, Title, and Add Button on Same Line */}
+    <div className=" bg-[#f9f9f7] dark:bg-slate-950">
+      {/* Header - Back Button, Title, Search, and Add Button on Same Line */}
       <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
-        <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6 gap-3">
           {/* Left side - Back button and Title */}
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
             <button
               onClick={() => navigate({ to: '/Stocks/stockpage' })}
               className="flex items-center gap-1 text-[#785600] hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300 transition-colors flex-shrink-0"
@@ -156,21 +215,36 @@ const ItemMaster: React.FC = () => {
               <span className="text-xs sm:text-sm font-medium">Back</span>
             </button>
             <div className="h-5 w-px bg-[#d3c4af]/30 dark:bg-slate-600 flex-shrink-0" />
-            <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
+            <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Item Master
-            </h1>
+            </h2>
           </div>
 
-          {/* Right side - Add Item Button */}
-          <GenericButton
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !bg-amber-600 hover:!bg-amber-700 !text-white whitespace-nowrap shadow-sm hover:shadow-md transition-all flex-shrink-0"
-          >
-            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Add Item</span>
-            <span className="xs:hidden">Add</span>
-          </GenericButton>
+          {/* Right side - Search and Add Item Button */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            {/* Search Bar */}
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+              <input
+                type="text"
+                placeholder="Search by item name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+              />
+            </div>
+
+            {/* Add Item Button */}
+            <GenericButton
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !bg-amber-600 hover:!bg-amber-700 !text-white whitespace-nowrap"
+            >
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Add Item</span>
+              <span className="xs:hidden">Add</span>
+            </GenericButton>
+          </div>
         </div>
       </div>
 
@@ -179,19 +253,16 @@ const ItemMaster: React.FC = () => {
         <div className="-mx-3 sm:-mx-4 md:mx-0">
           <GenericTable
             showSrNo={true}
-            data={items}
+            data={filteredData}
             columns={columns}
-            searchFields={['name']}
-            searchPlaceholder="Search by item name..."
             onSave={(item) => {
               console.log('Save item:', item);
             }}
-            onEdit={handleEditClick}
-            onDelete={handleDeleteItem}
-            showEdit={true}
-            showDelete={true}
             emptyMessage="No items found. Click 'Add Item' to create one."
             isLoading={isLoading || isSubmitting}
+            renderActions={renderActions}
+            showSrNo={true}
+            srNoLabel="Sr No."
           />
         </div>
       </div>
@@ -205,14 +276,12 @@ const ItemMaster: React.FC = () => {
               <h3 className="text-base sm:text-lg font-bold text-[#1a1c1b] dark:text-white">
                 {editingItem ? 'Edit Item' : 'Add New Item'}
               </h3>
-              <GenericButton
-                type="button"
-                variant="ghost"
+              <button
                 onClick={closeModal}
-                className="!p-1 !h-8 !w-8 !min-w-0"
+                className="rounded-lg p-1 transition-colors hover:bg-[#f4f4f2] dark:hover:bg-slate-800"
               >
-                <X className="h-4 w-4 sm:h-5 sm:w-5 text-[#4f4535] dark:text-slate-400" />
-              </GenericButton>
+                <X className="h-5 w-5 text-[#4f4535] dark:text-slate-400" />
+              </button>
             </div>
 
             {/* Modal Body */}
@@ -242,11 +311,17 @@ const ItemMaster: React.FC = () => {
 
             {/* Modal Footer */}
             <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 border-t border-[#d3c4af]/10 p-3 sm:p-4 dark:border-slate-700">
+              <button
+                onClick={closeModal}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
               <GenericButton
                 type="button"
                 onClick={editingItem ? handleEditItem : handleAddItem}
                 disabled={isSubmitting}
-                className="!px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !bg-amber-600 hover:!bg-amber-700 !text-white"
+                className="!px-4 !py-2 !text-sm !bg-amber-600 hover:!bg-amber-700 !text-white"
               >
                 {isSubmitting
                   ? 'Saving...'

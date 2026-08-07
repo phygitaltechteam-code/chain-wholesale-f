@@ -1,11 +1,11 @@
 import Sidebar from '@/components/Sidebar';
-import {useAuthContext} from '@/context/AuthContext';
-import {Outlet, useNavigate} from '@tanstack/react-router';
-import React, {useEffect, useState} from 'react';
+import { useAuthContext } from '@/context/AuthContext';
+import { Outlet, useNavigate } from '@tanstack/react-router';
+import React, { useEffect, useState } from 'react';
 
 const AppLayout = () => {
   const navigate = useNavigate();
-  const {isAuthenticated, user} = useAuthContext();
+  const { isAuthenticated, user } = useAuthContext();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -33,7 +33,7 @@ const AppLayout = () => {
   // Redirect to signin if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate({to: '/signin', replace: true});
+      navigate({ to: '/signin', replace: true });
     }
   }, [isAuthenticated, navigate]);
 
@@ -55,8 +55,8 @@ const AppLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7]">
-      <div className="flex h-screen overflow-hidden">
+    <div className="h-screen bg-[#f9f9f7] dark:bg-slate-950 overflow-hidden">
+      <div className="flex h-full">
         {/* Sidebar */}
         <Sidebar
           onCollapseChange={setSidebarCollapsed}
@@ -65,12 +65,11 @@ const AppLayout = () => {
           setSidebarOpen={setSidebarOpen}
         />
 
-        {/* Main content */}
+        {/* Main content - no scrolling */}
         <div
-          className={`relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden transition-all duration-300 ${getMarginLeft()}`}
+          className={`relative flex flex-1 flex-col transition-all duration-300 ${getMarginLeft()}`}
         >
-          {/* Add padding-top on mobile to account for menu button */}
-          <main className={`flex-1 ${isMobile ? 'pt-16' : ''}`}>
+          <main className="flex-1 overflow-visible">
             <Outlet />
           </main>
         </div>

@@ -1,0 +1,49 @@
+import { api } from "@/utils/axios";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+
+export const useGetBox = () => {
+    return useQuery({
+        queryKey: ['box'],
+        queryFn: getBoxApi,
+    });
+};
+
+export const getBoxApi = async () => {
+    try {
+        const response = await api.get("/admin/box");
+        return response.data;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(error.message || 'Failed to fetch box entries');
+        }
+        throw error;
+    }
+};
+
+export const useSubmitBox = () => {
+    const queryClient = useQueryClient();
+    
+    return useMutation({
+        mutationFn: submitBoxApi,
+        onSuccess: () => {
+            toast.success('Box submitted successfully');
+            queryClient.invalidateQueries({ queryKey: ['box'] });
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || 'Failed to submit box');
+        },
+    });
+};
+
+export const submitBoxApi = async ({ id, data }: { id: string; data: any }) => {
+    try {
+        const response = await api.put(`/admin/box/${id}`, data);
+        return response.data;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(error.message || 'Failed to submit box');
+        }
+        throw error;
+    }
+};

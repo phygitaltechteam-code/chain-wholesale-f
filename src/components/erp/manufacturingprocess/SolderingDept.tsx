@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Edit, Trash2, X, Search, Save } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Save, Scissors, Hammer } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
-import PageHeader from '@/components/Forms/Common/PageHeader';
 import toast from 'react-hot-toast';
-import { manufacturingStore } from '@/utils/manufacturingStore';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import { useGetSoldering, useSubmitSoldering } from '@/lib/api/soldering';
+import { useSubmitCutting, useSubmitMoveCutting } from '@/lib/api/cutting';
 
 interface SolderingEntry {
   id: string;
@@ -22,75 +23,81 @@ interface SolderingEntry {
   chainReceivedRaw?: string;
   powderRaw?: string;
   scrapRaw?: string;
+  itemId?: string;
+  sizeId?: string;
+  isCompleted?: boolean;
 }
 
 const SolderingDept: React.FC = () => {
   const navigate = useNavigate();
   const [solderingEntries, setSolderingEntries] = useState<SolderingEntry[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [saveIndex, setSaveIndex] = useState<number | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [actionType, setActionType] = useState<'joint' | 'cutting' | null>(null);
+  const isInitialMount = useRef(true);
 
-  // Load data from store
+  // Fetch data from API
+  const { data: solderingData = [], isLoading: solderingLoading, refetch } = useGetSoldering();
+  const submitSoldering = useSubmitSoldering();
+  const submitCutting = useSubmitMoveCutting();
+
+  // Load data from API
   useEffect(() => {
-    loadData();
-  }, []);
+    if (solderingLoading) {
+      return;
+    }
 
-  const loadData = () => {
-    const entries = manufacturingStore.getEntries();
-    console.log('📦 Soldering - Store entries:', entries);
-    
-    const solderingData = entries.map((entry, index) => {
-      // Calculate increase if powder and chainGiven exist
-      const increase = (entry.powder || 0) - (entry.chainGiven || entry.chainWeight || 0);
-      
-      return {
-        id: entry.id,
-        srNo: index + 1,
-        dateTime: entry.dateTime || new Date().toLocaleString('en-IN', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        }),
-        item: entry.item || 'N/A',
-        size: entry.size || 'N/A',
-        purity: entry.purity || '22K',
-        chainGiven: entry.chainWeight || entry.chainGiven || 0,
-        chainReceived: entry.chainReceived || 0,
-        powder: entry.powder || 0,
-        increase: increase > 0 ? increase : 0,
-        scrap: entry.scrap || 0,
-        isEditing: !entry.isSaved,
-        isSaved: entry.isSaved || false,
-        chainReceivedRaw: entry.chainReceived && entry.chainReceived !== 0 ? entry.chainReceived.toString() : '',
-        powderRaw: entry.powder && entry.powder !== 0 ? entry.powder.toString() : '',
-        scrapRaw: entry.scrap && entry.scrap !== 0 ? entry.scrap.toString() : '',
-      };
-    });
-    
-    setSolderingEntries(solderingData);
-  };
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+    }
 
-  // Handle row edit toggle
-  const handleRowEdit = (index: number) => {
-    setSolderingEntries(prev => prev.map((entry, i) => {
-      if (i === index) {
+    if (solderingData.length > 0) {
+      const entries: SolderingEntry[] = solderingData.map((soldering: any, index: number) => {
+        const itemName = soldering.item?.name || soldering.itemId || 'N/A';
+        const sizeName = soldering.size?.size || soldering.sizeId || 'N/A';
+
+        const chainGiven = soldering.chainWeight || 0;
+        const powder = soldering.powder || 0;
+        const increase = powder - chainGiven;
+
         return {
-          ...entry,
-          isEditing: !entry.isEditing,
-          chainReceivedRaw: entry.chainReceived !== 0 ? entry.chainReceived.toString() : '',
-          powderRaw: entry.powder !== 0 ? entry.powder.toString() : '',
-          scrapRaw: entry.scrap !== 0 ? entry.scrap.toString() : '',
+          id: soldering.id,
+          srNo: index + 1,
+          dateTime: new Date(soldering.createdAt).toLocaleString('en-IN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }),
+          item: itemName,
+          size: sizeName,
+          purity: soldering.purity || '22K',
+          chainGiven: chainGiven,
+          chainReceived: soldering.chainReceived || 0,
+          powder: powder,
+          increase: increase > 0 ? increase : 0,
+          scrap: soldering.scrap || 0,
+          isEditing: soldering.chainReceived === null || soldering.chainReceived === undefined,
+          isSaved: soldering.chainReceived !== null && soldering.chainReceived !== undefined,
+          chainReceivedRaw: soldering.chainReceived ? soldering.chainReceived.toString() : '',
+          powderRaw: soldering.powder ? soldering.powder.toString() : '',
+          scrapRaw: soldering.scrap ? soldering.scrap.toString() : '',
+          itemId: soldering.itemId,
+          sizeId: soldering.sizeId,
+          isCompleted: soldering.isCompleted || false,
         };
-      }
-      return entry;
-    }));
-  };
+      });
+      setSolderingEntries(entries);
+    } else {
+      setSolderingEntries([]);
+    }
+  }, [solderingData, solderingLoading]);
 
   // Handle inline field change
-  const handleInlineChange = (index: number, field: 'chainReceived' | 'powder' | 'scrap', value: string) => {
+  const handleInlineChange = useCallback((index: number, field: 'chainReceived' | 'powder' | 'scrap', value: string) => {
     setSolderingEntries(prev => prev.map((entry, i) => {
       if (i === index) {
         const updated = { ...entry };
@@ -121,17 +128,16 @@ const SolderingDept: React.FC = () => {
           }
         }
 
-        // Auto-calculate increase: increase = powder - chainGiven
         updated.increase = Math.max(0, updated.powder - entry.chainGiven);
 
         return updated;
       }
       return entry;
     }));
-  };
+  }, []);
 
-  // Handle row save - Update store and navigate to Joint
-  const handleRowSave = (index: number) => {
+  // Open confirmation popup before saving
+  const handleSaveClick = useCallback((index: number, action: 'joint' | 'cutting') => {
     const entry = solderingEntries[index];
 
     if (!entry.chainReceived || entry.chainReceived < 0) {
@@ -149,64 +155,116 @@ const SolderingDept: React.FC = () => {
       return;
     }
 
+    setSaveIndex(index);
+    setActionType(action);
+    setShowConfirmModal(true);
+  }, [solderingEntries]);
+
+  // Confirm and save - Joint
+  const confirmSaveJoint = useCallback(async () => {
+    if (saveIndex === null) return;
+
+    const index = saveIndex;
+    const entry = solderingEntries[index];
+
     setIsLoading(true);
 
     try {
-      // Calculate increase
-      const calculatedIncrease = Math.max(0, entry.powder - entry.chainGiven);
-      
-      // Update the store with soldering data
-      manufacturingStore.updateEntry(entry.id, {
-        chainGiven: entry.chainGiven,
-        chainReceived: entry.chainReceived,
-        powder: entry.powder,
-        increase: calculatedIncrease,
-        scrap: entry.scrap,
-        isSaved: true,
+      await submitSoldering.mutateAsync({
+        id: entry.id,
+        data: {
+          chainReceived: entry.chainReceived,
+          powder: entry.powder,
+          increase: entry.increase,
+          scrap: entry.scrap,
+          isCompleted: true,
+        }
       });
 
-      // Update local state to show saved values
-      setSolderingEntries(prev => prev.map((s, i) => {
-        if (i === index) {
-          return {
-            ...s,
-            chainReceived: entry.chainReceived,
-            powder: entry.powder,
-            increase: calculatedIncrease,
-            scrap: entry.scrap,
-            isEditing: false,
-            isSaved: true,
-            chainReceivedRaw: entry.chainReceived.toString(),
-            powderRaw: entry.powder.toString(),
-            scrapRaw: entry.scrap.toString(),
-          };
-        }
-        return s;
-      }));
+      setSolderingEntries(prev => prev.map((s, i) =>
+        i === index ? { ...s, isEditing: false, isSaved: true, isCompleted: true } : s
+      ));
 
-      toast.success('Soldering entry saved successfully! Moving to Joint...');
       setIsLoading(false);
+      setShowConfirmModal(false);
+      setSaveIndex(null);
+      setActionType(null);
+      await refetch();
 
-      // Navigate to Joint after successful save
-      navigate({ to: '/manufacturingprocess/joint/JointDept' });
+      navigate({
+        to: '/manufacturingprocess/process',
+        state: { selectedTab: 'joint' }
+      });
     } catch (error) {
       console.error('Error saving soldering:', error);
       toast.error('Failed to save soldering entry');
       setIsLoading(false);
+      setShowConfirmModal(false);
+      setSaveIndex(null);
+      setActionType(null);
     }
-  };
+  }, [saveIndex, solderingEntries, submitSoldering, navigate, refetch]);
 
-  // Handle delete
-  const handleDelete = (index: number) => {
+  // Confirm and save - Cutting (uses different API)
+  const confirmSaveCutting = useCallback(async () => {
+    if (saveIndex === null) return;
+
+    const index = saveIndex;
     const entry = solderingEntries[index];
-    if (window.confirm(`Are you sure you want to delete soldering entry for "${entry.item}"?`)) {
-      setSolderingEntries(prev => prev.filter((_, i) => i !== index));
-      toast.success('Soldering entry deleted successfully');
+
+    setIsLoading(true);
+
+    try {
+      // First save the soldering entry
+      await submitSoldering.mutateAsync({
+        id: entry.id,
+        data: {
+          chainReceived: entry.chainReceived,
+          powder: entry.powder,
+          increase: entry.increase,
+          scrap: entry.scrap,
+          isCompleted: true,
+        }
+      });
+
+      // Then submit to Cutting API
+      await submitCutting.mutateAsync({
+        id: entry.id,
+        data: {
+          chainReceived: entry.chainReceived,
+          powder: entry.powder,
+          increase: entry.increase,
+          scrap: entry.scrap,
+          isCompleted: true,
+        }
+      });
+
+      setSolderingEntries(prev => prev.map((s, i) =>
+        i === index ? { ...s, isEditing: false, isSaved: true, isCompleted: true } : s
+      ));
+
+      setIsLoading(false);
+      setShowConfirmModal(false);
+      setSaveIndex(null);
+      setActionType(null);
+      await refetch();
+
+      navigate({
+        to: '/manufacturingprocess/process',
+        state: { selectedTab: 'cutting' }
+      });
+    } catch (error) {
+      console.error('Error saving soldering:', error);
+      toast.error('Failed to save soldering entry');
+      setIsLoading(false);
+      setShowConfirmModal(false);
+      setSaveIndex(null);
+      setActionType(null);
     }
-  };
+  }, [saveIndex, solderingEntries, submitSoldering, submitCutting, navigate, refetch]);
 
   const formatNumber = (value: number) => {
-    if (value === 0) return '0';
+    if (value === 0 || !value) return '0';
     const str = value.toString();
     if (str.includes('.')) {
       return str.replace(/\.?0+$/, '');
@@ -214,181 +272,224 @@ const SolderingDept: React.FC = () => {
     return str;
   };
 
-  const filteredEntries = solderingEntries.filter(entry =>
-    entry.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.size.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Check if all entries are saved
+  const allSaved = solderingEntries.every(entry => entry.isSaved);
 
-  return (
-    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-      <div className="px-4 py-4 md:px-8 md:py-6">
-        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <PageHeader
-              title="Soldering Department"
-              subtitle="Manage soldering entries - Chain Given, Chain Received, Powder, Increase, Scrap"
-            />
+  // Custom action renderer for GenericTable
+  const renderActions = useCallback((item: SolderingEntry, index: number) => {
+    if (!item.isEditing) {
+      return null;
+    }
+
+    return (
+      <div className="flex items-center justify-center gap-2">
+        <button
+          onClick={() => handleSaveClick(index, 'joint')}
+          disabled={isLoading}
+          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          title="Go to Joint"
+        >
+          <Hammer className="h-4 w-4" />
+          <span className="text-xs">Joint</span>
+        </button>
+        <button
+          onClick={() => handleSaveClick(index, 'cutting')}
+          disabled={isLoading}
+          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          title="Go to Cutting"
+        >
+          <Scissors className="h-4 w-4" />
+          <span className="text-xs">Cutting</span>
+        </button>
+      </div>
+    );
+  }, [isLoading, handleSaveClick]);
+
+  // Define columns for GenericTable
+  const columns: Column<SolderingEntry>[] = [
+    {
+      key: 'dateTime',
+      header: 'Date & Time',
+      render: (item) => {
+        // Split dateTime into date and time parts
+        const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
+        const datePart = parts[0] || '';
+        const timePart = parts.slice(1).join(' ') || '';
+
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {datePart}
+            </span>
+            <span className="text-xs text-[#4f4535] dark:text-slate-400">
+              {timePart}
+            </span>
           </div>
-        </div>
-
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+        );
+      },
+    },
+    {
+      key: 'item',
+      header: 'Item',
+      render: (item) => (
+        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
+          {item.item}
+        </span>
+      ),
+    },
+    {
+      key: 'size',
+      header: 'Size',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {item.size}
+        </span>
+      ),
+    },
+    {
+      key: 'chainGiven',
+      header: 'Chain Given(G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.chainGiven)}
+        </span>
+      ),
+    },
+    {
+      key: 'chainReceived',
+      header: 'Chain Received(G)',
+      render: (item, index) => {
+        if (item.isEditing) {
+          return (
             <input
               type="text"
-              placeholder="Search by item or size..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+              value={item.chainReceivedRaw !== undefined ? item.chainReceivedRaw : (item.chainReceived === 0 ? '' : item.chainReceived)}
+              onChange={(e) => handleInlineChange(index, 'chainReceived', e.target.value)}
+              placeholder="0.000"
+              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             />
-          </div>
-        </div>
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumber(item.chainReceived)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'powder',
+      header: 'Powder(G)',
+      render: (item, index) => {
+        if (item.isEditing) {
+          return (
+            <input
+              type="text"
+              value={item.powderRaw !== undefined ? item.powderRaw : (item.powder === 0 ? '' : item.powder)}
+              onChange={(e) => handleInlineChange(index, 'powder', e.target.value)}
+              placeholder="0.000"
+              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+            />
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumber(item.powder)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'increase',
+      header: 'Increase',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.increase)}
+        </span>
+      ),
+    },
+    {
+      key: 'scrap',
+      header: 'Scrap (स्क्रॅप)',
+      render: (item, index) => {
+        if (item.isEditing) {
+          return (
+            <input
+              type="text"
+              value={item.scrapRaw !== undefined ? item.scrapRaw : (item.scrap === 0 ? '' : item.scrap)}
+              onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
+              placeholder="0.000"
+              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+            />
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumber(item.scrap)}
+          </span>
+        );
+      },
+    },
+  ];
 
-        <div className="overflow-hidden rounded-xl border border-[#d3c4af]/10 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-[#f4f4f2] text-xs uppercase tracking-[0.15em] text-[#4f4535] dark:bg-slate-800 dark:text-slate-400">
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Sr No</th>
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Date & Time</th>
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Item</th>
-                  <th className="px-3 py-3 text-left font-semibold lg:px-4">Size</th>
-                  <th className="px-3 py-3 text-right font-semibold lg:px-4">Chain Given</th>
-                  <th className="px-3 py-3 text-right font-semibold lg:px-4">Chain Received</th>
-                  <th className="px-3 py-3 text-right font-semibold lg:px-4">Powder</th>
-                  <th className="px-3 py-3 text-right font-semibold lg:px-4">Increase</th>
-                  <th className="px-3 py-3 text-right font-semibold lg:px-4">Scrap</th>
-                  <th className="px-3 py-3 text-center font-semibold lg:px-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
-                {filteredEntries.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} className="py-12 text-center text-[#4f4535] dark:text-slate-400">
-                      No soldering entries found. Please save Box entry first.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredEntries.map((entry, index) => (
-                    <tr key={entry.id} className="group transition-colors hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50">
-                      <td className="px-3 py-3 text-sm text-[#4f4535] dark:text-slate-400 lg:px-4">
-                        {entry.srNo}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-[#1a1c1b] dark:text-white lg:px-4">
-                        {entry.dateTime}
-                      </td>
-                      <td className="px-3 py-3 text-sm font-medium text-[#1a1c1b] dark:text-white lg:px-4">
-                        {entry.item}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-[#1a1c1b] dark:text-white lg:px-4">
-                        {entry.size}
-                      </td>
-                      <td className="px-3 py-3 text-right font-mono text-sm text-[#1a1c1b] dark:text-white lg:px-4">
-                        {formatNumber(entry.chainGiven)}
-                      </td>
-                      <td className="px-3 py-3 text-right lg:px-4">
-                        {entry.isEditing ? (
-                          <input
-                            type="text"
-                            value={entry.chainReceivedRaw !== undefined ? entry.chainReceivedRaw : (entry.chainReceived === 0 ? '' : entry.chainReceived)}
-                            onChange={(e) => handleInlineChange(index, 'chainReceived', e.target.value)}
-                            placeholder="0.000"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                          />
-                        ) : (
-                          <span className="font-mono text-[#1a1c1b] dark:text-white">
-                            {formatNumber(entry.chainReceived)}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-right lg:px-4">
-                        {entry.isEditing ? (
-                          <input
-                            type="text"
-                            value={entry.powderRaw !== undefined ? entry.powderRaw : (entry.powder === 0 ? '' : entry.powder)}
-                            onChange={(e) => handleInlineChange(index, 'powder', e.target.value)}
-                            placeholder="0.000"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                          />
-                        ) : (
-                          <span className="font-mono text-[#1a1c1b] dark:text-white">
-                            {formatNumber(entry.powder)}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-right lg:px-4">
-                        <span className={`font-mono ${entry.increase < 0 ? 'text-red-600 font-bold' : 'text-green-600 dark:text-green-400'}`}>
-                          {formatNumber(entry.increase)}
-                        </span>
-                        {entry.isEditing && (
-                          <span className="ml-1 text-[10px] text-green-600 dark:text-green-400">(auto)</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-right lg:px-4">
-                        {entry.isEditing ? (
-                          <input
-                            type="text"
-                            value={entry.scrapRaw !== undefined ? entry.scrapRaw : (entry.scrap === 0 ? '' : entry.scrap)}
-                            onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
-                            placeholder="0.000"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                          />
-                        ) : (
-                          <span className="font-mono text-[#1a1c1b] dark:text-white">
-                            {formatNumber(entry.scrap)}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-center lg:px-4">
-                        {entry.isEditing ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleRowSave(index)}
-                              disabled={isLoading}
-                              className="rounded-lg bg-emerald-600 p-1.5 text-white hover:bg-emerald-700 disabled:opacity-50"
-                              title="Save"
-                            >
-                              <Save className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleRowEdit(index)}
-                              className="rounded-lg bg-gray-400 p-1.5 text-white hover:bg-gray-500"
-                              title="Cancel"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleRowEdit(index)}
-                              className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                              title="Edit"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(index)}
-                              className="rounded-lg p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+  const isSubmitting = submitSoldering.isPending || submitCutting.isPending;
 
-        <div className="mt-3 text-xs text-[#4f4535] dark:text-slate-400">
-          Showing {filteredEntries.length} of {solderingEntries.length} entries
-        </div>
+  return (
+    <div className=" bg-[#f9f9f7] dark:bg-slate-950">
+      <div >
+       
+          <GenericTable<SolderingEntry>
+            data={solderingEntries}
+            columns={columns}
+            onSave={(item, index) => handleSaveClick(index, 'joint')}
+            emptyMessage="No soldering entries found."
+            isLoading={solderingLoading || isSubmitting}
+            renderActions={!allSaved ? renderActions : undefined}
+            showSrNo={true}
+            srNoLabel="Sr No."
+          />
+       
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
+                  <Save className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+              </div>
+              <h3 className="text-center text-lg font-bold text-[#1a1c1b] dark:text-white mb-2">
+                Confirm Save
+              </h3>
+              <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
+                Are you sure you want to save this soldering entry and go to the <strong>{actionType === 'joint' ? 'Joint' : 'Cutting'}</strong> department?
+              </p>
+              <div className="mt-6 flex justify-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setSaveIndex(null);
+                    setActionType(null);
+                  }}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={actionType === 'joint' ? confirmSaveJoint : confirmSaveCutting}
+                  disabled={isLoading}
+                  className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isLoading ? 'Saving...' : 'Confirm Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
