@@ -157,3 +157,24 @@ export const useSaveTar = () => {
     },
   });
 };
+
+
+export const useGetTarHistory = () => {
+  return useQuery({
+    queryKey: ['tarHistory'],
+    queryFn: getTarHistory,
+  });
+};
+
+
+const getTarHistory = async () => {
+  try {
+    const response = await api.get("/admin/tar/history");
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to fetch items');
+    }
+    throw error;
+  }
+};

@@ -9,6 +9,28 @@ export const useGetBox = () => {
     });
 };
 
+
+export const useGetBoxHistory = () => {
+    return useQuery({
+        queryKey: ['box'],
+        queryFn: getBoxHistory,
+    });
+};
+
+
+export const getBoxHistory = async () => {
+    try {
+        const response = await api.get("/admin/box/history");
+        return response.data;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(error.message || 'Failed to fetch box history');
+        }
+        throw error;
+    }
+};
+
+
 export const getBoxApi = async () => {
     try {
         const response = await api.get("/admin/box");

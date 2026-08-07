@@ -30,6 +30,18 @@ export const getSolderingApi = async () => {
         throw error;
     }
 };
+export const getSolderingHistoryApi = async () => {
+    try {
+        const response = await api.get("/admin/soldering/history");
+        return response.data;
+    } catch (error) {
+        if (error instanceof Error) {
+            throw new Error(error.message || 'Failed to fetch soldering entries');
+        }
+        throw error;
+    }
+};
+
 
 export const submitSolderingApi = async ({ id, data }: { id: string; data: any }) => {
     try {
@@ -48,6 +60,12 @@ export const useGetSoldering = () => {
     return useQuery({
         queryKey: ['soldering'],
         queryFn: getSolderingApi,
+    });
+};
+export const useGetSolderingHistory = () => {
+    return useQuery({
+        queryKey: ['soldering'],
+        queryFn: getSolderingHistoryApi,
     });
 };
 

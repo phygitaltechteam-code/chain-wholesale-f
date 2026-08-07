@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Save, Scissors, Hammer } from 'lucide-react';
+import { Save, Scissors, Hammer, History } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
-import { useGetSoldering, useSubmitSoldering } from '@/lib/api/soldering';
+import GenericButton from '@/components/Forms/Buttons/GenericButton';
+import { useGetSoldering, useGetSolderingHistory, useSubmitSoldering } from '@/lib/api/soldering';
 import { useSubmitCutting, useSubmitMoveCutting } from '@/lib/api/cutting';
 
 interface SolderingEntry {
@@ -35,10 +36,12 @@ const SolderingDept: React.FC = () => {
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [actionType, setActionType] = useState<'joint' | 'cutting' | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const isInitialMount = useRef(true);
 
   // Fetch data from API
   const { data: solderingData = [], isLoading: solderingLoading, refetch } = useGetSoldering();
+  const { data: solderingHistory = [], isLoading: historyLoading, refetch: refetchHistory } = useGetSolderingHistory();
   const submitSoldering = useSubmitSoldering();
   const submitCutting = useSubmitMoveCutting();
 
@@ -95,6 +98,150 @@ const SolderingDept: React.FC = () => {
       setSolderingEntries([]);
     }
   }, [solderingData, solderingLoading]);
+
+  // Format date helper for history
+    const formatDate = (dateString: string) => {
+  if (!dateString) return { date: '-', time: '-' };
+
+  const date = new Date(dateString);
+
+  return {
+    date: date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }),
+    time: date.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }),
+  };
+};
+
+
+  // Format number helper for history
+  const formatNumber = (value: any) => {
+    if (value === null || value === undefined) return '0';
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(num)) return '0';
+    return num.toFixed(3);
+  };
+
+  // History table columns
+  const historyColumns: Column<any>[] = [
+
+  {
+  key: 'createdAt',
+  header: 'Date & Time',
+  render: (item) => {
+    const { date, time } = formatDate(item.createdAt);
+
+    return (
+      <div className="flex flex-col items-center">
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {date}
+        </span>
+
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {time}
+        </span>
+      </div>
+    );
+  },
+},
+   {
+  key: 'updatedAt',
+  header: 'Updated Date & Time',
+  render: (item) => {
+    const { date, time } = formatDate(item.updatedAt);
+
+    return (
+      <div className="flex flex-col items-center">
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {date}
+        </span>
+
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {time}
+        </span>
+      </div>
+    );
+  },
+},
+    {
+      key: 'item',
+      header: 'Item',
+      render: (item) => (
+        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
+          {item.item?.name || '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'size',
+      header: 'Size',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {item.size?.size || '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'purity',
+      header: 'Purity',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {item.purity || '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'chainWeight',
+      header: 'Chain Given (G)',
+      render: (item) => (
+        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.chainWeight)}
+        </span>
+      ),
+    },
+    {
+      key: 'chainReceived',
+      header: 'Chain Received (G)',
+      render: (item) => (
+        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.chainReceived)}
+        </span>
+      ),
+    },
+    {
+      key: 'powder',
+      header: 'Powder (G)',
+      render: (item) => (
+        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.powder)}
+        </span>
+      ),
+    },
+    {
+      key: 'increase',
+      header: 'Increase',
+      render: (item) => (
+        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.increase)}
+        </span>
+      ),
+    },
+    {
+      key: 'scrap',
+      header: 'Scrap (स्क्रॅप)',
+      render: (item) => (
+        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.scrap)}
+        </span>
+      ),
+    },
+  ];
 
   // Handle inline field change
   const handleInlineChange = useCallback((index: number, field: 'chainReceived' | 'powder' | 'scrap', value: string) => {
@@ -263,7 +410,7 @@ const SolderingDept: React.FC = () => {
     }
   }, [saveIndex, solderingEntries, submitSoldering, submitCutting, navigate, refetch]);
 
-  const formatNumber = (value: number) => {
+  const formatNumberDisplay = (value: number) => {
     if (value === 0 || !value) return '0';
     const str = value.toString();
     if (str.includes('.')) {
@@ -311,7 +458,6 @@ const SolderingDept: React.FC = () => {
       key: 'dateTime',
       header: 'Date & Time',
       render: (item) => {
-        // Split dateTime into date and time parts
         const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
         const datePart = parts[0] || '';
         const timePart = parts.slice(1).join(' ') || '';
@@ -351,7 +497,7 @@ const SolderingDept: React.FC = () => {
       header: 'Chain Given(G)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.chainGiven)}
+          {formatNumberDisplay(item.chainGiven)}
         </span>
       ),
     },
@@ -372,7 +518,7 @@ const SolderingDept: React.FC = () => {
         }
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumber(item.chainReceived)}
+            {formatNumberDisplay(item.chainReceived)}
           </span>
         );
       },
@@ -394,7 +540,7 @@ const SolderingDept: React.FC = () => {
         }
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumber(item.powder)}
+            {formatNumberDisplay(item.powder)}
           </span>
         );
       },
@@ -404,7 +550,7 @@ const SolderingDept: React.FC = () => {
       header: 'Increase',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.increase)}
+          {formatNumberDisplay(item.increase)}
         </span>
       ),
     },
@@ -425,7 +571,7 @@ const SolderingDept: React.FC = () => {
         }
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumber(item.scrap)}
+            {formatNumberDisplay(item.scrap)}
           </span>
         );
       },
@@ -434,10 +580,52 @@ const SolderingDept: React.FC = () => {
 
   const isSubmitting = submitSoldering.isPending || submitCutting.isPending;
 
+  const toggleHistory = () => {
+    setShowHistory(!showHistory);
+    if (!showHistory) {
+      refetchHistory();
+    }
+  };
+
   return (
-    <div className=" bg-[#f9f9f7] dark:bg-slate-950">
-      <div >
-       
+    <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
+        <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
+              {showHistory ? 'Soldering History' : 'Soldering Department'}
+            </h1>
+            {!showHistory && (
+              <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                {solderingEntries.length}
+              </span>
+            )}
+            {showHistory && (
+              <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                {solderingHistory.length}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {!showHistory && (
+              <GenericButton
+                type="button"
+                onClick={toggleHistory}
+                className="flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap !bg-blue-600 hover:!bg-blue-700"
+              >
+                <History className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>History</span>
+              </GenericButton>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Conditional Rendering: Soldering Table OR History Table */}
+      {!showHistory ? (
+        /* Soldering Department Table */
+        <div className="px-3 py-4 sm:px-4 md:px-6">
           <GenericTable<SolderingEntry>
             data={solderingEntries}
             columns={columns}
@@ -448,8 +636,23 @@ const SolderingDept: React.FC = () => {
             showSrNo={true}
             srNoLabel="Sr No."
           />
+        </div>
+      ) : (
+        /* History Table */
+        <div className="px-3 py-4 sm:px-4 md:px-6">
        
-      </div>
+          {/* History Table */}
+          <GenericTable
+            data={solderingHistory}
+            columns={historyColumns}
+            emptyMessage="No history records found. Complete a soldering process to see history."
+            isLoading={historyLoading}
+            showSrNo={true}
+            srNoLabel="Sr No."
+            className="shadow-sm"
+          />
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       {showConfirmModal && (

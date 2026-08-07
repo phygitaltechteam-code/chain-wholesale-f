@@ -30,6 +30,17 @@ export const getJointApi = async () => {
     throw error;
   }
 };
+export const getJointHistoryApi = async () => {
+  try {
+    const response = await api.get("/admin/joint/history");
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to fetch joint entries');
+    }
+    throw error;
+  }
+};
 
 export const submitJointApi = async ({ id, data }: { id: string; data: any }) => {
   try {
@@ -48,6 +59,12 @@ export const useGetJoint = () => {
   return useQuery({
     queryKey: ['joint'],
     queryFn: getJointApi,
+  });
+};
+export const useGetJointHistory = () => {
+  return useQuery({
+    queryKey: ['jointhistory'],
+    queryFn: getJointHistoryApi,
   });
 };
 

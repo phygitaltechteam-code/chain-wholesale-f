@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Save, X, ArrowLeft } from 'lucide-react';
+import { Plus, Save, X, ArrowLeft, ChevronDown, ChevronRight } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import { Column, GenericTable } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import { useGetItems, Item } from '@/lib/api/items';
 import { useGetSizes, Size } from '@/lib/api/sizes';
-import { useTar, useCreateTar, useSaveTar, Tar } from '@/lib/api/tar';
+import { useTar, useCreateTar, useSaveTar, Tar, useGetTarHistory } from '@/lib/api/tar';
 
 interface TarEntry {
     id: string;
@@ -39,6 +39,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     const [saveIndex, setSaveIndex] = useState<number | null>(null);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isTarCompleted, setIsTarCompleted] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
 
     const [formData, setFormData] = useState({
         itemId: '',
@@ -61,34 +62,165 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
 
     // Fetch existing tar data
     const { data: tarData = [], isLoading: tarLoading, refetch } = useTar();
+    const { data: tarHistory = [], isLoading: tarHistoryLoading, refetch: refetchHistory } = useGetTarHistory();
 
     // Mutation hooks
     const createTar = useCreateTar();
     const saveTar = useSaveTar();
 
+    // Format date helper for history
+  const formatDate = (dateString: string) => {
+  if (!dateString) return { date: '-', time: '-' };
+
+  const date = new Date(dateString);
+
+  return {
+    date: date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }),
+    time: date.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }),
+  };
+};
+    // Format number helper
+    const formatNumber = (value: any) => {
+        if (value === null || value === undefined) return '0';
+        const num = typeof value === 'string' ? parseFloat(value) : value;
+        if (isNaN(num)) return '0';
+        return num.toFixed(3);
+    };
+
+    // History table columns
+    const historyColumns: Column<any>[] = [
+
+       {
+  key: 'createdAt',
+  header: 'Date & Time',
+  render: (item) => {
+    const { date, time } = formatDate(item.createdAt);
+
+    return (
+      <div className="flex flex-col items-center">
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {date}
+        </span>
+
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {time}
+        </span>
+      </div>
+    );
+  },
+},
+        
+    {
+  key: 'updatedAt',
+  header: 'Updated Date & Time',
+  render: (item) => {
+    const { date, time } = formatDate(item.updatedAt);
+
+    return (
+      <div className="flex flex-col items-center">
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {date}
+        </span>
+
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {time}
+        </span>
+      </div>
+    );
+  },
+},
+        {
+            key: 'item',
+            header: 'Item',
+            render: (item) => (
+                <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
+                    {item.item?.name || '-'}
+                </span>
+            ),
+        },
+        {
+            key: 'size',
+            header: 'Size',
+            render: (item) => (
+                <span className="text-sm text-[#1a1c1b] dark:text-white">
+                    {item.size?.size || '-'}
+                </span>
+            ),
+        },
+        {
+            key: 'fine',
+            header: 'Fine (लगड)',
+            render: (item) => (
+                <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+                    {formatNumber(item.fine)}
+                </span>
+            ),
+        },
+        {
+            key: 'tar',
+            header: 'Tar (तार)',
+            render: (item) => (
+                <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+                    {formatNumber(item.tar)}
+                </span>
+            ),
+        },
+        {
+            key: 'scrap',
+            header: 'Scrap (स्क्रॅप)',
+            render: (item) => (
+                <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+                    {formatNumber(item.scrap)}
+                </span>
+            ),
+        },
+        {
+            key: 'loss',
+            header: 'Loss',
+            render: (item) => (
+                <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+                    {formatNumber(item.loss)}
+                </span>
+            ),
+        },
+        {
+            key: 'purity',
+            header: 'Purity % (टंच)',
+            render: (item) => (
+                <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+                    {formatNumber(item.purity)}
+                </span>
+            ),
+        },
+    ];
+
     // Initialize with existing tar data
     useEffect(() => {
         if (!tarLoading && items.length > 0 && sizes.length > 0) {
             if (tarData.length > 0) {
-                const entries: TarEntry[] = tarData.map((tar, index) => {
-                    // Handle if size is an object
+                const entries: TarEntry[] = tarData.map((tar, index:any) => {
                     let sizeValue = tar.size;
                     if (typeof tar.size === 'object' && tar.size !== null) {
                         sizeValue = tar.size.size || tar.size.name || JSON.stringify(tar.size);
                     }
 
-                    // Handle if item is an object
                     let itemValue = tar.item;
                     if (typeof tar.item === 'object' && tar.item !== null) {
                         itemValue = tar.item.name || tar.item.item || JSON.stringify(tar.item);
                     }
 
-                    // Check if any tar is saved
                     if (tar.isSaved) {
                         setIsTarCompleted(true);
                     }
 
-                    // Format date from API or create new one
                     let formattedDateTime = tar.dateTime || '';
                     if (!formattedDateTime) {
                         formattedDateTime = formatDateTime(new Date());
@@ -150,22 +282,11 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         }
     };
 
-    const handleDateChange = (field: string, value: number) => {
-        setSelectedDate(prev => ({ ...prev, [field]: value }));
-    };
-
-    const getFormattedDateTime = () => {
-        const { day, month, year, hour, minute } = selectedDate;
-        const date = new Date(year, month - 1, day, hour, minute);
-        return formatDateTime(date);
-    };
-
     const handleOpenModal = () => {
         if (isTarCompleted) {
             toast.error('Tar process is already completed. You cannot add more entries.');
             return;
         }
-        // Reset date to current
         const now = new Date();
         setSelectedDate({
             day: now.getDate(),
@@ -183,7 +304,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     };
 
     const handleSaveFromPopup = async () => {
-        // Validate form data
         if (!formData.itemId) {
             toast.error('Please select an item');
             return;
@@ -206,12 +326,10 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             const selectedItem = items.find(i => i.id === formData.itemId);
             const selectedSize = sizes.find(s => s.id === formData.sizeId);
 
-            // Format date with time
             const { day, month, year, hour, minute } = selectedDate;
             const date = new Date(year, month - 1, day, hour, minute);
             const dateTimeStr = formatDateTime(date);
 
-            // Prepare payload with ALL required fields - ensure fine is a number
             const payload = {
                 itemId: formData.itemId,
                 sizeId: formData.sizeId,
@@ -226,11 +344,8 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                 dateTime: dateTimeStr,
             };
 
-            console.log('Sending payload:', payload);
-
             const result = await createTar.mutateAsync(payload);
 
-            // Add the new entry to the table
             const newEntry: TarEntry = {
                 id: result?.data?.id || Date.now().toString(),
                 srNo: tarEntries.length + 1,
@@ -303,7 +418,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         }));
     };
 
-    // Open confirmation popup before saving
     const handleSaveClick = (index: number) => {
         const entry = tarEntries[index];
 
@@ -331,7 +445,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         setShowConfirmModal(true);
     };
 
-    // Confirm and save
     const confirmSave = async () => {
         if (saveIndex === null) return;
 
@@ -364,13 +477,11 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
 
             setIsTarCompleted(true);
 
-            // toast.success('Tar entry saved successfully!');
             setIsLoading(false);
             setShowConfirmModal(false);
             setSaveIndex(null);
             await refetch();
 
-            // Navigate to the Process page with Box Department state
             navigate({
                 to: '/manufacturingprocess/process',
                 state: { selectedTab: 'box' }
@@ -397,7 +508,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         resetForm();
     };
 
-    const formatNumber = (value: number) => {
+    const formatNumberDisplay = (value: number) => {
         if (value === 0 || !value) return '0';
         const str = value.toString();
         if (str.includes('.')) {
@@ -411,7 +522,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             key: 'dateTime',
             header: 'Date & Time',
             render: (item) => {
-                // Split dateTime into date and time parts
                 const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
                 const datePart = parts[0] || '';
                 const timePart = parts.slice(1).join(' ') || '';
@@ -451,7 +561,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             header: 'Fine (लगड)',
             render: (item) => (
                 <span className="text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumber(item.fine)}
+                    {formatNumberDisplay(item.fine)}
                 </span>
             ),
         },
@@ -472,7 +582,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                 }
                 return (
                     <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                        {formatNumber(item.tar)}
+                        {formatNumberDisplay(item.tar)}
                     </span>
                 );
             },
@@ -494,7 +604,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                 }
                 return (
                     <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                        {formatNumber(item.scrap)}
+                        {formatNumberDisplay(item.scrap)}
                     </span>
                 );
             },
@@ -504,7 +614,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             header: 'Loss',
             render: (item) => (
                 <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumber(item.loss)}
+                    {formatNumberDisplay(item.loss)}
                 </span>
             ),
         },
@@ -525,12 +635,13 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                 }
                 return (
                     <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                        {formatNumber(item.purity)}
+                        {formatNumberDisplay(item.purity)}
                     </span>
                 );
             },
         },
     ];
+
     const renderActions = (item: TarEntry, index: number) => {
         if (!item.isSaved) {
             return (
@@ -554,52 +665,104 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
 
     const isSubmitting = createTar.isPending || saveTar.isPending;
 
+    const toggleHistory = () => {
+        setShowHistory(!showHistory);
+        if (!showHistory) {
+            refetchHistory();
+        }
+    };
+
     return (
-        <div className="bg-[#f9f9f7] dark:bg-slate-950">
-            {/* Header with Conditional Back Button - Optimized */}
+        <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
+            {/* Header */}
             <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
                 <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
                     <div className="flex items-center gap-2 min-w-0">
                         <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
-                            Tar Management
+                            {showHistory ? 'Tar History' : 'Tar Management'}
                         </h1>
+                      
                     </div>
-                    <GenericButton
-                        type="button"
-                        onClick={handleOpenModal}
-                        disabled={isTarCompleted}
-                        className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${isTarCompleted
-                            ? '!bg-gray-400 cursor-not-allowed opacity-60'
-                            : '!bg-amber-600 hover:!bg-amber-700'
+                    <div className="flex items-center gap-2">
+                        {!showHistory && (
+                            <GenericButton
+                                type="button"
+                                onClick={handleOpenModal}
+                                disabled={isTarCompleted}
+                                className={`flex items-center !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${
+                                    isTarCompleted
+                                        ? '!bg-gray-400 cursor-not-allowed opacity-60'
+                                        : '!bg-amber-600 hover:!bg-amber-700'
+                                }`}
+                            >
+                                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <span>
+                                    {isTarCompleted ? 'Completed' : 'Add Tar'}
+                                </span>
+                            </GenericButton>
+                        )}
+
+                        {/* History Toggle Button */}
+                        <GenericButton
+                            type="button"
+                            onClick={toggleHistory}
+                            className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${
+                                showHistory ? '!bg-amber-600 hover:!bg-amber-700' : '!bg-blue-600 hover:!bg-blue-700'
                             }`}
-                    >
-                        <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                        <span className="xs:hidden">{isTarCompleted ? 'Completed' : 'Add Tar'}</span>
-                    </GenericButton>
+                        >
+                            {showHistory ? (
+                                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            ) : (
+                                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            )}
+                            <span>
+                                {showHistory ? 'Show Tar' : 'History'}
+                            </span>
+                        </GenericButton>
+                    </div>
                 </div>
             </div>
 
-            <div>
-                <GenericTable<TarEntry>
-                    data={tarEntries}
-                    columns={columns}
-                    onSave={(item, index) => handleSaveClick(index)}
-                    emptyMessage="No tar entries found. Click 'Add Tar' to create one."
-                    isLoading={tarLoading || itemsLoading || sizesLoading || isSubmitting}
-                    renderActions={renderActions}
-                    showSrNo={true}
-                    srNoLabel="Sr No."
-                />
-            </div>
+            {!showHistory ? (
+                /* Tar Management Table */
+                <div className="px-3 py-4 sm:px-4 md:px-6">
+                    <GenericTable<TarEntry>
+                        data={tarEntries}
+                        columns={columns}
+                        onSave={(item, index) => handleSaveClick(index)}
+                        emptyMessage="No tar entries found. Click 'Add Tar' to create one."
+                        isLoading={tarLoading || itemsLoading || sizesLoading || isSubmitting}
+                        renderActions={renderActions}
+                        showSrNo={true}
+                        srNoLabel="Sr No."
+                    />
+                </div>
+            ) : (
+                /* History Table */
+                <div className="px-3 py-4 sm:px-4 md:px-6">
+                    {/* History Header */}
+              
+
+                    {/* History Table */}
+                    <GenericTable
+                        data={tarHistory}
+                        columns={historyColumns}
+                        emptyMessage="No history records found. Complete a tar process to see history."
+                        isLoading={tarHistoryLoading}
+                        showSrNo={true}
+                        srNoLabel="Sr No."
+                        className="shadow-sm"
+                    />
+                </div>
+            )}
 
             {/* Add Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
-                        {/* Modal Header */}
                         <div className="flex items-center justify-between border-b border-[#d3c4af]/10 p-4 dark:border-slate-700">
                             <h3 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
-                                Add New Tar
+                                Add New
                             </h3>
                             <button
                                 onClick={closeModal}
@@ -609,9 +772,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                             </button>
                         </div>
 
-                        {/* Modal Body */}
                         <div className="space-y-4 p-4">
-                            {/* Item Select */}
                             <div>
                                 <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
                                     Item <span className="text-red-500">*</span>
@@ -631,7 +792,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                                 </select>
                             </div>
 
-                            {/* Size Select */}
                             <div>
                                 <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
                                     Size <span className="text-red-500">*</span>
@@ -651,7 +811,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                                 </select>
                             </div>
 
-                            {/* Fine Input */}
                             <div>
                                 <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
                                     Fine (लगड) <span className="text-red-500">*</span>
@@ -666,10 +825,8 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                                     autoFocus
                                 />
                             </div>
-
                         </div>
 
-                        {/* Modal Footer */}
                         <div className="flex justify-end gap-3 border-t border-[#d3c4af]/10 p-4 dark:border-slate-700">
                             <GenericButton
                                 onClick={handleSaveFromPopup}
@@ -682,6 +839,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                     </div>
                 </div>
             )}
+
             {/* Confirmation Modal */}
             {showConfirmModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

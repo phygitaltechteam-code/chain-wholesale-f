@@ -28,6 +28,17 @@ export const getCuttingApi = async () => {
     throw error;
   }
 };
+export const getCuttingHistoryApi = async () => {
+  try {
+    const response = await api.get("/admin/cutting/history");
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to fetch cutting history ');
+    }
+    throw error;
+  }
+};
 
 export const submitCuttingApi = async ({ id, data }: { id: string; data: any }) => {
   try {
@@ -58,6 +69,13 @@ export const useGetCutting = () => {
   return useQuery({
     queryKey: ['cutting'],
     queryFn: getCuttingApi,
+  });
+};
+
+export const useGetCuttingHistory = () => {
+  return useQuery({
+    queryKey: ['cutting'],
+    queryFn: getCuttingHistoryApi,
   });
 };
 
