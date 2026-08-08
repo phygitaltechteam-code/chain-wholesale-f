@@ -1,5 +1,5 @@
 // components/Common/GenericTable.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Edit, Trash2, Save, X, Search } from 'lucide-react';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 
@@ -35,6 +35,14 @@ export interface GenericTableProps<T> {
     enableInlineEdit?: boolean;
     showSrNo?: boolean;
     srNoLabel?: string;
+    // New props for row styling and click
+    rowClassName?: (item: T, index: number) => string;
+    rowTextColor?: (item: T, index: number) => string;
+    onRowClick?: (item: T, index: number) => void;
+    hoverColor?: string;
+    evenRowColor?: string;
+    oddRowColor?: string;
+    selectedRowColor?: string;
 }
 
 export function GenericTable<T extends { id: string | number }>({
@@ -57,10 +65,24 @@ export function GenericTable<T extends { id: string | number }>({
     enableInlineEdit = false,
     showSrNo = false,
     srNoLabel = 'Sr No.',
+    rowClassName,
+    rowTextColor,
+    onRowClick,
+    hoverColor = 'hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50',
+    evenRowColor = 'bg-white dark:bg-slate-900',
+    oddRowColor = 'bg-[#fafaf8] dark:bg-slate-900/80',
+    selectedRowColor = 'dark:bg-amber-900/10',
 }: GenericTableProps<T>) {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editData, setEditData] = useState<Partial<T>>({});
+    const [tableData, setTableData] = useState<T[]>(data);
+    const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
+
+    // Update tableData when data prop changes
+    useEffect(() => {
+        setTableData(data);
+    }, [data]);
 
     const handleEdit = (item: T, index: number) => {
         if (enableInlineEdit) {
@@ -86,14 +108,21 @@ export function GenericTable<T extends { id: string | number }>({
         setEditData(prev => ({ ...prev, [key]: value }));
     };
 
+    const handleRowClick = (item: T, index: number) => {
+        setSelectedRowIndex(index);
+        if (onRowClick) {
+            onRowClick(item, index);
+        }
+    };
+
     const filteredData = searchFields.length > 0 && searchTerm
-        ? data.filter(item =>
+        ? tableData.filter(item =>
             searchFields.some(field => {
                 const value = item[field];
                 return value && String(value).toLowerCase().includes(searchTerm.toLowerCase());
             })
         )
-        : data;
+        : tableData;
 
     const getValue = (item: T, key: string | keyof T) => {
         if (typeof key === 'string' && key.includes('.')) {
@@ -129,7 +158,7 @@ export function GenericTable<T extends { id: string | number }>({
                 width: '60px',
                 className: 'text-center font-semibold text-white dark:text-[#986d00]',
                 render: (_: T, index: number) => (
-                    <span className="text-xs sm:text-sm font-semibold text-[#1a1c1b]  dark:text-[#986d00]">
+                    <span className="text-xs sm:text-sm font-semibold text-[#1a1c1b] dark:text-[#986d00]">
                         {index + 1}
                     </span>
                 ),
@@ -142,9 +171,44 @@ export function GenericTable<T extends { id: string | number }>({
         return column.align || 'center';
     };
 
+    const getRowColor = (item: T, index: number) => {
+        // If row has custom class, use it
+        if (rowClassName) {
+            return rowClassName(item, index);
+        }
+
+        // If selected row, use selected color
+        if (selectedRowIndex === index) {
+            return selectedRowColor;
+        }
+
+        // Alternate row colors
+        return index % 2 === 0 ? evenRowColor : oddRowColor;
+    };
+
+    const getRowTextColorClass = (item: T, index: number) => {
+        if (rowTextColor) {
+            return rowTextColor(item, index);
+        }
+        return 'text-[#1a1c1b] dark:text-white';
+    };
+
+    // If loading, show loading state
+    if (isLoading) {
+        return (
+            <div className="bg-[#f9f9f7] dark:bg-slate-950">
+                <div className="overflow-hidden border border-[#d3c4af]/10 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
+                    <div className="p-8 text-center text-[#4f4535] dark:text-slate-400">
+                        Loading...
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className=" bg-[#f9f9f7] dark:bg-slate-950">
-            <div >
+        <div className="bg-[#f9f9f7] dark:bg-slate-950">
+            <div>
                 {/* Header with Title, Search and Add Button */}
                 {(title || onAdd || searchFields.length > 0) && (
                     <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -187,7 +251,7 @@ export function GenericTable<T extends { id: string | number }>({
                 )}
 
                 {/* Table */}
-                <div className="overflow-hidden  border border-[#d3c4af]/10 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
+                <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
                             <thead>
@@ -207,13 +271,7 @@ export function GenericTable<T extends { id: string | number }>({
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
-                                {isLoading ? (
-                                    <tr>
-                                        <td colSpan={allColumns.length + (showActionsColumn ? 1 : 0)} className="py-12 text-center text-[#4f4535] dark:text-slate-400">
-                                            Loading...
-                                        </td>
-                                    </tr>
-                                ) : filteredData.length === 0 ? (
+                                {filteredData.length === 0 ? (
                                     <tr>
                                         <td colSpan={allColumns.length + (showActionsColumn ? 1 : 0)} className="py-12 text-center text-[#4f4535] dark:text-slate-400">
                                             {emptyMessage}
@@ -223,9 +281,16 @@ export function GenericTable<T extends { id: string | number }>({
                                     filteredData.map((item, index) => {
                                         const isItemEditing = isEditing(index);
                                         const originalIndex = data.indexOf(item);
+                                        const rowColor = getRowColor(item, index);
+                                        const textColor = getRowTextColorClass(item, index);
+                                        const isClickable = !!onRowClick;
 
                                         return (
-                                            <tr key={item.id} className="group transition-colors hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50">
+                                            <tr
+                                                key={item.id || index}
+                                                className={`group transition-colors ${rowColor} ${hoverColor} ${isClickable ? 'cursor-pointer' : ''} ${isItemEditing ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}
+                                                onClick={() => handleRowClick(item, index)}
+                                            >
                                                 {allColumns.map((column, colIdx) => {
                                                     const value = getCellValue(item, column, index);
                                                     const isEditable = column.editable && isItemEditing;
@@ -234,7 +299,7 @@ export function GenericTable<T extends { id: string | number }>({
                                                     return (
                                                         <td
                                                             key={colIdx}
-                                                            className={`px-3 py-3 text-sm lg:px-4 ${column.className || ''}`}
+                                                            className={`px-3 py-3 text-sm lg:px-4 ${textColor} ${column.className || ''}`}
                                                             style={{ textAlign: align }}
                                                         >
                                                             {isEditable ? (
@@ -295,7 +360,10 @@ export function GenericTable<T extends { id: string | number }>({
                                                                     <>
                                                                         {showEdit && onEdit && (
                                                                             <button
-                                                                                onClick={() => handleEdit(item, index)}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleEdit(item, index);
+                                                                                }}
                                                                                 className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
                                                                                 title="Edit"
                                                                             >
@@ -304,8 +372,11 @@ export function GenericTable<T extends { id: string | number }>({
                                                                         )}
                                                                         {showDelete && onDelete && (
                                                                             <button
-                                                                                onClick={() => onDelete(item, index)}
-                                                                                className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    onDelete(item, index);
+                                                                                }}
+                                                                                className="rounded-lg p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
                                                                                 title="Delete"
                                                                             >
                                                                                 <Trash2 className="h-4 w-4" />
@@ -328,9 +399,9 @@ export function GenericTable<T extends { id: string | number }>({
                 </div>
 
                 {/* Footer */}
-                {data.length > 0 && (
+                {tableData.length > 0 && (
                     <div className="mt-3 text-xs text-[#4f4535] dark:text-slate-400">
-                        Showing {filteredData.length} of {data.length} entries
+                        Showing {filteredData.length} of {tableData.length} entries
                     </div>
                 )}
             </div>

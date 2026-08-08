@@ -1,14 +1,16 @@
-import {AuthContextType} from '@/types';
+import { AuthContextType } from '@/types';
 
 export const INITIAL_AUTH_STATE: AuthContextType = {
   user: null,
-  setUser: () => {},
+  setUser: () => { },
   role: null,
-  setRole: () => {},
+  setRole: () => { },
   token: null,
-  setToken: () => {},
+  setToken: () => { },
   isAuthenticated: false,
-  setIsAuthenticated: () => {},
+  setIsAuthenticated: () => { },
+  isLoading: true,
+  setIsLoading: () => { }
 };
 
 export const languageId = localStorage.getItem('languageId');

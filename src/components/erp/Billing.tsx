@@ -1,11 +1,52 @@
-// manufacturingprocess/Billing.tsx
-import React, { useState, useEffect } from 'react';
-import { Eye, X, Search, Printer, Edit, Trash2, Filter, Calendar, Plus } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Search, Printer, Edit, Trash2, Plus, Calendar } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import toast from 'react-hot-toast';
 import GenericButton from '../Forms/Buttons/GenericButton';
+import { useGetBill } from '@/lib/api/bill';
+import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
+import { useReactToPrint } from 'react-to-print';
+import PDFHeader from '../Forms/Common/PDFHeader';
+
+interface ReceiptItem {
+  id: string;
+  receiptID: string;
+  itemID: string;
+  sizeID: string;
+  purity: number;
+  grossWeight: number;
+  srp: number;
+  fineWeight: number;
+  laborRate: number;
+  item: {
+    id: string;
+    name: string;
+  };
+  size: {
+    id: string;
+    size: string;
+  };
+}
+
+interface ReceiptData {
+  id: string;
+  clientID: string;
+  receiptDate: string;
+  totalWeight: number;
+  customerWeight: number;
+  remainingWeight: number;
+  createdAt: string;
+  client: {
+    id: string;
+    fullName: string;
+    phoneNumber: string;
+    address: string;
+    openingBalance: number;
+  };
+  receiptItems: ReceiptItem[];
+}
 
 interface BillingEntry {
   id: string;
@@ -16,6 +57,7 @@ interface BillingEntry {
   phoneNumber: string;
   item: string;
   size: string;
+  purity: number;
   finWt: number;
   srp: number;
   receive: number;
@@ -28,171 +70,74 @@ const Billing: React.FC = () => {
   const navigate = useNavigate();
   const [billingEntries, setBillingEntries] = useState<BillingEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedEntry, setSelectedEntry] = useState<BillingEntry | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const [dateRange, setDateRange] = useState<'weekly' | 'monthly' | 'all'>('weekly');
+  const [isLoading, setIsLoading] = useState(true);
+  const [fromDate, setFromDate] = useState<Date[]>([]);
+  const [toDate, setToDate] = useState<Date[]>([]);
+  const printRef = useRef<HTMLDivElement>(null);
+  const tablePrintRef = useRef<HTMLDivElement>(null);
 
-  // Static data
-  const staticData: BillingEntry[] = [
-    {
-      id: '1',
-      srNo: 1,
-      dateTime: '05/08/2026, 10:30 AM',
-      billNo: 'BILL-0001',
-      clientName: 'Rajesh Kumar',
-      phoneNumber: '9876543210',
-      item: 'Gold Chain',
-      size: '18',
-      finWt: 15.5,
-      srp: 45000,
-      receive: 12.0,
-      pending: 3.5,
-      status: 'completed',
-      createdAt: '2026-08-05T10:30:00.000Z',
-    },
-    {
-      id: '2',
-      srNo: 2,
-      dateTime: '05/08/2026, 11:45 AM',
-      billNo: 'BILL-0002',
-      clientName: 'Priya Sharma',
-      phoneNumber: '8765432109',
-      item: 'Gold Bracelet',
-      size: '16',
-      finWt: 8.2,
-      srp: 28000,
-      receive: 5.0,
-      pending: 3.2,
-      status: 'pending',
-      createdAt: '2026-08-05T11:45:00.000Z',
-    },
-    {
-      id: '3',
-      srNo: 3,
-      dateTime: '04/08/2026, 09:15 AM',
-      billNo: 'BILL-0003',
-      clientName: 'Amit Patel',
-      phoneNumber: '7654321098',
-      item: 'Gold Ring',
-      size: '22',
-      finWt: 4.8,
-      srp: 15000,
-      receive: 4.8,
-      pending: 0.0,
-      status: 'completed',
-      createdAt: '2026-08-04T09:15:00.000Z',
-    },
-    {
-      id: '4',
-      srNo: 4,
-      dateTime: '04/08/2026, 02:30 PM',
-      billNo: 'BILL-0004',
-      clientName: 'Sneha Reddy',
-      phoneNumber: '6543210987',
-      item: 'Gold Earrings',
-      size: '14',
-      finWt: 3.2,
-      srp: 12000,
-      receive: 2.0,
-      pending: 1.2,
-      status: 'draft',
-      createdAt: '2026-08-04T14:30:00.000Z',
-    },
-    {
-      id: '5',
-      srNo: 5,
-      dateTime: '03/08/2026, 04:00 PM',
-      billNo: 'BILL-0005',
-      clientName: 'Vikram Singh',
-      phoneNumber: '5432109876',
-      item: 'Gold Necklace',
-      size: '20',
-      finWt: 22.5,
-      srp: 65000,
-      receive: 18.0,
-      pending: 4.5,
-      status: 'pending',
-      createdAt: '2026-08-03T16:00:00.000Z',
-    },
-    {
-      id: '6',
-      srNo: 6,
-      dateTime: '03/08/2026, 11:20 AM',
-      billNo: 'BILL-0006',
-      clientName: 'Meera Joshi',
-      phoneNumber: '4321098765',
-      item: 'Gold Pendant',
-      size: '10',
-      finWt: 2.5,
-      srp: 8000,
-      receive: 2.5,
-      pending: 0.0,
-      status: 'completed',
-      createdAt: '2026-08-03T11:20:00.000Z',
-    },
-    {
-      id: '7',
-      srNo: 7,
-      dateTime: '02/08/2026, 10:00 AM',
-      billNo: 'BILL-0007',
-      clientName: 'Ravi Desai',
-      phoneNumber: '3210987654',
-      item: 'Gold Bangle',
-      size: '24',
-      finWt: 12.8,
-      srp: 38000,
-      receive: 10.0,
-      pending: 2.8,
-      status: 'draft',
-      createdAt: '2026-08-02T10:00:00.000Z',
-    },
-    {
-      id: '8',
-      srNo: 8,
-      dateTime: '02/08/2026, 03:45 PM',
-      billNo: 'BILL-0008',
-      clientName: 'Kavita Nair',
-      phoneNumber: '2109876543',
-      item: 'Gold Chain',
-      size: '20',
-      finWt: 18.3,
-      srp: 52000,
-      receive: 15.0,
-      pending: 3.3,
-      status: 'completed',
-      createdAt: '2026-08-02T15:45:00.000Z',
-    },
-  ];
+  const { data: billData, isLoading: billLoading } = useGetBill();
 
+  // Process API data
   useEffect(() => {
-    setBillingEntries(staticData);
-  }, []);
+    if (billLoading) {
+      setIsLoading(true);
+      return;
+    }
 
-  // Get week range (Monday to Sunday)
-  const getWeekRange = () => {
-    const today = new Date();
-    const day = today.getDay();
-    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(today);
-    monday.setDate(diff);
-    monday.setHours(0, 0, 0, 0);
+    if (billData && Array.isArray(billData)) {
+      const entries: BillingEntry[] = billData.map((receipt: ReceiptData, index: number) => {
+        const firstItem = receipt.receiptItems?.[0];
+        const itemName = firstItem?.item?.name || 'N/A';
+        const sizeName = firstItem?.size?.size || 'N/A';
+        const fineWeight = firstItem?.fineWeight || 0;
+        const srp = firstItem?.srp || 0;
 
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
+        let status: 'draft' | 'completed' | 'pending' = 'pending';
+        if (receipt.remainingWeight === 0) {
+          status = 'completed';
+        } else if (receipt.customerWeight === 0) {
+          status = 'draft';
+        } else {
+          status = 'pending';
+        }
 
-    return { monday, sunday };
-  };
+        const dateObj = new Date(receipt.receiptDate || receipt.createdAt);
+        const formattedDate = dateObj.toLocaleString('en-IN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
 
-  // Get month range
-  const getMonthRange = () => {
-    const today = new Date();
-    const start = new Date(today.getFullYear(), today.getMonth(), 1);
-    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    end.setHours(23, 59, 59, 999);
-    return { start, end };
-  };
+        return {
+          id: receipt.id,
+          srNo: index + 1,
+          dateTime: formattedDate,
+          billNo: `BILL-${String(index + 1).padStart(4, '0')}`,
+          clientName: receipt.client?.fullName || 'N/A',
+          phoneNumber: receipt.client?.phoneNumber || 'N/A',
+          item: itemName,
+          size: sizeName,
+          purity: firstItem?.purity || 0,
+          finWt: fineWeight,
+          srp: srp,
+          receive: receipt.customerWeight || 0,
+          pending: receipt.remainingWeight || 0,
+          status: status,
+          createdAt: receipt.createdAt,
+        };
+      });
+
+      setBillingEntries(entries);
+    } else {
+      setBillingEntries([]);
+    }
+    setIsLoading(false);
+  }, [billData, billLoading]);
 
   // Filter entries
   const filteredEntries = billingEntries.filter(entry => {
@@ -202,34 +147,84 @@ const Billing: React.FC = () => {
       entry.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.item.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === 'all' || entry.status === statusFilter;
-
     let matchesDate = true;
-    const entryDate = new Date(entry.createdAt);
-
-    if (dateRange === 'weekly') {
-      const { monday, sunday } = getWeekRange();
-      matchesDate = entryDate >= monday && entryDate <= sunday;
-    } else if (dateRange === 'monthly') {
-      const { start, end } = getMonthRange();
-      matchesDate = entryDate >= start && entryDate <= end;
+    if (fromDate.length > 0 && toDate.length > 0) {
+      const entryDate = new Date(entry.createdAt);
+      const from = new Date(fromDate[0]);
+      const to = new Date(toDate[0]);
+      to.setHours(23, 59, 59, 999);
+      matchesDate = entryDate >= from && entryDate <= to;
     }
 
-    return matchesSearch && matchesStatus && matchesDate;
+    return matchesSearch && matchesDate;
   });
 
-  const handlePreview = (entry: BillingEntry) => {
+  // Calculate totals from filtered entries
+  const totalFinWt = filteredEntries.reduce((sum, item) => sum + item.finWt, 0);
+  const totalSRP = filteredEntries.reduce((sum, item) => sum + item.srp, 0);
+  const totalReceive = filteredEntries.reduce((sum, item) => sum + item.receive, 0);
+  const totalPending = filteredEntries.reduce((sum, item) => sum + item.pending, 0);
+  const totalEntries = filteredEntries.length;
+
+  // Direct print without popup
+  const handleDirectPrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Receipt-${selectedEntry?.billNo || 'bill'}`,
+    pageStyle: `
+      @page { 
+        size: A4 portrait; 
+        margin: 5mm; 
+      }
+      @media print {
+        body { 
+          -webkit-print-color-adjust: exact; 
+          print-color-adjust: exact; 
+        }
+        #receipt { 
+          page-break-inside: avoid; 
+          break-inside: avoid; 
+        }
+        .no-print { 
+          display: none !important; 
+        }
+      }
+    `,
+  });
+
+  // Print table with filters - A4 size with proper margins
+  const handlePrintTable = useReactToPrint({
+    contentRef: tablePrintRef,
+    documentTitle: `Billing-Report-${new Date().toLocaleDateString()}`,
+    pageStyle: `
+      @page { 
+        size: A4 landscape; 
+        margin: 8mm; 
+      }
+      @media print {
+        body { 
+          -webkit-print-color-adjust: exact; 
+          print-color-adjust: exact; 
+        }
+        #table-print { 
+          page-break-inside: avoid; 
+          break-inside: avoid; 
+        }
+        .no-print { 
+          display: none !important; 
+        }
+      }
+    `,
+  });
+
+  const handlePrint = (entry: BillingEntry) => {
     setSelectedEntry(entry);
-    setShowPreview(true);
+    setTimeout(() => {
+      handleDirectPrint();
+    }, 100);
   };
 
-  const closePreview = () => {
-    setShowPreview(false);
-    setSelectedEntry(null);
-  };
-
-  const handleEdit = (entry: BillingEntry) => {
-    toast.success(`Editing bill ${entry.billNo}`);
+  const handleRowClick = (entry: BillingEntry) => {
+    navigate({ to: "/billiupdate/$id", params: { id: entry.id } });
   };
 
   const handleDelete = (entry: BillingEntry) => {
@@ -239,9 +234,21 @@ const Billing: React.FC = () => {
     }
   };
 
+  // Format number - remove trailing zeros
   const formatNumber = (value: number) => {
-    if (value === 0) return '0.000';
-    return value.toFixed(3);
+    if (value === 0 || !value) return '0';
+    const str = value.toString();
+    if (str.includes('.')) {
+      return str.replace(/\.?0+$/, '');
+    }
+    return str;
+  };
+
+  // Format number with 3 decimals only if needed
+  const formatNumberWithDecimals = (value: number) => {
+    if (value === 0 || !value) return '0';
+    const str = value.toFixed(3);
+    return str.replace(/\.?0+$/, '');
   };
 
   const getStatusColor = (status: string) => {
@@ -260,22 +267,15 @@ const Billing: React.FC = () => {
   const renderActions = (item: BillingEntry, index: number) => (
     <div className="flex items-center justify-center gap-1">
       <button
-        onClick={() => handlePreview(item)}
-        className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
-        title="Preview"
+        onClick={(e) => { e.stopPropagation(); handlePrint(item); }}
+        className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
+        title="Print Receipt"
       >
-        <Eye className="h-4 w-4" />
+        <Printer className="h-4 w-4" />
       </button>
       <button
-        onClick={() => handleEdit(item)}
-        className="rounded-lg p-1.5 text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20"
-        title="Edit"
-      >
-        <Edit className="h-4 w-4" />
-      </button>
-      <button
-        onClick={() => handleDelete(item)}
-        className="rounded-lg p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+        onClick={(e) => { e.stopPropagation(); handleDelete(item); }}
+        className="rounded-lg p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
         title="Delete"
       >
         <Trash2 className="h-4 w-4" />
@@ -287,11 +287,22 @@ const Billing: React.FC = () => {
     {
       key: 'dateTime',
       header: 'Date & Time',
-      render: (item) => (
-        <span className="text-sm text-[#1a1c1b] dark:text-white">
-          {item.dateTime}
-        </span>
-      ),
+      render: (item) => {
+        const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
+        const datePart = parts[0] || '';
+        const timePart = parts.slice(1).join(' ') || '';
+
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {datePart}
+            </span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {timePart}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: 'billNo',
@@ -339,38 +350,47 @@ const Billing: React.FC = () => {
       ),
     },
     {
+      key: 'purity',
+      header: 'Purity %',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {item.purity}
+        </span>
+      ),
+    },
+    {
       key: 'finWt',
       header: 'Fin Wt (g)',
       render: (item) => (
-        <span className="text-sm font-mono font-bold text-[#785600] dark:text-amber-400">
-          {formatNumber(item.finWt)}
+        <span className="text-sm font-mono font-bold text-black dark:text-amber-400">
+          {formatNumberWithDecimals(item.finWt)}
         </span>
       ),
     },
     {
       key: 'srp',
-      header: 'SRP (Majri)',
+      header: 'SRP (G)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.srp)}
+          {formatNumberWithDecimals(item.srp)}
         </span>
       ),
     },
     {
       key: 'receive',
-      header: 'Receive (g)',
+      header: 'Receive (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-green-600 dark:text-green-400">
-          {formatNumber(item.receive)}
+        <span className="text-sm font-mono text-black dark:text-green-400">
+          {formatNumberWithDecimals(item.receive)}
         </span>
       ),
     },
     {
       key: 'pending',
-      header: 'Pending (g)',
+      header: 'Pending (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-red-600 dark:text-red-400">
-          {formatNumber(item.pending)}
+        <span className="text-sm font-mono text-black dark:text-red-400">
+          {formatNumberWithDecimals(item.pending)}
         </span>
       ),
     },
@@ -379,168 +399,365 @@ const Billing: React.FC = () => {
       header: 'Status',
       render: (item) => (
         <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium capitalize ${getStatusColor(item.status)}`}>
-          {item.status}
+          {item.status || "-"}
         </span>
       ),
     },
   ];
 
+  // Receipt Preview Component for Print with PDF Header
   const ReceiptPreview = ({ entry }: { entry: BillingEntry }) => (
-    <div className="bg-white p-6 max-w-2xl mx-auto font-mono">
-      <div className="text-center border-b-2 border-black pb-3 mb-3">
-        <h1 className="text-xl font-bold tracking-wider">MATOSHREE GOLD MIRAI</h1>
-        <p className="text-sm">Bill No: {entry.billNo}</p>
-        <p className="text-sm">Date: {entry.dateTime}</p>
+    <div
+      className="bg-white p-4 max-w-4xl mx-auto font-sans"
+      ref={printRef}
+      id="receipt"
+      style={{ width: '210mm', minHeight: '297mm' }}
+    >
+      {/* PDF Header */}
+      <PDFHeader />
+
+      <div className="border-b-2 border-[#c43d5c] my-2" />
+
+      {/* Client Info (Left) and Receipt Info (Right) */}
+      <div className="flex justify-between items-start my-3">
+        {/* Left - Client Info */}
+        <div className="border border-gray-300 p-3 flex-1 mr-4">
+          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Client Details</h4>
+          <div className="space-y-0.5 text-sm">
+            <div>
+              <span className="text-gray-600">Name:</span>
+              <span className="ml-1 font-medium">{entry.clientName}</span>
+            </div>
+            <div>
+              <span className="text-gray-600">Phone:</span>
+              <span className="ml-1">{entry.phoneNumber}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right - Receipt Info */}
+        <div className="border border-gray-300 p-3 flex-1">
+          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Receipt Details</h4>
+          <div className="space-y-0.5 text-sm">
+            <div>
+              <span className="text-gray-600">Receipt #:</span>
+              <span className="ml-1 font-bold text-[#785600]">{entry.billNo}</span>
+            </div>
+            <div>
+              <span className="text-gray-600">Date:</span>
+              <span className="ml-1">{entry.dateTime}</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="mb-3 text-sm">
-        <div className="flex justify-between">
-          <span><strong>Client:</strong> {entry.clientName}</span>
-          <span><strong>Phone:</strong> {entry.phoneNumber}</span>
-        </div>
-        <div className="flex justify-between mt-1">
-          <span><strong>Item:</strong> {entry.item}</span>
-          <span><strong>Size:</strong> {entry.size}</span>
-        </div>
+
+      {/* Table */}
+      <div className="my-3">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-white">
+              <th className="border border-[#785600] px-2 py-1 text-left text-xs font-semibold">Sr No.</th>
+              <th className="border border-[#785600] px-2 py-1 text-left text-xs font-semibold">Item</th>
+              <th className="border border-[#785600] px-2 py-1 text-left text-xs font-semibold">Size</th>
+              <th className="border border-[#785600] px-2 py-1 text-right text-xs font-semibold">Fin Wt (G)</th>
+              <th className="border border-[#785600] px-2 py-1 text-right text-xs font-semibold">SRP (G)</th>
+              <th className="border border-[#785600] px-2 py-1 text-right text-xs font-semibold">Amount (G)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="border border-gray-300 px-2 py-1 text-center">1</td>
+              <td className="border border-gray-300 px-2 py-1">{entry.item}</td>
+              <td className="border border-gray-300 px-2 py-1">{entry.size}</td>
+              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.finWt)}</td>
+              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.srp)}</td>
+              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.finWt * entry.srp)}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <div className="text-sm border-t border-black pt-2">
-        <div className="flex justify-between py-1">
-          <span><strong>Fin Wt:</strong></span>
-          <span>{formatNumber(entry.finWt)} g</span>
+
+      {/* Footer */}
+      <div className="mt-3 pt-2 border-t-2 border-[#785600] text-center">
+        <p className="text-xs text-gray-500">This is a system-generated receipt</p>
+        <div className="mt-0.5 flex justify-center gap-3 text-[10px] text-gray-400">
+          <span>Powered by Matoshree Gold</span>
+          <span>|</span>
+          <span>Generated: {new Date().toLocaleString()}</span>
         </div>
-        <div className="flex justify-between py-1">
-          <span><strong>SRP (Majri):</strong></span>
-          <span>{formatNumber(entry.srp)}</span>
-        </div>
-        <div className="flex justify-between py-1">
-          <span><strong>Receive:</strong></span>
-          <span>{formatNumber(entry.receive)} g</span>
-        </div>
-        <div className="flex justify-between py-1 border-t border-black">
-          <span><strong>Pending:</strong></span>
-          <span>{formatNumber(entry.pending)} g</span>
-        </div>
-        <div className="flex justify-between py-1">
-          <span><strong>Status:</strong></span>
-          <span className="font-bold capitalize">{entry.status}</span>
-        </div>
-      </div>
-      <div className="mt-4 pt-2 border-t-2 border-black text-center text-xs">
-        <p>Thank you for your business!</p>
       </div>
     </div>
   );
 
-  return (
-    <div className=" bg-[#f9f9f7] dark:bg-slate-950">
-      <div className="px-4 py-4 md:px-8 md:py-6">
-        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <PageHeader
-              title="Billing"
-              subtitle="Generate invoices and receipts for finished products"
-            />
-          </div>
-          <GenericButton
-            type="button"
-            onClick={() => navigate({ to: '/receipt/addreciept' })}
-          >
-            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+  // Table Print Preview Component - A4 size with proper design
+  const TablePrintPreview = () => {
+    const printData = filteredEntries;
 
-            <span className="xs:hidden">Add Bill</span>
-          </GenericButton>
+    return (
+      <div
+        className="bg-white p-4 max-w-full mx-auto font-sans"
+        ref={tablePrintRef}
+        id="table-print"
+        style={{ width: '297mm', minHeight: '210mm' }}
+      >
+        {/* PDF Header */}
+        <PDFHeader />
+
+        <div className="border-b-2 border-[#c43d5c] my-2" />
+
+        {/* Title */}
+        <div className="mb-2 text-center">
+          <h2 className="text-lg font-bold text-black">Billing Report</h2>
         </div>
 
-        {/* Filters - All on one line */}
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          {/* Search Bar */}
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
-            />
-          </div>
+        {/* Table */}
+        <table className="w-full text-xs border-collapse">
+          <thead>
+            <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-white">
+              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Sr</th>
+              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Date & Time</th>
+              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Bill No</th>
+              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Client</th>
+              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Phone</th>
+              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Item</th>
+              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Size</th>
+              <th className="border border-[#785600] px-2 py-1 text-right font-semibold">Purity %</th>
+              <th className="border border-[#785600] px-2 py-1 text-right font-semibold">Fin Wt (G)</th>
+              <th className="border border-[#785600] px-2 py-1 text-right font-semibold">SRP (G)</th>
+              <th className="border border-[#785600] px-2 py-1 text-right font-semibold">Receive (G)</th>
+              <th className="border border-[#785600] px-2 py-1 text-right font-semibold">Pending (G)</th>
+              <th className="border border-[#785600] px-2 py-1 text-center font-semibold">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {printData.map((entry, index) => (
+              <tr key={entry.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="border border-gray-300 px-2 py-1 text-center">{index + 1}</td>
+                <td className="border border-gray-300 px-2 py-1 text-xs">{entry.dateTime}</td>
+                <td className="border border-gray-300 px-2 py-1 font-medium">{entry.billNo}</td>
+                <td className="border border-gray-300 px-2 py-1">{entry.clientName}</td>
+                <td className="border border-gray-300 px-2 py-1">{entry.phoneNumber}</td>
+                <td className="border border-gray-300 px-2 py-1">{entry.item}</td>
+                <td className="border border-gray-300 px-2 py-1">{entry.size}</td>
+                <td className="border border-gray-300 px-2 py-1 text-right">{entry.purity}</td>
+                <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.finWt)}</td>
+                <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.srp)}</td>
+                <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.receive)}</td>
+                <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.pending)}</td>
+                <td className="border border-gray-300 px-2 py-1 text-center">
+                  <span className={`px-1.5 py-0.5 text-[9px] font-medium capitalize ${getStatusColor(entry.status)}`}>
+                    {entry.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="bg-gray-100 font-bold">
+              <td colSpan={8} className="border border-gray-300 px-2 py-1 text-right">Total:</td>
+              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(totalFinWt)}</td>
+              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(totalSRP)}</td>
+              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(totalReceive)}</td>
+              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(totalPending)}</td>
+              <td className="border border-gray-300 px-2 py-1 text-center text-[10px]">{printData.length} entries</td>
+            </tr>
+          </tfoot>
+        </table>
 
-          {/* Status Filter */}
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-[#817563]" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
-            >
-              <option value="all">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
-            </select>
-          </div>
-
-          {/* Date Range Filters */}
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-[#817563]" />
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value as 'weekly' | 'monthly' | 'all')}
-              className="rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
-            >
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="all">All Time</option>
-            </select>
+        {/* Footer */}
+        <div className="mt-3 pt-2 border-t-2 border-[#785600] text-center">
+          <p className="text-xs text-gray-500">This is a system-generated report</p>
+          <div className="mt-0.5 flex justify-center gap-3 text-[10px] text-gray-400">
+            <span>Powered by Matoshree Gold</span>
+            <span>|</span>
+            <span>Generated: {new Date().toLocaleString()}</span>
           </div>
         </div>
-
-        {/* Generic Table */}
-        <div className="-mx-3 sm:-mx-4 md:mx-0">
-          <GenericTable<BillingEntry>
-            data={filteredEntries}
-            columns={columns}
-            onSave={(item) => console.log('Save:', item)}
-            emptyMessage="No billing entries found for the selected filters."
-            isLoading={false}
-            renderActions={renderActions}
-            showSrNo={true}
-            srNoLabel="Sr No."
-          />
-        </div>
-
       </div>
+    );
+  };
 
-      {/* Preview Modal */}
-      {showPreview && selectedEntry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl">
-            <button
-              onClick={closePreview}
-              className="sticky top-2 right-2 float-right z-10 rounded-full bg-red-500 p-1.5 text-white hover:bg-red-600"
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-4 border-[#785600] border-t-transparent"></div>
+          <p className="text-[#4f4535] dark:text-slate-400">Loading billing entries...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[#f9f9f7] dark:bg-slate-950">
+      <div className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
+        {/* Header & Filters */}
+        <div className="mb-4 space-y-3">
+          {/* Row 1: Title and Add Bill button */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <PageHeader title='Billing' />
+            </div>
+            <GenericButton
+              type="button"
+              onClick={() => navigate({ to: '/receipt/addreciept' })}
             >
-              <X className="h-5 w-5" />
-            </button>
-            <div className="p-6">
-              <ReceiptPreview entry={selectedEntry} />
-              <div className="flex justify-end gap-3 mt-4 border-t pt-4">
-                <button
-                  onClick={closePreview}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => window.print()}
-                  className="rounded-lg bg-[#785600] px-4 py-2 text-sm font-medium text-white hover:bg-[#5d4200] flex items-center gap-2"
-                >
-                  <Printer className="h-4 w-4" />
-                  Print
-                </button>
-              </div>
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Add Bill</span>
+            </GenericButton>
+          </div>
+
+
+        </div>
+
+        {/* Summary Cards - Totals for Fin Wt, SRP, Receive, Pending */}
+        <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Total Fin Wt Card */}
+          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                Total Fin Wt
+              </span>
+              <span className="text-lg font-bold text-[#785600] dark:text-amber-400">
+                {formatNumberWithDecimals(totalFinWt)} g
+              </span>
+              <span className="text-[9px] text-[#4f4535] dark:text-slate-400">
+                {totalEntries} entries
+              </span>
+            </div>
+          </div>
+
+          {/* Total SRP Card */}
+          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                Total SRP
+              </span>
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {formatNumberWithDecimals(totalSRP)} g
+              </span>
+              <span className="text-[9px] text-[#4f4535] dark:text-slate-400">
+                {totalEntries} entries
+              </span>
+            </div>
+          </div>
+
+          {/* Total Receive Card */}
+          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                Total Receive
+              </span>
+              <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                {formatNumberWithDecimals(totalReceive)} g
+              </span>
+              <span className="text-[9px] text-[#4f4535] dark:text-slate-400">
+                {totalEntries} entries
+              </span>
+            </div>
+          </div>
+
+          {/* Total Pending Card */}
+          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                Total Pending
+              </span>
+              <span className="text-lg font-bold text-red-600 dark:text-red-400">
+                {formatNumberWithDecimals(totalPending)} g
+              </span>
+              <span className="text-[9px] text-[#4f4535] dark:text-slate-400">
+                {totalEntries} entries
+              </span>
             </div>
           </div>
         </div>
-      )}
+        {/* Row 2: Search and Date Filters with Print Button on Right */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+          <div className="relative flex-1 min-w-[140px] sm:min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+            <input
+              type="text"
+              placeholder="Search by client, phone, bill no..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <GenericDatePicker
+              id="from-date"
+              placeholder="From Date"
+              dateFormat="d/m/Y"
+              onDateChange={(dates) => setFromDate(dates)}
+              className="w-28 sm:w-32"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <GenericDatePicker
+              id="to-date"
+              placeholder="To Date"
+              dateFormat="d/m/Y"
+              onDateChange={(dates) => setToDate(dates)}
+              className="w-28 sm:w-32"
+            />
+          </div>
+
+          {/* Print Report Button */}
+          <button
+            onClick={() => {
+              if (filteredEntries.length === 0) {
+                toast.error('No records to print');
+                return;
+              }
+              handlePrintTable();
+            }}
+            className="flex items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white hover:bg-[#5d4200] transition-colors whitespace-nowrap"
+          >
+            <Printer className="h-4 w-4" />
+            <span>Print</span>
+          </button>
+
+          {(fromDate.length > 0 || toDate.length > 0 || searchTerm) && (
+            <button
+              onClick={() => {
+                setFromDate([]);
+                setToDate([]);
+                setSearchTerm('');
+              }}
+              className="flex items-center gap-1 text-sm text-[#785600] hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300 font-medium whitespace-nowrap"
+            >
+              <X className="h-4 w-4" />
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Generic Table with Row Click */}
+        <GenericTable<BillingEntry>
+          data={filteredEntries}
+          columns={columns}
+          onSave={(item) => console.log('Save:', item)}
+          emptyMessage="No billing entries found for the selected filters."
+          isLoading={false}
+          renderActions={renderActions}
+          showSrNo={true}
+          srNoLabel="Sr No."
+          onRowClick={handleRowClick}
+        />
+      </div>
+
+      {/* Hidden Print Components */}
+      <div className="hidden">
+        {selectedEntry && <ReceiptPreview entry={selectedEntry} />}
+      </div>
+
+      {/* Hidden Table Print Component */}
+      <div className="hidden">
+        <TablePrintPreview />
+      </div>
     </div>
   );
 };

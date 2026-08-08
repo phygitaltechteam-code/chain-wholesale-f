@@ -100,6 +100,8 @@ export interface AuthContextType {
   setToken: React.Dispatch<React.SetStateAction<Token | null>>;
   isAuthenticated: boolean;
   setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
+  isLoading: boolean;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 // **Pagination Interfaces**

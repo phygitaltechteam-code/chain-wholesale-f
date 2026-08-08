@@ -5,8 +5,8 @@ import toast from "react-hot-toast";
 export const useGetQuantity = () => {
   return useMutation({
     mutationFn: getQuantityApi,
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to fetch quantity');
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to fetch quantity');
     },
   });
 };
@@ -17,18 +17,66 @@ export const useBill = () => {
     onSuccess: () => {
       toast.success('Bill added successfully');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to add bill');
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Insufficient stock');
     },
   });
 };
 
 const saveBillApi = async (data: any) => {
-  const response = await api.post('/admin/billing/create', data);
+  const response = await api.post('/admin/billing', data);
   return response.data;
 };
 
 const getQuantityApi = async (payload: { itemId: string; sizeId: string; purity: number }) => {
   const response = await api.put('/admin/billing/check', payload);
+  return response.data;
+};
+
+export const useGetBill = () => {
+  return useQuery({
+    queryKey: ['bill'],
+    queryFn: getbillAll,
+  });
+};
+
+export const getbillAll = async () => {
+  try {
+    const response = await api.get("/admin/billing");
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to fetch joint entries');
+    }
+    throw error;
+  }
+};
+export const useGetBillByid = (id: string) => {
+  return useQuery({
+    queryKey: ['bill', id],
+    queryFn: async () => {
+      const response = await api.get(`/admin/billing/${id}`);
+      return response.data;
+    },
+    enabled: !!id,
+  });
+};
+
+
+export const useBillUpdate = () => {
+  return useMutation({
+    mutationFn: updateBillApi,
+    onSuccess: () => {
+      toast.success('Bill added successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Insufficient stock');
+    },
+  });
+};
+
+
+export const updateBillApi = async ({ id, data }: { id: string; data: any }) => {
+  const response = await api.put(`/admin/billing/${id}`, data);
   return response.data;
 };

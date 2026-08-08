@@ -504,10 +504,10 @@ const ReceiptAdd: React.FC = () => {
       const totalBill = calculateTotalBill();
       const remainingWeight = calculateRemainingWeight();
 
-      // Prepare data for API - Exactly as requested
+      // Prepare data for API - with correct field names
       const billData = {
         clientId: formData.clientId,
-        datetime: formData.date,
+        receiptDate: formData.date, // Changed from 'datetime' to 'receiptDate'
         items: formData.items.map(item => ({
           itemId: items.find((i: any) => i.name === item.item)?.id,
           itemName: item.item,
@@ -515,20 +515,20 @@ const ReceiptAdd: React.FC = () => {
           size: item.size,
           purity: item.purity,
           availableQty: item.availableQty,
-          grossWt: Number(item.grossWt.toFixed(3)),
+          grossWeight: Number(item.grossWt.toFixed(3)), // Changed from 'grossWt' to 'grossWeight'
           srp: item.srp,
-          fineWt: Number(item.fineWt.toFixed(3)),
+          fineWeight: Number(item.fineWt.toFixed(3)), // Changed from 'fineWt' to 'fineWeight'
           laborRate: item.laborRate || 0
         })),
         customerWeight: Number(formData.customerWeight.toFixed(3)),
         remainingWeight: Number(remainingWeight.toFixed(3)),
-        totalGrossWt: Number(totalGrossWt.toFixed(3))
+        totalWeight: Number(totalGrossWt.toFixed(3)) // Changed from 'totalGrossWt' to 'totalWeight'
       };
 
       console.log('Sending to backend:', billData);
 
       await savebill.mutateAsync(billData);
-      toast.success(`Receipt saved successfully! Total Bill: ₹${totalBill.toFixed(2)}`);
+      // toast.success(`Receipt saved successfully! Total Bill: ₹${totalBill.toFixed(2)}`);
 
       // Reset form after successful save
       setFormData({
@@ -554,7 +554,7 @@ const ReceiptAdd: React.FC = () => {
       navigate({ to: '/billing' });
     } catch (error) {
       console.error('Error saving receipt:', error);
-      toast.error('Failed to save receipt');
+      toast.error('Insufficient stock');
     }
   };
 
@@ -575,18 +575,14 @@ const ReceiptAdd: React.FC = () => {
     return formData.items.reduce((total, item) => total + (item.laborRate || 0), 0);
   };
 
-  const formatNumber = (value: number) => {
-    if (value === 0 || !value) return '0';
-    const str = value.toString();
-    if (str.includes('.')) {
-      return str.replace(/\.?0+$/, '');
-    }
-    return str;
-  };
+
 
   const formatNumberThreeDecimals = (value: number) => {
-    if (value === 0 || !value) return '0.000';
-    return value.toFixed(3);
+    if (value === 0 || !value) return '0';
+    // First format to 3 decimal places
+    const str = value.toFixed(3);
+    // Then remove trailing zeros
+    return str.replace(/\.0+$/, '');
   };
 
   // Custom action renderer for GenericTable - Shows Add/Remove buttons
@@ -660,7 +656,7 @@ const ReceiptAdd: React.FC = () => {
       render: (item, index) => {
         const actualIndex = formData.items.indexOf(item);
         return (
-          <div className="flex items-center gap-1">
+          <div className="relative flex-1">
             <input
               type="number"
               step="0.01"
@@ -669,10 +665,13 @@ const ReceiptAdd: React.FC = () => {
               value={item.purity || ''}
               onChange={(e) => handleItemChange(actualIndex, 'purity', parseFloat(e.target.value) || 0)}
               placeholder="0"
-              className="flex-1 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-8 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
             />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#4f4535] dark:text-slate-400">
+              %
+            </span>
             {item.isLoadingQty && (
-              <Loader2 className="h-4 w-4 animate-spin text-[#785600]" />
+              <Loader2 className="h-4 w-4 animate-spin text-[#785600] absolute right-3 top-1/2 -translate-y-1/2" />
             )}
           </div>
         );
@@ -730,7 +729,7 @@ const ReceiptAdd: React.FC = () => {
     },
     {
       key: 'srp',
-      header: 'SRP (₹)',
+      header: 'SRP (G)',
       render: (item, index) => {
         const actualIndex = formData.items.indexOf(item);
         return (
@@ -862,7 +861,7 @@ const ReceiptAdd: React.FC = () => {
               {/* Customer Weight - Editable Field */}
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <label className="text-sm font-semibold text-[#4f4535] dark:text-slate-300 whitespace-nowrap">
-                  Customer Weight (G) <span className="text-red-500">*</span>
+                  Adavance Receive(G) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -888,12 +887,7 @@ const ReceiptAdd: React.FC = () => {
                     {formatNumberThreeDecimals(calculateTotalGrossWt())} G
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-[#4f4535] dark:text-slate-400">Customer:</span>
-                  <span className="text-sm font-bold text-[#1a1c1b] dark:text-white font-mono">
-                    {formatNumberThreeDecimals(formData.customerWeight)} G
-                  </span>
-                </div>
+
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-[#4f4535] dark:text-slate-400">Remaining:</span>
                   <span className="text-sm font-bold text-[#1a1c1b] dark:text-white font-mono">

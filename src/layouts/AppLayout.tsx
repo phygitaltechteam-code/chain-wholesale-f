@@ -5,15 +5,11 @@ import React, { useEffect, useState } from 'react';
 
 const AppLayout = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuthContext();
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  console.log('AppLayout - isAuthenticated:', isAuthenticated);
-  console.log('AppLayout - User:', user);
-  console.log('AppLayout - User Role:', user?.role);
-
+  const { isAuthenticated, isLoading } = useAuthContext();
   // Check if screen is mobile
   useEffect(() => {
     const checkScreenSize = () => {
@@ -30,12 +26,14 @@ const AppLayout = () => {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  // Redirect to signin if not authenticated
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate({ to: '/signin', replace: true });
+    if (!isLoading && !isAuthenticated) {
+      navigate({
+        to: "/signin",
+        replace: true,
+      });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isLoading, isAuthenticated, navigate]);
 
   // Get margin left based on sidebar state
   const getMarginLeft = () => {

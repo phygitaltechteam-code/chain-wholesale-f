@@ -333,7 +333,7 @@ const StockManagment: React.FC = () => {
             </button>
             <div className="h-5 w-px bg-[#d3c4af]/30 dark:bg-slate-600 flex-shrink-0" />
             <h1 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
-              Stock Management
+              Inward / Outward Stock
             </h1>
           </div>
         </div>

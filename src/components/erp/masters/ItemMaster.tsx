@@ -261,7 +261,6 @@ const ItemMaster: React.FC = () => {
             emptyMessage="No items found. Click 'Add Item' to create one."
             isLoading={isLoading || isSubmitting}
             renderActions={renderActions}
-            showSrNo={true}
             srNoLabel="Sr No."
           />
         </div>

@@ -10,12 +10,13 @@ const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<Token | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const initializeAuth = () => {
       try {
         const tokenString = localStorage.getItem(QUERY_KEYS.TOKEN);
-        
+
         if (!tokenString) {
           clearAuthState();
           return;
@@ -39,7 +40,7 @@ const AuthContextProvider = ({ children }: { children: ReactNode }) => {
         const accessToken = localToken.accessToken;
 
         // Check if it's a demo/mock token (not a valid JWT)
-        const isDemoToken = 
+        const isDemoToken =
           accessToken === 'demo-access-token-gold-erp' ||
           accessToken === 'temp-access-token-gold-erp' ||
           accessToken.includes('demo') ||
@@ -48,11 +49,11 @@ const AuthContextProvider = ({ children }: { children: ReactNode }) => {
 
         if (isDemoToken) {
           console.log('🔧 Demo token detected, using static user data');
-          
+
           // Try to get user from localStorage or use default
           let userData = localStorage.getItem('user');
           let parsedUser = null;
-          
+
           if (userData) {
             try {
               parsedUser = JSON.parse(userData);
@@ -77,6 +78,7 @@ const AuthContextProvider = ({ children }: { children: ReactNode }) => {
           setRole(demoUser.role || 'ADMIN');
           setIsSuperAdmin(demoUser.role === 'SuperAdmin' || demoUser.role === 'SUPERADMIN');
           setIsAuthenticated(true);
+          setIsLoading(false);
           console.log('✅ Demo auth initialized successfully');
           return;
         }
@@ -105,6 +107,7 @@ const AuthContextProvider = ({ children }: { children: ReactNode }) => {
         setRole(decodedToken.role || null);
         setIsSuperAdmin(decodedToken.role === 'SuperAdmin' || decodedToken.role === 'SUPERADMIN');
         setIsAuthenticated(true);
+        setIsLoading(false);
         console.log('✅ Auth initialized successfully');
 
       } catch (error) {
@@ -119,6 +122,7 @@ const AuthContextProvider = ({ children }: { children: ReactNode }) => {
       setRole(null);
       setIsSuperAdmin(false);
       setIsAuthenticated(false);
+      setIsLoading(false);
     };
 
     initializeAuth();
@@ -136,6 +140,7 @@ const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     setIsAuthenticated,
     isSuperAdmin,
     setIsSuperAdmin,
+    isLoading,
   };
 
   return (

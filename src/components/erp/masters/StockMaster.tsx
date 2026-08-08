@@ -76,7 +76,7 @@ const StockMaster: React.FC = () => {
           srNo: index + 1,
           item: item?.name || '',
           size: size?.size || '',
-          purity: typeof stock.purity === 'string' ? parseFloat(stock.purity) : stock.purity,
+          purity: typeof stock.purity === 'string' ? parseFloat(stock.purity) : stock.purity || '99.99',
           grams: stock.weight,
           isEditing: false,
           isSaved: true,
@@ -391,7 +391,7 @@ const StockMaster: React.FC = () => {
         }
         return (
           <span className="font-mono text-[#1a1c1b] dark:text-white">
-            {item.purity || '-'}
+            {item.purity || '99.99'}
           </span>
         );
       },
@@ -442,7 +442,7 @@ const StockMaster: React.FC = () => {
                 className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span >Stock Management</span>
+                <span >  Inward / Outward</span>
               </GenericButton>
 
               <GenericButton

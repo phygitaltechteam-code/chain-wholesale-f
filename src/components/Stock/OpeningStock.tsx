@@ -353,13 +353,13 @@ const OpeningStock: React.FC = () => {
     if (isGoldRow(item)) {
       return (
         <div className="flex">
-          <button
+          {/* <button
             onClick={() => handleRowEdit(index)}
             className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:bg-[#785600]/10 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
             title="Edit"
           >
             <Edit className="h-4 w-4" />
-          </button>
+          </button> */}
         </div>
       );
     }
