@@ -98,7 +98,6 @@ export default function ManufacturingReport() {
 
         // Transform history data
         const transformedData: ManufacturingEntry[] = responseData.history.map((item: ApiDataItem, index: number) => {
-          // Format date
           const date = new Date(item.createdAt);
           const formattedDate = date.toLocaleDateString('en-IN', {
             day: '2-digit',
@@ -148,92 +147,91 @@ export default function ManufacturingReport() {
     return str.replace(/\.?0+$/, "");
   };
 
-  // Table columns - Simple GenericTable design
-  const columns: Column<ManufacturingEntry>[] = [
-    {
-      key: 'dateTime',
-      header: 'Date & Time',
-      render: (item) => {
-        const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
-        const datePart = parts[0] || '';
-        const timePart = parts.slice(1).join(' ') || '';
-
-        return (
-          <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {datePart}
-            </span>
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {timePart}
-            </span>
+  // Custom Table with Sub-Columns
+  const CustomTable = () => {
+    if (filteredData.length === 0) {
+      return (
+        <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
+          <div className="py-12 text-center text-[#4f4535] dark:text-slate-400">
+            No manufacturing entries found.
           </div>
-        );
-      },
-    },
-    {
-      key: "item",
-      header: "Item",
-      render: (item) => (
-        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-          {item.item}
-        </span>
-      ),
-    },
-    {
-      key: "size",
-      header: "Size",
-      render: (item) => (
-        <span className="text-sm text-[#1a1c1b] dark:text-white">
-          {item.size}
-        </span>
-      ),
-    },
-    {
-      key: "purity",
-      header: "Purity",
-      render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {item.purity}%
-        </span>
-      ),
-    },
-    {
-      key: "weight",
-      header: "Weight (G)",
-      render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.weight)}
-        </span>
-      ),
-    },
-    {
-      key: "scrap",
-      header: "Scrap (G)",
-      render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.scrap)}
-        </span>
-      ),
-    },
-    {
-      key: "loss",
-      header: "Loss (G)",
-      render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.loss)}
-        </span>
-      ),
-    },
-    {
-      key: "currentWeight",
-      header: "Current WT (G)",
-      render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.currentWeight)}
-        </span>
-      ),
-    },
-  ];
+        </div>
+      );
+    }
+
+    return (
+      <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
+        <div className="max-w-full overflow-x-auto">
+          <table className="w-full border-collapse min-w-[700px] md:min-w-0">
+            <thead>
+              {/* First Row - Main Headers */}
+              <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-xs uppercase tracking-[0.15em] text-white">
+                <th className="px-3 py-3 text-center font-semibold border border-[#785600]">Sr No.</th>
+                <th className="px-3 py-3 text-center font-semibold border border-[#785600]">Date & Time</th>
+                <th className="px-3 py-3 text-center font-semibold border border-[#785600]" colSpan={3}>Item (Size) (Purity)</th>
+                <th className="px-3 py-3 text-center font-semibold border border-[#785600]">Wt. (G)</th>
+                <th className="px-3 py-3 text-center font-semibold border border-[#785600]">Current Wt. (G)</th>
+              </tr>
+              {/* Second Row - Sub Headers */}
+              <tr className="bg-gradient-to-r from-[#8b6a00] to-[#a87d00] text-white text-[10px] uppercase tracking-[0.1em]">
+                <th className="px-3 py-2 text-center border border-[#8b6a00]"></th>
+                <th className="px-3 py-2 text-center border border-[#8b6a00]"></th>
+                <th className="px-3 py-2 text-center font-semibold border border-[#8b6a00]"></th>
+                <th className="px-3 py-2 text-center font-semibold border border-[#8b6a00]">Scrap</th>
+                <th className="px-3 py-2 text-center font-semibold border border-[#8b6a00]">Loss</th>
+                <th className="px-3 py-2 text-center border border-[#8b6a00]"></th>
+                <th className="px-3 py-2 text-center border border-[#8b6a00]"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
+              {filteredData.map((item, index) => (
+                <tr
+                  key={item.id}
+                  className={`group transition-colors ${index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-[#fafaf8] dark:bg-slate-900/80'} hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50`}
+                >
+                  <td className="px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                    {item.srNo}
+                  </td>
+                  <td className="px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                    <div>{item.dateTime.split(' ')[0]}</div>
+                    <div className="text-xs text-[#4f4535] dark:text-slate-400">{item.dateTime.split(' ').slice(1).join(' ')}</div>
+                  </td>
+                  <td className="px-3 py-3 text-center text-sm font-medium text-[#1a1c1b] dark:text-white">
+                    {item.item} ({item.size}) {item.purity > 0 && `(${item.purity}%)`}
+                  </td>
+                  <td className="px-3 py-3 text-center text-sm font-mono text-[#1a1c1b] dark:text-white">
+                    {formatNumber(item.scrap)}
+                  </td>
+                  <td className="px-3 py-3 text-center text-sm font-mono text-[#1a1c1b] dark:text-white">
+                    {formatNumber(item.loss)}
+                  </td>
+                  <td className="px-3 py-3 text-center text-sm font-mono font-bold text-[#785600] dark:text-amber-400">
+                    {formatNumber(item.weight)}
+                  </td>
+                  <td className="px-3 py-3 text-center text-sm font-mono font-bold text-green-600 dark:text-green-400">
+                    {formatNumber(item.currentWeight)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-gray-100 font-bold dark:bg-slate-800">
+                <td colSpan={5} className="px-3 py-3 text-right text-sm text-[#1a1c1b] dark:text-white">
+                  Total:
+                </td>
+                <td className="px-3 py-3 text-center text-sm font-mono text-[#785600] dark:text-amber-400">
+                  {formatNumber(totals.totalWeight)}
+                </td>
+                <td className="px-3 py-3 text-center text-sm font-mono text-green-600 dark:text-green-400">
+                  {formatNumber(totals.currentWeight)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    );
+  };
 
   // Print handler
   const handlePrint = useReactToPrint({
@@ -278,40 +276,43 @@ export default function ManufacturingReport() {
 
       <table className="w-full text-xs border-collapse">
         <thead>
+          {/* First Row */}
           <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-white">
-            <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Sr</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Date & Time</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Item</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Size</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Purity %</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Weight (G)</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Scrap (G)</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Loss (G)</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Current WT (G)</th>
+            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Sr</th>
+            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Date & Time</th>
+            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold" colSpan={3}>Item (Size) (Purity)</th>
+            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Wt. (G)</th>
+            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Current Wt. (G)</th>
+          </tr>
+          {/* Second Row */}
+          <tr className="bg-gradient-to-r from-[#8b6a00] to-[#a87d00] text-white">
+            <th className="border border-[#8b6a00] px-2 py-1"></th>
+            <th className="border border-[#8b6a00] px-2 py-1"></th>
+            <th className="border border-[#8b6a00] px-2 py-1 text-center font-semibold"></th>
+            <th className="border border-[#8b6a00] px-2 py-1 text-center font-semibold">Scrap</th>
+            <th className="border border-[#8b6a00] px-2 py-1 text-center font-semibold">Loss</th>
+            <th className="border border-[#8b6a00] px-2 py-1"></th>
+            <th className="border border-[#8b6a00] px-2 py-1"></th>
           </tr>
         </thead>
         <tbody>
           {filteredData.map((entry, index) => (
             <tr key={entry.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
               <td className="border border-gray-300 px-2 py-1.5 text-center">{entry.srNo}</td>
-              <td className="border border-gray-300 px-2 py-1.5">{entry.dateTime}</td>
-              <td className="border border-gray-300 px-2 py-1.5">{entry.item}</td>
-              <td className="border border-gray-300 px-2 py-1.5">{entry.size}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-right">{entry.purity}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(entry.weight)}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(entry.scrap)}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(entry.loss)}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(entry.currentWeight)}</td>
+              <td className="border border-gray-300 px-2 py-1.5 text-center">{entry.dateTime}</td>
+              <td className="border border-gray-300 px-2 py-1.5 text-center">{entry.item} ({entry.size}) {entry.purity > 0 && `(${entry.purity}%)`}</td>
+              <td className="border border-gray-300 px-2 py-1.5 text-center font-mono">{formatNumber(entry.scrap)}</td>
+              <td className="border border-gray-300 px-2 py-1.5 text-center font-mono">{formatNumber(entry.loss)}</td>
+              <td className="border border-gray-300 px-2 py-1.5 text-center font-mono">{formatNumber(entry.weight)}</td>
+              <td className="border border-gray-300 px-2 py-1.5 text-center font-mono">{formatNumber(entry.currentWeight)}</td>
             </tr>
           ))}
         </tbody>
         <tfoot>
           <tr className="bg-gray-100 font-bold">
             <td colSpan={5} className="border border-gray-300 px-2 py-1.5 text-right">Total:</td>
-            <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(totals.totalWeight)}</td>
-            <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(totals.totalScrap)}</td>
-            <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(totals.totalLoss)}</td>
-            <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(totals.currentWeight)}</td>
+            <td className="border border-gray-300 px-2 py-1.5 text-center font-mono">{formatNumber(totals.totalWeight)}</td>
+            <td className="border border-gray-300 px-2 py-1.5 text-center font-mono">{formatNumber(totals.currentWeight)}</td>
           </tr>
         </tfoot>
       </table>
@@ -344,7 +345,7 @@ export default function ManufacturingReport() {
     return (
       <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-500 text-5xl mb-4">⚠️</div>
+          <div className="text-red-500 text-5xl mb-4"></div>
           <h3 className="text-xl font-bold text-red-600 dark:text-red-400">Error Loading Report</h3>
           <p className="mt-2 text-gray-600 dark:text-gray-400">Failed to fetch manufacturing report data.</p>
           <button
@@ -358,26 +359,7 @@ export default function ManufacturingReport() {
     );
   }
 
-  // Show empty state
-  if (reportData.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="text-5xl mb-4">🔧</div>
-            <h3 className="text-xl font-bold text-[#1a1c1b] dark:text-white">No Manufacturing Records Found</h3>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">No manufacturing records found.</p>
-            <button
-              onClick={() => navigate({ to: "/manufacturing" })}
-              className="mt-4 px-4 py-2 bg-[#785600] text-white rounded-lg hover:bg-[#5d4200]"
-            >
-              Go Back
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
@@ -385,8 +367,6 @@ export default function ManufacturingReport() {
       <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
         <div className="flex flex-col sm:flex-row items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6 gap-3">
           <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
-
-            <div className="h-5 w-px bg-[#d3c4af]/30 dark:bg-slate-600 flex-shrink-0" />
             <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Manufacturing Report
             </h2>
@@ -410,24 +390,23 @@ export default function ManufacturingReport() {
               onClick={() => handlePrint()}
             >
               <Printer className="h-4 w-4" />
-              <span >Print</span>
+              <span>Print</span>
             </GenericButton>
           </div>
         </div>
       </div>
 
       <div className="px-3 sm:px-4 md:px-6 py-4">
-        {/* Summary Cards using totals from API */}
+        {/* Summary Cards */}
         <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
             <div className="flex flex-col">
               <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                 Total Weight
               </span>
-              <span className="text-lg font-bold text-black">
+              <span className="text-lg font-bold text-[#785600] dark:text-amber-400">
                 {formatNumber(totals.totalWeight)} g
               </span>
-
             </div>
           </div>
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
@@ -435,10 +414,9 @@ export default function ManufacturingReport() {
               <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                 Total Scrap
               </span>
-              <span className="text-lg font-bold text-black">
+              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                 {formatNumber(totals.totalScrap)} g
               </span>
-
             </div>
           </div>
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
@@ -446,10 +424,9 @@ export default function ManufacturingReport() {
               <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                 Total Loss
               </span>
-              <span className="text-lg font-bold text-black">
+              <span className="text-lg font-bold text-red-600 dark:text-red-400">
                 {formatNumber(totals.totalLoss)} g
               </span>
-
             </div>
           </div>
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
@@ -457,33 +434,15 @@ export default function ManufacturingReport() {
               <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                 Current Weight
               </span>
-              <span className="text-lg font-bold text-black">
+              <span className="text-lg font-bold text-green-600 dark:text-green-400">
                 {formatNumber(totals.currentWeight)} g
               </span>
-
             </div>
           </div>
         </div>
 
-        {/* Generic Table - Simple design */}
-        <div className="-mx-3 sm:-mx-4 md:mx-0">
-          <GenericTable
-            data={filteredData}
-            columns={columns}
-            onSave={(item) => console.log("Save:", item)}
-            emptyMessage="No manufacturing entries found."
-            isLoading={isLoading || loading}
-            showSrNo={true}
-            srNoLabel="Sr No."
-          />
-        </div>
-
-        {/* Footer */}
-        <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-[#d3c4af]/10 pt-3 dark:border-slate-700">
-          <span className="text-xs text-[#4f4535] dark:text-slate-400">
-            Total Records: {filteredData.length}
-          </span>
-        </div>
+        {/* Custom Table with Sub-Columns */}
+        <CustomTable />
       </div>
 
       {/* Hidden Print Component */}

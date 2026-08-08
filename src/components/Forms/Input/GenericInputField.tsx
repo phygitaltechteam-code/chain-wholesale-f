@@ -1,3 +1,4 @@
+// components/Forms/Input/GenericInputField.tsx
 import React, { forwardRef } from 'react';
 
 interface InputProps {
@@ -36,7 +37,7 @@ interface InputProps {
   max?: number | string;
 
   // Decimal configuration
-  decimalScale?: number;
+  decimalScale?: number; // Number of decimal places allowed (e.g., 3 for 3 decimals)
 }
 
 const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
@@ -68,6 +69,7 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
   ) => {
     const isReadOnly = readOnly || disabled;
 
+    // If decimalScale is provided, use text input to handle decimals properly
     const isDecimalInput = decimalScale !== undefined;
 
     const baseInputClasses = `
@@ -92,81 +94,109 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
           : 'hover:border-[#785600]/50'
       }
 
-      ${suffix ? 'pr-12' : ''}
+      ${suffix ? 'pr-8' : ''}
       ${className}
     `;
 
-    const handleChange = (
-      e: React.ChangeEvent<HTMLInputElement>
-    ) => {
+    // Handle input change with decimal validation
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (isDecimalInput) {
         const inputValue = e.target.value;
 
-        /*
-         * Allow empty value
-         */
+        // Allow empty value
         if (inputValue === '') {
           onChange?.(e);
           return;
         }
 
-        /*
-         * Allow only:
-         * 123
-         * 123.
-         * 123.45
-         */
+        // Allow only digits and decimal point
         if (!/^\d*\.?\d*$/.test(inputValue)) {
           return;
         }
 
-        /*
-         * Prevent multiple decimal points
-         */
+        // Prevent multiple decimal points
         const parts = inputValue.split('.');
-
         if (parts.length > 2) {
           return;
         }
 
-        /*
-         * Check decimal places
-         */
+        // Check decimal places limit
         const decimalPart = parts[1];
-
-        if (
-          decimalPart !== undefined &&
-          decimalPart.length > decimalScale!
-        ) {
+        if (decimalPart !== undefined && decimalPart.length > decimalScale!) {
           return;
         }
-      }
 
-      onChange?.(e);
+        onChange?.(e);
+      } else {
+        onChange?.(e);
+      }
     };
 
-    /*
-     * Prevent invalid keyboard characters
-     * when decimal input is enabled.
-     */
-    const handleKeyDown = (
-      e: React.KeyboardEvent<HTMLInputElement>
-    ) => {
+    // Prevent invalid keyboard characters for decimal input
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (isDecimalInput) {
-        const invalidKeys = [
-          'e',
-          'E',
-          '+',
-          '-',
-        ];
+        const invalidKeys = ['e', 'E', '+', '-'];
 
+        // Prevent 'e', 'E', '+', '-' characters
         if (invalidKeys.includes(e.key)) {
           e.preventDefault();
           return;
         }
+
+        // Allow backspace, delete, tab, escape, enter, etc.
+        const allowedKeys = [
+          'Backspace',
+          'Delete',
+          'Tab',
+          'Escape',
+          'Enter',
+          'ArrowLeft',
+          'ArrowRight',
+          'ArrowUp',
+          'ArrowDown',
+          'Home',
+          'End',
+        ];
+
+        if (allowedKeys.includes(e.key)) {
+          // Let these pass through
+        } else if (e.key === '.') {
+          // Allow decimal point, but prevent if already has one
+          const currentValue = (e.target as HTMLInputElement).value;
+          if (currentValue.includes('.')) {
+            e.preventDefault();
+          }
+        } else if (!/^\d$/.test(e.key)) {
+          // Allow only digits
+          e.preventDefault();
+        }
       }
 
       onKeyDown?.(e);
+    };
+
+    // On blur, format the value to the specified decimal places
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      if (isDecimalInput && e.target.value) {
+        const numValue = parseFloat(e.target.value);
+        if (!isNaN(numValue)) {
+          // Round to decimalScale places
+          const rounded = numValue.toFixed(decimalScale!);
+          e.target.value = rounded;
+          // Trigger onChange with formatted value
+          if (onChange) {
+            const changeEvent = {
+              ...e,
+              target: { ...e.target, value: rounded },
+            } as React.ChangeEvent<HTMLInputElement>;
+            onChange(changeEvent);
+          }
+        }
+      }
+
+      if (onBlur) {
+        onBlur(e);
+      }
     };
 
     const inputElement = (
@@ -175,11 +205,7 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
         id={name}
         name={name}
         type={isDecimalInput ? 'text' : type}
-        inputMode={
-          isDecimalInput
-            ? 'decimal'
-            : inputMode
-        }
+        inputMode={isDecimalInput ? 'decimal' : inputMode}
         placeholder={placeholder}
         className={baseInputClasses}
         disabled={disabled}
@@ -188,7 +214,7 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
         readOnly={readOnly}
         required={required}
         onChange={handleChange}
-        onBlur={onBlur}
+        onBlur={handleBlur}
         onFocus={onFocus}
         onKeyDown={handleKeyDown}
         step={step}
@@ -206,11 +232,7 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
           >
             {label}
 
-            {required && (
-              <span className="ml-1 text-red-500">
-                *
-              </span>
-            )}
+            {required && <span className="ml-1 text-red-500">*</span>}
           </label>
         )}
 

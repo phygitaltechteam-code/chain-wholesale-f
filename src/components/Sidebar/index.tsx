@@ -23,6 +23,8 @@ import {
   MdGroups,
   MdStore,
   MdReceiptLong,
+  MdAccountBalance,
+  MdReceipt,
 } from 'react-icons/md';
 import { useAuthContext } from '@/context/AuthContext';
 
@@ -140,81 +142,53 @@ const Sidebar = ({
 
   // Menu items with Gold Chain Manufacturing ERP flow
   const allMenuItems: MenuItem[] = [
+    // ========== BILLING ==========
     {
-      label: 'Dashboard',
-      path: '/dashboard',
-      icon: <MdDashboard size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+      label: 'Billing',
+      path: '/billing',
+      icon: <MdReceipt size={22} />,
+      roles: ['ADMIN'],
     },
-    // Masters Section
-    // {
-    //   label: 'Item Master',
-    //   path: '/master/additems',
-    //   icon: <MdCategory size={22} />,
-    //   roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-    // },
-    // {
-    //   label: 'Size Master',
-    //   path: '/master/size',
-    //   icon: <MdStraighten size={22} />,
-    //   roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-    // },
-    // client
+
+    // ========== SETTLEMENT ==========
     {
-      label: 'Client',
-      path: '/client/client',
-      icon: <MdGroups size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+      label: 'Settlement',
+      path: '/setlment/settlement',
+      icon: <MdAccountBalance size={22} />,
+      roles: ['ADMIN'],
     },
-    // {
-    //   label: 'Opening Stocks',
-    //   path: '/stock/openingstock',
-    //   icon: <MdInventory2 size={22} />,
-    //   roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-    // },
+
+    // ========== MANUFACTURING ==========
+    {
+      label: 'Manufacturing',
+      path: '/manufacturingprocess/process',
+      icon: <MdPrecisionManufacturing size={22} />,
+      roles: ['ADMIN'],
+    },
+
+    // ========== STOCKS ==========
     {
       label: 'Stocks',
       path: '/Stocks/stockpage',
       icon: <MdInventory2 size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+      roles: ['ADMIN'],
     },
+
+    // ========== CLIENT ==========
     {
-      label: 'Process',
-      path: '/manufacturingprocess/process',
-      icon: <MdPrecisionManufacturing size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+      label: 'Client',
+      path: '/client/client',
+      icon: <MdGroups size={22} />,
+      roles: ['ADMIN'],
     },
+
+    // ========== MANUFACTURING REPORT ==========
     {
-      label: 'Billing',
-      path: '/billing',
-      icon: <MdPrecisionManufacturing size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+      label: 'Manufacturing Report',
+      path: '/reports/manufacturingreport',
+      icon: <MdAssessment size={22} />,
+      roles: ['ADMIN'],
     },
-    {
-      label: 'Settlement',
-      path: '/setlment/settlement',
-      icon: <MdPrecisionManufacturing size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-    },
-    {
-      label: 'Reports',
-      icon: <MdPrecisionManufacturing size={22} />,
-      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-      subroutes: [
-        {
-          label: 'Manufacturing Report',
-          path: '/reports/manufacturingreport',
-          icon: <MdPrecisionManufacturing size={22} />,
-          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-        },
-        {
-          label: 'Billing Report',
-          path: '/reports/billreport',
-          icon: <MdPrecisionManufacturing size={22} />,
-          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
-        },
-      ]
-    }
   ];
 
   const menuItems = allMenuItems.filter((item) => {

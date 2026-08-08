@@ -1,8 +1,9 @@
+// components/reciept/ReceiptAdd.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   X, Save, Edit, Trash2,
   Plus, Minus, ArrowLeft, Loader2,
-  FileText, CheckCircle, AlertCircle, Pencil
+  FileText, CheckCircle, AlertCircle
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
@@ -278,6 +279,12 @@ const ReceiptAdd: React.FC = () => {
     return (grossWt * purityFactor) + srp;
   };
 
+  // Update Total Fine calculation
+  const updateTotalFine = (items: ReceiptItem[]) => {
+    const total = items.reduce((sum, item) => sum + (item.fineWt || 0), 0);
+    return Math.round(total * 1000) / 1000;
+  };
+
   const handleItemChange = (index: number, field: keyof ReceiptItem, value: any) => {
     const updatedItems = [...formData.items];
     const item = updatedItems[index];
@@ -304,6 +311,13 @@ const ReceiptAdd: React.FC = () => {
           [field]: 0
         };
       }
+    } else if (field === 'purity') {
+      // Handle purity as number
+      const numValue = parseFloat(value);
+      updatedItems[index] = {
+        ...item,
+        [field]: isNaN(numValue) ? 0 : Math.min(100, Math.max(0, numValue))
+      };
     } else {
       updatedItems[index] = {
         ...item,
@@ -311,23 +325,30 @@ const ReceiptAdd: React.FC = () => {
       };
     }
 
+    // Recalculate fine weight for the changed item
+    const currentItem = updatedItems[index];
     if (field === 'purity' || field === 'grossWt' || field === 'srp') {
-      const purity = field === 'purity' ? value : updatedItems[index].purity;
-      const grossWt = field === 'grossWt' ? updatedItems[index].grossWt : updatedItems[index].grossWt;
-      const srp = field === 'srp' ? value : updatedItems[index].srp;
+      const purity = field === 'purity' ? currentItem.purity : currentItem.purity;
+      const grossWt = field === 'grossWt' ? currentItem.grossWt : currentItem.grossWt;
+      const srp = field === 'srp' ? currentItem.srp : currentItem.srp;
 
-      updatedItems[index].fineWt = calculateFineWeight(
+      currentItem.fineWt = calculateFineWeight(
         Number(purity) || 0,
         Number(grossWt) || 0,
         Number(srp) || 0
       );
     }
 
+    // Update total fine
+    const newTotalFine = updateTotalFine(updatedItems);
+    
     setFormData({
       ...formData,
-      items: updatedItems
+      items: updatedItems,
+      totalFine: newTotalFine
     });
 
+    // Fetch quantity if purity changed
     if (field === 'purity') {
       const currentItem = updatedItems[index];
       if (currentItem.item && currentItem.size && currentItem.purity > 0) {
@@ -384,33 +405,29 @@ const ReceiptAdd: React.FC = () => {
 
   // Handle Advance (Customer Weight) change
   const handleCustomerWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    if (!isNaN(value) && value >= 0) {
-      setFormData({
-        ...formData,
-        customerWeight: value
-      });
-    } else {
-      setFormData({
-        ...formData,
-        customerWeight: 0
-      });
+    const value = e.target.value;
+    if (value === '') {
+      setFormData({ ...formData, customerWeight: 0 });
+      return;
+    }
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0) {
+      const roundedValue = Math.round(numValue * 1000) / 1000;
+      setFormData({ ...formData, customerWeight: roundedValue });
     }
   };
 
-  // Handle Total Fine (Issue) change
+  // Handle Total Fine (Issue) change - Manual edit
   const handleTotalFineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    if (!isNaN(value) && value >= 0) {
-      setFormData({
-        ...formData,
-        totalFine: value
-      });
-    } else {
-      setFormData({
-        ...formData,
-        totalFine: 0
-      });
+    const value = e.target.value;
+    if (value === '') {
+      setFormData({ ...formData, totalFine: 0 });
+      return;
+    }
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0) {
+      const roundedValue = Math.round(numValue * 1000) / 1000;
+      setFormData({ ...formData, totalFine: roundedValue });
     }
   };
 
@@ -618,7 +635,7 @@ const ReceiptAdd: React.FC = () => {
         const actualIndex = formData.items.indexOf(item);
         return (
           <div className="relative flex-1">
-            <input
+            <GenericInputField
               type="number"
               step="0.01"
               min="0"
@@ -626,13 +643,12 @@ const ReceiptAdd: React.FC = () => {
               value={item.purity || ''}
               onChange={(e) => handleItemChange(actualIndex, 'purity', parseFloat(e.target.value) || 0)}
               placeholder="0"
+              suffix="%"
               className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-8 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+              decimalScale={2}
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#4f4535] dark:text-slate-400">
-              %
-            </span>
             {item.isLoadingQty && (
-              <Loader2 className="h-4 w-4 animate-spin text-[#785600] absolute right-3 top-1/2 -translate-y-1/2" />
+              <Loader2 className="h-4 w-4 animate-spin text-[#785600] absolute right-8 top-1/2 -translate-y-1/2" />
             )}
           </div>
         );
@@ -661,7 +677,7 @@ const ReceiptAdd: React.FC = () => {
       render: (item, index) => {
         const actualIndex = formData.items.indexOf(item);
         return (
-          <input
+          <GenericInputField
             type="number"
             step="0.001"
             min="0"
@@ -683,7 +699,9 @@ const ReceiptAdd: React.FC = () => {
               }
             }}
             placeholder="0.000"
+            suffix="G"
             className="w-24 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+            decimalScale={3}
           />
         );
       },
@@ -694,7 +712,7 @@ const ReceiptAdd: React.FC = () => {
       render: (item, index) => {
         const actualIndex = formData.items.indexOf(item);
         return (
-          <input
+          <GenericInputField
             type="number"
             step="0.01"
             min="0"
@@ -702,6 +720,7 @@ const ReceiptAdd: React.FC = () => {
             onChange={(e) => handleItemChange(actualIndex, 'srp', parseFloat(e.target.value) || 0)}
             placeholder="0.00"
             className="w-24 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+            decimalScale={2}
           />
         );
       },
@@ -717,11 +736,11 @@ const ReceiptAdd: React.FC = () => {
     },
     {
       key: 'laborRate',
-      header: 'Labor Rate (₹)',
+      header: 'Labor Rate',
       render: (item, index) => {
         const actualIndex = formData.items.indexOf(item);
         return (
-          <input
+          <GenericInputField
             type="number"
             step="0.01"
             min="0"
@@ -729,6 +748,7 @@ const ReceiptAdd: React.FC = () => {
             onChange={(e) => handleItemChange(actualIndex, 'laborRate', parseFloat(e.target.value) || 0)}
             placeholder="0.00"
             className="w-24 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+            decimalScale={2}
           />
         );
       },
@@ -815,69 +835,57 @@ const ReceiptAdd: React.FC = () => {
           />
         </div>
 
-        {/* Simple Payment Summary - With Editable Fields */}
+        {/* Simple Payment Summary */}
         {formData.items.length > 0 && (
           <div className="mb-4 rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm dark:bg-slate-900 dark:border-slate-700">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Advance - Editable */}
               <div>
-                <label className="block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
-                  Advance (G) <span className="text-red-500">*</span>
-                </label>
-                <div className="relative mt-1">
-                  <GenericInputField
-                    type="number"
-                    step="0.001"
-                    min="0"
-                    value={formData.customerWeight || ''}
-                    onChange={handleCustomerWeightChange}
-                    placeholder="0.000"
-                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#4f4535] dark:text-slate-400">G</span>
-                </div>
+                <GenericInputField
+                  label="Advance (G)"
+                  type="text"
+                  inputMode="decimal"
+                  value={formData.customerWeight || ''}
+                  onChange={handleCustomerWeightChange}
+                  placeholder="0.000"
+                  suffix="G"
+                  required
+                  decimalScale={3}
+                  className="text-left"
+                />
               </div>
 
               {/* Issue (Total Fine) - Editable */}
               <div>
-                <label className="block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
-                  Issue (Total Fine) (G)
-                </label>
-                <div className="relative mt-1">
-                  <input
-                    type="number"
-                    step="0.001"
-                    min="0"
-                    value={formData.totalFine || ''}
-                    onChange={handleTotalFineChange}
-                    placeholder="0.000"
-                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#4f4535] dark:text-slate-400">G</span>
-                </div>
+                <GenericInputField
+                  label="Issue (Total Fine) (G)"
+                  type="text"
+                  inputMode="decimal"
+                  value={formData.totalFine || ''}
+                  onChange={handleTotalFineChange}
+                  placeholder="0.000"
+                  suffix="G"
+                  decimalScale={3}
+                  className="text-left"
+                />
               </div>
 
               {/* Remaining - Read Only */}
               <div>
-                <label className="block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
-                  Remaining (G)
-                </label>
-                <div className="relative mt-1">
-                  <input
-                    type="number"
-                    step="0.001"
-                    min="0"
-                    value={calculateRemainingWeight()}
-                    className={`w-full rounded-lg px-3 py-2 text-right text-sm ${
-                      calculateRemainingWeight() === 0
-                        ? 'border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
-                        : 'border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
+                <GenericInputField
+                  label="Remaining (G)"
+                  type="text"
+                  inputMode="decimal"
+                  value={calculateRemainingWeight()}
+                  placeholder="0.000"
+                  suffix="G"
+                  readOnly
+                  className={`text-left ${calculateRemainingWeight() === 0
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-amber-600 dark:text-amber-400'
                     }`}
-                    readOnly
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#4f4535] dark:text-slate-400">G</span>
-                </div>
-                
+                  decimalScale={3}
+                />
               </div>
             </div>
           </div>
@@ -886,7 +894,6 @@ const ReceiptAdd: React.FC = () => {
         {/* Action Buttons */}
         <div className="sticky bottom-0 bg-[#f9f9f7] dark:bg-slate-950 p-4 border-t border-[#d3c4af]/20 dark:border-slate-700 z-50">
           <div className="flex flex-col sm:flex-row justify-end gap-3">
-            {/* Save as Draft Button */}
             <GenericButton
               type="button"
               onClick={handleSaveAsDraft}
@@ -897,7 +904,6 @@ const ReceiptAdd: React.FC = () => {
               {savebill.isPending ? 'Saving...' : 'Save as Draft'}
             </GenericButton>
 
-            {/* Save Bill Button */}
             <GenericButton
               type="button"
               onClick={handleSaveReceipt}

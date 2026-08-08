@@ -44,6 +44,8 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({ style, className = '' }) => {
                     fontWeight: 'bold',
                     color: '#c43d5c',
                     lineHeight: 1.1,
+                    justifyContent:'center',
+                    paddingTop:'4'
                 }}
             >
                 मातोश्री चेन फॅक्टरी
