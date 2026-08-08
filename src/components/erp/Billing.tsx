@@ -9,7 +9,12 @@ import { useGetBill } from '@/lib/api/bill';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
 import { useReactToPrint } from 'react-to-print';
 import PDFHeader from '../Forms/Common/PDFHeader';
-
+import {
+  Scale,
+  DollarSign,
+  ArrowDownToLine,
+  Clock
+} from 'lucide-react';
 interface ReceiptItem {
   id: string;
   receiptID: string;
@@ -62,7 +67,7 @@ interface BillingEntry {
   srp: number;
   receive: number;
   pending: number;
-  status: 'draft' | 'completed' | 'pending';
+  type: 'DRAFT' | 'BILL' ;
   createdAt: string;
 }
 
@@ -94,7 +99,7 @@ const Billing: React.FC = () => {
         const fineWeight = firstItem?.fineWeight || 0;
         const srp = firstItem?.srp || 0;
 
-        let status: 'draft' | 'completed' | 'pending' = 'pending';
+        let status : 'draft' | 'completed' | 'pending' = 'pending';
         if (receipt.remainingWeight === 0) {
           status = 'completed';
         } else if (receipt.customerWeight === 0) {
@@ -399,7 +404,7 @@ const Billing: React.FC = () => {
       header: 'Status',
       render: (item) => (
         <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium capitalize ${getStatusColor(item.status)}`}>
-          {item.status || "-"}
+          {item.type || "-"}
         </span>
       ),
     },
@@ -603,72 +608,80 @@ const Billing: React.FC = () => {
               onClick={() => navigate({ to: '/receipt/addreciept' })}
             >
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span>Add Bill.</span>
+              <span>Add Bill</span>
             </GenericButton>
           </div>
-
-
         </div>
+
 
         {/* Summary Cards - Totals for Fin Wt, SRP, Receive, Pending */}
         <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Total Fin Wt Card */}
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                Total Fin Wt
-              </span>
-              <span className="text-lg font-bold text-[#785600] dark:text-amber-400">
-                {formatNumberWithDecimals(totalFinWt)} g
-              </span>
-              <span className="text-[9px] text-[#4f4535] dark:text-slate-400">
-                {totalEntries} entries
-              </span>
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Total Fin Wt
+                </span>
+                <span className="text-lg font-bold text-black">
+                  {formatNumberWithDecimals(totalFinWt)} g
+                </span>
+              </div>
+              <div className="rounded-full bg-amber-100 p-2 dark:bg-amber-900/30">
+                <Scale className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
             </div>
           </div>
 
           {/* Total SRP Card */}
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                Total SRP
-              </span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                {formatNumberWithDecimals(totalSRP)} g
-              </span>
-              <span className="text-[9px] text-[#4f4535] dark:text-slate-400">
-                {totalEntries} entries
-              </span>
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Total SRP
+                </span>
+                    <span className="text-lg font-bold text-black">
+                  {formatNumberWithDecimals(totalSRP)} g
+                </span>
+              </div>
+              <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/30">
+                <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
             </div>
           </div>
 
           {/* Total Receive Card */}
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                Total Receive
-              </span>
-              <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                {formatNumberWithDecimals(totalReceive)} g
-              </span>
-              <span className="text-[9px] text-[#4f4535] dark:text-slate-400">
-                {totalEntries} entries
-              </span>
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Total Receive
+                </span>
+                       <span className="text-lg font-bold text-black">
+                  {formatNumberWithDecimals(totalReceive)} g
+                </span>
+              </div>
+              <div className="rounded-full bg-green-100 p-2 dark:bg-green-900/30">
+                <ArrowDownToLine className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
             </div>
           </div>
 
           {/* Total Pending Card */}
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                Total Pending
-              </span>
-              <span className="text-lg font-bold text-red-600 dark:text-red-400">
-                {formatNumberWithDecimals(totalPending)} g
-              </span>
-              <span className="text-[9px] text-[#4f4535] dark:text-slate-400">
-                {totalEntries} entries
-              </span>
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Total Pending
+                </span>
+                      <span className="text-lg font-bold text-black">
+                  {formatNumberWithDecimals(totalPending)} g
+                </span>
+
+              </div>
+              <div className="rounded-full bg-red-100 p-2 dark:bg-red-900/30">
+                <Clock className="h-4 w-4 text-red-600 dark:text-red-400" />
+              </div>
             </div>
           </div>
         </div>
@@ -706,7 +719,7 @@ const Billing: React.FC = () => {
           </div>
 
           {/* Print Report Button */}
-          <button
+          <GenericButton
             onClick={() => {
               if (filteredEntries.length === 0) {
                 toast.error('No records to print');
@@ -714,11 +727,10 @@ const Billing: React.FC = () => {
               }
               handlePrintTable();
             }}
-            className="flex items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white hover:bg-[#5d4200] transition-colors whitespace-nowrap"
           >
             <Printer className="h-4 w-4" />
             <span>Print</span>
-          </button>
+          </GenericButton>
 
           {(fromDate.length > 0 || toDate.length > 0 || searchTerm) && (
             <button

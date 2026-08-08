@@ -252,8 +252,8 @@ export function GenericTable<T extends { id: string | number }>({
 
                 {/* Table */}
                 <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
+                    <div className="w-full max-w-full overflow-x-auto">
+                        <table className="w-full min-w-max border-collapse">
                             <thead>
                                 <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-xs uppercase tracking-[0.15em] text-white">
                                     {allColumns.map((column, idx) => (

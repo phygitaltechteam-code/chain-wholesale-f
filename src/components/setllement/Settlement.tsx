@@ -38,6 +38,7 @@ import { useGetClients } from '@/lib/api/client';
 import GenericInputField from '../Forms/Input/GenericInputField';
 import { useReactToPrint } from 'react-to-print';
 import PDFHeader from '../Forms/Common/PDFHeader';
+import GenericButton from '../Forms/Buttons/GenericButton';
 
 // ======================================================
 // TYPES
@@ -56,6 +57,8 @@ interface SettlementEntry {
   due?: number | null;
   address?: string;
   totalBills?: number;
+  amount: number;
+  remark?: string;
 }
 
 interface SettlementDetail {
@@ -303,6 +306,12 @@ const Settlement: React.FC = () => {
                 item._count?.receipts ??
                 0
               ),
+
+            // Amount from opening balance
+            amount: Number(item.openingBalance ?? 0),
+
+            // Remark based on balance
+            remark: Number(item.openingBalance ?? 0) > 0 ? 'Received' : 'Given',
           })
         );
 
@@ -445,13 +454,14 @@ const Settlement: React.FC = () => {
 
 
   // ======================================================
-  // SETTLEMENT PRINT PREVIEW - A4 Size
+  // SETTLEMENT PRINT PREVIEW - A4 Size with Amount & Remark
   // ======================================================
 
   const SettlementPrintPreview = () => {
     const printData = filteredSettlements;
     const totalDue = printData.reduce((sum, item) => sum + Math.abs(item.goldBalance), 0);
     const totalBills = printData.reduce((sum, item) => sum + (item.totalBills || 0), 0);
+    const totalAmount = printData.reduce((sum, item) => sum + Math.abs(item.amount), 0);
 
     return (
       <div
@@ -486,6 +496,8 @@ const Settlement: React.FC = () => {
               <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Client Name</th>
               <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Phone</th>
               <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Due Balance (g)</th>
+              <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Amount (g)</th>
+              <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Remark</th>
               <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Total Bills</th>
               <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Status</th>
             </tr>
@@ -498,6 +510,17 @@ const Settlement: React.FC = () => {
                 <td className="border border-gray-300 px-2 py-1.5">{entry.phoneNumber}</td>
                 <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">
                   {formatNumber(Math.abs(entry.goldBalance))}
+                </td>
+                <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">
+                  {formatNumber(entry.amount)}
+                </td>
+                <td className="border border-gray-300 px-2 py-1.5">
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-medium ${entry.remark === 'Received'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-red-100 text-red-700'
+                    }`}>
+                    {entry.remark || '-'}
+                  </span>
                 </td>
                 <td className="border border-gray-300 px-2 py-1.5 text-right">{entry.totalBills || 0}</td>
                 <td className="border border-gray-300 px-2 py-1.5 text-center">
@@ -512,6 +535,8 @@ const Settlement: React.FC = () => {
             <tr className="bg-gray-100 font-bold">
               <td colSpan={3} className="border border-gray-300 px-2 py-1.5 text-right">Total:</td>
               <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(totalDue)}</td>
+              <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(totalAmount)}</td>
+              <td className="border border-gray-300 px-2 py-1.5 text-center">-</td>
               <td className="border border-gray-300 px-2 py-1.5 text-right">{totalBills}</td>
               <td className="border border-gray-300 px-2 py-1.5 text-center">{printData.length} entries</td>
             </tr>
@@ -674,58 +699,67 @@ const Settlement: React.FC = () => {
   };
 
   // ======================================================
-  // SAVE SETTLEMENT - CLEAN VERSION (No error handling)
+  // SAVE SETTLEMENT - WITH REMARK
   // ======================================================
 
   const handleSaveSettlement = async () => {
-    const amount = Number(settlementDetail.settlementAmount);
+    try {
+      const amount = Number(settlementDetail.settlementAmount);
 
-    if (!amount || Number.isNaN(amount) || amount <= 0) {
-      toast.error('Please enter a valid amount');
-      return;
+      if (!amount || Number.isNaN(amount) || amount <= 0) {
+        toast.error('Please enter a valid amount');
+        return;
+      }
+
+      if (!settlementDetail.clientId) {
+        toast.error('Client ID is missing');
+        return;
+      }
+
+      // Send amount as number (positive for receive, negative for give)
+      const signedAmount = settlementDetail.settlementType === 'receive'
+        ? amount
+        : -amount;
+
+      // Determine remark based on settlement type
+      const remark = settlementDetail.settlementType === 'receive' ? 'Received' : 'Given';
+
+      const settlementData = {
+        clientId: settlementDetail.clientId,
+        amount: signedAmount,
+        remark: remark,
+      };
+
+      const response = await submitSettlementMutation.mutateAsync(settlementData);
+
+      // Success - close modals and reset
+      setShowConfirmModal(false);
+      setShowSettleModal(false);
+      setLocalAmount('');
+
+      setSettlementDetail({
+        clientName: '',
+        phoneNumber: '',
+        address: '',
+        pendingBalance: 0,
+        totalBills: 0,
+        settlementAmount: 0,
+        settlementType: 'receive',
+        date: new Date().toISOString().split('T')[0],
+        clientId: '',
+        openingBalance: 0,
+        due: null,
+      });
+
+      await refetchSettlements();
+
+    } catch (error) {
+      console.error('Settlement error:', error);
+      toast.error('Failed to save settlement');
     }
-
-    if (!settlementDetail.clientId) {
-      toast.error('Client ID is missing');
-      return;
-    }
-
-    // Send amount as number (positive for receive, negative for give)
-    const signedAmount = settlementDetail.settlementType === 'receive'
-      ? amount
-      : -amount;
-
-    const settlementData = {
-      clientId: settlementDetail.clientId,
-      amount: signedAmount,
-      type: settlementDetail.settlementType,
-      notes: '',
-      date: settlementDetail.date,
-    };
-
-    const response = await submitSettlementMutation.mutateAsync(settlementData);
-
-    // Success - close modals and reset
-    setShowConfirmModal(false);
-    setShowSettleModal(false);
-    setLocalAmount('');
-
-    setSettlementDetail({
-      clientName: '',
-      phoneNumber: '',
-      address: '',
-      pendingBalance: 0,
-      totalBills: 0,
-      settlementAmount: 0,
-      settlementType: 'receive',
-      date: new Date().toISOString().split('T')[0],
-      clientId: '',
-      openingBalance: 0,
-      due: null,
-    });
-
-    await refetchSettlements();
   };
+
+
   // ======================================================
   // FILTER
   // ======================================================
@@ -845,7 +879,7 @@ const Settlement: React.FC = () => {
 
 
   // ======================================================
-  // TABLE COLUMNS
+  // TABLE COLUMNS - With Amount and Remark
   // ======================================================
 
   const columns: Column<SettlementEntry>[] = [
@@ -895,7 +929,6 @@ const Settlement: React.FC = () => {
         </div>
       ),
     },
-
     {
       key: 'totalBills',
       header: 'Total Bills',
@@ -1434,8 +1467,8 @@ const Settlement: React.FC = () => {
                   <div className="flex justify-between text-sm">
                     <span className="text-[#4f4535] dark:text-slate-400">Amount:</span>
                     <span className={`font-bold ${settlementDetail.settlementType === 'receive'
-                        ? 'text-green-600'
-                        : 'text-red-600'
+                      ? 'text-green-600'
+                      : 'text-red-600'
                       }`}>
                       {signedAmount}g
                     </span>
@@ -1504,38 +1537,7 @@ const Settlement: React.FC = () => {
             subtitle="Manage client settlements and gold balances"
           />
 
-
-          <div className="flex items-center gap-2 text-sm">
-
-            <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs text-green-800 dark:bg-green-900/30 dark:text-green-400">
-
-              <TrendingUp className="h-3 w-3" />
-
-              Receiving:{' '}
-              {formatNumber(
-                totalPositiveBalance
-              )}
-              g
-
-            </span>
-
-
-            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs text-red-800 dark:bg-red-900/30 dark:text-red-400">
-
-              <TrendingDown className="h-3 w-3" />
-
-              Given:{' '}
-              {formatNumber(
-                totalNegativeBalance
-              )}
-              g
-
-            </span>
-
-          </div>
-
         </div>
-
 
         {/* =================================================
             STATISTICS
@@ -1553,7 +1555,7 @@ const Settlement: React.FC = () => {
                   Total Clients
                 </p>
 
-                <p className="text-2xl font-bold text-[#1a1c1b] dark:text-white">
+                <p className="text-2xl font-bold text-black">
                   {settlements.length}
                 </p>
               </div>
@@ -1577,7 +1579,7 @@ const Settlement: React.FC = () => {
                   Pending Settlements
                 </p>
 
-                <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                <p className="text-2xl font-bold text-black">
                   {totalPending}
                 </p>
               </div>
@@ -1601,7 +1603,7 @@ const Settlement: React.FC = () => {
                   Settled
                 </p>
 
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                <p className="text-2xl font-bold text-black">
                   {totalSettled}
                 </p>
               </div>
@@ -1625,12 +1627,7 @@ const Settlement: React.FC = () => {
                   Net Balance
                 </p>
 
-                <p
-                  className={`text-2xl font-bold ${getBalanceColor(
-                    totalPositiveBalance -
-                    totalNegativeBalance
-                  )}`}
-                >
+                <p className="text-2xl font-bold text-black">
                   {formatNumber(
                     totalPositiveBalance -
                     totalNegativeBalance
@@ -1741,24 +1738,22 @@ const Settlement: React.FC = () => {
               }
               className="rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
-
+            {/* Print Report Button */}
+            <GenericButton
+              onClick={() => {
+                if (filteredSettlements.length === 0) {
+                  toast.error('No records to print');
+                  return;
+                }
+                handlePrintTable();
+              }}
+            >
+              <Printer className="h-4 w-4" />
+              <span >Print</span>
+            </GenericButton>
           </div>
 
-          {/* Print Report Button */}
-          <button
-            onClick={() => {
-              if (filteredSettlements.length === 0) {
-                toast.error('No records to print');
-                return;
-              }
-              handlePrintTable();
-            }}
-            className="flex items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white hover:bg-[#5d4200] transition-colors whitespace-nowrap"
-          >
-            <Printer className="h-4 w-4" />
-            <span className="hidden sm:inline">Print Report</span>
-            <span className="sm:hidden">Print</span>
-          </button>
+
 
         </div>
 

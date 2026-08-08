@@ -1,11 +1,20 @@
-// components/Forms/Input/GenericInputField.tsx
 import React, { forwardRef } from 'react';
 
 interface InputProps {
   name?: string;
   label?: string;
   type?: string;
-  inputMode?: 'text' | 'numeric' | 'decimal' | 'search' | 'email' | 'tel' | 'url' | 'none';
+
+  inputMode?:
+    | 'text'
+    | 'numeric'
+    | 'decimal'
+    | 'search'
+    | 'email'
+    | 'tel'
+    | 'url'
+    | 'none';
+
   placeholder?: string;
   disabled?: boolean;
   defaultValue?: string | number;
@@ -59,6 +68,8 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
   ) => {
     const isReadOnly = readOnly || disabled;
 
+    const isDecimalInput = decimalScale !== undefined;
+
     const baseInputClasses = `
       w-full rounded-lg
       border border-[#d3c4af]/30
@@ -81,32 +92,51 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
           : 'hover:border-[#785600]/50'
       }
 
-      ${suffix ? 'pr-8' : ''}
+      ${suffix ? 'pr-12' : ''}
       ${className}
     `;
 
-    // Keep maximum 3 decimal places while typing
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (decimalScale !== undefined) {
+    const handleChange = (
+      e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+      if (isDecimalInput) {
         const inputValue = e.target.value;
 
-        // Allow empty value
+        /*
+         * Allow empty value
+         */
         if (inputValue === '') {
           onChange?.(e);
           return;
         }
 
-        // Allow only numbers and decimal point
+        /*
+         * Allow only:
+         * 123
+         * 123.
+         * 123.45
+         */
         if (!/^\d*\.?\d*$/.test(inputValue)) {
           return;
         }
 
-        // Check decimal places
-        const decimalPart = inputValue.split('.')[1];
+        /*
+         * Prevent multiple decimal points
+         */
+        const parts = inputValue.split('.');
+
+        if (parts.length > 2) {
+          return;
+        }
+
+        /*
+         * Check decimal places
+         */
+        const decimalPart = parts[1];
 
         if (
           decimalPart !== undefined &&
-          decimalPart.length > decimalScale
+          decimalPart.length > decimalScale!
         ) {
           return;
         }
@@ -115,13 +145,38 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
       onChange?.(e);
     };
 
+    /*
+     * Prevent invalid keyboard characters
+     * when decimal input is enabled.
+     */
+    const handleKeyDown = (
+      e: React.KeyboardEvent<HTMLInputElement>
+    ) => {
+      if (isDecimalInput) {
+        const invalidKeys = [
+          'e',
+          'E',
+          '+',
+          '-',
+        ];
+
+        if (invalidKeys.includes(e.key)) {
+          e.preventDefault();
+          return;
+        }
+      }
+
+      onKeyDown?.(e);
+    };
+
     const inputElement = (
       <input
         ref={ref}
+        id={name}
         name={name}
-        type={type}
+        type={isDecimalInput ? 'text' : type}
         inputMode={
-          decimalScale !== undefined
+          isDecimalInput
             ? 'decimal'
             : inputMode
         }
@@ -129,13 +184,13 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
         className={baseInputClasses}
         disabled={disabled}
         defaultValue={defaultValue}
-        value={value}
+        value={value ?? ''}
         readOnly={readOnly}
         required={required}
         onChange={handleChange}
         onBlur={onBlur}
         onFocus={onFocus}
-        onKeyDown={onKeyDown}
+        onKeyDown={handleKeyDown}
         step={step}
         min={min}
         max={max}
@@ -150,8 +205,11 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
             className="mb-1.5 block text-sm font-medium text-[#1a1c1b] dark:text-white"
           >
             {label}
+
             {required && (
-              <span className="ml-1 text-red-500">*</span>
+              <span className="ml-1 text-red-500">
+                *
+              </span>
             )}
           </label>
         )}

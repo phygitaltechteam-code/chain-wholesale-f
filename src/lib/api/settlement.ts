@@ -47,9 +47,6 @@ export const useGetSettlements = () => {
     return useQuery({
         queryKey: ['settlements'],
         queryFn: getSettlements,
-        onError: (error: any) => {
-            toast.error(error?.response?.data?.message || 'Failed to fetch settlements');
-        },
     });
 };
 

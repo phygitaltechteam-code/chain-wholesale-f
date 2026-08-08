@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Save, X, Edit, Trash2, Package, Ruler, Search } from 'lucide-react';
+import { Plus, Save, X, Edit, Trash2, Package, Ruler, Search, Eye } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
@@ -151,20 +151,7 @@ const StockMaster: React.FC = () => {
     }
   };
 
-  // Handle row edit toggle
-  const handleRowEdit = (index: number) => {
-    setOpeningEntries(prev => prev.map((entry, i) => {
-      if (i === index) {
-        return {
-          ...entry,
-          isEditing: !entry.isEditing,
-          gramsRaw: entry.grams !== 0 ? entry.grams.toString() : '',
-          purityRaw: entry.purity ? entry.purity.toString() : '',
-        };
-      }
-      return entry;
-    }));
-  };
+
 
   // Handle inline field change
   const handleInlineChange = (index: number, field: 'item' | 'size' | 'purity' | 'grams' | 'itemId' | 'sizeId', value: string) => {
@@ -277,47 +264,18 @@ const StockMaster: React.FC = () => {
     }
   };
 
-  // Handle delete
-  const handleDelete = async (index: number) => {
-    const entry = openingEntries[index];
-    if (window.confirm(`Are you sure you want to delete this opening stock entry?`)) {
-      try {
-        if (entry.isSaved) {
-          await deleteStock.mutateAsync(entry.id);
-          toast.success('Opening stock entry deleted successfully');
-          await refetch();
-        }
-        setOpeningEntries(prev => prev.filter((_, i) => i !== index));
-        setOpeningEntries(prev => prev.map((e, i) => ({ ...e, srNo: i + 1 })));
-      } catch (error) {
-        console.error('Error deleting opening stock:', error);
-        toast.error('Failed to delete opening stock');
-      }
-    }
+
+  const handleRowClick = (entry: OpeningStockEntry) => {
+    const id = entry.id;
+    navigate({ to: `/stock/stockreport/${entry.id}`});
   };
 
-  // Define columns for GenericTable
+  // Define columns for GenericTable - NO EDIT/DELETE icons
   const columns: Column<OpeningStockEntry>[] = [
     {
       key: 'item',
       header: 'Item',
       render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <select
-              value={item.itemId || ''}
-              onChange={(e) => handleInlineChange(index, 'itemId', e.target.value)}
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            >
-              <option value="">Select Item</option>
-              {items && items.map((i) => (
-                <option key={i.id} value={i.id}>
-                  {i.name}
-                </option>
-              ))}
-            </select>
-          );
-        }
         return (
           <span className="font-medium text-[#1a1c1b] dark:text-white">
             {item.item}
@@ -329,22 +287,6 @@ const StockMaster: React.FC = () => {
       key: 'size',
       header: 'Size',
       render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <select
-              value={item.sizeId || ''}
-              onChange={(e) => handleInlineChange(index, 'sizeId', e.target.value)}
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            >
-              <option value="">Select Size</option>
-              {sizes && sizes.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.size}
-                </option>
-              ))}
-            </select>
-          );
-        }
         return (
           <span className="text-[#1a1c1b] dark:text-white">
             {item.size}
@@ -356,17 +298,6 @@ const StockMaster: React.FC = () => {
       key: 'grams',
       header: 'Weight (G)',
       render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <input
-              type="text"
-              value={item.gramsRaw !== undefined ? item.gramsRaw : (item.grams === 0 ? '' : item.grams)}
-              onChange={(e) => handleInlineChange(index, 'grams', e.target.value)}
-              placeholder="0.000"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
-          );
-        }
         return (
           <span className="font-mono text-[#1a1c1b] dark:text-white">
             {formatGrams(item.grams)}
@@ -378,17 +309,6 @@ const StockMaster: React.FC = () => {
       key: 'purity',
       header: 'Purity (%)',
       render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <input
-              type="text"
-              value={item.purityRaw !== undefined ? item.purityRaw : (item.purity ? item.purity.toString() : '')}
-              onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
-              placeholder="e.g., 98"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
-          );
-        }
         return (
           <span className="font-mono text-[#1a1c1b] dark:text-white">
             {item.purity || '99.99'}
@@ -434,39 +354,43 @@ const StockMaster: React.FC = () => {
               )}
             </div>
 
-            {/* Action Buttons - Responsive Grid */}
+            {/* Action Buttons - Themed Colors */}
             <div className="flex flex-wrap items-center justify-center gap-2 w-full sm:w-auto">
+              {/* Inward / Outward - Green theme */}
               <GenericButton
                 type="button"
                 onClick={() => navigate({ to: '/Stocks/stockmanagement' })}
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 !bg-emerald-600 hover:!bg-emerald-700 !text-white"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span >  Inward / Outward</span>
+                <span>Inward / Outward</span>
               </GenericButton>
 
+              {/* Opening Stock - Amber theme */}
               <GenericButton
                 type="button"
                 onClick={() => navigate({ to: '/stock/openingstock' })}
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 !bg-amber-600 hover:!bg-amber-700 !text-white"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span >Opening Stock</span>
+                <span>Opening Stock</span>
               </GenericButton>
 
+              {/* Add Item - Blue theme */}
               <GenericButton
                 type="button"
                 onClick={() => navigate({ to: '/master/additems' })}
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 !bg-blue-600 hover:!bg-blue-700 !text-white"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Add Item</span>
               </GenericButton>
 
+              {/* Add Size - Purple theme */}
               <GenericButton
                 type="button"
                 onClick={() => navigate({ to: '/master/size' })}
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
+                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 !bg-purple-600 hover:!bg-purple-700 !text-white"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Add Size</span>
@@ -477,7 +401,7 @@ const StockMaster: React.FC = () => {
       </div>
 
       <div className="px-3 sm:px-4 md:px-6 pb-4">
-        {/* Generic Table */}
+        {/* Generic Table - No Actions column */}
         <div className="-mx-3 sm:-mx-4 md:mx-0 overflow-x-auto">
           <div className="min-w-full inline-block align-middle">
             <GenericTable
@@ -492,10 +416,13 @@ const StockMaster: React.FC = () => {
               isLoading={isSubmitting}
               showSrNo={true}
               srNoLabel="Sr No."
+              onRowClick={handleRowClick}
+              showEdit={false}
+              showDelete={false}
+              renderActions={undefined}
             />
           </div>
         </div>
-
       </div>
     </div>
   );

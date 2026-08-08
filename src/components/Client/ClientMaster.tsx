@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, ArrowLeft, Edit, Trash2, Save, Search } from 'lucide-react';
+import { Plus, X, ArrowLeft, Edit, Trash2, Save, Search, Eye } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
@@ -164,6 +164,11 @@ const ClientMaster: React.FC = () => {
         setIsModalOpen(true);
     };
 
+    // Handle row click - Navigate to client detail page
+    const handleRowClick = (client: Client) => {
+        navigate({ to: '/client/clientreport/$id', params: { id: client.id } });
+    };
+
     // Reset form
     const resetForm = () => {
         setFormData({
@@ -285,7 +290,7 @@ const ClientMaster: React.FC = () => {
                         <GenericButton
                             type="button"
                             onClick={() => setIsModalOpen(true)}
-                            className="flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !bg-amber-600 hover:!bg-amber-700 !text-white whitespace-nowrap"
+                            className="flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 !sm:py-2 sm:!text-sm !bg-amber-600 hover:!bg-amber-700 !text-white whitespace-nowrap"
                         >
                             <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             <span className="hidden xs:inline">Add Client</span>
@@ -307,6 +312,7 @@ const ClientMaster: React.FC = () => {
                         renderActions={renderActions}
                         showSrNo={true}
                         srNoLabel="Sr No."
+                        onRowClick={handleRowClick}
                     />
                 </div>
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   X, Save, Edit, Trash2,
-  Plus, Minus, ArrowLeft, Loader2
+  Plus, Minus, ArrowLeft, Loader2,
+  FileText, CheckCircle, AlertCircle, Pencil
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
@@ -14,6 +15,7 @@ import toast from 'react-hot-toast';
 import { z } from 'zod';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
 import { useGetQuantity, useBill } from '@/lib/api/bill';
+import GenericInputField from '../Forms/Input/GenericInputField';
 
 interface ReceiptItem {
   id: string;
@@ -35,7 +37,8 @@ interface ReceiptFormData {
   clientName: string;
   date: string;
   items: ReceiptItem[];
-  customerWeight: number; // Added customer weight field
+  customerWeight: number;
+  totalFine: number;
   goldInfo: {
     karat: string;
     rate: number;
@@ -61,6 +64,7 @@ const ReceiptAdd: React.FC = () => {
     date: new Date().toISOString().split('T')[0],
     items: [],
     customerWeight: 0,
+    totalFine: 0,
     goldInfo: {
       karat: '22K',
       rate: 0,
@@ -95,9 +99,6 @@ const ReceiptAdd: React.FC = () => {
   // API hooks
   const getQuantity = useGetQuantity();
   const savebill = useBill();
-
-  // Available options for dropdowns
-  const purityOptions = ['24K', '22K', '18K', '14K', '916'];
 
   const handleClientSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -157,7 +158,6 @@ const ReceiptAdd: React.FC = () => {
     }
   };
 
-  // Add new row - called from plus button in action
   const handleAddItem = () => {
     const newItem: ReceiptItem = {
       id: `item-${Date.now()}`,
@@ -179,7 +179,6 @@ const ReceiptAdd: React.FC = () => {
     });
   };
 
-  // Remove row
   const handleRemoveItem = (index: number) => {
     if (formData.items.length <= 1) {
       toast.error('At least one item is required');
@@ -197,13 +196,11 @@ const ReceiptAdd: React.FC = () => {
     toast.success('Item removed');
   };
 
-  // Function to fetch quantity from API
   const fetchQuantity = async (index: number, item: string, size: string, purity: number) => {
     if (!item || !size || !purity || purity <= 0) {
       return;
     }
 
-    // Find the item and size IDs
     const selectedItem = items.find((i: any) => i.name === item);
     const selectedSize = sizes.find((s: any) => s.size === size);
 
@@ -212,18 +209,15 @@ const ReceiptAdd: React.FC = () => {
       return;
     }
 
-    // Check if this is a duplicate request
     const currentFetch = { item, size, purity };
     if (lastFetchRef.current &&
       lastFetchRef.current.item === currentFetch.item &&
       lastFetchRef.current.size === currentFetch.size &&
       lastFetchRef.current.purity === currentFetch.purity) {
-      console.log('Skipping duplicate fetch request');
       return;
     }
     lastFetchRef.current = currentFetch;
 
-    // Set loading state
     setFormData(prev => ({
       ...prev,
       items: prev.items.map((entry, i) =>
@@ -232,19 +226,13 @@ const ReceiptAdd: React.FC = () => {
     }));
 
     try {
-      // Call the API with payload
       const response = await getQuantity.mutateAsync({
         itemId: selectedItem.id,
         sizeId: selectedSize.id,
         purity: purity
       });
 
-      console.log('API Response:', response);
-
-      // Handle response - getting weight from response
       let weight = 0;
-
-      // Check different possible response structures
       if (response?.data?.weight !== undefined && response.data.weight !== null) {
         weight = Number(response.data.weight);
       } else if (response?.weight !== undefined && response.weight !== null) {
@@ -255,11 +243,7 @@ const ReceiptAdd: React.FC = () => {
         weight = Number(response.quantity);
       }
 
-      console.log('Extracted weight:', weight);
-
-      // Only update if weight is valid
       if (!isNaN(weight) && weight >= 0) {
-        // Update the available quantity with the weight
         setFormData(prev => ({
           ...prev,
           items: prev.items.map((entry, i) =>
@@ -270,15 +254,6 @@ const ReceiptAdd: React.FC = () => {
             } : entry
           )
         }));
-
-        if (weight > 0) {
-          toast.success(`Available quantity: ${weight}`);
-        } else {
-          toast('No quantity available for this combination', {
-            icon: 'ℹ️',
-            duration: 3000,
-          });
-        }
       } else {
         setFormData(prev => ({
           ...prev,
@@ -286,15 +261,9 @@ const ReceiptAdd: React.FC = () => {
             i === index ? { ...entry, isLoadingQty: false } : entry
           )
         }));
-        toast.error('Invalid quantity received from server');
       }
-
     } catch (error: any) {
       console.error('Error fetching quantity:', error);
-      // Only show error if it's a real error, not just "no quantity"
-      if (error.response?.status !== 404) {
-        toast.error(error.response?.data?.message || 'Failed to fetch available quantity');
-      }
       setFormData(prev => ({
         ...prev,
         items: prev.items.map((entry, i) =>
@@ -304,7 +273,6 @@ const ReceiptAdd: React.FC = () => {
     }
   };
 
-  // Calculate fine weight: fineWt = (purity% * grossWt) + srp
   const calculateFineWeight = (purity: number, grossWt: number, srp: number) => {
     const purityFactor = purity / 100;
     return (grossWt * purityFactor) + srp;
@@ -314,9 +282,7 @@ const ReceiptAdd: React.FC = () => {
     const updatedItems = [...formData.items];
     const item = updatedItems[index];
 
-    // Handle grossWt with 3 decimal validation
     if (field === 'grossWt') {
-      // Convert to string to check decimal places
       const strValue = String(value);
       if (strValue.includes('.')) {
         const decimalPlaces = strValue.split('.')[1]?.length || 0;
@@ -325,10 +291,8 @@ const ReceiptAdd: React.FC = () => {
           return;
         }
       }
-      // Parse the value and round to 3 decimal places
       const numValue = parseFloat(strValue);
       if (!isNaN(numValue)) {
-        // Round to 3 decimal places
         const roundedValue = Math.round(numValue * 1000) / 1000;
         updatedItems[index] = {
           ...item,
@@ -347,7 +311,6 @@ const ReceiptAdd: React.FC = () => {
       };
     }
 
-    // Auto-calculate fine weight: fineWt = (purity% * grossWt) + srp
     if (field === 'purity' || field === 'grossWt' || field === 'srp') {
       const purity = field === 'purity' ? value : updatedItems[index].purity;
       const grossWt = field === 'grossWt' ? updatedItems[index].grossWt : updatedItems[index].grossWt;
@@ -365,16 +328,12 @@ const ReceiptAdd: React.FC = () => {
       items: updatedItems
     });
 
-    // If purity is changed, fetch quantity with debounce
     if (field === 'purity') {
       const currentItem = updatedItems[index];
       if (currentItem.item && currentItem.size && currentItem.purity > 0) {
-        // Clear previous timer
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
         }
-
-        // Set new timer
         debounceTimerRef.current = setTimeout(() => {
           fetchQuantity(index, currentItem.item, currentItem.size, currentItem.purity);
         }, 800);
@@ -382,7 +341,6 @@ const ReceiptAdd: React.FC = () => {
     }
   };
 
-  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
@@ -391,14 +349,12 @@ const ReceiptAdd: React.FC = () => {
     };
   }, []);
 
-  // Initialize with one empty row
   useEffect(() => {
     if (formData.items.length === 0) {
       handleAddItem();
     }
   }, []);
 
-  // Validate all items before submit
   const validateAllItems = (): boolean => {
     for (let i = 0; i < formData.items.length; i++) {
       const item = formData.items[i];
@@ -426,23 +382,7 @@ const ReceiptAdd: React.FC = () => {
     return true;
   };
 
-  const handleGoldInfoChange = (field: keyof typeof formData.goldInfo, value: any) => {
-    const updatedGoldInfo = {
-      ...formData.goldInfo,
-      [field]: value
-    };
-    if (field === 'rate' || field === 'weight') {
-      const rate = field === 'rate' ? value : formData.goldInfo.rate;
-      const weight = field === 'weight' ? value : formData.goldInfo.weight;
-      updatedGoldInfo.totalAmount = Number(rate) * Number(weight);
-    }
-    setFormData({
-      ...formData,
-      goldInfo: updatedGoldInfo
-    });
-  };
-
-  // Handle customer weight change
+  // Handle Advance (Customer Weight) change
   const handleCustomerWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     if (!isNaN(value) && value >= 0) {
@@ -458,107 +398,22 @@ const ReceiptAdd: React.FC = () => {
     }
   };
 
-  // Calculate total bill amount
-  const calculateTotalBill = () => {
-    // Total Bill = Total SRP + Total Labor
-    return calculateTotalSRP() + calculateTotalLabor();
-  };
-
-  // Calculate remaining weight
-  const calculateRemainingWeight = () => {
-    return calculateTotalGrossWt() - formData.customerWeight;
-  };
-
-  const handleSaveReceipt = async () => {
-    if (!formData.clientId || !formData.clientName) {
-      toast.error('Please select a client');
-      return;
-    }
-    if (formData.items.length === 0) {
-      toast.error('Please add at least one item');
-      return;
-    }
-
-    // Validate all items at once
-    if (!validateAllItems()) {
-      return;
-    }
-
-    // Validate customer weight
-    if (formData.customerWeight <= 0) {
-      toast.error('Please enter customer weight');
-      return;
-    }
-
-    if (formData.customerWeight > calculateTotalGrossWt()) {
-      toast.error('Customer weight cannot be greater than total gross weight');
-      return;
-    }
-
-    try {
-      // Calculate all totals
-      const totalGrossWt = calculateTotalGrossWt();
-      const totalFineWt = calculateTotalFineWt();
-      const totalSRP = calculateTotalSRP();
-      const totalLabor = calculateTotalLabor();
-      const totalBill = calculateTotalBill();
-      const remainingWeight = calculateRemainingWeight();
-
-      // Prepare data for API - with correct field names
-      const billData = {
-        clientId: formData.clientId,
-        receiptDate: formData.date, // Changed from 'datetime' to 'receiptDate'
-        items: formData.items.map(item => ({
-          itemId: items.find((i: any) => i.name === item.item)?.id,
-          itemName: item.item,
-          sizeId: sizes.find((s: any) => s.size === item.size)?.id,
-          size: item.size,
-          purity: item.purity,
-          availableQty: item.availableQty,
-          grossWeight: Number(item.grossWt.toFixed(3)), // Changed from 'grossWt' to 'grossWeight'
-          srp: item.srp,
-          fineWeight: Number(item.fineWt.toFixed(3)), // Changed from 'fineWt' to 'fineWeight'
-          laborRate: item.laborRate || 0
-        })),
-        customerWeight: Number(formData.customerWeight.toFixed(3)),
-        remainingWeight: Number(remainingWeight.toFixed(3)),
-        totalWeight: Number(totalGrossWt.toFixed(3)) // Changed from 'totalGrossWt' to 'totalWeight'
-      };
-
-      console.log('Sending to backend:', billData);
-
-      await savebill.mutateAsync(billData);
-      // toast.success(`Receipt saved successfully! Total Bill: ₹${totalBill.toFixed(2)}`);
-
-      // Reset form after successful save
+  // Handle Total Fine (Issue) change
+  const handleTotalFineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value) && value >= 0) {
       setFormData({
-        clientId: '',
-        clientName: '',
-        date: new Date().toISOString().split('T')[0],
-        items: [],
-        customerWeight: 0,
-        goldInfo: {
-          karat: '22K',
-          rate: 0,
-          weight: 0,
-          totalAmount: 0
-        }
+        ...formData,
+        totalFine: value
       });
-
-      // Add initial empty row after reset
-      setTimeout(() => {
-        handleAddItem();
-      }, 100);
-
-      // Navigate back to billing page
-      navigate({ to: '/billing' });
-    } catch (error) {
-      console.error('Error saving receipt:', error);
-      toast.error('Insufficient stock');
+    } else {
+      setFormData({
+        ...formData,
+        totalFine: 0
+      });
     }
   };
 
-  // Calculate totals
   const calculateTotalGrossWt = () => {
     return formData.items.reduce((total, item) => total + (item.grossWt || 0), 0);
   };
@@ -575,17 +430,124 @@ const ReceiptAdd: React.FC = () => {
     return formData.items.reduce((total, item) => total + (item.laborRate || 0), 0);
   };
 
+  const calculateTotalBill = () => {
+    return calculateTotalSRP() + calculateTotalLabor();
+  };
 
+  const calculateRemainingWeight = () => {
+    return calculateTotalGrossWt() - formData.customerWeight;
+  };
 
   const formatNumberThreeDecimals = (value: number) => {
     if (value === 0 || !value) return '0';
-    // First format to 3 decimal places
     const str = value.toFixed(3);
-    // Then remove trailing zeros
     return str.replace(/\.0+$/, '');
   };
 
-  // Custom action renderer for GenericTable - Shows Add/Remove buttons
+  // Save as Draft - Use 'DRAFT' (uppercase)
+  const handleSaveAsDraft = async () => {
+    if (!formData.clientId || !formData.clientName) {
+      toast.error('Please select a client');
+      return;
+    }
+    if (formData.items.length === 0) {
+      toast.error('Please add at least one item');
+      return;
+    }
+
+    try {
+      const totalGrossWt = calculateTotalGrossWt();
+      const remainingWeight = calculateRemainingWeight();
+
+      const billData = {
+        clientId: formData.clientId,
+        receiptDate: formData.date,
+        items: formData.items.map(item => ({
+          itemId: items.find((i: any) => i.name === item.item)?.id,
+          itemName: item.item,
+          sizeId: sizes.find((s: any) => s.size === item.size)?.id,
+          size: item.size,
+          purity: item.purity,
+          availableQty: item.availableQty,
+          grossWeight: Number(item.grossWt.toFixed(3)),
+          srp: item.srp,
+          fineWeight: Number(item.fineWt.toFixed(3)),
+          laborRate: item.laborRate || 0
+        })),
+        customerWeight: Number(formData.customerWeight.toFixed(3)),
+        remainingWeight: Number(remainingWeight.toFixed(3)),
+        totalWeight: Number(totalGrossWt.toFixed(3)),
+        type: 'DRAFT'
+      };
+
+      await savebill.mutateAsync(billData);
+      toast.success('Bill saved as draft successfully!');
+      navigate({ to: '/billing' });
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      toast.error('Failed to save draft');
+    }
+  };
+
+  // Save as Completed - Use 'BILL' (uppercase)
+  const handleSaveReceipt = async () => {
+    if (!formData.clientId || !formData.clientName) {
+      toast.error('Please select a client');
+      return;
+    }
+    if (formData.items.length === 0) {
+      toast.error('Please add at least one item');
+      return;
+    }
+
+    if (!validateAllItems()) {
+      return;
+    }
+
+    if (formData.customerWeight <= 0) {
+      toast.error('Please enter customer weight');
+      return;
+    }
+
+    if (formData.customerWeight > calculateTotalGrossWt()) {
+      toast.error('Customer weight cannot be greater than total gross weight');
+      return;
+    }
+
+    try {
+      const totalGrossWt = calculateTotalGrossWt();
+      const remainingWeight = calculateRemainingWeight();
+
+      const billData = {
+        clientId: formData.clientId,
+        receiptDate: formData.date,
+        items: formData.items.map(item => ({
+          itemId: items.find((i: any) => i.name === item.item)?.id,
+          itemName: item.item,
+          sizeId: sizes.find((s: any) => s.size === item.size)?.id,
+          size: item.size,
+          purity: item.purity,
+          availableQty: item.availableQty,
+          grossWeight: Number(item.grossWt.toFixed(3)),
+          srp: item.srp,
+          fineWeight: Number(item.fineWt.toFixed(3)),
+          laborRate: item.laborRate || 0
+        })),
+        customerWeight: Number(formData.customerWeight.toFixed(3)),
+        remainingWeight: Number(remainingWeight.toFixed(3)),
+        totalWeight: Number(totalGrossWt.toFixed(3)),
+        type: 'BILL'
+      };
+
+      await savebill.mutateAsync(billData);
+      toast.success(`Bill saved successfully!`);
+      navigate({ to: '/billing' });
+    } catch (error) {
+      console.error('Error saving receipt:', error);
+      toast.error('Failed to save bill');
+    }
+  };
+
   const renderActions = (item: ReceiptItem, index: number) => {
     const actualIndex = formData.items.indexOf(item);
 
@@ -610,7 +572,6 @@ const ReceiptAdd: React.FC = () => {
     );
   };
 
-  // Define columns for GenericTable
   const columns: Column<ReceiptItem>[] = [
     {
       key: 'item',
@@ -775,8 +736,8 @@ const ReceiptAdd: React.FC = () => {
   ];
 
   return (
-    <div className="bg-[#f9f9f7] dark:bg-slate-950">
-      <div className="px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8 pb-32">
+    <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
+      <div className="px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8">
         {/* Header */}
         <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <div className="flex items-center gap-3">
@@ -854,64 +815,89 @@ const ReceiptAdd: React.FC = () => {
           />
         </div>
 
-        {/* Receipt Summary */}
+        {/* Simple Payment Summary - With Editable Fields */}
         {formData.items.length > 0 && (
           <div className="mb-4 rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm dark:bg-slate-900 dark:border-slate-700">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              {/* Customer Weight - Editable Field */}
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <label className="text-sm font-semibold text-[#4f4535] dark:text-slate-300 whitespace-nowrap">
-                  Adavance Receive(G) <span className="text-red-500">*</span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Advance - Editable */}
+              <div>
+                <label className="block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
+                  Advance (G) <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  value={formData.customerWeight || ''}
-                  onChange={handleCustomerWeightChange}
-                  placeholder="Enter weight"
-                  className="w-32 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
-                />
-                {formData.customerWeight > 0 && formData.customerWeight > calculateTotalGrossWt() && (
-                  <p className="text-xs text-red-500 whitespace-nowrap">
-                    Exceeds total ({formatNumberThreeDecimals(calculateTotalGrossWt())}G)
-                  </p>
-                )}
+                <div className="relative mt-1">
+                  <GenericInputField
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={formData.customerWeight || ''}
+                    onChange={handleCustomerWeightChange}
+                    placeholder="0.000"
+                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#4f4535] dark:text-slate-400">G</span>
+                </div>
               </div>
 
-              {/* Summary Stats in One Line */}
-              <div className="flex flex-wrap items-center gap-4 sm:gap-6 w-full sm:w-auto">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-[#4f4535] dark:text-slate-400">Total Gross:</span>
-                  <span className="text-sm font-bold text-[#1a1c1b] dark:text-white font-mono">
-                    {formatNumberThreeDecimals(calculateTotalGrossWt())} G
-                  </span>
+              {/* Issue (Total Fine) - Editable */}
+              <div>
+                <label className="block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
+                  Issue (Total Fine) (G)
+                </label>
+                <div className="relative mt-1">
+                  <input
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={formData.totalFine || ''}
+                    onChange={handleTotalFineChange}
+                    placeholder="0.000"
+                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#4f4535] dark:text-slate-400">G</span>
                 </div>
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-[#4f4535] dark:text-slate-400">Remaining:</span>
-                  <span className="text-sm font-bold text-[#1a1c1b] dark:text-white font-mono">
-                    {formatNumberThreeDecimals(calculateRemainingWeight())} G
-                    {calculateRemainingWeight() > 0 && (
-                      <span className="ml-1 text-xs font-normal text-[#4f4535] dark:text-slate-400">
-                        (Pending)
-                      </span>
-                    )}
-                    {calculateRemainingWeight() === 0 && (
-                      <span className="ml-1 text-xs font-normal text-[#4f4535] dark:text-slate-400">
-                        (Settled)
-                      </span>
-                    )}
-                  </span>
+              {/* Remaining - Read Only */}
+              <div>
+                <label className="block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
+                  Remaining (G)
+                </label>
+                <div className="relative mt-1">
+                  <input
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={calculateRemainingWeight()}
+                    className={`w-full rounded-lg px-3 py-2 text-right text-sm ${
+                      calculateRemainingWeight() === 0
+                        ? 'border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
+                        : 'border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
+                    }`}
+                    readOnly
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#4f4535] dark:text-slate-400">G</span>
                 </div>
+                
               </div>
             </div>
           </div>
         )}
 
-        {/* Action Buttons - Sticky Version */}
+        {/* Action Buttons */}
         <div className="sticky bottom-0 bg-[#f9f9f7] dark:bg-slate-950 p-4 border-t border-[#d3c4af]/20 dark:border-slate-700 z-50">
           <div className="flex flex-col sm:flex-row justify-end gap-3">
+            {/* Save as Draft Button */}
+            <GenericButton
+              type="button"
+              onClick={handleSaveAsDraft}
+              disabled={savebill.isPending}
+              className="!bg-gray-600 hover:!bg-gray-700 !text-white"
+            >
+              <FileText className="h-5 w-5" />
+              {savebill.isPending ? 'Saving...' : 'Save as Draft'}
+            </GenericButton>
+
+            {/* Save Bill Button */}
             <GenericButton
               type="button"
               onClick={handleSaveReceipt}

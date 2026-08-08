@@ -196,6 +196,25 @@ const Sidebar = ({
       icon: <MdPrecisionManufacturing size={22} />,
       roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
     },
+    {
+      label: 'Reports',
+      icon: <MdPrecisionManufacturing size={22} />,
+      roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+      subroutes: [
+        {
+          label: 'Manufacturing Report',
+          path: '/reports/manufacturingreport',
+          icon: <MdPrecisionManufacturing size={22} />,
+          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+        },
+        {
+          label: 'Billing Report',
+          path: '/reports/billreport',
+          icon: <MdPrecisionManufacturing size={22} />,
+          roles: ['SUPERADMIN', 'ADMIN', 'SHOP'],
+        },
+      ]
+    }
   ];
 
   const menuItems = allMenuItems.filter((item) => {
