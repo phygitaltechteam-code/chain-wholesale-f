@@ -1,10 +1,11 @@
-import React, {useState, useEffect, useCallback, useRef} from 'react';
-import {Save, History, ChevronRight, ChevronDown, Printer} from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Save, History, ChevronRight, ChevronDown, Printer } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import {useGetBox, useGetBoxHistory, useSubmitBox} from '@/lib/api/box';
+import { useGetBox, useGetBoxHistory, useSubmitBox } from '@/lib/api/box';
+import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
 
 interface BoxEntry {
   id: string;
@@ -28,53 +29,34 @@ interface BoxEntry {
 // Helper functions for safely extracting values
 const getItemName = (item: any): string => {
   if (!item) return '-';
-
-  if (typeof item === 'string') {
-    return item;
-  }
-
-  if (typeof item === 'object' && item.name) {
-    return String(item.name);
-  }
-
+  if (typeof item === 'string') return item;
+  if (typeof item === 'object' && item.name) return String(item.name);
   return '-';
 };
 
 const getSizeName = (size: any): string => {
   if (!size) return '-';
-
-  if (typeof size === 'string') {
-    return size;
-  }
-
-  if (typeof size === 'object' && size.size !== undefined) {
-    return String(size.size);
-  }
-
+  if (typeof size === 'string') return size;
+  if (typeof size === 'object' && size.size !== undefined) return String(size.size);
   return '-';
 };
 
 const BoxDept: React.FC = () => {
   const navigate = useNavigate();
   const [boxEntries, setBoxEntries] = useState<BoxEntry[]>([]);
-
-  console.log('boxEntriessss', boxEntries);
   const [isLoading, setIsLoading] = useState(false);
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [fromDate, setFromDate] = useState<Date[]>([]);
+  const [toDate, setToDate] = useState<Date[]>([]);
   const isInitialMount = useRef(true);
 
   // Fetch data from API
-  const {data: boxData = [], isLoading: boxLoading, refetch} = useGetBox();
-  const {
-    data: boxHistory = [],
-    isLoading: historyLoading,
-    refetch: refetchHistory,
-  } = useGetBoxHistory();
+  const { data: boxData = [], isLoading: boxLoading, refetch } = useGetBox();
+  const { data: boxHistory = [], isLoading: historyLoading, refetch: refetchHistory } = useGetBoxHistory();
   const submitBox = useSubmitBox();
 
-  console.log('boxHistoryyy', boxHistory);
   // Load data from API
   useEffect(() => {
     if (boxLoading) return;
@@ -135,10 +117,8 @@ const BoxDept: React.FC = () => {
 
   // Format date helper for history
   const formatDate = (dateString: string) => {
-    if (!dateString) return {date: '-', time: '-'};
-
+    if (!dateString) return { date: '-', time: '-' };
     const date = new Date(dateString);
-
     return {
       date: date.toLocaleDateString('en-IN', {
         day: '2-digit',
@@ -153,149 +133,6 @@ const BoxDept: React.FC = () => {
     };
   };
 
-const handlePrintHistory = () => {
-  if (!boxHistory || boxHistory.length === 0) {
-    toast.error('No history records available to print');
-    return;
-  }
-
-  // Create a hidden div for printing
-  const printContainer = document.createElement('div');
-  printContainer.id = 'print-container';
-  printContainer.style.cssText = `
-    position: fixed;
-    left: -9999px;
-    top: 0;
-    width: 100%;
-    background: white;
-    padding: 20px;
-    z-index: 9999;
-  `;
-  document.body.appendChild(printContainer);
-
-  // Build the table rows
-  const rows = boxHistory
-    .map((item: any, index: number) => {
-      const {date, time} = formatDate(item?.createdAt);
-      const {date: proceedDate, time: proceedTime} = formatDate(item?.updatedAt);
-
-      return `
-        <tr>
-          <td style="border:1px solid #000;padding:6px 8px;text-align:center;">${index + 1}</td>
-          <td style="border:1px solid #000;padding:6px 8px;text-align:center;">
-            ${date}<br/>
-            <span style="font-size:11px;color:#666;">${time}</span>
-          </td>
-          <td style="border:1px solid #000;padding:6px 8px;text-align:center;">${getItemName(item?.item)}</td>
-          <td style="border:1px solid #000;padding:6px 8px;text-align:center;">${getSizeName(item?.size)}</td>
-          <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(item?.tarWeight)}</td>
-          <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(item?.chainWeight)}</td>
-          <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(item?.scrap)}</td>
-          <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(
-            item?.loss ?? ((item?.tarWeight || 0) - (item?.chainWeight || 0))
-          )}</td>
-          <td style="border:1px solid #000;padding:6px 8px;text-align:center;">
-            ${proceedDate}<br/>
-            <span style="font-size:11px;color:#666;">${proceedTime}</span>
-          </td>
-        </tr>
-      `;
-    })
-    .join('');
-
-  // Calculate totals
-  const totalTar = boxHistory.reduce((sum: number, item: any) => sum + (item?.tarWeight || 0), 0);
-  const totalChain = boxHistory.reduce((sum: number, item: any) => sum + (item?.chainWeight || 0), 0);
-  const totalScrap = boxHistory.reduce((sum: number, item: any) => sum + (item?.scrap || 0), 0);
-  const totalLoss = boxHistory.reduce((sum: number, item: any) => sum + (item?.loss ?? ((item?.tarWeight || 0) - (item?.chainWeight || 0))), 0);
-
-  // Set the content
-  printContainer.innerHTML = `
-    <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;">
-      <h2 style="text-align:center;margin:0 0 10px 0;font-size:22px;color:#000;">Box History Report</h2>
-      <p style="text-align:center;font-size:12px;color:#666;margin-bottom:20px;">
-        Generated: ${new Date().toLocaleString()}
-      </p>
-
-      <table style="width:100%;border-collapse:collapse;font-size:12px;">
-        <thead>
-          <tr style="background:#f2f2f2;font-weight:600;">
-            <th style="border:1px solid #000;padding:8px;text-align:center;">Sr No.</th>
-            <th style="border:1px solid #000;padding:8px;text-align:center;">Date & Time</th>
-            <th style="border:1px solid #000;padding:8px;text-align:center;">Item</th>
-            <th style="border:1px solid #000;padding:8px;text-align:center;">Size</th>
-            <th style="border:1px solid #000;padding:8px;text-align:center;">Tar (तार)</th>
-            <th style="border:1px solid #000;padding:8px;text-align:center;">Chain Weight (G)</th>
-            <th style="border:1px solid #000;padding:8px;text-align:center;">Scrap (स्क्रॅप)</th>
-            <th style="border:1px solid #000;padding:8px;text-align:center;">Loss</th>
-            <th style="border:1px solid #000;padding:8px;text-align:center;">Proceed Date & Time</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-        <tfoot>
-          <tr style="background:#f9f9f7;font-weight:bold;">
-            <td colspan="4" style="border:1px solid #000;padding:6px 8px;text-align:right;">Total:</td>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(totalTar)}</td>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(totalChain)}</td>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(totalScrap)}</td>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(totalLoss)}</td>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:center;">${boxHistory.length} entries</td>
-          </tr>
-        </tfoot>
-      </table>
-
-      <div style="margin-top:20px;padding-top:10px;border-top:2px solid #785600;text-align:center;">
-        <p style="font-size:11px;color:#666;margin:2px 0;">This is a system-generated report</p>
-        <span style="font-size:10px;color:#999;">Powered by Matoshree Gold | Total Entries: ${boxHistory.length}</span>
-      </div>
-    </div>
-  `;
-
-  // Add print styles
-  const style = document.createElement('style');
-  style.textContent = `
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      #print-container, #print-container * {
-        visibility: visible;
-      }
-      #print-container {
-        position: fixed !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        background: white !important;
-        padding: 20px !important;
-        overflow: auto !important;
-        z-index: 9999 !important;
-      }
-      #print-container table {
-        width: 100% !important;
-      }
-      #print-container tr {
-        page-break-inside: avoid !important;
-      }
-    }
-  `;
-  document.head.appendChild(style);
-
-  // Trigger print
-  setTimeout(() => {
-    window.print();
-    
-    // Clean up after print
-    setTimeout(() => {
-      document.body.removeChild(printContainer);
-      document.head.removeChild(style);
-    }, 1000);
-  }, 500);
-};
-
   // Format number helper for history
   const formatNumber = (value: any) => {
     if (value === null || value === undefined) return '0';
@@ -304,29 +141,241 @@ const handlePrintHistory = () => {
     return num.toFixed(0);
   };
 
-  // History table columns - FIXED with proper safety
+  // Format number for display
+  const formatNumberDisplay = (value: number) => {
+    if (value === 0 || !value) return '0';
+    const str = value.toString();
+    if (str.includes('.')) {
+      return str.replace(/\.?0+$/, '');
+    }
+    return str;
+  };
+
+  // Filter history by date
+  const getFilteredHistory = () => {
+    let filtered = boxHistory;
+
+    if (fromDate.length > 0 && toDate.length > 0) {
+      const from = new Date(fromDate[0]);
+      const to = new Date(toDate[0]);
+      to.setHours(23, 59, 59, 999);
+      
+      filtered = boxHistory.filter((item: any) => {
+        const itemDate = new Date(item.createdAt);
+        return itemDate >= from && itemDate <= to;
+      });
+    }
+
+    return filtered;
+  };
+
+  // Print History Function
+  const handlePrintHistory = () => {
+    const filteredData = getFilteredHistory();
+    
+    if (!filteredData || filteredData.length === 0) {
+      toast.error('No history records available to print for the selected date range');
+      return;
+    }
+
+    // Create a hidden div for printing
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    printContainer.style.cssText = `
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 100%;
+      background: white;
+      padding: 4px;
+      z-index: 9999;
+    `;
+    document.body.appendChild(printContainer);
+
+    // Build the table rows - Compact with minimum padding
+    const rows = filteredData
+      .map((item: any, index: number) => {
+        const { date, time } = formatDate(item?.createdAt);
+        const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
+
+        return `
+          <tr>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+              ${date} ${time}
+            </td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.tarWeight)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.chainWeight)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.scrap)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(
+              item?.loss ?? ((item?.tarWeight || 0) - (item?.chainWeight || 0))
+            )}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+              ${proceedDate} ${proceedTime}
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    // Calculate totals
+    const totalTar = filteredData.reduce((sum: number, item: any) => sum + (item?.tarWeight || 0), 0);
+    const totalChain = filteredData.reduce((sum: number, item: any) => sum + (item?.chainWeight || 0), 0);
+    const totalScrap = filteredData.reduce((sum: number, item: any) => sum + (item?.scrap || 0), 0);
+    const totalLoss = filteredData.reduce((sum: number, item: any) => sum + (item?.loss ?? ((item?.tarWeight || 0) - (item?.chainWeight || 0))), 0);
+
+    // Set the content with PDF Header - Minimal padding
+    printContainer.innerHTML = `
+      <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
+        <!-- PDF Header -->
+        <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
+            <span>॥ श्री गणेश प्रसन्न ॥</span>
+            <span>॥ श्री साई प्रसन्न ॥</span>
+          </div>
+          <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
+            मातोश्री चेन फॅक्टरी
+          </div>
+          <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
+            आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+          </div>
+          <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
+            प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+          </div>
+          <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
+        </div>
+
+        <!-- Title -->
+        <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Box History Report</h2>
+        ${fromDate.length > 0 && toDate.length > 0 ? `
+          <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
+            Date Range: ${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()}
+          </p>
+        ` : ''}
+
+        <!-- Table -->
+        <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
+          <thead>
+            <tr style="background:#785600;color:white;font-weight:600;">
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Tar</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Wt</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Proceed</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+          <tfoot>
+            <tr style="background:#f4f4f2;font-weight:bold;">
+              <td colspan="4" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">Total</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalTar)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalChain)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalScrap)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalLoss)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${filteredData.length}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Footer -->
+        <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
+          <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
+          <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
+            <span>Powered by Matoshree Gold</span>
+            <span>|</span>
+            <span>${new Date().toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add print styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @page {
+        margin: 3mm;
+      }
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #print-container, #print-container * {
+          visibility: visible;
+        }
+        #print-container {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          background: white !important;
+          padding: 4px !important;
+          overflow: auto !important;
+          z-index: 9999 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container table {
+          width: 100% !important;
+        }
+        #print-container tr {
+          page-break-inside: avoid !important;
+        }
+        #print-container thead tr {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container thead tr th {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Trigger print
+    setTimeout(() => {
+      window.print();
+      
+      // Clean up after print
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
+    }, 500);
+  };
+
+  // History table columns
   const historyColumns: Column<any>[] = [
     {
       key: 'createdAt',
       header: 'Date & Time',
       render: (item) => {
-        console.log('itemmmmm', item);
-        const {date, time} = formatDate(item?.createdAt);
-
+        const { date, time } = formatDate(item?.createdAt);
         return (
           <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {date}
-            </span>
-
-            <span className="text-gray-500 dark:text-gray-400 text-sm">
-              {time}
-            </span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{time}</span>
           </div>
         );
       },
     },
-
     {
       key: 'item',
       header: 'Item',
@@ -336,7 +385,6 @@ const handlePrintHistory = () => {
         </span>
       ),
     },
-
     {
       key: 'size',
       header: 'Size',
@@ -346,7 +394,6 @@ const handlePrintHistory = () => {
         </span>
       ),
     },
-
     {
       key: 'tarWeight',
       header: 'Tar (तार)',
@@ -356,7 +403,6 @@ const handlePrintHistory = () => {
         </span>
       ),
     },
-
     {
       key: 'chainWeight',
       header: 'Chain Weight (G)',
@@ -366,7 +412,6 @@ const handlePrintHistory = () => {
         </span>
       ),
     },
-
     {
       key: 'scrap',
       header: 'Scrap (स्क्रॅप)',
@@ -376,7 +421,6 @@ const handlePrintHistory = () => {
         </span>
       ),
     },
-
     {
       key: 'loss',
       header: 'Loss',
@@ -386,22 +430,15 @@ const handlePrintHistory = () => {
         </span>
       ),
     },
-
     {
       key: 'updatedAt',
       header: 'Proceed Date & Time',
       render: (item) => {
-        const {date, time} = formatDate(item?.updatedAt);
-
+        const { date, time } = formatDate(item?.updatedAt);
         return (
           <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {date}
-            </span>
-
-            <span className="text-gray-500 dark:text-gray-400 text-sm">
-              {time}
-            </span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{time}</span>
           </div>
         );
       },
@@ -414,7 +451,7 @@ const handlePrintHistory = () => {
       setBoxEntries((prev) =>
         prev.map((entry, i) => {
           if (i === index) {
-            const updated = {...entry};
+            const updated = { ...entry };
 
             if (field === 'chainWeight') {
               updated.chainWeightRaw = value;
@@ -495,7 +532,7 @@ const handlePrintHistory = () => {
       setBoxEntries((prev) =>
         prev.map((s, i) =>
           i === index
-            ? {...s, isEditing: false, isSaved: true, isCompleted: true}
+            ? { ...s, isEditing: false, isSaved: true, isCompleted: true }
             : s,
         ),
       );
@@ -507,7 +544,7 @@ const handlePrintHistory = () => {
 
       navigate({
         to: '/manufacturingprocess/process',
-        state: {selectedTab: 'soldering'},
+        state: { selectedTab: 'soldering' },
       });
     } catch (error) {
       console.error('Error saving box:', error);
@@ -517,15 +554,6 @@ const handlePrintHistory = () => {
       setSaveIndex(null);
     }
   }, [saveIndex, boxEntries, submitBox, navigate, refetch]);
-
-  const formatNumberDisplay = (value: number) => {
-    if (value === 0 || !value) return '0';
-    const str = value.toString();
-    if (str.includes('.')) {
-      return str.replace(/\.?0+$/, '');
-    }
-    return str;
-  };
 
   // Check if all entries are saved
   const allSaved = boxEntries.every((entry) => entry.isSaved);
@@ -561,7 +589,6 @@ const handlePrintHistory = () => {
       key: 'dateTime',
       header: 'Date & Time',
       render: (item) => {
-        console.log('entryItem', item);
         const parts = item.dateTime ? item.dateTime.split(', ') : ['', ''];
         const datePart = parts[0] || '';
         const timePart = parts[1] || '';
@@ -592,7 +619,6 @@ const handlePrintHistory = () => {
     {
       key: 'sizeName',
       header: 'Size',
-
       render: (item) => (
         <span className="text-sm text-[#1a1c1b] dark:text-white">
           {typeof item?.size === 'object'
@@ -693,6 +719,12 @@ const handlePrintHistory = () => {
     }
   };
 
+  // Clear date filters
+  const clearDateFilters = () => {
+    setFromDate([]);
+    setToDate([]);
+  };
+
   return (
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       {/* Header */}
@@ -702,14 +734,47 @@ const handlePrintHistory = () => {
             <h1 className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white sm:text-base md:text-lg">
               {showHistory ? 'Box History' : 'Box Department'}
             </h1>
+          
           </div>
           <div className="flex items-center gap-2">
+            {/* Date Filters - Only show when viewing history */}
+            {showHistory && (
+              <>
+                <div className="flex items-center gap-2">
+                  <GenericDatePicker
+                    id="from-date-box"
+                    placeholder="From Date"
+                    dateFormat="d/m/Y"
+                    onDateChange={(dates) => setFromDate(dates)}
+                    className="w-24 sm:w-28"
+                  />
+                  <span className="text-xs text-[#4f4535] dark:text-slate-400">to</span>
+                  <GenericDatePicker
+                    id="to-date-box"
+                    placeholder="To Date"
+                    dateFormat="d/m/Y"
+                    onDateChange={(dates) => setToDate(dates)}
+                    className="w-24 sm:w-28"
+                  />
+                  {(fromDate.length > 0 || toDate.length > 0) && (
+                    <button
+                      onClick={clearDateFilters}
+                      className="rounded-lg p-1 text-[#4f4535] hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
+                      title="Clear filters"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+
             {/* PRINT HISTORY */}
             {showHistory && (
               <GenericButton
                 type="button"
                 onClick={handlePrintHistory}
-                className="flex items-center gap-1.5 whitespace-nowrap !bg-blue-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-blue-700 sm:!px-4 sm:!py-2 sm:!text-sm"
+                className="flex items-center gap-1.5 whitespace-nowrap !bg-green-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-green-700 sm:!px-4 sm:!py-2 sm:!text-sm"
               >
                 <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Print</span>
@@ -755,9 +820,13 @@ const handlePrintHistory = () => {
       ) : (
         <div className="px-3 py-4 sm:px-4 md:px-6">
           <GenericTable
-            data={boxHistory}
+            data={getFilteredHistory()}
             columns={historyColumns}
-            emptyMessage="No history records found. Complete a box process to see history."
+            emptyMessage={
+              fromDate.length > 0 && toDate.length > 0
+                ? `No history records found for the selected date range (${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()})`
+                : "No history records found. Complete a box process to see history."
+            }
             isLoading={historyLoading}
             showSrNo={true}
             srNoLabel="Sr No."
