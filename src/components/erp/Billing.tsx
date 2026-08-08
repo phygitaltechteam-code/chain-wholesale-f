@@ -603,7 +603,7 @@ const Billing: React.FC = () => {
               onClick={() => navigate({ to: '/receipt/addreciept' })}
             >
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span>Add Bill</span>
+              <span>Add Bill.</span>
             </GenericButton>
           </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Save, X, ArrowLeft, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Save, X, ArrowLeft, ChevronDown, ChevronRight, Printer } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import { Column, GenericTable } from '@/components/Forms/Table/GenericTable';
@@ -30,6 +30,21 @@ interface TarEntry {
 interface AddTarProps {
     showBack?: boolean;
 }
+
+// Helper functions for safely extracting values
+const getItemName = (item: any): string => {
+    if (!item) return '-';
+    if (typeof item === 'string') return item;
+    if (item.name) return item.name;
+    return '-';
+};
+
+const getSizeName = (size: any): string => {
+    if (!size) return '-';
+    if (typeof size === 'string') return size;
+    if (size.size) return size.size;
+    return '-';
+};
 
 const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     const navigate = useNavigate();
@@ -69,80 +84,207 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     const saveTar = useSaveTar();
 
     // Format date helper for history
-  const formatDate = (dateString: string) => {
-  if (!dateString) return { date: '-', time: '-' };
+    const formatDate = (dateString: string) => {
+        if (!dateString) return { date: '-', time: '-' };
+        const date = new Date(dateString);
+        return {
+            date: date.toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+            }),
+            time: date.toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+            }),
+        };
+    };
 
-  const date = new Date(dateString);
-
-  return {
-    date: date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    }),
-    time: date.toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    }),
-  };
-};
     // Format number helper
     const formatNumber = (value: any) => {
         if (value === null || value === undefined) return '0';
         const num = typeof value === 'string' ? parseFloat(value) : value;
         if (isNaN(num)) return '0';
-        return num.toFixed(3);
+        return num.toFixed(0);
+    };
+
+    // Format number for display
+    const formatNumberDisplay = (value: number) => {
+        if (value === 0 || !value) return '0';
+        const str = value.toString();
+        if (str.includes('.')) {
+            return str.replace(/\.?0+$/, '');
+        }
+        return str;
+    };
+
+    // Print History Function
+    const handlePrintHistory = () => {
+        if (!tarHistory || tarHistory.length === 0) {
+            toast.error('No history records available to print');
+            return;
+        }
+
+        // Create a hidden div for printing
+        const printContainer = document.createElement('div');
+        printContainer.id = 'print-container';
+        printContainer.style.cssText = `
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            width: 100%;
+            background: white;
+            padding: 20px;
+            z-index: 9999;
+        `;
+        document.body.appendChild(printContainer);
+
+        // Build the table rows
+        const rows = tarHistory
+            .map((item: any, index: number) => {
+                const { date, time } = formatDate(item?.createdAt);
+                const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
+
+                return `
+                    <tr>
+                        <td style="border:1px solid #000;padding:6px 8px;text-align:center;">${index + 1}</td>
+                        <td style="border:1px solid #000;padding:6px 8px;text-align:center;">
+                            ${date}<br/>
+                            <span style="font-size:11px;color:#666;">${time}</span>
+                        </td>
+                        <td style="border:1px solid #000;padding:6px 8px;text-align:center;">${getItemName(item?.item)}</td>
+                        <td style="border:1px solid #000;padding:6px 8px;text-align:center;">${getSizeName(item?.size)}</td>
+                        <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(item?.fine)}</td>
+                        <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(item?.tar)}</td>
+                        <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(item?.scrap)}</td>
+                        <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(item?.loss)}</td>
+                        <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(item?.purity)}%</td>
+                        <td style="border:1px solid #000;padding:6px 8px;text-align:center;">
+                            ${proceedDate}<br/>
+                            <span style="font-size:11px;color:#666;">${proceedTime}</span>
+                        </td>
+                    </tr>
+                `;
+            })
+            .join('');
+
+        // Calculate totals
+        const totalFine = tarHistory.reduce((sum: number, item: any) => sum + (item?.fine || 0), 0);
+        const totalTar = tarHistory.reduce((sum: number, item: any) => sum + (item?.tar || 0), 0);
+        const totalScrap = tarHistory.reduce((sum: number, item: any) => sum + (item?.scrap || 0), 0);
+        const totalLoss = tarHistory.reduce((sum: number, item: any) => sum + (item?.loss || 0), 0);
+
+        // Set the content
+        printContainer.innerHTML = `
+            <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;">
+                <h2 style="text-align:center;margin:0 0 10px 0;font-size:22px;color:#000;">Tar History Report</h2>
+                <p style="text-align:center;font-size:12px;color:#666;margin-bottom:20px;">
+                    Generated: ${new Date().toLocaleString()}
+                </p>
+
+                <table style="width:100%;border-collapse:collapse;font-size:11px;">
+                    <thead>
+                        <tr style="background:#f2f2f2;font-weight:600;">
+                            <th style="border:1px solid #000;padding:8px;text-align:center;">Sr No.</th>
+                            <th style="border:1px solid #000;padding:8px;text-align:center;">Date & Time</th>
+                            <th style="border:1px solid #000;padding:8px;text-align:center;">Item</th>
+                            <th style="border:1px solid #000;padding:8px;text-align:center;">Size</th>
+                            <th style="border:1px solid #000;padding:8px;text-align:center;">Fine (लगड)</th>
+                            <th style="border:1px solid #000;padding:8px;text-align:center;">Tar (तार)</th>
+                            <th style="border:1px solid #000;padding:8px;text-align:center;">Scrap (स्क्रॅप)</th>
+                            <th style="border:1px solid #000;padding:8px;text-align:center;">Loss</th>
+                            <th style="border:1px solid #000;padding:8px;text-align:center;">Purity % (टंच)</th>
+                            <th style="border:1px solid #000;padding:8px;text-align:center;">Proceed Date & Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#f9f9f7;font-weight:bold;">
+                            <td colspan="4" style="border:1px solid #000;padding:6px 8px;text-align:right;">Total:</td>
+                            <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(totalFine)}</td>
+                            <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(totalTar)}</td>
+                            <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(totalScrap)}</td>
+                            <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(totalLoss)}</td>
+                            <td style="border:1px solid #000;padding:6px 8px;text-align:center;">-</td>
+                            <td style="border:1px solid #000;padding:6px 8px;text-align:center;">${tarHistory.length} entries</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div style="margin-top:20px;padding-top:10px;border-top:2px solid #785600;text-align:center;">
+                    <p style="font-size:11px;color:#666;margin:2px 0;">This is a system-generated report</p>
+                    <span style="font-size:10px;color:#999;">Powered by Matoshree Gold | Total Entries: ${tarHistory.length}</span>
+                </div>
+            </div>
+        `;
+
+        // Add print styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @media print {
+                body * {
+                    visibility: hidden;
+                }
+                #print-container, #print-container * {
+                    visibility: visible;
+                }
+                #print-container {
+                    position: fixed !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                    background: white !important;
+                    padding: 20px !important;
+                    overflow: auto !important;
+                    z-index: 9999 !important;
+                }
+                #print-container table {
+                    width: 100% !important;
+                }
+                #print-container tr {
+                    page-break-inside: avoid !important;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Trigger print
+        setTimeout(() => {
+            window.print();
+            
+            // Clean up after print
+            setTimeout(() => {
+                document.body.removeChild(printContainer);
+                document.head.removeChild(style);
+            }, 1000);
+        }, 500);
     };
 
     // History table columns
     const historyColumns: Column<any>[] = [
-
-       {
-  key: 'createdAt',
-  header: 'Date & Time',
-  render: (item) => {
-    const { date, time } = formatDate(item.createdAt);
-
-    return (
-      <div className="flex flex-col items-center">
-        <span className="text-sm text-[#1a1c1b] dark:text-white">
-          {date}
-        </span>
-
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          {time}
-        </span>
-      </div>
-    );
-  },
-},
-        
-    {
-  key: 'updatedAt',
-  header: 'Updated Date & Time',
-  render: (item) => {
-    const { date, time } = formatDate(item.updatedAt);
-
-    return (
-      <div className="flex flex-col items-center">
-        <span className="text-sm text-[#1a1c1b] dark:text-white">
-          {date}
-        </span>
-
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          {time}
-        </span>
-      </div>
-    );
-  },
-},
+        {
+            key: 'createdAt',
+            header: 'Date & Time',
+            render: (item) => {
+                const { date, time } = formatDate(item.createdAt);
+                return (
+                    <div className="flex flex-col items-center">
+                        <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{time}</span>
+                    </div>
+                );
+            },
+        },
         {
             key: 'item',
             header: 'Item',
             render: (item) => (
                 <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-                    {item.item?.name || '-'}
+                    {getItemName(item?.item)}
                 </span>
             ),
         },
@@ -151,7 +293,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             header: 'Size',
             render: (item) => (
                 <span className="text-sm text-[#1a1c1b] dark:text-white">
-                    {item.size?.size || '-'}
+                    {getSizeName(item?.size)}
                 </span>
             ),
         },
@@ -196,17 +338,30 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             header: 'Purity % (टंच)',
             render: (item) => (
                 <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-                    {formatNumber(item.purity)}
+                    {formatNumber(item.purity)}%
                 </span>
             ),
         },
+        {
+            key: 'updatedAt',
+            header: 'Proceed Date & Time',
+            render: (item) => {
+                const { date, time } = formatDate(item.updatedAt);
+                return (
+                    <div className="flex flex-col items-center">
+                        <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{time}</span>
+                    </div>
+                );
+            },
+        }
     ];
 
     // Initialize with existing tar data
     useEffect(() => {
         if (!tarLoading && items.length > 0 && sizes.length > 0) {
             if (tarData.length > 0) {
-                const entries: TarEntry[] = tarData.map((tar, index:any) => {
+                const entries: TarEntry[] = tarData.map((tar, index: any) => {
                     let sizeValue = tar.size;
                     if (typeof tar.size === 'object' && tar.size !== null) {
                         sizeValue = tar.size.size || tar.size.name || JSON.stringify(tar.size);
@@ -508,15 +663,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         resetForm();
     };
 
-    const formatNumberDisplay = (value: number) => {
-        if (value === 0 || !value) return '0';
-        const str = value.toString();
-        if (str.includes('.')) {
-            return str.replace(/\.?0+$/, '');
-        }
-        return str;
-    };
-
     const columns: Column<TarEntry>[] = [
         {
             key: 'dateTime',
@@ -531,7 +677,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                         <span className="text-sm text-[#1a1c1b] dark:text-white">
                             {datePart}
                         </span>
-                        <span className="text-xs text-[#4f4535] dark:text-slate-400">
+                        <span className="text-sm text-[#4f4535] dark:text-slate-400">
                             {timePart}
                         </span>
                     </div>
@@ -628,7 +774,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                             type="text"
                             value={item.purityRaw !== undefined ? item.purityRaw : (item.purity === 0 ? '' : item.purity)}
                             onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
-                            placeholder="e.g., 98"
+                            placeholder="e.g., 98 %"
                             className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
                         />
                     );
@@ -666,8 +812,11 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     const isSubmitting = createTar.isPending || saveTar.isPending;
 
     const toggleHistory = () => {
-        setShowHistory(!showHistory);
-        if (!showHistory) {
+        if (showHistory) {
+            setShowHistory(false);
+            refetch();
+        } else {
+            setShowHistory(true);
             refetchHistory();
         }
     };
@@ -681,7 +830,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                         <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
                             {showHistory ? 'Tar History' : 'Tar Management'}
                         </h1>
-                      
+                       
                     </div>
                     <div className="flex items-center gap-2">
                         {!showHistory && (
@@ -699,6 +848,18 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                                 <span>
                                     {isTarCompleted ? 'Completed' : 'Add Tar'}
                                 </span>
+                            </GenericButton>
+                        )}
+
+                        {/* Print History Button */}
+                        {showHistory && (
+                            <GenericButton
+                                type="button"
+                                onClick={handlePrintHistory}
+                                className="flex items-center gap-1.5 whitespace-nowrap !bg-green-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-green-700 sm:!px-4 sm:!py-2 sm:!text-sm"
+                            >
+                                <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <span>Print</span>
                             </GenericButton>
                         )}
 
@@ -740,10 +901,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             ) : (
                 /* History Table */
                 <div className="px-3 py-4 sm:px-4 md:px-6">
-                    {/* History Header */}
-              
-
-                    {/* History Table */}
                     <GenericTable
                         data={tarHistory}
                         columns={historyColumns}

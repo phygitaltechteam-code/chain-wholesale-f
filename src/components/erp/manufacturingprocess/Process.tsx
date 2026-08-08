@@ -219,13 +219,7 @@ const Process: React.FC = () => {
                   {/* Tab Name */}
                   <span>{step.name}</span>
 
-                  {/* Completion Badge for completed tabs */}
-                  {isCompleted && (
-                    <span className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                      ✓
-                    </span>
-                  )}
-
+                 
                 </button>
               );
             })}
