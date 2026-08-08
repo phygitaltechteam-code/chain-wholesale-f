@@ -16,7 +16,7 @@ interface ClientReportEntry {
     item: string;
     size: string;
     purity: string;
-    remark: 'Settle' | 'Advance' | 'Sale' | 'Received' | 'Given';
+    remark: string;
     wt: number;
 }
 
@@ -70,88 +70,84 @@ export default function ClientReport() {
     // Transform API data to match our table structure
     useEffect(() => {
         if (clientReportData) {
-            // Check if data is in the expected format
             const responseData = clientReportData as ApiResponse;
 
-            if (responseData?.data && Array.isArray(responseData)) {
-                const transformedData: ClientReportEntry[] = responseData.map((item: ApiDataItem, index: number) => {
-                    // Format date
-                    const date = new Date(item.createdAt);
-                    const formattedDate = date.toLocaleDateString('en-IN', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                    });
-                    const formattedTime = date.toLocaleTimeString('en-IN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                    });
-
-                    // Determine remark type
-                    let remarkType: 'Settle' | 'Advance' | 'Sale' | 'Received' | 'Given' = 'Received';
-                    if (item.remark) {
-                        const remarkLower = item.remark.toLowerCase();
-                        if (remarkLower.includes('settle')) remarkType = 'Settle';
-                        else if (remarkLower.includes('advance')) remarkType = 'Advance';
-                        else if (remarkLower.includes('sale')) remarkType = 'Sale';
-                        else if (remarkLower.includes('received')) remarkType = 'Received';
-                        else if (remarkLower.includes('given')) remarkType = 'Given';
+            if (responseData?.data && Array.isArray(responseData.data)) {
+                // Group by bill number
+                const groupedData = responseData.data.reduce((acc: any, item: ApiDataItem) => {
+                    const billKey = item.billNumber || 'N/A';
+                    if (!acc[billKey]) {
+                        acc[billKey] = [];
                     }
+                    acc[billKey].push(item);
+                    return acc;
+                }, {});
 
-                    // Determine weight sign based on remark
-                    let weightValue = item.weight || 0;
+                // Transform grouped data to entries
+                const transformedData: ClientReportEntry[] = [];
+                let srNo = 1;
 
-                    return {
-                        id: item.id,
-                        srNo: index + 1,
-                        dateTime: `${formattedDate} ${formattedTime}`,
-                        billNo: item.billNumber || 'N/A',
-                        item: item.item?.name || 'Unknown Item',
-                        size: item.size?.size || 'N/A',
-                        purity: item.purity !== null ? item.purity.toString() : 'N/A',
-                        remark: remarkType,
-                        wt: weightValue
-                    };
-                });
-                setReportData(transformedData);
-            } else if (Array.isArray(clientReportData)) {
-                // If data is directly an array
-                const transformedData: ClientReportEntry[] = clientReportData.map((item: ApiDataItem, index: number) => {
-                    const date = new Date(item.createdAt);
-                    const formattedDate = date.toLocaleDateString('en-IN', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
+                // Process each bill group
+                Object.keys(groupedData).forEach((billKey) => {
+                    const items = groupedData[billKey];
+                    
+                    // Group by remark to combine weights
+                    const remarkGroups = items.reduce((acc: any, item: ApiDataItem) => {
+                        const remark = item.remark || 'N/A';
+                        if (!acc[remark]) {
+                            acc[remark] = {
+                                weight: 0,
+                                item: item.item?.name || 'Unknown Item',
+                                size: item.size?.size || 'N/A',
+                                purity: item.purity !== null ? item.purity.toString() : 'N/A',
+                                createdAt: item.createdAt
+                            };
+                        }
+                        acc[remark].weight += item.weight || 0;
+                        return acc;
+                    }, {});
+
+                    // Create entries for each remark group
+                    Object.keys(remarkGroups).forEach((remark) => {
+                        const group = remarkGroups[remark];
+                        const date = new Date(group.createdAt);
+                        const formattedDate = date.toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        });
+                        const formattedTime = date.toLocaleTimeString('en-IN', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                        });
+
+                        transformedData.push({
+                            id: `group-${srNo}`,
+                            srNo: srNo++,
+                            dateTime: `${formattedDate} ${formattedTime}`,
+                            billNo: billKey === 'N/A' ? 'N/A' : billKey,
+                            item: group.item,
+                            size: group.size,
+                            purity: group.purity,
+                            remark: remark,
+                            wt: group.weight
+                        });
                     });
-                    const formattedTime = date.toLocaleTimeString('en-IN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                    });
-
-                    let remarkType: 'Settle' | 'Advance' | 'Sale' | 'Received' | 'Given' = 'Received';
-                    if (item.remark) {
-                        const remarkLower = item.remark.toLowerCase();
-                        if (remarkLower.includes('settle')) remarkType = 'Settle';
-                        else if (remarkLower.includes('advance')) remarkType = 'Advance';
-                        else if (remarkLower.includes('sale')) remarkType = 'Sale';
-                        else if (remarkLower.includes('received')) remarkType = 'Received';
-                        else if (remarkLower.includes('given')) remarkType = 'Given';
-                    }
-
-                    return {
-                        id: item.id,
-                        srNo: index + 1,
-                        dateTime: `${formattedDate} ${formattedTime}`,
-                        billNo: item.billNumber || 'N/A',
-                        item: item.item?.name || 'Unknown Item',
-                        size: item.size?.size || 'N/A',
-                        purity: item.purity !== null ? item.purity.toString() : 'N/A',
-                        remark: remarkType,
-                        wt: item.weight || 0
-                    };
                 });
+
+                // Sort by date (newest first)
+                transformedData.sort((a, b) => {
+                    const dateA = new Date(a.dateTime);
+                    const dateB = new Date(b.dateTime);
+                    return dateB.getTime() - dateA.getTime();
+                });
+
+                // Reset srNo after sorting
+                transformedData.forEach((item, index) => {
+                    item.srNo = index + 1;
+                });
+
                 setReportData(transformedData);
             }
             setLoading(false);
@@ -476,7 +472,6 @@ export default function ClientReport() {
                             <span className={`text-lg font-bold ${totalWt > 0 ? 'text-green-600' : totalWt < 0 ? 'text-red-600' : 'text-[#1a1c1b]'} dark:text-amber-400`}>
                                 {formatNumber(totalWt)} G
                             </span>
-
                         </div>
                     </div>
                     <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
@@ -487,7 +482,6 @@ export default function ClientReport() {
                             <span className="text-lg font-bold text-green-600 dark:text-green-400">
                                 +{formatNumber(totalReceived)} G
                             </span>
-
                         </div>
                     </div>
                     <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
@@ -498,7 +492,6 @@ export default function ClientReport() {
                             <span className="text-lg font-bold text-red-600 dark:text-red-400">
                                 -{formatNumber(totalGiven)} G
                             </span>
-
                         </div>
                     </div>
                 </div>

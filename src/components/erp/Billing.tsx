@@ -43,6 +43,7 @@ interface ReceiptData {
   customerWeight: number;
   remainingWeight: number;
   createdAt: string;
+  type: string;
   client: {
     id: string;
     fullName: string;
@@ -99,13 +100,11 @@ const Billing: React.FC = () => {
         const fineWeight = firstItem?.fineWeight || 0;
         const srp = firstItem?.srp || 0;
 
-        let status : 'draft' | 'completed' | 'pending' = 'pending';
+        let type : 'DRAFT' | 'BILL';
         if (receipt.remainingWeight === 0) {
-          status = 'completed';
+          type = 'BILL';
         } else if (receipt.customerWeight === 0) {
-          status = 'draft';
-        } else {
-          status = 'pending';
+          type = 'DRAFT';
         }
 
         const dateObj = new Date(receipt.receiptDate || receipt.createdAt);
@@ -132,7 +131,7 @@ const Billing: React.FC = () => {
           srp: srp,
           receive: receipt.customerWeight || 0,
           pending: receipt.remainingWeight || 0,
-          status: status,
+          type: receipt.type,
           createdAt: receipt.createdAt,
         };
       });
@@ -256,8 +255,8 @@ const Billing: React.FC = () => {
     return str.replace(/\.?0+$/, '');
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const gettypeColor = (type: string) => {
+    switch (type) {
       case 'completed':
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
       case 'draft':
@@ -280,7 +279,7 @@ const Billing: React.FC = () => {
       </button>
       <button
         onClick={(e) => { e.stopPropagation(); handleDelete(item); }}
-        className="rounded-lg p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+        className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
         title="Delete"
       >
         <Trash2 className="h-4 w-4" />
@@ -400,10 +399,10 @@ const Billing: React.FC = () => {
       ),
     },
     {
-      key: 'status',
-      header: 'Status',
+      key: 'type',
+      header: 'status',
       render: (item) => (
-        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium capitalize ${getStatusColor(item.status)}`}>
+        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium capitalize ${gettypeColor(item.type)}`}>
           {item.type || "-"}
         </span>
       ),
@@ -445,7 +444,7 @@ const Billing: React.FC = () => {
           <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Receipt Details</h4>
           <div className="space-y-0.5 text-sm">
             <div>
-              <span className="text-gray-600">Receipt #:</span>
+              <span className="text-gray-600">Receipt No:</span>
               <span className="ml-1 font-bold text-[#785600]">{entry.billNo}</span>
             </div>
             <div>
@@ -531,7 +530,7 @@ const Billing: React.FC = () => {
               <th className="border border-[#785600] px-2 py-1 text-right font-semibold">SRP (G)</th>
               <th className="border border-[#785600] px-2 py-1 text-right font-semibold">Receive (G)</th>
               <th className="border border-[#785600] px-2 py-1 text-right font-semibold">Pending (G)</th>
-              <th className="border border-[#785600] px-2 py-1 text-center font-semibold">Status</th>
+              <th className="border border-[#785600] px-2 py-1 text-center font-semibold">type</th>
             </tr>
           </thead>
           <tbody>
@@ -550,8 +549,8 @@ const Billing: React.FC = () => {
                 <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.receive)}</td>
                 <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.pending)}</td>
                 <td className="border border-gray-300 px-2 py-1 text-center">
-                  <span className={`px-1.5 py-0.5 text-[9px] font-medium capitalize ${getStatusColor(entry.status)}`}>
-                    {entry.status}
+                  <span className={`px-1.5 py-0.5 text-[9px] font-medium capitalize ${gettypeColor(entry.type)}`}>
+                    {entry.type}
                   </span>
                 </td>
               </tr>
