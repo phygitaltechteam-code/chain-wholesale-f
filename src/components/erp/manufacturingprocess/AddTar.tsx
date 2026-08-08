@@ -7,6 +7,7 @@ import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import { useGetItems, Item } from '@/lib/api/items';
 import { useGetSizes, Size } from '@/lib/api/sizes';
 import { useTar, useCreateTar, useSaveTar, Tar, useGetTarHistory } from '@/lib/api/tar';
+import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
 
 interface TarEntry {
     id: string;
@@ -55,6 +56,8 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isTarCompleted, setIsTarCompleted] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
+    const [fromDate, setFromDate] = useState<Date[]>([]);
+    const [toDate, setToDate] = useState<Date[]>([]);
 
     const [formData, setFormData] = useState({
         itemId: '',
@@ -118,10 +121,31 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         }
         return str;
     };
+
+    // Filter history by date
+    const getFilteredHistory = () => {
+        let filtered = tarHistory;
+
+        if (fromDate.length > 0 && toDate.length > 0) {
+            const from = new Date(fromDate[0]);
+            const to = new Date(toDate[0]);
+            to.setHours(23, 59, 59, 999);
+            
+            filtered = tarHistory.filter((item: any) => {
+                const itemDate = new Date(item.createdAt);
+                return itemDate >= from && itemDate <= to;
+            });
+        }
+
+        return filtered;
+    };
+
     // Print History Function - Minimal Padding
     const handlePrintHistory = () => {
-        if (!tarHistory || tarHistory.length === 0) {
-            toast.error('No history records available to print');
+        const filteredData = getFilteredHistory();
+        
+        if (!filteredData || filteredData.length === 0) {
+            toast.error('No history records available to print for the selected date range');
             return;
         }
 
@@ -129,155 +153,168 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         const printContainer = document.createElement('div');
         printContainer.id = 'print-container';
         printContainer.style.cssText = `
-        position: fixed;
-        left: -9999px;
-        top: 0;
-        width: 100%;
-        background: white;
-        padding: 6px;
-        z-index: 9999;
-    `;
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            width: 100%;
+            background: white;
+            padding: 4px;
+            z-index: 9999;
+        `;
         document.body.appendChild(printContainer);
 
-        // Build the table rows - Black text only
-        const rows = tarHistory
+        // Build the table rows - Compact with minimum padding
+        const rows = filteredData
             .map((item: any, index: number) => {
                 const { date, time } = formatDate(item?.createdAt);
                 const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
 
                 return `
-            <tr>
-                <td style="border:1px solid #000;padding:4px 5px;text-align:center;font-size:10px;color:#000;">${index + 1}</td>
-                <td style="border:1px solid #000;padding:4px 5px;text-align:center;font-size:10px;color:#000;">
-                    ${date}<br/>
-                    <span style="font-size:9px;color:#000;">${time}</span>
-                </td>
-                <td style="border:1px solid #000;padding:4px 5px;text-align:center;font-size:10px;color:#000;">${getItemName(item?.item)}</td>
-                <td style="border:1px solid #000;padding:4px 5px;text-align:center;font-size:10px;color:#000;">${getSizeName(item?.size)}</td>
-                <td style="border:1px solid #000;padding:4px 5px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumber(item?.fine)}</td>
-                <td style="border:1px solid #000;padding:4px 5px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumber(item?.tar)}</td>
-                <td style="border:1px solid #000;padding:4px 5px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumber(item?.scrap)}</td>
-                <td style="border:1px solid #000;padding:4px 5px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumber(item?.loss)}</td>
-                <td style="border:1px solid #000;padding:4px 5px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumber(item?.purity)}%</td>
-                <td style="border:1px solid #000;padding:4px 5px;text-align:center;font-size:10px;color:#000;">
-                    ${proceedDate}<br/>
-                    <span style="font-size:9px;color:#000;">${proceedTime}</span>
-                </td>
-            </tr>
-        `;
+                    <tr>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+                            ${date} ${time}
+                        </td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.fine)}</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.tar)}</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.scrap)}</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.loss)}</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.purity)}%</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+                            ${proceedDate} ${proceedTime}
+                        </td>
+                    </tr>
+                `;
             })
             .join('');
 
         // Calculate totals
-        const totalFine = tarHistory.reduce((sum: number, item: any) => sum + (item?.fine || 0), 0);
-        const totalTar = tarHistory.reduce((sum: number, item: any) => sum + (item?.tar || 0), 0);
-        const totalScrap = tarHistory.reduce((sum: number, item: any) => sum + (item?.scrap || 0), 0);
-        const totalLoss = tarHistory.reduce((sum: number, item: any) => sum + (item?.loss || 0), 0);
+        const totalFine = filteredData.reduce((sum: number, item: any) => sum + (item?.fine || 0), 0);
+        const totalTar = filteredData.reduce((sum: number, item: any) => sum + (item?.tar || 0), 0);
+        const totalScrap = filteredData.reduce((sum: number, item: any) => sum + (item?.scrap || 0), 0);
+        const totalLoss = filteredData.reduce((sum: number, item: any) => sum + (item?.loss || 0), 0);
 
         // Set the content with PDF Header - Minimal padding
         printContainer.innerHTML = `
-        <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
-            <!-- PDF Header -->
-            <div style="width:100%;text-align:center;margin:0;padding:2px 0;">
-                <!-- Top Text -->
-                <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
-                    <span>॥ श्री गणेश प्रसन्न ॥</span>
-                    <span>॥ श्री साई प्रसन्न ॥</span>
+            <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
+                <!-- PDF Header -->
+                <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
+                        <span>॥ श्री गणेश प्रसन्न ॥</span>
+                        <span>॥ श्री साई प्रसन्न ॥</span>
+                    </div>
+                    <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
+                        मातोश्री चेन फॅक्टरी
+                    </div>
+                    <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
+                        आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+                    </div>
+                    <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
+                        प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+                    </div>
+                    <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
                 </div>
 
-                <!-- Factory Name -->
-                <div style="margin:1px 0 0 0;padding:0;font-size:22px;font-weight:bold;color:#c43d5c;line-height:1.1;">
-                    मातोश्री चेन फॅक्टरी
-                </div>
+                <!-- Title -->
+                <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Tar History Report</h2>
+                ${fromDate.length > 0 && toDate.length > 0 ? `
+                    <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
+                        Date Range: ${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()}
+                    </p>
+                ` : ''}
 
-                <!-- Description -->
-                <div style="margin:1px 0 0 0;padding:0;font-size:11px;font-weight:bold;color:#8b451f;line-height:1.2;">
-                    आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
-                </div>
+                <!-- Table -->
+                <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
+                    <thead>
+                        <tr style="background:#785600;color:white;font-weight:600;">
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Fine</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Tar</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Proceed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#f4f4f2;font-weight:bold;">
+                            <td colspan="4" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">Total</td>
+                            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalFine)}</td>
+                            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalTar)}</td>
+                            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalScrap)}</td>
+                            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalLoss)}</td>
+                            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">-</td>
+                            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${filteredData.length}</td>
+                        </tr>
+                    </tfoot>
+                </table>
 
-                <!-- Contact -->
-                <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
-                    प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+                <!-- Footer -->
+                <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
+                    <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
+                    <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
+                        <span>Powered by Matoshree Gold</span>
+                        <span>|</span>
+                        <span>${new Date().toLocaleString()}</span>
+                    </div>
                 </div>
-
-                <!-- Divider -->
-                <div style="border-bottom:2px solid #c43d5c;margin:3px 0 5px 0;"></div>
             </div>
-
-            <!-- Title -->
-            <h2 style="text-align:center;margin:4px 0 3px 0;font-size:16px;color:#000;padding:0;">Tar History Report</h2>
-        
-
-            <!-- Table -->
-            <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
-                <thead>
-                    <tr style="background:#785600;color:white;font-weight:600;">
-                        <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:9px;">Sr No.</th>
-                        <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:9px;">Date & Time</th>
-                        <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:9px;">Item</th>
-                        <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:9px;">Size</th>
-                        <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:9px;">Fine</th>
-                        <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:9px;">Tar</th>
-                        <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:9px;">Scrap</th>
-                        <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:9px;">Loss</th>
-                        <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:9px;">Purity %</th>
-                        <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:9px;">Proceed Date & Time</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rows}
-                </tbody>
-                
-            </table>
-        </div>
-    `;
+        `;
 
         // Add print styles
         const style = document.createElement('style');
         style.textContent = `
-        @page {
-            margin: 4mm;
-        }
-        @media print {
-            body * {
-                visibility: hidden;
+            @page {
+                margin: 3mm;
             }
-            #print-container, #print-container * {
-                visibility: visible;
+            @media print {
+                body * {
+                    visibility: hidden;
+                }
+                #print-container, #print-container * {
+                    visibility: visible;
+                }
+                #print-container {
+                    position: fixed !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                    background: white !important;
+                    padding: 4px !important;
+                    overflow: auto !important;
+                    z-index: 9999 !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                #print-container table {
+                    width: 100% !important;
+                }
+                #print-container tr {
+                    page-break-inside: avoid !important;
+                }
+                #print-container thead tr {
+                    background: #785600 !important;
+                    color: white !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                #print-container thead tr th {
+                    background: #785600 !important;
+                    color: white !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
             }
-            #print-container {
-                position: fixed !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                background: white !important;
-                padding: 6px !important;
-                overflow: auto !important;
-                z-index: 9999 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            #print-container table {
-                width: 100% !important;
-            }
-            #print-container tr {
-                page-break-inside: avoid !important;
-            }
-            #print-container thead tr {
-                background: #785600 !important;
-                color: white !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            #print-container thead tr th {
-                background: #785600 !important;
-                color: white !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-        }
-    `;
+        `;
         document.head.appendChild(style);
 
         // Trigger print
@@ -295,6 +332,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             }, 1000);
         }, 500);
     };
+
     // History table columns
     const historyColumns: Column<any>[] = [
         {
@@ -852,6 +890,12 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         }
     };
 
+    // Clear date filters
+    const clearDateFilters = () => {
+        setFromDate([]);
+        setToDate([]);
+    };
+
     return (
         <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
             {/* Header */}
@@ -861,7 +905,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                         <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
                             {showHistory ? 'Tar History' : 'Tar Management'}
                         </h1>
-
+                      
                     </div>
                     <div className="flex items-center gap-2">
                         {!showHistory && (
@@ -879,6 +923,38 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                                     {isTarCompleted ? 'Completed' : 'Add Tar'}
                                 </span>
                             </GenericButton>
+                        )}
+
+                        {/* Date Filters - Only show when viewing history */}
+                        {showHistory && (
+                            <>
+                                <div className="flex items-center gap-2">
+                                    <GenericDatePicker
+                                        id="from-date-tar"
+                                        placeholder="From Date"
+                                        dateFormat="d/m/Y"
+                                        onDateChange={(dates) => setFromDate(dates)}
+                                        className="w-24 sm:w-28"
+                                    />
+                                    <span className="text-xs text-[#4f4535] dark:text-slate-400">to</span>
+                                    <GenericDatePicker
+                                        id="to-date-tar"
+                                        placeholder="To Date"
+                                        dateFormat="d/m/Y"
+                                        onDateChange={(dates) => setToDate(dates)}
+                                        className="w-24 sm:w-28"
+                                    />
+                                    {(fromDate.length > 0 || toDate.length > 0) && (
+                                        <button
+                                            onClick={clearDateFilters}
+                                            className="rounded-lg p-1 text-[#4f4535] hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
+                                            title="Clear filters"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            </>
                         )}
 
                         {/* Print History Button */}
@@ -931,9 +1007,13 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                 /* History Table */
                 <div className="px-3 py-4 sm:px-4 md:px-6">
                     <GenericTable
-                        data={tarHistory}
+                        data={getFilteredHistory()}
                         columns={historyColumns}
-                        emptyMessage="No history records found. Complete a tar process to see history."
+                        emptyMessage={
+                            fromDate.length > 0 && toDate.length > 0
+                                ? `No history records found for the selected date range (${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()})`
+                                : "No history records found. Complete a tar process to see history."
+                        }
                         isLoading={tarHistoryLoading}
                         showSrNo={true}
                         srNoLabel="Sr No."

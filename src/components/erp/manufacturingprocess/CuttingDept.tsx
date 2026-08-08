@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Save, History, ChevronRight, ChevronDown, Printer } from 'lucide-react';
+import { Save, History, ChevronRight, ChevronDown, Printer, Calendar } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import { useGetCutting, useGetCuttingHistory, useSubmitCutting } from '@/lib/api/cutting';
+import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
 
 interface CuttingEntry {
   id: string;
@@ -48,6 +49,8 @@ const CuttingDept: React.FC = () => {
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [fromDate, setFromDate] = useState<Date[]>([]);
+  const [toDate, setToDate] = useState<Date[]>([]);
   const isInitialMount = useRef(true);
 
   // Fetch data from API
@@ -149,10 +152,30 @@ const CuttingDept: React.FC = () => {
     return str;
   };
 
-  // Print History Function
+  // Filter history by date
+  const getFilteredHistory = () => {
+    let filtered = cuttingHistory;
+
+    if (fromDate.length > 0 && toDate.length > 0) {
+      const from = new Date(fromDate[0]);
+      const to = new Date(toDate[0]);
+      to.setHours(23, 59, 59, 999);
+      
+      filtered = cuttingHistory.filter((item: any) => {
+        const itemDate = new Date(item.createdAt);
+        return itemDate >= from && itemDate <= to;
+      });
+    }
+
+    return filtered;
+  };
+
+  // Print History Function with filtered data
   const handlePrintHistory = () => {
-    if (!cuttingHistory || cuttingHistory.length === 0) {
-      toast.error('No history records available to print');
+    const filteredData = getFilteredHistory();
+    
+    if (!filteredData || filteredData.length === 0) {
+      toast.error('No history records available to print for the selected date range');
       return;
     }
 
@@ -160,133 +183,179 @@ const CuttingDept: React.FC = () => {
     const printContainer = document.createElement('div');
     printContainer.id = 'print-container';
     printContainer.style.cssText = `
-      position: fixed;
-      left: -9999px;
-      top: 0;
-      width: 100%;
-      background: white;
-      padding: 20px;
-      z-index: 9999;
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        width: 100%;
+        background: white;
+        padding: 4px;
+        z-index: 9999;
     `;
     document.body.appendChild(printContainer);
 
-    // Build the table rows
-    const rows = cuttingHistory
-      .map((item: any, index: number) => {
-        const { date, time } = formatDate(item?.createdAt);
-        const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
+    // Build the table rows - Compact with minimum padding
+    const rows = filteredData
+        .map((item: any, index: number) => {
+            const { date, time } = formatDate(item?.createdAt);
+            const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
 
-        return `
-          <tr>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:center;">${index + 1}</td>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:center;">
-              ${date}<br/>
-              <span style="font-size:11px;color:#666;">${time}</span>
-            </td>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:center;">${getItemName(item?.item)}</td>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:center;">${getSizeName(item?.size)}</td>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(item?.chainWeight)}</td>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(item?.chainReceived)}</td>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(item?.scrap)}</td>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(item?.purity)}%</td>
-            <td style="border:1px solid #000;padding:6px 8px;text-align:center;">
-              ${proceedDate}<br/>
-              <span style="font-size:11px;color:#666;">${proceedTime}</span>
-            </td>
-          </tr>
-        `;
-      })
-      .join('');
+            return `
+                <tr>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+                        ${date} ${time}
+                    </td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.chainWeight)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.chainReceived)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.scrap)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.purity)}%</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+                        ${proceedDate} ${proceedTime}
+                    </td>
+                </tr>
+            `;
+        })
+        .join('');
 
     // Calculate totals
-    const totalChainGiven = cuttingHistory.reduce((sum: number, item: any) => sum + (item?.chainWeight || 0), 0);
-    const totalChainReceived = cuttingHistory.reduce((sum: number, item: any) => sum + (item?.chainReceived || 0), 0);
-    const totalScrap = cuttingHistory.reduce((sum: number, item: any) => sum + (item?.scrap || 0), 0);
+    const totalChainGiven = filteredData.reduce((sum: number, item: any) => sum + (item?.chainWeight || 0), 0);
+    const totalChainReceived = filteredData.reduce((sum: number, item: any) => sum + (item?.chainReceived || 0), 0);
+    const totalScrap = filteredData.reduce((sum: number, item: any) => sum + (item?.scrap || 0), 0);
 
-    // Set the content
+    // Set the content with PDF Header - Minimal padding
     printContainer.innerHTML = `
-      <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;">
-        <h2 style="text-align:center;margin:0 0 10px 0;font-size:22px;color:#000;">Cutting History Report</h2>
-        <p style="text-align:center;font-size:12px;color:#666;margin-bottom:20px;">
-          Generated: ${new Date().toLocaleString()}
-        </p>
+        <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
+            <!-- PDF Header -->
+            <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
+                    <span>॥ श्री गणेश प्रसन्न ॥</span>
+                    <span>॥ श्री साई प्रसन्न ॥</span>
+                </div>
+                <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
+                    मातोश्री चेन फॅक्टरी
+                </div>
+                <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
+                    आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+                </div>
+                <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
+                    प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+                </div>
+                <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
+            </div>
 
-        <table style="width:100%;border-collapse:collapse;font-size:11px;">
-          <thead>
-            <tr style="background:#f2f2f2;font-weight:600;">
-              <th style="border:1px solid #000;padding:8px;text-align:center;">Sr No.</th>
-              <th style="border:1px solid #000;padding:8px;text-align:center;">Date & Time</th>
-              <th style="border:1px solid #000;padding:8px;text-align:center;">Item</th>
-              <th style="border:1px solid #000;padding:8px;text-align:center;">Size</th>
-              <th style="border:1px solid #000;padding:8px;text-align:center;">Chain Given (G)</th>
-              <th style="border:1px solid #000;padding:8px;text-align:center;">Chain Received (G)</th>
-              <th style="border:1px solid #000;padding:8px;text-align:center;">Scrap (G)</th>
-              <th style="border:1px solid #000;padding:8px;text-align:center;">Purity (%)</th>
-              <th style="border:1px solid #000;padding:8px;text-align:center;">Proceed Date & Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-          <tfoot>
-            <tr style="background:#f9f9f7;font-weight:bold;">
-              <td colspan="4" style="border:1px solid #000;padding:6px 8px;text-align:right;">Total:</td>
-              <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(totalChainGiven)}</td>
-              <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(totalChainReceived)}</td>
-              <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;">${formatNumber(totalScrap)}</td>
-              <td style="border:1px solid #000;padding:6px 8px;text-align:center;">-</td>
-              <td style="border:1px solid #000;padding:6px 8px;text-align:center;">${cuttingHistory.length} entries</td>
-            </tr>
-          </tfoot>
-        </table>
+            <!-- Title -->
+            <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Cutting History Report</h2>
+            ${fromDate.length > 0 && toDate.length > 0 ? `
+                <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
+                    Date Range: ${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()}
+                </p>
+            ` : ''}
 
-        <div style="margin-top:20px;padding-top:10px;border-top:2px solid #785600;text-align:center;">
-          <p style="font-size:11px;color:#666;margin:2px 0;">This is a system-generated report</p>
-          <span style="font-size:10px;color:#999;">Powered by Matoshree Gold | Total Entries: ${cuttingHistory.length}</span>
+            <!-- Table -->
+            <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
+                <thead>
+                    <tr style="background:#785600;color:white;font-weight:600;">
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Given</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Rec</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Proceed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                </tbody>
+                <tfoot>
+                    <tr style="background:#f4f4f2;font-weight:bold;">
+                        <td colspan="4" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">Total</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalChainGiven)}</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalChainReceived)}</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalScrap)}</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">-</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${filteredData.length}</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <!-- Footer -->
+            <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
+                <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
+                <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
+                    <span>Powered by Matoshree Gold</span>
+                    <span>|</span>
+                    <span>${new Date().toLocaleString()}</span>
+                </div>
+            </div>
         </div>
-      </div>
     `;
 
     // Add print styles
     const style = document.createElement('style');
     style.textContent = `
-      @media print {
-        body * {
-          visibility: hidden;
+        @page {
+            margin: 3mm;
         }
-        #print-container, #print-container * {
-          visibility: visible;
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-container, #print-container * {
+                visibility: visible;
+            }
+            #print-container {
+                position: fixed !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                background: white !important;
+                padding: 4px !important;
+                overflow: auto !important;
+                z-index: 9999 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            #print-container table {
+                width: 100% !important;
+            }
+            #print-container tr {
+                page-break-inside: avoid !important;
+            }
+            #print-container thead tr {
+                background: #785600 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            #print-container thead tr th {
+                background: #785600 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
         }
-        #print-container {
-          position: fixed !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-          background: white !important;
-          padding: 20px !important;
-          overflow: auto !important;
-          z-index: 9999 !important;
-        }
-        #print-container table {
-          width: 100% !important;
-        }
-        #print-container tr {
-          page-break-inside: avoid !important;
-        }
-      }
     `;
     document.head.appendChild(style);
 
     // Trigger print
     setTimeout(() => {
-      window.print();
-      
-      // Clean up after print
-      setTimeout(() => {
-        document.body.removeChild(printContainer);
-        document.head.removeChild(style);
-      }, 1000);
+        window.print();
+        
+        // Clean up after print
+        setTimeout(() => {
+            if (document.body.contains(printContainer)) {
+                document.body.removeChild(printContainer);
+            }
+            if (document.head.contains(style)) {
+                document.head.removeChild(style);
+            }
+        }, 1000);
     }, 500);
   };
 
@@ -634,6 +703,12 @@ const CuttingDept: React.FC = () => {
     }
   };
 
+  // Clear date filters
+  const clearDateFilters = () => {
+    setFromDate([]);
+    setToDate([]);
+  };
+
   return (
     <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
       {/* Header */}
@@ -643,9 +718,45 @@ const CuttingDept: React.FC = () => {
             <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
               {showHistory ? 'Cutting History' : 'Cutting Department'}
             </h1>
-         
+          
           </div>
           <div className="flex items-center gap-2">
+            {/* Date Filters */}
+            {showHistory && (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <GenericDatePicker
+                      id="from-date-cutting"
+                      placeholder="From Date"
+                      dateFormat="d/m/Y"
+                      onDateChange={(dates) => setFromDate(dates)}
+                      className="w-24 sm:w-28"
+                    />
+                  </div>
+                  <span className="text-xs text-[#4f4535] dark:text-slate-400">to</span>
+                  <div className="flex items-center gap-1">
+                    <GenericDatePicker
+                      id="to-date-cutting"
+                      placeholder="To Date"
+                      dateFormat="d/m/Y"
+                      onDateChange={(dates) => setToDate(dates)}
+                      className="w-24 sm:w-28"
+                    />
+                  </div>
+                  {(fromDate.length > 0 || toDate.length > 0) && (
+                    <button
+                      onClick={clearDateFilters}
+                      className="rounded-lg p-1 text-[#4f4535] hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
+                      title="Clear filters"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+
             {/* Print History Button */}
             {showHistory && (
               <GenericButton
@@ -696,9 +807,13 @@ const CuttingDept: React.FC = () => {
       ) : (
         <div className="px-3 py-4 sm:px-4 md:px-6">
           <GenericTable
-            data={cuttingHistory}
+            data={getFilteredHistory()}
             columns={historyColumns}
-            emptyMessage="No history records found. Complete a cutting process to see history."
+            emptyMessage={
+              fromDate.length > 0 && toDate.length > 0
+                ? `No history records found for the selected date range (${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()})`
+                : "No history records found. Complete a cutting process to see history."
+            }
             isLoading={historyLoading}
             showSrNo={true}
             srNoLabel="Sr No."
