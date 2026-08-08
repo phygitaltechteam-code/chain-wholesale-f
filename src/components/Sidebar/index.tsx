@@ -142,6 +142,14 @@ const Sidebar = ({
 
   // Menu items with Gold Chain Manufacturing ERP flow
   const allMenuItems: MenuItem[] = [
+
+     // ========== BILLING ==========
+  {
+  label: 'Dashboard',
+  path: '/dashboard',
+  icon: <MdReceipt size={22} />,
+  roles: ['ADMIN'],
+},
     // ========== BILLING ==========
     {
       label: 'Billing',
