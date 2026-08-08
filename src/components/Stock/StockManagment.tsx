@@ -445,14 +445,16 @@ const StockManagment: React.FC = () => {
                 </div>
 
                 {/* Note */}
-                <div className="md:col-span-2">
-                  <GenericInputField
-                    name="note"
-                    label="Note"
-                    type="text"
-                    placeholder="Add a note (optional)"
-                  />
-                </div>
+              <div className="md:col-span-2">
+  <GenericInputField
+    name="note"
+    label="Note"
+    type="text"
+    placeholder="Add a note (optional)"
+    onChange={(e) => setValue('note', e.target.value)}
+    value={watch('note') || ''}
+  />
+</div>
               </div>
 
               {/* Save Button */}

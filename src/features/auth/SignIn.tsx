@@ -40,7 +40,7 @@ const SignIn: React.FC = () => {
 
   useEffect(() => {
     if (isSuccess || isAuthenticated) {
-      window.location.href = '/billing';
+      window.location.href = '/dashboard';
     }
   }, [isSuccess, isAuthenticated]);
 
@@ -117,8 +117,8 @@ const SignIn: React.FC = () => {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`relative flex-1 py-3 text-[10px] font-semibold tracking-widest transition-all ${activeTab === tab
-                ? 'text-amber-400'
-                : 'text-slate-500 hover:text-slate-300'
+                  ? 'text-amber-400'
+                  : 'text-slate-500 hover:text-slate-300'
                 }`}
             >
               {tab}
