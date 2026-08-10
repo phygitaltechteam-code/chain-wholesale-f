@@ -199,6 +199,10 @@ const SKundaDept: React.FC = () => {
     { totalGiven: 0, totalReceived: 0, totalScrap: 0, totalLoss: 0 }
   );
 
+  // ======================================================
+  // PRINT FUNCTION - Full A4 with Date Range
+  // ======================================================
+
   const handlePrintHistory = () => {
     const filteredData = getFilteredHistory();
 
@@ -207,89 +211,198 @@ const SKundaDept: React.FC = () => {
       return;
     }
 
+    // Create a hidden div for printing
     const printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
+    printContainer.id = 'print-container-history';
     printContainer.style.cssText = `
-        position: fixed;
-        left: -9999px;
-        top: 0;
-        width: 100%;
-        background: white;
-        padding: 4px;
-        z-index: 9999;
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 210mm;
+      background: white;
+      padding: 0;
+      z-index: 9999;
     `;
     document.body.appendChild(printContainer);
 
+    // Build the table rows
     const rows = filteredData
       .map((item: any, index: number) => {
         const { date, time } = formatDate(item?.createdAt);
         const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
 
         return `
-            <tr>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
-                    ${date} ${time}
-                </td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainWeight)}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainReceived)}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.loss)}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
-                    ${proceedDate} ${proceedTime}
-                </td>
-            </tr>
+          <tr>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${index + 1}</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:7.5px;color:#000;white-space:nowrap;">
+              ${date} ${time}
+            </td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${getItemName(item?.item)}</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${getSizeName(item?.size)}</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.chainWeight)}</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.chainReceived)}</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.loss)}</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:7.5px;color:#000;white-space:nowrap;">
+              ${proceedDate} ${proceedTime}
+            </td>
+          </tr>
         `;
       })
       .join('');
 
-    printContainer.innerHTML = `
-        <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
-            <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
-                    <span>॥ श्री गणेश प्रसन्न ॥</span>
-                    <span>॥ श्री साई प्रसन्न ॥</span>
-                </div>
-                <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
-                    मातोश्री चेन फॅक्टरी
-                </div>
-                <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
-                    आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
-                </div>
-                <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
-                    प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
-                </div>
-                <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
-            </div>
+    // Format date for display
+    const formatDateForDisplay = (date: Date | null) => {
+      if (!date) return '';
+      return date.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    };
 
-            <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">S Kunda History Report</h2>
-            <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
-                <thead>
-                    <tr style="background:#785600;color:white;font-weight:600;">
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Given</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Received</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Proceed Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rows}
-                </tbody>
-            </table>
+    // Set the content with PDF Header - Full A4
+    printContainer.innerHTML = `
+      <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+        <!-- Header Section -->
+        <div>
+          <!-- PDF Header -->
+          <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
+              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री गणेश प्रसन्न ॥</span>
+              <span style="font-size:20px;font-weight:bold;color:#c43d5c;">मातोश्री चेन फॅक्टरी, मिरज</span>
+              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री साई प्रसन्न ॥</span>
+            </div>
+            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#8b451f;line-height:1.2;">
+              आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+            </div>
+            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#a84b20;line-height:1.2;">
+              प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
+            </div>
+            <div style="border-bottom:2px solid #c43d5c;margin:2px 0 4px 0;"></div>
+          </div>
+
+          <!-- Title and Date Range in one line -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
+            <div style="flex:1;"></div>
+            <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+              S Kunda History Report
+            </h2>
+            <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
+              From: ${formatDateForDisplay(dateRange[0]) || 'Start'} 
+              &nbsp;&nbsp; To: ${formatDateForDisplay(dateRange[1]) || 'End'}
+            </div>
+          </div>
+
+          <!-- Table -->
+          <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
+            <thead>
+              <tr style="background:#785600;color:white;font-weight:600;">
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Sr</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Date & Time</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Item</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Size</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Chain Given</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Chain Received</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Scrap</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Loss</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Purity</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Proceed Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
         </div>
+
+        <!-- Footer -->
+        
+      </div>
     `;
 
-    window.print();
-    document.body.removeChild(printContainer);
+    // Add print styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      @media print {
+        html, body {
+          margin: 0;
+          padding: 0;
+          width: 210mm;
+          height: 297mm;
+        }
+        body * {
+          visibility: hidden;
+        }
+        #print-container-history, #print-container-history * {
+          visibility: visible;
+        }
+        #print-container-history {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 210mm !important;
+          height: 297mm !important;
+          background: white !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          overflow: hidden !important;
+          z-index: 9999 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container-history > div {
+          width: 210mm !important;
+          min-height: 297mm !important;
+          padding: 6mm 5mm !important;
+          box-sizing: border-box !important;
+        }
+        #print-container-history table {
+          width: 100% !important;
+        }
+        #print-container-history tr {
+          page-break-inside: avoid !important;
+        }
+        #print-container-history thead tr {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container-history thead tr th {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container-history tfoot tr {
+          background: #f4f4f2 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Trigger print
+    setTimeout(() => {
+      window.print();
+
+      // Clean up after print
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
+    }, 500);
   };
 
   const handleInlineChange = useCallback(
