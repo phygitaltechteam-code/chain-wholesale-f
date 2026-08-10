@@ -289,10 +289,10 @@ export default function StockReport() {
   // Print handler
   const handlePrint = useReactToPrint({
     contentRef: printRef,
-    documentTitle: `Stock-Report-${d}`,
+    documentTitle: 'Stock Report',
     pageStyle: `
       @page { 
-        size: A4 landscape; 
+        size: A4 portrait; 
         margin: 10mm; 
       }
       @media print {
@@ -364,22 +364,9 @@ export default function StockReport() {
             </tr>
           ))}
         </tbody>
-        <tfoot>
-          <tr className="bg-gray-100 font-bold">
-            <td colSpan={6} className="border border-gray-300 px-2 py-1.5 text-right">Total:</td>
-            <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(totalWt)}</td>
-          </tr>
-        </tfoot>
+       
       </table>
 
-      <div className="mt-3 pt-2 border-t-2 border-[#785600] text-center">
-        <p className="text-xs text-gray-500">This is a system-generated report</p>
-        <div className="mt-0.5 flex justify-center gap-3 text-[10px] text-gray-400">
-          <span>Powered by Matoshree Gold</span>
-          <span>|</span>
-          <span>Generated: {new Date().toLocaleString()}</span>
-        </div>
-      </div>
     </div>
   );
 

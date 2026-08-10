@@ -67,6 +67,8 @@ interface BillingEntry {
   srp: number;
   receive: number;
   pending: number;
+  grossWeight: number;
+  
   type: 'DRAFT' | 'BILL';
   createdAt: string;
 }
@@ -211,6 +213,19 @@ const Billing: React.FC = () => {
   const totalPending = filteredEntries.reduce((sum, item) => sum + item.pending, 0);
   const totalEntries = filteredEntries.length;
 
+  // Format number with 3 decimals only if needed
+  const formatNumberWithDecimals = (value: number) => {
+    if (value === 0 || !value) return '0';
+    const str = value.toFixed(3);
+    return str.replace(/\.?0+$/, '');
+  };
+
+  // Format number with 2 decimals for billing
+  const formatNumberWith2Decimals = (value: number) => {
+    if (value === 0 || !value) return '0.00';
+    return value.toFixed(2);
+  };
+
   // Print Receipt - Full A4 page with proper spacing
   const handlePrintReceipt = (entry: BillingEntry) => {
     // Create a hidden div for printing
@@ -220,113 +235,291 @@ const Billing: React.FC = () => {
       position: fixed;
       left: -9999px;
       top: 0;
-      width: 100%;
+      width: 210mm;
       background: white;
-      padding: 8px;
+      padding: 0;
       z-index: 9999;
     `;
     document.body.appendChild(printContainer);
 
+    const amount = entry.finWt * entry.srp;
+
     // Build receipt HTML - Full A4 page
-    printContainer.innerHTML = `
-      <div style="max-width:210mm;margin:0 auto;font-family:Arial,sans-serif;padding:12px;min-height:297mm;display:flex;flex-direction:column;justify-content:space-between;">
-        <!-- Header Section -->
-        <div>
-          <!-- PDF Header -->
-          <div style="width:100%;text-align:center;margin:0;padding:4px 0;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:12px;font-weight:bold;color:#a84b20;">
-              <span>॥ श्री गणेश प्रसन्न ॥</span>
-              <span>॥ श्री साई प्रसन्न ॥</span>
-            </div>
-            <div style="margin:2px 0 0 0;padding:0;font-size:24px;font-weight:bold;color:#c43d5c;line-height:1.2;">
-              मातोश्री चेन फॅक्टरी
-            </div>
-            <div style="margin:2px 0 0 0;padding:0;font-size:11px;font-weight:bold;color:#8b451f;line-height:1.3;">
-              आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
-            </div>
-            <div style="margin:2px 0 0 0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;line-height:1.3;">
-              प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
-            </div>
-            <div style="border-bottom:2px solid #c43d5c;margin:4px 0 6px 0;"></div>
-          </div>
-
-          <!-- Title -->
-          <h2 style="text-align:center;margin:6px 0 10px 0;font-size:20px;color:#000;padding:0;font-weight:bold;letter-spacing:2px;">TAX INVOICE</h2>
-
-          <!-- Client Info and Receipt Info - Two Columns -->
-          <div style="display:flex;justify-content:space-between;align-items:stretch;margin:8px 0 12px 0;gap:12px;">
-            <!-- Left - Client Info -->
-            <div style="border:1px solid #333;padding:10px 12px;flex:1;border-radius:4px;">
-              <h4 style="font-size:11px;font-weight:bold;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;border-bottom:1px solid #ddd;padding-bottom:4px;">Client Details</h4>
-              <div style="font-size:13px;line-height:1.8;">
-                <div><strong>Name:</strong> ${entry.clientName}</div>
-                <div><strong>Phone:</strong> ${entry.phoneNumber}</div>
-              </div>
-            </div>
-
-            <!-- Right - Receipt Info -->
-            <div style="border:1px solid #333;padding:10px 12px;flex:1;border-radius:4px;">
-              <h4 style="font-size:11px;font-weight:bold;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;border-bottom:1px solid #ddd;padding-bottom:4px;">Receipt Details</h4>
-              <div style="font-size:13px;line-height:1.8;">
-                <div><strong>Receipt No:</strong> <span style="color:#785600;font-weight:bold;">${entry.billNo}</span></div>
-                <div><strong>Date:</strong> ${entry.dateTime}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Table -->
-          <table style="width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;">
-            <thead>
-              <tr style="background:#785600;color:white;font-weight:600;">
-                <th style="border:1px solid #785600;padding:6px 8px;text-align:center;font-size:11px;">Sr</th>
-                <th style="border:1px solid #785600;padding:6px 8px;text-align:left;font-size:11px;">Item</th>
-                <th style="border:1px solid #785600;padding:6px 8px;text-align:left;font-size:11px;">Size</th>
-                <th style="border:1px solid #785600;padding:6px 8px;text-align:right;font-size:11px;">Fin Wt (G)</th>
-                <th style="border:1px solid #785600;padding:6px 8px;text-align:right;font-size:11px;">SRP (G)</th>
-                <th style="border:1px solid #785600;padding:6px 8px;text-align:right;font-size:11px;">Amount (G)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="border:1px solid #000;padding:6px 8px;text-align:center;">1</td>
-                <td style="border:1px solid #000;padding:6px 8px;">${entry.item}</td>
-                <td style="border:1px solid #000;padding:6px 8px;">${entry.size}</td>
-                <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;font-weight:500;">${formatNumberWithDecimals(entry.finWt)}</td>
-                <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;font-weight:500;">${formatNumberWithDecimals(entry.srp)}</td>
-                <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;font-weight:bold;font-size:14px;">${formatNumberWithDecimals(entry.finWt * entry.srp)}</td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr style="background:#f4f4f2;font-weight:bold;">
-                <td colspan="5" style="border:1px solid #000;padding:6px 8px;text-align:right;font-size:14px;">Total Amount</td>
-                <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;font-size:14px;color:#785600;">${formatNumberWithDecimals(entry.finWt * entry.srp)}</td>
-              </tr>
-            </tfoot>
-          </table>
+   printContainer.innerHTML = `
+  <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:10mm 8mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+    <!-- Header Section -->
+    <div>
+      <!-- PDF Header -->
+      <div style="width:100%;text-align:center;margin:0;padding:2px 0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
+          <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री गणेश प्रसन्न ॥</span>
+          <span style="font-size:22px;font-weight:bold;color:#c43d5c;">  मातोश्री चेन फॅक्टरी, मिरज </span>
+          <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री साई प्रसन्न ॥</span>
         </div>
-
-        <!-- Footer Section - Pushed to bottom -->
-        <div>
-          <div style="margin-top:12px;padding-top:8px;border-top:2px solid #785600;text-align:center;">
-            <p style="font-size:11px;color:#555;margin:2px 0;">This is a system-generated receipt</p>
-            <div style="display:flex;justify-content:center;gap:12px;font-size:10px;color:#888;margin-top:2px;">
-              <span>Powered by Matoshree Gold</span>
-              <span>|</span>
-              <span>Generated: ${new Date().toLocaleString()}</span>
-            </div>
-          </div>
+        <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.3;">
+          आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
         </div>
+        <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.3;">
+          प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
+        </div>
+        <div style="border-bottom:2px solid #c43d5c;margin:3px 0 5px 0;"></div>
       </div>
-    `;
+
+      <!-- Title -->
+      <h2 style="text-align:center;margin:4px 0 8px 0;font-size:18px;color:#000;padding:0;font-weight:bold;letter-spacing:2px;">INVOICE</h2>
+
+      <!-- Client Info and Receipt Info - Two Columns -->
+      <!-- Client Info and Receipt Info -->
+<div style="
+  display:flex;
+  justify-content:space-between;
+  align-items:stretch;
+  margin:6px 0 10px 0;
+  gap:10px;
+">
+
+  <!-- Left - Client Details -->
+  <div style="
+    flex:1;
+    border:1px solid #d6c08a;
+    border-radius:8px;
+    overflow:hidden;
+    background:#fffdf7;
+    box-shadow:0 1px 4px rgba(0,0,0,0.08);
+  ">
+
+    <!-- Header -->
+    <div style="
+      background:#785600;
+      color:#fff;
+      padding:7px 10px;
+      font-size:10px;
+      font-weight:bold;
+      text-transform:uppercase;
+      letter-spacing:0.8px;
+    ">
+      Client Details
+    </div>
+
+    <!-- Client Information -->
+    <div style="
+      padding:9px 11px;
+      font-size:11px;
+      line-height:1.8;
+    ">
+
+      <!-- Client Name -->
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        padding-bottom:5px;
+        margin-bottom:5px;
+        border-bottom:1px dashed #d9d9d9;
+      ">
+        <span style="
+          color:#666;
+          font-weight:bold;
+        ">
+          Name
+        </span>
+
+        <span style="
+          color:#222;
+          font-weight:bold;
+          text-align:right;
+        ">
+          ${entry.clientName}
+        </span>
+      </div>
+
+      <!-- Phone -->
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+      ">
+        <span style="
+          color:#666;
+          font-weight:bold;
+        ">
+          Phone
+        </span>
+
+        <span style="
+          color:#222;
+          font-weight:500;
+        ">
+          ${entry.phoneNumber}
+        </span>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- Right - Receipt Details -->
+  <div style="
+    flex:1;
+    border:1px solid #d6c08a;
+    border-radius:8px;
+    overflow:hidden;
+    background:#fffdf7;
+    box-shadow:0 1px 4px rgba(0,0,0,0.08);
+  ">
+
+    <!-- Header -->
+    <div style="
+      background:#785600;
+      color:#fff;
+      padding:7px 10px;
+      font-size:10px;
+      font-weight:bold;
+      text-transform:uppercase;
+      letter-spacing:0.8px;
+    ">
+      Receipt Details
+    </div>
+
+    <!-- Receipt Information -->
+    <div style="
+      padding:9px 11px;
+      font-size:11px;
+      line-height:1.8;
+    ">
+
+      <!-- Receipt No -->
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        padding-bottom:5px;
+        margin-bottom:5px;
+        border-bottom:1px dashed #d9d9d9;
+      ">
+        <span style="
+          color:#666;
+          font-weight:bold;
+        ">
+          Receipt No
+        </span>
+
+        <span style="
+          color:#785600;
+          font-weight:bold;
+          font-size:12px;
+        ">
+          ${entry.billNo}
+        </span>
+      </div>
+
+      <!-- Date -->
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        padding-bottom:5px;
+        margin-bottom:5px;
+        border-bottom:1px dashed #d9d9d9;
+      ">
+        <span style="
+          color:#666;
+          font-weight:bold;
+        ">
+          Date
+        </span>
+
+        <span style="
+          color:#222;
+          font-weight:500;
+        ">
+          ${entry.dateTime}
+        </span>
+      </div>
+
+      <!-- Status -->
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+      ">
+        <span style="
+          color:#666;
+          font-weight:bold;
+        ">
+          Status
+        </span>
+
+        <span style="
+          display:inline-block;
+          padding:3px 10px;
+          border-radius:12px;
+          font-size:9px;
+          font-weight:bold;
+          color:#fff;
+          background:${entry.type === 'BILL' ? '#16a34a' : '#f59e0b'};
+        ">
+          ${entry.type}
+        </span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+      <!-- Table -->
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin:6px 0;">
+        <thead>
+          <tr style="background:#785600;color:white;font-weight:600;">
+            <th style="border:1px solid #785600;padding:5px 6px;text-align:center;font-size:10px;">Sr</th>
+            <th style="border:1px solid #785600;padding:5px 6px;text-align:left;font-size:10px;">Item</th>
+            <th style="border:1px solid #785600;padding:5px 6px;text-align:left;font-size:10px;">Size</th>
+            <th style="border:1px solid #785600;padding:5px 6px;text-align:right;font-size:10px;">Fin Wt (G)</th>
+            <th style="border:1px solid #785600;padding:5px 6px;text-align:right;font-size:10px;">Gross Wt (W)</th>
+            <th style="border:1px solid #785600;padding:5px 6px;text-align:right;font-size:10px;">SRP (₹)</th>
+            <th style="border:1px solid #785600;padding:5px 6px;text-align:right;font-size:10px;">Pending (G)</th>
+            <th style="border:1px solid #785600;padding:5px 6px;text-align:right;font-size:10px;">Amount (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border:1px solid #000;padding:5px 6px;text-align:center;">1</td>
+            <td style="border:1px solid #000;padding:5px 6px;">${entry.item}</td>
+            <td style="border:1px solid #000;padding:5px 6px;">${entry.size}</td>
+            <td style="border:1px solid #000;padding:5px 6px;text-align:right;font-family:monospace;font-weight:500;">${formatNumberWith2Decimals(entry.finWt)}</td>
+            <td style="border:1px solid #000;padding:5px 6px;text-align:right;font-family:monospace;font-weight:500;">${formatNumberWith2Decimals(entry.grossWeight)}</td>
+            <td style="border:1px solid #000;padding:5px 6px;text-align:right;font-family:monospace;font-weight:500;">${formatNumberWith2Decimals(entry.srp)}</td>
+            <td style="border:1px solid #000;padding:5px 6px;text-align:right;font-family:monospace;font-weight:500;">${formatNumberWith2Decimals(entry.pending)}</td>
+            <td style="border:1px solid #000;padding:5px 6px;text-align:right;font-family:monospace;font-weight:bold;font-size:13px;">${formatNumberWith2Decimals(amount)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Payment Summary -->
+      
+
+
+      <!-- Footer Section -->
+      <div style="text-align:right;">
+  Contact For Support 9511640551
+</div>
+  </div>
+`;
 
     // Add print styles
     const style = document.createElement('style');
     style.textContent = `
       @page {
         size: A4 portrait;
-        margin: 5mm;
+        margin: 0;
       }
       @media print {
+        html, body {
+          margin: 0;
+          padding: 0;
+          width: 210mm;
+          height: 297mm;
+        }
         body * {
           visibility: hidden;
         }
@@ -337,14 +530,21 @@ const Billing: React.FC = () => {
           position: fixed !important;
           left: 0 !important;
           top: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
+          width: 210mm !important;
+          height: 297mm !important;
           background: white !important;
-          padding: 8px !important;
-          overflow: auto !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          overflow: hidden !important;
           z-index: 9999 !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
+        }
+        #print-container > div {
+          width: 210mm !important;
+          min-height: 297mm !important;
+          padding: 10mm 8mm !important;
+          box-sizing: border-box !important;
         }
         #print-container table {
           width: 100% !important;
@@ -364,6 +564,11 @@ const Billing: React.FC = () => {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
+        #print-container tfoot tr {
+          background: #f4f4f2 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -383,195 +588,220 @@ const Billing: React.FC = () => {
       }, 1000);
     }, 500);
   };
+ // Print Table Report - Full A4 portrait with totals
+const handlePrintTable = () => {
+  if (!filteredEntries || filteredEntries.length === 0) {
+    toast.error('No records available to print');
+    return;
+  }
 
-  // Print Table Report - Full A4 landscape
-  const handlePrintTable = () => {
-    if (!filteredEntries || filteredEntries.length === 0) {
-      toast.error('No records available to print');
-      return;
-    }
+  // Create a hidden div for printing
+  const printContainer = document.createElement('div');
+  printContainer.id = 'print-container-table';
+  printContainer.style.cssText = `
+    position: fixed;
+    left: -9999px;
+    top: 0;
+    width: 210mm;
+    background: white;
+    padding: 0;
+    z-index: 9999;
+  `;
+  document.body.appendChild(printContainer);
 
-    // Create a hidden div for printing
-    const printContainer = document.createElement('div');
-    printContainer.id = 'print-container-table';
-    printContainer.style.cssText = `
-      position: fixed;
-      left: -9999px;
-      top: 0;
-      width: 100%;
-      background: white;
-      padding: 4px;
-      z-index: 9999;
-    `;
-    document.body.appendChild(printContainer);
+  // Build the table rows - Status column removed
+  const rows = filteredEntries
+    .map((entry, index) => {
+      return `
+        <tr>
+          <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:7px;color:#000;">${index + 1}</td>
+          <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:6.5px;color:#000;white-space:nowrap;">${entry.dateTime}</td>
+          <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:7px;color:#000;font-weight:bold;">${entry.billNo}</td>
+          <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:7px;color:#000;">${entry.clientName}</td>
+          <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:7px;color:#000;">${entry.phoneNumber}</td>
+          <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:7px;color:#000;">${entry.item}</td>
+          <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:7px;color:#000;">${entry.size}</td>
+          <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:7px;color:#000;">${entry.purity}</td>
+          <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:7px;color:#000;">${formatNumberWithDecimals(entry.finWt)}</td>
+          <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:7px;color:#000;">${formatNumberWithDecimals(entry.srp)}</td>
+          <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:7px;color:#000;">${formatNumberWithDecimals(entry.receive)}</td>
+          <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:7px;color:#000;">${formatNumberWithDecimals(entry.pending)}</td>
+        </tr>
+      `;
+    })
+    .join('');
 
-    // Build the table rows
-    const rows = filteredEntries
-      .map((entry, index) => {
-        return `
-          <tr>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${index + 1}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:9px;color:#000;white-space:nowrap;">${entry.dateTime}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;font-weight:bold;">${entry.billNo}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${entry.clientName}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${entry.phoneNumber}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${entry.item}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${entry.size}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${entry.purity}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(entry.finWt)}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(entry.srp)}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(entry.receive)}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(entry.pending)}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:9px;color:#000;">
-              <span style="background:${entry.type === 'BILL' ? '#22c55e' : '#f59e0b'};color:white;padding:1px 4px;border-radius:3px;font-size:8px;font-weight:bold;">
-                ${entry.type}
-              </span>
-            </td>
-          </tr>
-        `;
-      })
-      .join('');
+  // Set the content with Date at the top
+  printContainer.innerHTML = `
+    <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+      <!-- Header Section -->
+      <div>
+        <!-- Date Range at the very top -->
+        ${fromDate.length > 0 && toDate.length > 0 ? `
+          <div style="text-align:center;font-size:9px;color:#333;margin:0 0 3px 0;padding:2px;background:#f5f5f5;border-radius:3px;font-weight:bold;">
+            📅 ${new Date(fromDate[0]).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })} 
+            to 
+            ${new Date(toDate[0]).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+          </div>
+        ` : ''}
 
-    // Set the content with PDF Header
-    printContainer.innerHTML = `
-      <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
         <!-- PDF Header -->
         <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:9px;font-weight:bold;color:#a84b20;">
             <span>॥ श्री गणेश प्रसन्न ॥</span>
-            <span>॥ श्री साई प्रसन्न ॥</span>
+            <span style="font-size:14px;color:#c43d5c;">मातोश्री चेन फॅक्टरी, मिरज</span>
+            <span>॥ श्री गणेश प्रसन्न ॥</span>
           </div>
-          <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
-            मातोश्री चेन फॅक्टरी
-          </div>
-          <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
+          <div style="margin:1px 0 0 0;padding:0;font-size:8px;font-weight:bold;color:#8b451f;line-height:1.2;">
             आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
           </div>
-          <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
-            प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+          <div style="margin:1px 0 0 0;padding:0;font-size:8px;font-weight:bold;color:#a84b20;line-height:1.2;">
+            प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
           </div>
           <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
         </div>
 
         <!-- Title -->
-        <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Billing Report</h2>
-        ${fromDate.length > 0 && toDate.length > 0 ? `
-          <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
-            Date Range: ${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()}
-          </p>
-        ` : ''}
+      <h2 style="
+  text-align:center;
+  margin:2px 0;
+  font-size:13px;
+  color:#000;
+  padding:0;
+  font-weight:bold;
+">
+  Billing Report
+</h2>
 
-        <!-- Table -->
-        <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
+<h2 style="
+  text-align:center;
+  margin:2px 0 5px 0;
+  font-size:10px;
+  color:#000;
+  font-weight:bold;
+">
+  From: ${new Date(fromDate[0]).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })}
+  &nbsp;&nbsp; To: ${new Date(toDate[0]).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })}
+</h2>
+
+<!-- Table - Status column removed -->  <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
           <thead>
             <tr style="background:#785600;color:white;font-weight:600;">
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Sr</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Date & Time</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Bill No</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Client</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Phone</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Item</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Size</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Purity %</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Fin Wt</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">SRP</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Receive</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Pending</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Status</th>
+              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Sr</th>
+              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Date & Time</th>
+              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Bill No</th>
+              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Client</th>
+              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Phone</th>
+              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Item</th>
+              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Size</th>
+              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Purity %</th>
+              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Fin Wt</th>
+              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">SRP</th>
+              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Receive</th>
+              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Pending</th>
             </tr>
           </thead>
           <tbody>
             ${rows}
           </tbody>
-          <tfoot>
-            <tr style="background:#f4f4f2;font-weight:bold;">
-              <td colspan="8" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">Total</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(totalFinWt)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(totalSRP)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(totalReceive)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(totalPending)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${filteredEntries.length}</td>
-            </tr>
-          </tfoot>
         </table>
-
-        <!-- Footer -->
-        <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
-          <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
-          <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
-            <span>Powered by Matoshree Gold</span>
-            <span>|</span>
-            <span>${new Date().toLocaleString()}</span>
-          </div>
-        </div>
       </div>
-    `;
 
-    // Add print styles
-    const style = document.createElement('style');
-    style.textContent = `
-      @page {
-        size: A4 landscape;
-        margin: 3mm;
-      }
-      @media print {
-        body * {
-          visibility: hidden;
-        }
-        #print-container-table, #print-container-table * {
-          visibility: visible;
-        }
-        #print-container-table {
-          position: fixed !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-          background: white !important;
-          padding: 4px !important;
-          overflow: auto !important;
-          z-index: 9999 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        #print-container-table table {
-          width: 100% !important;
-        }
-        #print-container-table tr {
-          page-break-inside: avoid !important;
-        }
-        #print-container-table thead tr {
-          background: #785600 !important;
-          color: white !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        #print-container-table thead tr th {
-          background: #785600 !important;
-          color: white !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
-    // Trigger print
-    setTimeout(() => {
-      window.print();
+      <!-- Footer -->
       
-      // Clean up after print
-      setTimeout(() => {
-        if (document.body.contains(printContainer)) {
-          document.body.removeChild(printContainer);
-        }
-        if (document.head.contains(style)) {
-          document.head.removeChild(style);
-        }
-      }, 1000);
-    }, 500);
-  };
+    </div>
+  `;
 
+  // Add print styles
+  const style = document.createElement('style');
+  style.textContent = `
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+    @media print {
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+        height: 297mm;
+      }
+      body * {
+        visibility: hidden;
+      }
+      #print-container-table, #print-container-table * {
+        visibility: visible;
+      }
+      #print-container-table {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 210mm !important;
+        height: 297mm !important;
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+        z-index: 9999 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      #print-container-table > div {
+        width: 210mm !important;
+        min-height: 297mm !important;
+        padding: 6mm 5mm !important;
+        box-sizing: border-box !important;
+      }
+      #print-container-table table {
+        width: 100% !important;
+      }
+      #print-container-table tr {
+        page-break-inside: avoid !important;
+      }
+      #print-container-table thead tr {
+        background: #785600 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      #print-container-table thead tr th {
+        background: #785600 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      #print-container-table tfoot tr {
+        background: #f4f4f2 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Trigger print
+  setTimeout(() => {
+    window.print();
+
+    // Clean up after print
+    setTimeout(() => {
+      if (document.body.contains(printContainer)) {
+        document.body.removeChild(printContainer);
+      }
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
+    }, 1000);
+  }, 500);
+};
   const handleRowClick = (entry: BillingEntry) => {
     navigate({ to: "/billiupdate/$id", params: { id: entry.id } });
   };
@@ -581,15 +811,6 @@ const Billing: React.FC = () => {
       setBillingEntries(prev => prev.filter(e => e.id !== entry.id));
       toast.success(`Bill ${entry.billNo} deleted successfully`);
     }
-  };
-
- 
-
-  // Format number with 3 decimals only if needed
-  const formatNumberWithDecimals = (value: number) => {
-    if (value === 0 || !value) return '0';
-    const str = value.toFixed(3);
-    return str.replace(/\.?0+$/, '');
   };
 
   const gettypeColor = (type: string) => {
@@ -866,6 +1087,7 @@ const Billing: React.FC = () => {
               dateFormat="d/m/Y"
               onDateChange={(dates) => setFromDate(dates)}
               className="w-28 sm:w-32"
+              defaultWeek={true}
             />
           </div>
 
