@@ -221,6 +221,7 @@ const Billing: React.FC = () => {
   const totalPending = filteredEntries.reduce((sum, item) => sum + item.pending, 0);
   const totalEntries = filteredEntries.length;
 
+
   // Format number with 3 decimals only if needed
   const formatNumberWithDecimals = (value: number) => {
     if (value === 0 || !value) return '0';
@@ -234,9 +235,8 @@ const Billing: React.FC = () => {
     return value.toFixed(2);
   };
 
-  // Print Receipt - Full A4 page with proper spacing
+  // Print Receipt - A4 half-page horizontal receipt (A5 landscape)
   const handlePrintReceipt = (entry: BillingEntry) => {
-    // Create a hidden div for printing
     const printContainer = document.createElement('div');
     printContainer.id = 'print-container';
     printContainer.style.cssText = `
@@ -244,358 +244,390 @@ const Billing: React.FC = () => {
       left: -9999px;
       top: 0;
       width: 210mm;
+      height: 140mm;
       background: white;
       padding: 0;
       z-index: 9999;
     `;
+
     document.body.appendChild(printContainer);
 
     const amount = entry.finWt * entry.srp;
 
-    // Build receipt HTML - Full A4 page
     printContainer.innerHTML = `
-  <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:10mm 8mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
-    <!-- Header Section -->
-    <div>
-      <!-- PDF Header -->
-      <div style="width:100%;text-align:center;margin:0;padding:2px 0;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
-          <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री गणेश प्रसन्न ॥</span>
-          <span style="font-size:22px;font-weight:bold;color:#c43d5c;">  मातोश्री चेन फॅक्टरी, मिरज </span>
-          <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री साई प्रसन्न ॥</span>
-        </div>
-        <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.3;">
-          आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
-        </div>
-        <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.3;">
-          प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
-        </div>
-        <div style="border-bottom:2px solid #c43d5c;margin:3px 0 5px 0;"></div>
-      </div>
+      <div style="
+        width:210mm;
+        height:135mm;
+        margin:0 auto;
+        background:#ffffff;
+        font-family:Arial,Helvetica,sans-serif;
+        padding:4mm 6mm;
+        box-sizing:border-box;
+        color:#111111;
+        overflow:hidden;
+      ">
 
-      <!-- Title -->
-      <h2 style="text-align:center;margin:4px 0 8px 0;font-size:18px;color:#000;padding:0;font-weight:bold;letter-spacing:2px;">INVOICE</h2>
+        <!-- HEADER -->
+        <div style="width:100%;text-align:center;">
+          <div style="
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            margin:0;
+            padding:0;
+          ">
+            <span style="
+              font-size:10px;
+              font-weight:bold;
+              color:#a84b20;
+              white-space:nowrap;
+            ">
+              ॥ श्री गणेश प्रसन्न ॥
+            </span>
 
-      <!-- Client Info and Receipt Info - Two Columns -->
-      <!-- Client Info and Receipt Info -->
+            <span style="
+              font-size:18px;
+              font-weight:bold;
+              color:#c43d5c;
+              line-height:1.1;
+              white-space:nowrap;
+            ">
+              मातोश्री चेन फॅक्टरी, मिरज
+            </span>
+
+            <span style="
+              font-size:10px;
+              font-weight:bold;
+              color:#a84b20;
+              white-space:nowrap;
+            ">
+              ॥ श्री साई प्रसन्न ॥
+            </span>
+          </div>
+
+          <div style="
+            margin:2px 0 0;
+            font-size:9px;
+            font-weight:bold;
+            color:#8b451f;
+            line-height:1.2;
+          ">
+            आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+          </div>
+
+          <div style="
+            margin:2px 0 0;
+            font-size:9px;
+            font-weight:bold;
+            color:#a84b20;
+            line-height:1.2;
+          ">
+            प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
+          </div>
+
+          <div style="
+            border-bottom:2px solid #c43d5c;
+            margin:2px 0 3px;
+          "></div>
+        </div>
+
+        <!-- RECEIPT TITLE -->
+        <div style="
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          margin:0 0 3px;
+        ">
+          <div style="width:25%;"></div>
+
+          <h2 style="
+            width:50%;
+            margin:0;
+            text-align:center;
+            font-size:15px;
+            font-weight:bold;
+            letter-spacing:2px;
+            color:#111111;
+          ">
+            RECEIPT
+          </h2>
+
+          <div style="
+            width:25%;
+            text-align:right;
+            font-size:9px;
+            font-weight:bold;
+            color:#444444;
+          ">
+            ${entry.type}
+          </div>
+        </div>
+
+        <!-- SIMPLE RECEIPT INFO -->
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          margin:0 0 4px;
+          padding:0 1px;
+          font-size:10px;
+          line-height:1.3;
+        ">
+          <div>
+            <span style="font-weight:bold;">Client:</span>
+            ${entry.clientName}
+            <span style="margin-left:14px;font-weight:bold;">Phone:</span>
+            ${entry.phoneNumber}
+          </div>
+
+          <div style="text-align:right;">
+            <span style="font-weight:bold;">Receipt:</span>
+            ${entry.billNo}
+            <span style="margin-left:12px;font-weight:bold;">Date:</span>
+            ${entry.dateTime}
+          </div>
+        </div>
+
+        <!-- ITEM TABLE -->
+        <table style="
+          width:100%;
+          border-collapse:collapse;
+          font-size:10px;
+          margin:0 0 3px;
+        ">
+          <thead>
+            <tr style="
+              background:#785600;
+              color:#ffffff;
+            ">
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:center;">Sr</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:left;">Item</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:left;">Size</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;">Purity %</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;">Fine Wt (G)</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;">Gross Wt (G)</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;">SRP (G)</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;">Receive (G)</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;">Pending (G)</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;">Amount</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td style="border:1px solid #222;padding:3px 4px;text-align:center;">1</td>
+              <td style="border:1px solid #222;padding:3px 4px;">${entry.item}</td>
+              <td style="border:1px solid #222;padding:3px 4px;">${entry.size}</td>
+              <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;">
+                ${formatNumberWithDecimals(entry.purity)}
+              </td>
+              <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-weight:bold;">
+                ${formatNumberWith2Decimals(entry.finWt)}
+              </td>
+              <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;">
+                ${formatNumberWith2Decimals(entry.grossWeight)}
+              </td>
+              <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;">
+                ${formatNumberWith2Decimals(entry.srp)}
+              </td>
+              <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;">
+                ${formatNumberWith2Decimals(entry.receive)}
+              </td>
+              <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;">
+                ${formatNumberWith2Decimals(entry.pending)}
+              </td>
+              <td style="
+                border:1px solid #222;
+                padding:4px 5px;
+                text-align:right;
+                font-family:monospace;
+                font-weight:bold;
+                font-size:11px;
+              ">
+                ₹${formatNumberWith2Decimals(amount)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- PAYMENT SUMMARY -->
+        <div style="
+          display:flex;
+          justify-content:flex-end;
+          margin-top:1px;
+        ">
+          <div style="
+            width:38%;
+            border:1px solid #d6c08a;
+            border-radius:5px;
+            background:#fffdf7;
+            overflow:hidden;
+          ">
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              padding:3px 7px;
+              border-bottom:1px dashed #dddddd;
+              font-size:10px;
+            ">
+              <span style="font-weight:bold;color:#666666;">Receive</span>
+              <span style="font-family:monospace;font-weight:bold;">
+                ${formatNumberWith2Decimals(entry.receive)} G
+              </span>
+            </div>
+
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              padding:3px 7px;
+              border-bottom:1px dashed #dddddd;
+              font-size:10px;
+            ">
+              <span style="font-weight:bold;color:#666666;">Pending</span>
+              <span style="font-family:monospace;font-weight:bold;">
+                ${formatNumberWith2Decimals(entry.pending)} G
+              </span>
+            </div>
+
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              padding:4px 7px;
+              background:#f4f0e5;
+              font-size:11px;
+            ">
+              <span style="font-weight:bold;">Total Amount</span>
+              <span style="font-family:monospace;font-weight:bold;">
+                ₹${formatNumberWith2Decimals(amount)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+       <!-- FOOTER -->
 <div style="
   display:flex;
   justify-content:space-between;
-  align-items:stretch;
-  margin:6px 0 10px 0;
-  gap:10px;
+  align-items:flex-end;
+  margin:4px 0 0;
+  padding:4px 0 0;
+  border-top:1px dashed #aaaaaa;
+  font-size:9px;
+  line-height:1;
+  color:#444444;
 ">
-
-  <!-- Left - Client Details -->
+  
   <div style="
-    flex:1;
-    border:1px solid #d6c08a;
-    border-radius:8px;
-    overflow:hidden;
-    background:#fffdf7;
-    box-shadow:0 1px 4px rgba(0,0,0,0.08);
+    margin:0;
+    padding:0;
   ">
-
-    <!-- Header -->
-    <div style="
-      background:#785600;
-      color:#fff;
-      padding:7px 10px;
-      font-size:10px;
-      font-weight:bold;
-      text-transform:uppercase;
-      letter-spacing:0.8px;
-    ">
-      Client Details
-    </div>
-
-    <!-- Client Information -->
-    <div style="
-      padding:9px 11px;
-      font-size:11px;
-      line-height:1.8;
-    ">
-
-      <!-- Client Name -->
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        padding-bottom:5px;
-        margin-bottom:5px;
-        border-bottom:1px dashed #d9d9d9;
-      ">
-        <span style="
-          color:#666;
-          font-weight:bold;
-        ">
-          Name
-        </span>
-
-        <span style="
-          color:#222;
-          font-weight:bold;
-          text-align:right;
-        ">
-          ${entry.clientName}
-        </span>
-      </div>
-
-      <!-- Phone -->
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-      ">
-        <span style="
-          color:#666;
-          font-weight:bold;
-        ">
-          Phone
-        </span>
-
-        <span style="
-          color:#222;
-          font-weight:500;
-        ">
-          ${entry.phoneNumber}
-        </span>
-      </div>
-
-    </div>
+    Contact For Support: 9511640351
   </div>
 
-
-  <!-- Right - Receipt Details -->
   <div style="
-    flex:1;
-    border:1px solid #d6c08a;
-    border-radius:8px;
-    overflow:hidden;
-    background:#fffdf7;
-    box-shadow:0 1px 4px rgba(0,0,0,0.08);
+    width:120px;
+    margin:0;
+    padding:0;
+    text-align:center;
   ">
-
-    <!-- Header -->
     <div style="
-      background:#785600;
-      color:#fff;
-      padding:7px 10px;
-      font-size:10px;
-      font-weight:bold;
-      text-transform:uppercase;
-      letter-spacing:0.8px;
+      border-top:1px solid #555555;
+      padding-top:2px;
+      margin:0;
     ">
-      Receipt Details
-    </div>
-
-    <!-- Receipt Information -->
-    <div style="
-      padding:9px 11px;
-      font-size:11px;
-      line-height:1.8;
-    ">
-
-      <!-- Receipt No -->
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        padding-bottom:5px;
-        margin-bottom:5px;
-        border-bottom:1px dashed #d9d9d9;
-      ">
-        <span style="
-          color:#666;
-          font-weight:bold;
-        ">
-          Receipt No
-        </span>
-
-        <span style="
-          color:#785600;
-          font-weight:bold;
-          font-size:12px;
-        ">
-          ${entry.billNo}
-        </span>
-      </div>
-
-      <!-- Date -->
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        padding-bottom:5px;
-        margin-bottom:5px;
-        border-bottom:1px dashed #d9d9d9;
-      ">
-        <span style="
-          color:#666;
-          font-weight:bold;
-        ">
-          Date
-        </span>
-
-        <span style="
-          color:#222;
-          font-weight:500;
-        ">
-          ${entry.dateTime}
-        </span>
-      </div>
-
-      <!-- Status -->
-      <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-      ">
-        <span style="
-          color:#666;
-          font-weight:bold;
-        ">
-          Status
-        </span>
-
-        <span style="
-          display:inline-block;
-          padding:3px 10px;
-          border-radius:12px;
-          font-size:9px;
-          font-weight:bold;
-          color:#fff;
-          background:${entry.type === 'BILL' ? '#16a34a' : '#f59e0b'};
-        ">
-          ${entry.type}
-        </span>
-      </div>
-
+      Authorized Signature
     </div>
   </div>
 
 </div>
-      <!-- Table -->
-      <table style="width:100%;border-collapse:collapse;font-size:12px;margin:6px 0;">
-        <thead>
-          <tr style="background:#785600;color:white;font-weight:600;">
-            <th style="border:1px solid #785600;padding:5px 6px;text-align:center;font-size:10px;">Sr</th>
-            <th style="border:1px solid #785600;padding:5px 6px;text-align:left;font-size:10px;">Item</th>
-            <th style="border:1px solid #785600;padding:5px 6px;text-align:left;font-size:10px;">Size</th>
-            <th style="border:1px solid #785600;padding:5px 6px;text-align:right;font-size:10px;">Fin Wt (G)</th>
-            <th style="border:1px solid #785600;padding:5px 6px;text-align:right;font-size:10px;">Gross Wt (W)</th>
-            <th style="border:1px solid #785600;padding:5px 6px;text-align:right;font-size:10px;">SRP (₹)</th>
-            <th style="border:1px solid #785600;padding:5px 6px;text-align:right;font-size:10px;">Pending (G)</th>
-            <th style="border:1px solid #785600;padding:5px 6px;text-align:right;font-size:10px;">Amount (₹)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="border:1px solid #000;padding:5px 6px;text-align:center;">1</td>
-            <td style="border:1px solid #000;padding:5px 6px;">${entry.item}</td>
-            <td style="border:1px solid #000;padding:5px 6px;">${entry.size}</td>
-            <td style="border:1px solid #000;padding:5px 6px;text-align:right;font-family:monospace;font-weight:500;">${formatNumberWith2Decimals(entry.finWt)}</td>
-            <td style="border:1px solid #000;padding:5px 6px;text-align:right;font-family:monospace;font-weight:500;">${formatNumberWith2Decimals(entry.grossWeight)}</td>
-            <td style="border:1px solid #000;padding:5px 6px;text-align:right;font-family:monospace;font-weight:500;">${formatNumberWith2Decimals(entry.srp)}</td>
-            <td style="border:1px solid #000;padding:5px 6px;text-align:right;font-family:monospace;font-weight:500;">${formatNumberWith2Decimals(entry.pending)}</td>
-            <td style="border:1px solid #000;padding:5px 6px;text-align:right;font-family:monospace;font-weight:bold;font-size:13px;">${formatNumberWith2Decimals(amount)}</td>
-          </tr>
-        </tbody>
-      </table>
 
-      <!-- Payment Summary -->
-      
+      </div>
+    `;
 
-
-      <!-- Footer Section -->
-      <div style="text-align:right;">
-  Contact For Support 9511640551
-</div>
-  </div>
-`;
-
-    // Add print styles
     const style = document.createElement('style');
+
     style.textContent = `
       @page {
-        size: A4 portrait;
+        size: A5 landscape;
         margin: 0;
       }
+
       @media print {
-        html, body {
-          margin: 0;
-          padding: 0;
-          width: 210mm;
-          height: 297mm;
+        html,
+        body {
+          width: 210mm !important;
+          height: 148mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+          background: #ffffff !important;
         }
+
         body * {
           visibility: hidden;
         }
-        #print-container, #print-container * {
+
+        #print-container,
+        #print-container * {
           visibility: visible;
         }
+
         #print-container {
           position: fixed !important;
           left: 0 !important;
           top: 0 !important;
           width: 210mm !important;
-          height: 297mm !important;
-          background: white !important;
-          padding: 0 !important;
+          height: 148mm !important;
           margin: 0 !important;
+          padding: 0 !important;
+          background: #ffffff !important;
           overflow: hidden !important;
-          z-index: 9999 !important;
+          z-index: 999999 !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
+
         #print-container > div {
           width: 210mm !important;
-          min-height: 297mm !important;
-          padding: 10mm 8mm !important;
+          height: 148mm !important;
+          min-height: 148mm !important;
+          max-height: 148mm !important;
           box-sizing: border-box !important;
+          overflow: hidden !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
+
         #print-container table {
           width: 100% !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
         }
+
         #print-container tr {
           page-break-inside: avoid !important;
-        }
-        #print-container thead tr {
-          background: #785600 !important;
-          color: white !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        #print-container thead tr th {
-          background: #785600 !important;
-          color: white !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        #print-container tfoot tr {
-          background: #f4f4f2 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
+          break-inside: avoid !important;
         }
       }
     `;
+
     document.head.appendChild(style);
 
-    // Trigger print
     setTimeout(() => {
       window.print();
 
-      // Clean up after print
       setTimeout(() => {
         if (document.body.contains(printContainer)) {
           document.body.removeChild(printContainer);
         }
+
         if (document.head.contains(style)) {
           document.head.removeChild(style);
         }
       }, 1000);
-    }, 500);
+    }, 300);
   };
+
   // Print Table Report - Full A4 portrait with totals
   const handlePrintTable = () => {
     if (!filteredEntries || filteredEntries.length === 0) {
