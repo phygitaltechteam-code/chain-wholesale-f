@@ -320,89 +320,191 @@ export default function StockReport() {
     },
   ];
 
-  // Print handler
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: 'Stock Report',
-    pageStyle: `
-      @page { 
-        size: A4 portrait; 
-        margin: 10mm; 
+  // Print handler - Full A4 with PDF Header
+  const handlePrint = () => {
+    if (!filteredData || filteredData.length === 0) {
+      return;
+    }
+
+    // Create a hidden div for printing
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    printContainer.style.cssText = `
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 210mm;
+      background: white;
+      padding: 0;
+      z-index: 9999;
+    `;
+    document.body.appendChild(printContainer);
+
+    // Build the table rows
+    const rows = filteredData
+      .map((item, index) => {
+        return `
+          <tr>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${index + 1}</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:7.5px;color:#000;white-space:nowrap;">${item.dateTime}</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${item.item}</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${item.size}</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${item.purity}</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">
+              <span style="color:${item.wt > 0 ? '#16a34a' : item.wt < 0 ? '#dc2626' : '#000'};font-weight:bold;">
+                ${item.remark}
+              </span>
+            </td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:${item.wt > 0 ? '#16a34a' : item.wt < 0 ? '#dc2626' : '#000'};">
+              ${item.wt > 0 ? '+' : ''}${formatNumber(item.wt)}
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    // Calculate total
+    const totalWt = filteredData.reduce((sum, item) => sum + item.wt, 0);
+
+    // Set the content with PDF Header
+    printContainer.innerHTML = `
+      <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+        <!-- Header Section -->
+        <div>
+          <!-- PDF Header - All in One Line -->
+          <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
+              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री गणेश प्रसन्न ॥</span>
+              <span style="font-size:20px;font-weight:bold;color:#c43d5c;">मातोश्री चेन फॅक्टरी, मिरज</span>
+              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री साई प्रसन्न ॥</span>
+            </div>
+            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#8b451f;line-height:1.2;">
+              आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+            </div>
+            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#a84b20;line-height:1.2;">
+              प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+            </div>
+            <div style="border-bottom:2px solid #c43d5c;margin:2px 0 4px 0;"></div>
+          </div>
+
+          <!-- Title and Date Range in one line -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
+            <div style="flex:1;"></div>
+            <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+              Stock Report
+            </h2>
+            <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
+              From: ${formatDateForDisplay(fromDate) || 'Start'} 
+              &nbsp;&nbsp; To: ${formatDateForDisplay(toDate) || 'End'}
+            </div>
+          </div>
+
+          <!-- Table -->
+          <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
+            <thead>
+              <tr style="background:#785600;color:white;font-weight:600;">
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Sr</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Date & Time</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Item</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Size</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Purity</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Remark</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">WT (G)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+   
+          </table>
+        </div>
+
+     
+      </div>
+    `;
+
+    // Add print styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @page {
+        size: A4 portrait;
+        margin: 0;
       }
       @media print {
-        body { 
-          -webkit-print-color-adjust: exact; 
-          print-color-adjust: exact; 
+        html, body {
+          margin: 0;
+          padding: 0;
+          width: 210mm;
+          height: 297mm;
         }
-        #report-print { 
-          page-break-inside: avoid; 
-          break-inside: avoid; 
+        body * {
+          visibility: hidden;
         }
-        .no-print { 
-          display: none !important; 
+        #print-container, #print-container * {
+          visibility: visible;
+        }
+        #print-container {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 210mm !important;
+          height: 297mm !important;
+          background: white !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          overflow: hidden !important;
+          z-index: 9999 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container > div {
+          width: 210mm !important;
+          min-height: 297mm !important;
+          padding: 6mm 5mm !important;
+          box-sizing: border-box !important;
+        }
+        #print-container table {
+          width: 100% !important;
+        }
+        #print-container tr {
+          page-break-inside: avoid !important;
+        }
+        #print-container thead tr {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container thead tr th {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container tfoot tr {
+          background: #f4f4f2 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
       }
-    `,
-  });
+    `;
+    document.head.appendChild(style);
 
-  // Print Preview Component
-  const PrintPreview = () => (
-    <div
-      className="bg-white p-6 max-w-full mx-auto font-sans"
-      ref={printRef}
-      id="report-print"
-      style={{ width: '297mm', minHeight: '210mm' }}
-    >
-      <PDFHeader />
-      <div className="border-b-2 border-[#c43d5c] my-3" />
+    // Trigger print
+    setTimeout(() => {
+      window.print();
 
-      <div className="mb-4 text-center">
-        <h2 className="text-lg font-bold text-gray-800">Stock Report</h2>
-        <p className="text-xs text-gray-500">Stock ID: {d}</p>
-        <p className="text-xs text-gray-500">Generated: {new Date().toLocaleString()}</p>
-        {(fromDate || toDate) && (
-          <p className="text-xs text-gray-500">
-            Date Range: {formatDateForDisplay(fromDate) || 'Start'} to {formatDateForDisplay(toDate) || 'End'}
-          </p>
-        )}
-      </div>
-
-      <table className="w-full text-xs border-collapse">
-        <thead>
-          <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-white">
-            <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Sr</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Date & Time</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Item</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Size</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Purity</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Remark</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">WT (G)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredData.map((entry, index) => (
-            <tr key={entry.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-              <td className="border border-gray-300 px-2 py-1.5 text-center">{entry.srNo}</td>
-              <td className="border border-gray-300 px-2 py-1.5">{entry.dateTime}</td>
-              <td className="border border-gray-300 px-2 py-1.5">{entry.item}</td>
-              <td className="border border-gray-300 px-2 py-1.5">{entry.size}</td>
-              <td className="border border-gray-300 px-2 py-1.5">{entry.purity}</td>
-              <td className="border border-gray-300 px-2 py-1.5">
-                <span className={`px-2 py-0.5 rounded-full text-[9px] font-medium ${getRemarkColor(entry.remark)}`}>
-                  {entry.remark}
-                </span>
-              </td>
-              <td className={`border border-gray-300 px-2 py-1.5 text-right font-mono ${entry.wt > 0 ? 'text-green-600' : entry.wt < 0 ? 'text-red-600' : ''}`}>
-                {entry.wt > 0 ? '+' : ''}{formatNumber(entry.wt)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-
-      </table>
-
-    </div>
-  );
+      // Clean up after print
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
+    }, 500);
+  };
 
   // Show loading state
   if (isLoading || loading) {
@@ -515,7 +617,7 @@ export default function StockReport() {
 
             {/* Print Button */}
             <button
-              onClick={() => handlePrint()}
+              onClick={handlePrint}
               className="flex items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white hover:bg-[#5d4200] transition-colors whitespace-nowrap"
             >
               <Printer className="h-4 w-4" />
@@ -563,11 +665,6 @@ export default function StockReport() {
             srNoLabel="Sr No."
           />
         </div>
-      </div>
-
-      {/* Hidden Print Component */}
-      <div className="hidden">
-        <PrintPreview />
       </div>
     </div>
   );

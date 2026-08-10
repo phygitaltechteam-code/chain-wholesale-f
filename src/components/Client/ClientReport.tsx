@@ -354,203 +354,180 @@ export default function ClientReport() {
     };
 
     // Print handler
-    const handlePrint = () => {
-        if (!filteredData || filteredData.length === 0) {
-            return;
+const handlePrint = () => {
+    if (!filteredData || filteredData.length === 0) {
+        return;
+    }
+
+    // Create a hidden div for printing
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    printContainer.style.cssText = `
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        width: 100%;
+        background: white;
+        padding: 4px;
+        z-index: 9999;
+    `;
+    document.body.appendChild(printContainer);
+
+    // Group data for print - maintain the same grouping
+    const printGroupedData: { [key: string]: ClientReportEntry[] } = {};
+    filteredData.forEach(entry => {
+        if (!printGroupedData[entry.groupId]) {
+            printGroupedData[entry.groupId] = [];
         }
+        printGroupedData[entry.groupId].push(entry);
+    });
 
-        // Create a hidden div for printing
-        const printContainer = document.createElement('div');
-        printContainer.id = 'print-container';
-        printContainer.style.cssText = `
-            position: fixed;
-            left: -9999px;
-            top: 0;
-            width: 100%;
-            background: white;
-            padding: 4px;
-            z-index: 9999;
-        `;
-        document.body.appendChild(printContainer);
+    // Build the table rows without separator rows
+    let rows = '';
 
-        // Group data for print - maintain the same grouping
-        const printGroupedData: { [key: string]: ClientReportEntry[] } = {};
-        filteredData.forEach(entry => {
-            if (!printGroupedData[entry.groupId]) {
-                printGroupedData[entry.groupId] = [];
-            }
-            printGroupedData[entry.groupId].push(entry);
+    Object.keys(printGroupedData).forEach((groupId) => {
+        const entries = printGroupedData[groupId];
+
+        entries.forEach((entry, index) => {
+            rows += `
+                <tr>
+                    ${entry.isFirstInGroup ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;vertical-align:middle;" rowspan="${entry.groupRowSpan}">${entry.srNo}</td>` : ''}
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+                        ${entry.dateTime || ' '}
+                    </td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:${entry.billNo && entry.billNo !== 'N/A' && entry.billNo !== '' ? 'bold' : 'normal'};">
+                        ${entry.billNo || ' '}
+                    </td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
+                        ${entry.item} (${entry.size})
+                    </td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
+                        ${entry.purity !== 'N/A' ? `${entry.purity}%` : 'N/A'}
+                    </td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${entry.remark || 'N/A'}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:${entry.wt > 0 ? '#16a34a' : entry.wt < 0 ? '#dc2626' : '#000'};">
+                        ${entry.wt > 0 ? '+' : ''}${formatNumber(entry.wt)}
+                    </td>
+                </tr>
+            `;
         });
+    });
 
-        // Build the table rows with proper grouping
-        let rows = '';
-        let isFirstGroup = true;
-
-        Object.keys(printGroupedData).forEach((groupId) => {
-            const entries = printGroupedData[groupId];
-
-            entries.forEach((entry, index) => {
-                // Show separator between groups
-                if (!isFirstGroup && index === 0) {
-                    rows += `
-                        <tr>
-                            <td colspan="7" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;background:#f0f0f0;">
-                                ───────────────────────────────────────
-                            </td>
-                        </tr>
-                    `;
-                }
-
-                rows += `
-                    <tr>
-                        ${entry.isFirstInGroup ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;vertical-align:middle;" rowspan="${entry.groupRowSpan}">${entry.srNo}</td>` : ''}
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
-                            ${entry.dateTime || ' '}
-                        </td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:${entry.billNo && entry.billNo !== 'N/A' && entry.billNo !== '' ? 'bold' : 'normal'};">
-                            ${entry.billNo || ' '}
-                        </td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-                            ${entry.item} (${entry.size})
-                        </td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-                            ${entry.purity !== 'N/A' ? `${entry.purity}%` : 'N/A'}
-                        </td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${entry.remark || 'N/A'}</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:${entry.wt > 0 ? '#16a34a' : entry.wt < 0 ? '#dc2626' : '#000'};">
-                            ${entry.wt > 0 ? '+' : ''}${formatNumber(entry.wt)}
-                        </td>
-                    </tr>
-                `;
-            });
-
-            isFirstGroup = false;
-        });
-
-        // Set the content with PDF Header
-        printContainer.innerHTML = `
-            <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
-                <!-- PDF Header -->
-                <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
-                        <span>॥ श्री गणेश प्रसन्न ॥</span>
-                        <span>॥ श्री साई प्रसन्न ॥</span>
-                    </div>
-                    <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
-                        मातोश्री चेन फॅक्टरी
-                    </div>
-                    <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
-                        आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
-                    </div>
-                    <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
-                        प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
-                    </div>
-                    <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
+    // Set the content with PDF Header
+    printContainer.innerHTML = `
+        <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
+            <!-- PDF Header -->
+            <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
+                    <span>॥ श्री गणेश प्रसन्न ॥</span>
+                    <span>॥ श्री साई प्रसन्न ॥</span>
                 </div>
+                <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
+                    मातोश्री चेन फॅक्टरी
+                </div>
+                <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
+                    आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+                </div>
+                <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
+                    प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+                </div>
+                <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
+            </div>
 
-                <!-- Title -->
-                <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Client Report</h2>
-                <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
-                    Client ID: ${id} | Date Range: ${formatIndianDate(fromDate)} - ${formatIndianDate(toDate)}
-                </p>
-
-                <!-- Table -->
-                <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
-                    <thead>
-                        <tr style="background:#785600;color:white;font-weight:600;">
-                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
-                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
-                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Bill No</th>
-                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item (Size)</th>
-                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity</th>
-                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Remark</th>
-                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">WT (G)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                    
-                </table>
-
-                <!-- Footer -->
-                <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
-                    <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
-                    <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
-                        <span>Powered by Matoshree Gold</span>
-                        <span>|</span>
-                        <span>${new Date().toLocaleString()}</span>
-                    </div>
+            <!-- Title and Date Range in one line -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
+                <div style="flex:1;"></div>
+                <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+                    Client Report
+                </h2>
+                <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
+                    From: ${formatIndianDate(fromDate)} &nbsp; To: ${formatIndianDate(toDate)}
                 </div>
             </div>
-        `;
 
-        // Add print styles
-        const style = document.createElement('style');
-        style.textContent = `
-            @page {
-                margin: 3mm;
-            }
-            @media print {
-                body * {
-                    visibility: hidden;
-                }
-                #print-container, #print-container * {
-                    visibility: visible;
-                }
-                #print-container {
-                    position: fixed !important;
-                    left: 0 !important;
-                    top: 0 !important;
-                    width: 100% !important;
-                    height: 100% !important;
-                    background: white !important;
-                    padding: 4px !important;
-                    overflow: auto !important;
-                    z-index: 9999 !important;
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-                #print-container table {
-                    width: 100% !important;
-                }
-                #print-container tr {
-                    page-break-inside: avoid !important;
-                }
-                #print-container thead tr {
-                    background: #785600 !important;
-                    color: white !important;
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-                #print-container thead tr th {
-                    background: #785600 !important;
-                    color: white !important;
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-                #print-container .group-separator {
-                    background: #f0f0f0 !important;
-                }
-            }
-        `;
-        document.head.appendChild(style);
+            <!-- Table -->
+            <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
+                <thead>
+                    <tr style="background:#785600;color:white;font-weight:600;">
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Bill No</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item (Size)</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Remark</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">WT (G)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                </tbody>
+            </table>
+        </div>
+    `;
 
-        // Trigger print
+    // Add print styles
+    const style = document.createElement('style');
+    style.textContent = `
+        @page {
+            margin: 3mm;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-container, #print-container * {
+                visibility: visible;
+            }
+            #print-container {
+                position: fixed !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                background: white !important;
+                padding: 4px !important;
+                overflow: auto !important;
+                z-index: 9999 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            #print-container table {
+                width: 100% !important;
+            }
+            #print-container tr {
+                page-break-inside: avoid !important;
+            }
+            #print-container thead tr {
+                background: #785600 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            #print-container thead tr th {
+                background: #785600 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Trigger print
+    setTimeout(() => {
+        window.print();
+
+        // Clean up after print
         setTimeout(() => {
-            window.print();
-
-            // Clean up after print
-            setTimeout(() => {
-                if (document.body.contains(printContainer)) {
-                    document.body.removeChild(printContainer);
-                }
-                if (document.head.contains(style)) {
-                    document.head.removeChild(style);
-                }
-            }, 1000);
-        }, 500);
-    };
+            if (document.body.contains(printContainer)) {
+                document.body.removeChild(printContainer);
+            }
+            if (document.head.contains(style)) {
+                document.head.removeChild(style);
+            }
+        }, 1000);
+    }, 500);
+};
 
     // Show loading state
     if (isLoading || loading) {
