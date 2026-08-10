@@ -640,151 +640,142 @@ const Billing: React.FC = () => {
       .join('');
 
     // Set the content with Date at the top
-    printContainer.innerHTML = `
-    <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
-      <!-- Header Section -->
-      <div>
-        
-        <!-- PDF Header -->
-        <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:9px;font-weight:bold;color:#a84b20;">
-            <span>॥ श्री गणेश प्रसन्न ॥</span>
-            <span style="font-size:14px;color:#c43d5c;">मातोश्री चेन फॅक्टरी, मिरज</span>
-            <span>॥ श्री गणेश प्रसन्न ॥</span>
-          </div>
-          <div style="margin:1px 0 0 0;padding:0;font-size:8px;font-weight:bold;color:#8b451f;line-height:1.2;">
-            आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
-          </div>
-          <div style="margin:1px 0 0 0;padding:0;font-size:8px;font-weight:bold;color:#a84b20;line-height:1.2;">
-            प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
-          </div>
-          <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
+   printContainer.innerHTML = `
+  <div style="width:297mm;min-height:210mm;margin:0 auto;font-family:Arial,sans-serif;padding:8mm 6mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+    <!-- Header Section -->
+    <div>
+      <!-- PDF Header -->
+      <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;">
+          <span>॥ श्री गणेश प्रसन्न ॥</span>
+          <span style="font-size:16px;color:#c43d5c;">मातोश्री चेन फॅक्टरी, मिरज</span>
+          <span>॥ श्री साई प्रसन्न ॥</span>
         </div>
-
-        <!-- Title -->
-      <h2 style="
-  text-align:center;
-  margin:2px 0;
-  font-size:13px;
-  color:#000;
-  padding:0;
-  font-weight:bold;
-">
-  Billing Report
-</h2>
-
-<h2 style="
-  text-align:center;
-  margin:2px 0 5px 0;
-  font-size:10px;
-  color:#000;
-  font-weight:bold;
-">
-  From: ${new Date(fromDate[0]).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    })}
-  &nbsp;&nbsp; To: ${new Date(toDate[0]).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    })}
-</h2>
-
-<!-- Table - Status column removed -->  <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
-          <thead>
-            <tr style="background:#785600;color:white;font-weight:600;">
-              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Sr</th>
-              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Date & Time</th>
-              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Bill No</th>
-              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Client</th>
-              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Phone</th>
-              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Item</th>
-              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Size</th>
-              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Purity %</th>
-              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Fin Wt</th>
-              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">SRP</th>
-              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Receive</th>
-              <th style="border:1px solid #785600;padding:1px 2px;text-align:center;font-size:6.5px;">Pending</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>
+        <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#8b451f;line-height:1.2;">
+          आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+        </div>
+        <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#a84b20;line-height:1.2;">
+          प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
+        </div>
+        <div style="border-bottom:2px solid #c43d5c;margin:2px 0 4px 0;"></div>
       </div>
 
-      <!-- Footer -->
+      <!-- Title and Date Range -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 5px 0;padding:0;position:relative;">
+        <div style="flex:1;"></div>
+        <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+          Billing Report
+        </h2>
+        <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
+          From: ${new Date(fromDate[0]).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          })}
+          &nbsp;&nbsp; To: ${new Date(toDate[0]).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          })}
+        </div>
+      </div>
+
+      <!-- Table - Full Width Landscape -->
+      <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
+        <thead>
+          <tr style="background:#785600;color:white;font-weight:600;">
+            <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Sr</th>
+            <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Date & Time</th>
+            <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Bill No</th>
+            <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Client</th>
+            <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Phone</th>
+            <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Item</th>
+            <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Size</th>
+            <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Purity %</th>
+            <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Fin Wt</th>
+            <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">SRP</th>
+            <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Receive</th>
+            <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Pending</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
       
+      </table>
     </div>
-  `;
+
+   <div>   Contact For Support: 9511640551</div>
+  </div>
+`;
 
     // Add print styles
-    const style = document.createElement('style');
-    style.textContent = `
-    @page {
-      size: A4 portrait;
+    // Add print styles for Landscape
+const style = document.createElement('style');
+style.textContent = `
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+  @media print {
+    html, body {
       margin: 0;
+      padding: 0;
+      width: 297mm;
+      height: 210mm;
     }
-    @media print {
-      html, body {
-        margin: 0;
-        padding: 0;
-        width: 210mm;
-        height: 297mm;
-      }
-      body * {
-        visibility: hidden;
-      }
-      #print-container-table, #print-container-table * {
-        visibility: visible;
-      }
-      #print-container-table {
-        position: fixed !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 210mm !important;
-        height: 297mm !important;
-        background: white !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        overflow: hidden !important;
-        z-index: 9999 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-      #print-container-table > div {
-        width: 210mm !important;
-        min-height: 297mm !important;
-        padding: 6mm 5mm !important;
-        box-sizing: border-box !important;
-      }
-      #print-container-table table {
-        width: 100% !important;
-      }
-      #print-container-table tr {
-        page-break-inside: avoid !important;
-      }
-      #print-container-table thead tr {
-        background: #785600 !important;
-        color: white !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-      #print-container-table thead tr th {
-        background: #785600 !important;
-        color: white !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-      #print-container-table tfoot tr {
-        background: #f4f4f2 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
+    body * {
+      visibility: hidden;
     }
-  `;
+    #print-container-table, #print-container-table * {
+      visibility: visible;
+    }
+    #print-container-table {
+      position: fixed !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 297mm !important;
+      height: 210mm !important;
+      background: white !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: hidden !important;
+      z-index: 9999 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    #print-container-table > div {
+      width: 297mm !important;
+      min-height: 210mm !important;
+      padding: 8mm 6mm !important;
+      box-sizing: border-box !important;
+    }
+    #print-container-table table {
+      width: 100% !important;
+    }
+    #print-container-table tr {
+      page-break-inside: avoid !important;
+    }
+    #print-container-table thead tr {
+      background: #785600 !important;
+      color: white !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    #print-container-table thead tr th {
+      background: #785600 !important;
+      color: white !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    #print-container-table tfoot tr {
+      background: #f4f4f2 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  }
+`;
+document.head.appendChild(style);
     document.head.appendChild(style);
 
     // Trigger print
@@ -1002,15 +993,15 @@ const Billing: React.FC = () => {
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium text-white dark:text-slate-400 uppercase tracking-wider">
                   Total Fin Wt
                 </span>
                 <span className="text-lg font-bold text-black">
                   {formatNumberWithDecimals(totalFinWt)} G
                 </span>
               </div>
-              <div className="rounded-full bg-amber-100 p-2 dark:bg-amber-900/30">
-                <Scale className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <div className="rounded-full bg-[#785600] p-2 dark:bg-amber-900/30">
+                <Scale className="h-4 w-4 text-white dark:text-amber-400" />
               </div>
             </div>
           </div>
@@ -1026,8 +1017,8 @@ const Billing: React.FC = () => {
                   {formatNumberWithDecimals(totalSRP)}G
                 </span>
               </div>
-              <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/30">
-                <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <div className="rounded-full bg-[#785600] p-2 dark:bg-blue-900/30">
+                <DollarSign className="h-4 w-4 text-white dark:text-blue-400" />
               </div>
             </div>
           </div>
@@ -1043,8 +1034,8 @@ const Billing: React.FC = () => {
                   {formatNumberWithDecimals(totalReceive)} G
                 </span>
               </div>
-              <div className="rounded-full bg-green-100 p-2 dark:bg-green-900/30">
-                <ArrowDownToLine className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <div className="rounded-full bg-[#785600] p-2 dark:bg-green-900/30">
+                <ArrowDownToLine className="h-4 w-4 text-white dark:text-green-400" />
               </div>
             </div>
           </div>
@@ -1060,8 +1051,8 @@ const Billing: React.FC = () => {
                   {formatNumberWithDecimals(totalPending)} G
                 </span>
               </div>
-              <div className="rounded-full bg-red-100 p-2 dark:bg-red-900/30">
-                <Clock className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <div className="rounded-full bg-[#785600] p-2 dark:bg-red-900/30">
+                <Clock className="h-4 w-4 text-white dark:text-red-400" />
               </div>
             </div>
           </div>

@@ -467,7 +467,6 @@ const Settlement: React.FC = () => {
       <div
         className="bg-white p-6 max-w-full mx-auto font-sans text-xs"
         ref={tablePrintRef}
-        id="settlement-print"
         style={{ width: '297mm', minHeight: '210mm' }}
       >
         {/* PDF Header */}
@@ -478,14 +477,7 @@ const Settlement: React.FC = () => {
         {/* Title */}
         <div className="mb-3 text-center">
           <h2 className="text-base font-bold text-gray-800">Settlement Report</h2>
-          <p className="text-xs text-gray-500">
-            {dateRange.from && dateRange.to
-              ? `Period: ${new Date(dateRange.from).toLocaleDateString()} - ${new Date(dateRange.to).toLocaleDateString()}`
-              : 'All Dates'}
-          </p>
-          <p className="text-xs text-gray-500">
-            Generated: {new Date().toLocaleString()}
-          </p>
+
         </div>
 
         {/* Table */}
@@ -976,7 +968,7 @@ const Settlement: React.FC = () => {
 
                 <div>
                   <h2 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
-                    Settlement
+                    Settlement..
                   </h2>
                 </div>
 
@@ -988,7 +980,7 @@ const Settlement: React.FC = () => {
                 onClick={
                   closeSettlementModal
                 }
-                className="rounded-full bg-red-500 p-2 text-white transition-colors duration-200 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                className="rounded-full bg-[#785600] p-2 text-white transition-colors duration-200 hover:[#785600] focus:outline-none focus:ring-2 focus:ring-red-500/50"
                 aria-label="Close modal"
               >
                 <X className="h-4 w-4" />
@@ -1051,8 +1043,8 @@ const Settlement: React.FC = () => {
                     <p
                       className={`text-sm font-bold ${settlementDetail.pendingBalance >
                         0
-                        ? 'text-red-600'
-                        : 'text-green-600'
+                        ? 'text-black-600'
+                        : 'text-black-600'
                         }`}
                     >
                       {formatNumber(
@@ -1101,7 +1093,7 @@ const Settlement: React.FC = () => {
                   }}
                   className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors ${settlementDetail.settlementType ===
                     'receive'
-                    ? 'bg-green-600 text-white shadow-md shadow-green-600/20'
+                    ? 'bg-[#785600] text-white shadow-md shadow-green-600/20'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
                     }`}
                 >
@@ -1128,7 +1120,7 @@ const Settlement: React.FC = () => {
                   }}
                   className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors ${settlementDetail.settlementType ===
                     'give'
-                    ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+                    ? 'bg-[#785600] text-white shadow-md shadow-red-600/20'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
                     }`}
                 >
@@ -1309,15 +1301,15 @@ const Settlement: React.FC = () => {
               {/* REMAINING BALANCE */}
               {settlementDetail.settlementAmount >
                 0 && (
-                  <div className="mb-4 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+                  <div className="mb-4 rounded-lg bg-[#785600] bg-opacity-50 p-3 dark:bg-[#9c854a]">
 
                     <div className="flex items-center justify-between">
 
-                      <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                      <span className="text-xs font-medium text-black dark:text-[#e5d19e] ">
                         Remaining Balance:
                       </span>
 
-                      <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                      <span className="text-sm font-bold text-black  dark:text-[#e5d19e]">
                         {formatNumber(
                           remainingBalance
                         )}
@@ -1333,17 +1325,7 @@ const Settlement: React.FC = () => {
               {/* ACTION BUTTONS */}
               <div className="flex gap-2 pt-2">
 
-                <button
-                  type="button"
-                  onClick={
-                    closeSettlementModal
-                  }
-                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
-                >
-                  Cancel
-                </button>
-
-
+                
                 <button
                   type="button"
                   onClick={
@@ -1437,15 +1419,15 @@ const Settlement: React.FC = () => {
                   <div className="flex justify-between text-sm">
                     <span className="text-[#4f4535] dark:text-slate-400">Amount:</span>
                     <span className={`font-bold ${settlementDetail.settlementType === 'receive'
-                      ? 'text-green-600'
-                      : 'text-red-600'
+                      ? 'text-black-600'
+                      : 'text-black-600'
                       }`}>
                       {signedAmount}g
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#4f4535] dark:text-slate-400">New Balance:</span>
-                    <span className="font-bold text-blue-600 dark:text-blue-400">
+                    <span className="font-bold text-black-600 dark:text-blue-400">
                       {formatNumber(newBalance)}g
                     </span>
                   </div>
@@ -1455,15 +1437,7 @@ const Settlement: React.FC = () => {
 
             {/* BUTTONS */}
             <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowConfirmModal(false)}
-                disabled={submitSettlementMutation.isPending}
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
-              >
-                Cancel
-              </button>
-
+       
               <button
                 type="button"
                 onClick={handleSaveSettlement}
@@ -1530,8 +1504,8 @@ const Settlement: React.FC = () => {
                 </p>
               </div>
 
-              <div className="rounded-full bg-blue-100 p-3 dark:bg-blue-900/30">
-                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="rounded-full bg-[#785600] p-3 dark:bg-blue-900/30">
+                <Users className="h-5 w-5 text-white dark:text-blue-400" />
               </div>
 
             </div>
@@ -1554,8 +1528,8 @@ const Settlement: React.FC = () => {
                 </p>
               </div>
 
-              <div className="rounded-full bg-yellow-100 p-3 dark:bg-yellow-900/30">
-                <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+              <div className="rounded-full bg-[#785600] p-3 dark:bg-yellow-900/30">
+                <Clock className="h-5 w-5 text-white dark:text-yellow-400" />
               </div>
 
             </div>
@@ -1578,8 +1552,8 @@ const Settlement: React.FC = () => {
                 </p>
               </div>
 
-              <div className="rounded-full bg-green-100 p-3 dark:bg-green-900/30">
-                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <div className="rounded-full bg-[#785600] p-3 dark:bg-green-900/30">
+                <CheckCircle className="h-5 w-5 text-white dark:text-green-400" />
               </div>
 
             </div>
@@ -1606,8 +1580,8 @@ const Settlement: React.FC = () => {
                 </p>
               </div>
 
-              <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
-                <Wallet className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <div className="rounded-full bg-[#785600] p-3 dark:bg-amber-900/30">
+                <Wallet className="h-5 w-5 text-white dark:text-amber-400" />
               </div>
 
             </div>
