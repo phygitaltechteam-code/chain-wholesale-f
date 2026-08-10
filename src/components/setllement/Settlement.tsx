@@ -73,14 +73,6 @@ interface SettlementDetail {
   due?: number | null;
 }
 
-interface ApiResponse {
-  statusCode: number;
-  status: boolean;
-  message: string;
-  data: any[];
-  errors: null;
-}
-
 
 // ======================================================
 // COMPONENT
@@ -297,10 +289,8 @@ const Settlement: React.FC = () => {
                 0
               ),
 
-            // Amount from opening balance
             amount: Number(item.openingBalance ?? 0),
 
-            // Remark based on balance
             remark: Number(item.openingBalance ?? 0) > 0 ? 'Received' : 'Given',
           })
         );
@@ -333,7 +323,6 @@ const Settlement: React.FC = () => {
       return '0';
     }
 
-    // Remove trailing zeros
     return parseFloat(numberValue.toFixed(3)).toString();
   };
 
@@ -417,13 +406,12 @@ const Settlement: React.FC = () => {
   // ======================================================
   // PRINT TABLE REPORT - Full A4 with PDF Header
   // ======================================================
-const handlePrintTable = () => {
+  const handlePrintTable = () => {
     if (!filteredSettlements || filteredSettlements.length === 0) {
       toast.error('No records available to print');
       return;
     }
 
-    // Create a hidden div for printing
     const printContainer = document.createElement('div');
     printContainer.id = 'print-container-settlement';
     printContainer.style.cssText = `
@@ -437,7 +425,6 @@ const handlePrintTable = () => {
     `;
     document.body.appendChild(printContainer);
 
-    // Format date for display
     const formatDateForDisplay = (dateStr: string) => {
       if (!dateStr) return '';
       const date = new Date(dateStr);
@@ -448,7 +435,6 @@ const handlePrintTable = () => {
       });
     };
 
-    // Build the table rows
     const rows = filteredSettlements
       .map((entry, index) => {
         return `
@@ -463,16 +449,9 @@ const handlePrintTable = () => {
       })
       .join('');
 
-    // Calculate totals
-    const totalDue = filteredSettlements.reduce((sum, item) => sum + Math.abs(item.goldBalance), 0);
-    const totalBills = filteredSettlements.reduce((sum, item) => sum + (item.totalBills || 0), 0);
-
-    // Set the content with PDF Header
     printContainer.innerHTML = `
       <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
-        <!-- Header Section -->
         <div>
-          <!-- PDF Header - All in One Line -->
           <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
               <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री गणेश प्रसन्न ॥</span>
@@ -488,7 +467,6 @@ const handlePrintTable = () => {
             <div style="border-bottom:2px solid #c43d5c;margin:2px 0 4px 0;"></div>
           </div>
 
-          <!-- Title and Date Range in one line -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
             <div style="flex:1;"></div>
             <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
@@ -500,7 +478,6 @@ const handlePrintTable = () => {
             </div>
           </div>
 
-          <!-- Table -->
           <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
             <thead>
               <tr style="background:#785600;color:white;font-weight:600;">
@@ -516,11 +493,9 @@ const handlePrintTable = () => {
             </tbody>
           </table>
         </div>
-
       </div>
     `;
 
-    // Add print styles
     const style = document.createElement('style');
     style.textContent = `
       @page {
@@ -578,20 +553,13 @@ const handlePrintTable = () => {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
-        #print-container-settlement tfoot tr {
-          background: #f4f4f2 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
       }
     `;
     document.head.appendChild(style);
 
-    // Trigger print
     setTimeout(() => {
       window.print();
 
-      // Clean up after print
       setTimeout(() => {
         if (document.body.contains(printContainer)) {
           document.body.removeChild(printContainer);
@@ -763,7 +731,6 @@ const handlePrintTable = () => {
         return;
       }
 
-      // Send amount as number (positive for receive, negative for give)
       const signedAmount = settlementDetail.settlementType === 'receive'
         ? amount
         : -amount;
@@ -775,7 +742,6 @@ const handlePrintTable = () => {
 
       const response = await submitSettlementMutation.mutateAsync(settlementData);
 
-      // Success - close modals and reset
       setShowConfirmModal(false);
       setShowSettleModal(false);
       setLocalAmount('');
@@ -887,7 +853,7 @@ const handlePrintTable = () => {
 
 
   // ======================================================
-  // ACTION BUTTON - Disabled after settlement
+  // ACTION BUTTON
   // ======================================================
 
   const renderActions = (
@@ -986,7 +952,7 @@ const handlePrintTable = () => {
 
 
   // ======================================================
-  // SETTLEMENT MODAL
+  // SETTLEMENT MODAL - Clean & Professional
   // ======================================================
 
   const renderSettlementModal =
@@ -1012,7 +978,7 @@ const handlePrintTable = () => {
 
       return (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onMouseDown={(e) => {
             if (
               e.target === e.currentTarget
@@ -1022,128 +988,85 @@ const handlePrintTable = () => {
           }}
         >
           <div
-            className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl dark:bg-slate-900"
+            className="relative w-full max-w-sm rounded-xl bg-white shadow-2xl dark:bg-slate-900"
             onMouseDown={(e) =>
               e.stopPropagation()
             }
           >
 
             {/* HEADER */}
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#d3c4af]/20 bg-white/95 px-6 py-3 backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/95">
+            <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-5 py-3 dark:border-slate-700">
 
-              <div className="flex items-center gap-3">
-
-                <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-[#785600]/20">
-                  <Wallet className="h-5 w-5 text-[#785600]" />
-                </div>
-
-                <div>
-                  <h2 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
-                    Settlement
-                  </h2>
-                </div>
-
+              <div className="flex items-center gap-2">
+                <Wallet className="h-5 w-5 text-[#785600]" />
+                <h2 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
+                  Settlement
+                </h2>
               </div>
-
 
               <button
                 type="button"
-                onClick={
-                  closeSettlementModal
-                }
-                className="rounded-full bg-[#785600] p-2 text-white transition-colors duration-200 hover:[#785600] focus:outline-none focus:ring-2 focus:ring-red-500/50"
-                aria-label="Close modal"
+                onClick={closeSettlementModal}
+                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-800"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
 
             </div>
 
 
             {/* BODY */}
-            <div className="p-6">
+            <div className="p-5">
 
-              {/* CLIENT INFORMATION */}
-              <div className="mb-5 rounded-lg bg-[#f4f4f2] p-4 dark:bg-slate-800">
+              {/* CLIENT INFORMATION - Clean */}
+              <div className="mb-4 space-y-2 border-b border-[#d3c4af]/20 pb-4 dark:border-slate-700">
 
-                <div className="space-y-2">
-
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-[#785600]" />
-                    <label className="text-sm font-semibold text-[#1a1c1b] dark:text-white">Client Name : </label>
-                    <span className="text-sm font-semibold text-[#1a1c1b] dark:text-white">
-                      {settlementDetail.clientName}
-                    </span>
-                  </div>
-
-
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-[#785600]" />
-                    <label className="text-sm font-semibold text-[#1a1c1b] dark:text-white">Phone Number : </label>
-                    <span className="text-sm text-[#1a1c1b] dark:text-white">
-                      {settlementDetail.phoneNumber}
-                    </span>
-                  </div>
-
-
-                  {settlementDetail.address && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-[#785600]" />
-                      <label className="text-sm font-semibold text-[#1a1c1b] dark:text-white">Address : </label>
-                      <span className="truncate text-sm text-[#1a1c1b] dark:text-white">
-                        {
-                          settlementDetail.address
-                        }
-                      </span>
-                    </div>
-                  )}
-
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-[#785600]" />
+                  <span className="text-sm font-semibold text-[#1a1c1b] dark:text-white">
+                    {settlementDetail.clientName}
+                  </span>
                 </div>
 
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-[#785600]" />
+                  <span className="text-sm text-[#1a1c1b] dark:text-white">
+                    {settlementDetail.phoneNumber}
+                  </span>
+                </div>
 
-                <div className="my-3 border-t border-[#d3c4af]/30 dark:border-slate-700/50" />
+                {settlementDetail.address && (
+                  <div className="flex items-start gap-2">
+                    <MapPin className="mt-0.5 h-4 w-4 text-[#785600]" />
+                    <span className="text-sm text-[#1a1c1b] dark:text-white">
+                      {settlementDetail.address}
+                    </span>
+                  </div>
+                )}
 
-
-                <div className="grid grid-cols-2 gap-4">
-
+                <div className="mt-2 grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400">
                       Due Balance
                     </p>
-
-                    <p
-                      className={`text-sm font-bold ${settlementDetail.pendingBalance >
-                        0
-                        ? 'text-black-600'
-                        : 'text-black-600'
-                        }`}
-                    >
-                      {formatNumber(
-                        settlementDetail.pendingBalance
-                      )}
-                      g
+                    <p className="text-sm font-bold text-[#1a1c1b] dark:text-white">
+                      {formatNumber(settlementDetail.pendingBalance)} g
                     </p>
                   </div>
-
-
                   <div>
                     <p className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400">
                       Total Bills
                     </p>
-
                     <p className="text-sm font-bold text-[#1a1c1b] dark:text-white">
-                      {
-                        settlementDetail.totalBills
-                      }
+                      {settlementDetail.totalBills}
                     </p>
                   </div>
-
                 </div>
 
               </div>
 
 
-              {/* RECEIVE / GIVEN */}
+              {/* RECEIVE / GIVE - Clean */}
               <div className="mb-4 grid grid-cols-2 gap-3">
 
                 <button
@@ -1152,8 +1075,7 @@ const handlePrintTable = () => {
                     setSettlementDetail(
                       (prev) => ({
                         ...prev,
-                        settlementType:
-                          'receive',
+                        settlementType: 'receive',
                       })
                     );
 
@@ -1162,16 +1084,14 @@ const handlePrintTable = () => {
                       inputRef.current?.select();
                     }, 50);
                   }}
-                  className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors ${settlementDetail.settlementType ===
-                    'receive'
-                    ? 'bg-[#785600] text-white shadow-md shadow-green-600/20'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'receive'
+                    ? 'border-[#785600] bg-[#785600] text-white'
+                    : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                     }`}
                 >
                   <Plus className="h-4 w-4" />
                   Receive
                 </button>
-
 
                 <button
                   type="button"
@@ -1179,8 +1099,7 @@ const handlePrintTable = () => {
                     setSettlementDetail(
                       (prev) => ({
                         ...prev,
-                        settlementType:
-                          'give',
+                        settlementType: 'give',
                       })
                     );
 
@@ -1189,231 +1108,132 @@ const handlePrintTable = () => {
                       inputRef.current?.select();
                     }, 50);
                   }}
-                  className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors ${settlementDetail.settlementType ===
-                    'give'
-                    ? 'bg-[#785600] text-white shadow-md shadow-red-600/20'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'give'
+                    ? 'border-[#785600] bg-[#785600] text-white'
+                    : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                     }`}
                 >
                   <Minus className="h-4 w-4" />
-                  Given
+                  Give
                 </button>
 
               </div>
 
 
               {/* AMOUNT INPUT */}
-              <GenericInputField
-                ref={inputRef}
-                name="settlementAmount"
-                type="text"
-                inputMode="decimal"
-                label="Amount (g)"
-                value={localAmount}
+              <div className="mb-3">
+                <GenericInputField
+                  ref={inputRef}
+                  name="settlementAmount"
+                  type="text"
+                  inputMode="decimal"
+                  label="Amount (g)"
+                  value={localAmount}
+                  onChange={(e) => {
+                    const value = e.target.value;
 
-                onChange={(e) => {
-                  const value =
-                    e.target.value;
+                    if (!/^\d*\.?\d{0,3}$/.test(value)) {
+                      return;
+                    }
 
-                  // Allow only numbers and up to 3 decimal places
-                  if (
-                    !/^\d*\.?\d{0,3}$/.test(
-                      value
-                    )
-                  ) {
-                    return;
-                  }
+                    setLocalAmount(value);
 
-
-                  setLocalAmount(value);
-
-
-                  if (value === '') {
-                    setSettlementDetail(
-                      (prev) => ({
+                    if (value === '') {
+                      setSettlementDetail((prev) => ({
                         ...prev,
-                        settlementAmount:
-                          0,
-                      })
-                    );
+                        settlementAmount: 0,
+                      }));
+                      return;
+                    }
 
-                    return;
-                  }
+                    const numberValue = Number(value);
 
-
-                  const numberValue =
-                    Number(value);
-
-
-                  if (
-                    !Number.isNaN(
-                      numberValue
-                    )
-                  ) {
-                    setSettlementDetail(
-                      (prev) => ({
+                    if (!Number.isNaN(numberValue)) {
+                      setSettlementDetail((prev) => ({
                         ...prev,
-                        settlementAmount:
-                          numberValue,
-                      })
-                    );
-                  }
-                }}
+                        settlementAmount: numberValue,
+                      }));
+                    }
+                  }}
+                  onFocus={(e) => {
+                    e.target.select();
+                  }}
+                  onBlur={() => {
+                    const amount = Number(localAmount);
 
-
-                onFocus={(e) => {
-                  e.target.select();
-                }}
-
-
-                onBlur={() => {
-                  const amount =
-                    Number(
-                      localAmount
-                    );
-
-
-                  if (
-                    localAmount === '' ||
-                    Number.isNaN(amount)
-                  ) {
-                    setLocalAmount('');
-
-                    setSettlementDetail(
-                      (prev) => ({
+                    if (localAmount === '' || Number.isNaN(amount)) {
+                      setLocalAmount('');
+                      setSettlementDetail((prev) => ({
                         ...prev,
-                        settlementAmount:
-                          0,
-                      })
-                    );
+                        settlementAmount: 0,
+                      }));
+                      return;
+                    }
 
-                    return;
-                  }
+                    let finalAmount = amount;
 
+                    if (settlementDetail.settlementType === 'receive') {
+                      finalAmount = Math.min(Math.max(amount, 0), settlementDetail.pendingBalance);
+                    } else {
+                      finalAmount = Math.max(amount, 0);
+                    }
 
-                  let finalAmount =
-                    amount;
+                    finalAmount = Number(finalAmount.toFixed(3));
 
-
-                  if (
-                    settlementDetail
-                      .settlementType ===
-                    'receive'
-                  ) {
-                    finalAmount =
-                      Math.min(
-                        Math.max(
-                          amount,
-                          0
-                        ),
-                        settlementDetail.pendingBalance
-                      );
-                  } else {
-                    finalAmount =
-                      Math.max(
-                        amount,
-                        0
-                      );
-                  }
-
-
-                  finalAmount =
-                    Number(
-                      finalAmount.toFixed(
-                        3
-                      )
-                    );
-
-
-                  setSettlementDetail(
-                    (prev) => ({
+                    setSettlementDetail((prev) => ({
                       ...prev,
-                      settlementAmount:
-                        finalAmount,
-                    })
-                  );
+                      settlementAmount: finalAmount,
+                    }));
 
+                    setLocalAmount(
+                      finalAmount > 0
+                        ? parseFloat(finalAmount.toFixed(3)).toString()
+                        : ''
+                    );
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleProceedToConfirm();
+                    }
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      closeSettlementModal();
+                    }
+                  }}
+                  placeholder={`Max ${formatNumber(settlementDetail.pendingBalance)}g`}
+                  suffix="g"
+                />
+              </div>
 
-                  // Show without trailing zeros
-                  setLocalAmount(
-                    finalAmount > 0
-                      ? parseFloat(finalAmount.toFixed(3)).toString()
-                      : ''
-                  );
-                }}
-
-
-                onKeyDown={(e) => {
-                  if (
-                    e.key === 'Enter'
-                  ) {
-                    e.preventDefault();
-
-                    handleProceedToConfirm();
-                  }
-
-                  if (
-                    e.key === 'Escape'
-                  ) {
-                    e.preventDefault();
-
-                    closeSettlementModal();
-                  }
-                }}
-
-
-                placeholder={`Max ${formatNumber(
-                  settlementDetail.pendingBalance
-                )}g`}
-
-                suffix="g"
-              />
-
-              {/* REMAINING BALANCE */}
-              {settlementDetail.settlementAmount >
-                0 && (
-                  <div className="mb-4 rounded-lg bg-[#785600] bg-opacity-50 p-3 dark:bg-[#9c854a]">
-
-                    <div className="flex items-center justify-between">
-
-                      <span className="text-xs font-medium text-black dark:text-[#e5d19e] ">
-                        Remaining Balance:
-                      </span>
-
-                      <span className="text-sm font-bold text-black  dark:text-[#e5d19e]">
-                        {formatNumber(
-                          remainingBalance
-                        )}
-                        g
-                      </span>
-
-                    </div>
-
+              {/* REMAINING BALANCE - Clean */}
+              {settlementDetail.settlementAmount > 0 && (
+                <div className="mb-4 rounded-lg border border-[#d3c4af]/20 bg-[#f9f9f7] px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
+                      Remaining Balance:
+                    </span>
+                    <span className="text-sm font-bold text-[#1a1c1b] dark:text-white">
+                      {formatNumber(remainingBalance)} g
+                    </span>
                   </div>
-                )}
+                </div>
+              )}
 
 
               {/* ACTION BUTTONS */}
-              <div className="flex gap-2 pt-2">
-
-
-                <button
-                  type="button"
-                  onClick={
-                    handleProceedToConfirm
-                  }
-                  disabled={
-                    submitSettlementMutation.isPending ||
-                    settlementDetail.settlementAmount <=
-                    0
-                  }
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#785600] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5d4200] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <ArrowRight className="h-4 w-4" />
-                  Proceed to Confirm
-                </button>
-
-              </div>
+              <button
+                type="button"
+                onClick={handleProceedToConfirm}
+                disabled={
+                  submitSettlementMutation.isPending ||
+                  settlementDetail.settlementAmount <= 0
+                }
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#785600] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#5d4200] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ArrowRight className="h-4 w-4" />
+                Proceed to Confirm
+              </button>
 
             </div>
 
@@ -1424,7 +1244,7 @@ const handlePrintTable = () => {
 
 
   // ======================================================
-  // CONFIRMATION MODAL
+  // CONFIRMATION MODAL - Clean
   // ======================================================
 
   const renderConfirmModal = () => {
@@ -1458,73 +1278,62 @@ const handlePrintTable = () => {
           <button
             type="button"
             onClick={() => setShowConfirmModal(false)}
-            className="absolute right-3 top-3 z-10 rounded-full bg-gray-200 p-1.5 text-gray-600 transition-colors hover:bg-gray-300 dark:bg-slate-700 dark:text-gray-300 dark:hover:bg-slate-600"
+            className="absolute right-3 top-3 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-800"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
 
           <div className="p-6">
-            {/* Simple Header */}
+            {/* Header */}
             <div className="mb-4 text-center">
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#785600]/10">
+                <CheckCircle className="h-6 w-6 text-[#785600]" />
+              </div>
               <h2 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
                 Confirm Settlement
               </h2>
+              <p className="text-sm text-[#4f4535] dark:text-slate-400">
+                Please review the details below
+              </p>
             </div>
 
-            {/* Confirmation Message */}
-            <div className="mb-5 space-y-3">
-              <div className="text-center">
-                <p className="text-sm text-[#4f4535] dark:text-slate-400">
-                  Are you sure you want to proceed with this settlement?
-                </p>
+            {/* Details */}
+            <div className="mb-5 space-y-2 rounded-lg border border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-800/50">
+              <div className="flex justify-between text-sm">
+                <span className="text-[#4f4535] dark:text-slate-400">Client:</span>
+                <span className="font-medium text-[#1a1c1b] dark:text-white">
+                  {settlementDetail.clientName}
+                </span>
               </div>
-
-              <div className="rounded-lg bg-[#f4f4f2] p-4 dark:bg-slate-800">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#4f4535] dark:text-slate-400">Client:</span>
-                    <span className="font-medium text-[#1a1c1b] dark:text-white">
-                      {settlementDetail.clientName}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#4f4535] dark:text-slate-400">Amount:</span>
-                    <span className={`font-bold ${settlementDetail.settlementType === 'receive'
-                      ? 'text-black-600'
-                      : 'text-black-600'
-                      }`}>
-                      {signedAmount}g
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#4f4535] dark:text-slate-400">New Balance:</span>
-                    <span className="font-bold text-black-600 dark:text-blue-400">
-                      {formatNumber(newBalance)}g
-                    </span>
-                  </div>
-                </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-[#4f4535] dark:text-slate-400">Amount:</span>
+                <span className="font-bold text-[#1a1c1b] dark:text-white">
+                  {signedAmount} g
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-[#4f4535] dark:text-slate-400">New Balance:</span>
+                <span className="font-bold text-[#1a1c1b] dark:text-white">
+                  {formatNumber(newBalance)} g
+                </span>
               </div>
             </div>
 
             {/* BUTTONS */}
-            <div className="flex gap-2 pt-2">
+            <div className="flex ">
 
               <button
                 type="button"
                 onClick={handleSaveSettlement}
                 disabled={submitSettlementMutation.isPending}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#785600] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5d4200] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 rounded-lg bg-[#785600] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5d4200] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitSettlementMutation.isPending ? (
                   <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Processing...
+                    <div className="mx-auto h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                   </>
                 ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    Confirm & Save
-                  </>
+                  'Confirm & Save'
                 )}
               </button>
             </div>
@@ -1553,10 +1362,8 @@ const handlePrintTable = () => {
           />
 
         </div>
-        {/* =================================================
-    STATISTICS
-================================================= */}
 
+        {/* STATISTICS */}
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* TOTAL CLIENTS */}
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
@@ -1629,10 +1436,7 @@ const handlePrintTable = () => {
           </div>
         </div>
 
-        {/* =================================================
-            FILTERS
-        ================================================= */}
-
+        {/* FILTERS */}
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-1 items-center gap-2 sm:max-w-md">
 
@@ -1685,7 +1489,7 @@ const handlePrintTable = () => {
 
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
 
             <input
               type="date"
@@ -1720,6 +1524,7 @@ const handlePrintTable = () => {
               }
               className="rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
+
             {/* Print Report Button */}
             <GenericButton
               onClick={() => {
@@ -1729,21 +1534,17 @@ const handlePrintTable = () => {
                 }
                 handlePrintTable();
               }}
+              className="!bg-[#785600] hover:!bg-[#5d4200] !text-white"
             >
               <Printer className="h-4 w-4" />
-              <span >Print</span>
+              <span>Print</span>
             </GenericButton>
           </div>
-
-
 
         </div>
 
 
-        {/* =================================================
-            TABLE
-        ================================================= */}
-
+        {/* TABLE */}
         <div className="-mx-3 sm:-mx-4 md:mx-0">
 
           <GenericTable<SettlementEntry>
@@ -1788,12 +1589,8 @@ const handlePrintTable = () => {
       </div>
 
 
-      {/* =================================================
-          MODALS
-      ================================================= */}
-
+      {/* MODALS */}
       {renderSettlementModal()}
-
       {renderConfirmModal()}
 
     </div>
