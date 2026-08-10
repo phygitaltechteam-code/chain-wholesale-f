@@ -17,8 +17,10 @@ interface CuttingEntry {
   chainGiven: number;
   chainReceived: number;
   scrap: number;
+  loss: number;
   isEditing?: boolean;
   isSaved?: boolean;
+  chainGivenRaw?: string;
   chainReceivedRaw?: string;
   scrapRaw?: string;
   purityRaw?: string;
@@ -40,6 +42,11 @@ const getSizeName = (size: any): string => {
   if (typeof size === 'string') return size;
   if (size.size) return size.size;
   return '-';
+};
+
+// Calculate Loss: Chain Given - Chain Received
+const calculateLoss = (chainGiven: number, chainReceived: number): number => {
+  return Math.max(0, chainGiven - chainReceived);
 };
 
 const CuttingDept: React.FC = () => {
@@ -97,11 +104,13 @@ const CuttingDept: React.FC = () => {
         const itemName = cutting.item?.name || cutting.itemId || 'N/A';
         const sizeName = cutting.size?.size || cutting.sizeId || 'N/A';
 
+        const chainGiven = cutting.chainWeight || 0;
+        const chainReceived = cutting.chainReceived || 0;
+        const loss = calculateLoss(chainGiven, chainReceived);
+
         const isSaved = cutting.isCompleted === true &&
           cutting.chainReceived !== null &&
           cutting.chainReceived !== undefined &&
-          cutting.scrap !== null &&
-          cutting.scrap !== undefined &&
           cutting.purity !== null &&
           cutting.purity !== undefined;
 
@@ -119,11 +128,13 @@ const CuttingDept: React.FC = () => {
           item: itemName,
           size: sizeName,
           purity: cutting.purity || 0,
-          chainGiven: cutting.chainWeight || 0,
-          chainReceived: cutting.chainReceived || 0,
+          chainGiven: chainGiven,
+          chainReceived: chainReceived,
           scrap: cutting.scrap || 0,
+          loss: loss,
           isEditing: !isSaved,
           isSaved: isSaved,
+          chainGivenRaw: cutting.chainWeight ? cutting.chainWeight.toString() : '',
           chainReceivedRaw: cutting.chainReceived ? cutting.chainReceived.toString() : '',
           scrapRaw: cutting.scrap ? cutting.scrap.toString() : '',
           purityRaw: cutting.purity ? cutting.purity.toString() : '',
@@ -196,12 +207,13 @@ const CuttingDept: React.FC = () => {
   // Calculate history totals
   const filteredHistory = getFilteredHistory();
   const historyTotals = filteredHistory.reduce(
-    (acc: { totalGiven: number; totalReceived: number; totalScrap: number }, item: any) => ({
+    (acc: { totalGiven: number; totalReceived: number; totalScrap: number; totalLoss: number }, item: any) => ({
       totalGiven: acc.totalGiven + toNumber(item?.chainWeight),
       totalReceived: acc.totalReceived + toNumber(item?.chainReceived),
       totalScrap: acc.totalScrap + toNumber(item?.scrap),
+      totalLoss: acc.totalLoss + toNumber(item?.loss),
     }),
-    { totalGiven: 0, totalReceived: 0, totalScrap: 0 }
+    { totalGiven: 0, totalReceived: 0, totalScrap: 0, totalLoss: 0 }
   );
 
   // Print History Function with filtered data
@@ -244,6 +256,7 @@ const CuttingDept: React.FC = () => {
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainWeight)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainReceived)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.loss)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
                         ${proceedDate} ${proceedTime}
@@ -252,11 +265,6 @@ const CuttingDept: React.FC = () => {
             `;
       })
       .join('');
-
-    // Calculate totals
-    const totalChainGiven = filteredData.reduce((sum: number, item: any) => sum + (item?.chainWeight || 0), 0);
-    const totalChainReceived = filteredData.reduce((sum: number, item: any) => sum + (item?.chainReceived || 0), 0);
-    const totalScrap = filteredData.reduce((sum: number, item: any) => sum + (item?.scrap || 0), 0);
 
     // Set the content with PDF Header - Minimal padding
     printContainer.innerHTML = `
@@ -268,13 +276,13 @@ const CuttingDept: React.FC = () => {
                     <span>॥ श्री साई प्रसन्न ॥</span>
                 </div>
                 <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
-                    मातोश्री चेन फॅक्टरी, मिरज
+                    मातोश्री चेन फॅक्टरी
                 </div>
                 <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
                     आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
                 </div>
                 <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
-                    प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
+                    प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
                 </div>
                 <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
             </div>
@@ -298,6 +306,7 @@ const CuttingDept: React.FC = () => {
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Given</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Rec</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Proceed</th>
                     </tr>
@@ -435,6 +444,15 @@ const CuttingDept: React.FC = () => {
       ),
     },
     {
+      key: 'loss',
+      header: 'Loss (G)',
+      render: (item) => (
+        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.loss)}
+        </span>
+      ),
+    },
+    {
       key: 'purity',
       header: 'Purity (%)',
       render: (item) => (
@@ -459,12 +477,22 @@ const CuttingDept: React.FC = () => {
   ];
 
   // Handle inline field change
-  const handleInlineChange = useCallback((index: number, field: 'chainReceived' | 'scrap' | 'purity', value: string) => {
+  const handleInlineChange = useCallback((index: number, field: 'chainGiven' | 'chainReceived' | 'scrap' | 'purity', value: string) => {
     setCuttingEntries(prev => prev.map((entry, i) => {
       if (i === index) {
         const updated = { ...entry };
 
-        if (field === 'chainReceived') {
+        if (field === 'chainGiven') {
+          updated.chainGivenRaw = value;
+          if (value === '' || value === '.' || value === '-') {
+            updated.chainGiven = 0;
+          } else {
+            const numValue = parseFloat(value);
+            updated.chainGiven = isNaN(numValue) ? 0 : numValue;
+          }
+          // Recalculate loss when chainGiven changes
+          updated.loss = calculateLoss(updated.chainGiven, updated.chainReceived);
+        } else if (field === 'chainReceived') {
           updated.chainReceivedRaw = value;
           if (value === '' || value === '.' || value === '-') {
             updated.chainReceived = 0;
@@ -472,6 +500,8 @@ const CuttingDept: React.FC = () => {
             const numValue = parseFloat(value);
             updated.chainReceived = isNaN(numValue) ? 0 : numValue;
           }
+          // Recalculate loss when chainReceived changes
+          updated.loss = calculateLoss(updated.chainGiven, updated.chainReceived);
         } else if (field === 'scrap') {
           updated.scrapRaw = value;
           if (value === '' || value === '.' || value === '-') {
@@ -500,6 +530,11 @@ const CuttingDept: React.FC = () => {
   const handleSaveClick = useCallback((index: number, target: 'stock' | 'kunda') => {
     const entry = cuttingEntries[index];
 
+    if (!entry.chainGiven || entry.chainGiven < 0) {
+      toast.error('Please enter a valid chain given weight');
+      return;
+    }
+
     if (!entry.chainReceived || entry.chainReceived < 0) {
       toast.error('Please enter a valid chain received weight');
       return;
@@ -512,6 +547,12 @@ const CuttingDept: React.FC = () => {
 
     if (!entry.purity || entry.purity < 0 || entry.purity > 100) {
       toast.error('Please enter a valid purity percentage (1-100)');
+      return;
+    }
+
+    // Validate that chainReceived doesn't exceed chainGiven
+    if (entry.chainReceived > entry.chainGiven) {
+      toast.error(`Chain Received (${formatNumberDisplay(entry.chainReceived)}) cannot exceed Chain Given (${formatNumberDisplay(entry.chainGiven)})`);
       return;
     }
 
@@ -533,9 +574,11 @@ const CuttingDept: React.FC = () => {
       await submitCutting.mutateAsync({
         id: entry.id,
         data: {
+          chainGiven: entry.chainGiven,
           chainReceived: entry.chainReceived,
           scrap: entry.scrap,
           purity: entry.purity,
+          loss: entry.loss,
           isCompleted: true,
         }
       });
@@ -550,6 +593,7 @@ const CuttingDept: React.FC = () => {
       setActionType(null);
       await refetch();
 
+      toast.success('Cutting entry saved to Stock successfully!');
       navigate({
         to: '/Stocks/stockpage'
       });
@@ -576,9 +620,11 @@ const CuttingDept: React.FC = () => {
       await submitMoveKunda.mutateAsync({
         id: entry.id,
         data: {
+          chainGiven: entry.chainGiven,
           chainReceived: entry.chainReceived,
           scrap: entry.scrap,
           purity: entry.purity,
+          loss: entry.loss,
           isCompleted: true,
         }
       });
@@ -593,6 +639,7 @@ const CuttingDept: React.FC = () => {
       setActionType(null);
       await refetch();
 
+      toast.success('Cutting entry moved to S Kunda successfully!');
       navigate({
         to: '/manufacturingprocess/process',
         state: { selectedTab: 'kunda' }
@@ -608,9 +655,10 @@ const CuttingDept: React.FC = () => {
   }, [saveIndex, cuttingEntries, submitMoveKunda, navigate, refetch]);
 
   // Action column is shown only when at least one unsaved row
-  // has an entered Chain Received / Scrap / Purity value.
+  // has an entered Chain Given / Chain Received / Scrap / Purity value.
   const hasEditableValues = (entry: CuttingEntry): boolean => {
     return Boolean(
+      entry.chainGivenRaw?.trim() ||
       entry.chainReceivedRaw?.trim() ||
       entry.scrapRaw?.trim() ||
       entry.purityRaw?.trim()
@@ -668,11 +716,24 @@ const CuttingDept: React.FC = () => {
     {
       key: 'chainGiven',
       header: 'Chain Given (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.chainGiven)}
-        </span>
-      ),
+      render: (item, index) => {
+        if (item.isEditing) {
+          return (
+            <input
+              type="text"
+              value={item.chainGivenRaw !== undefined ? item.chainGivenRaw : (item.chainGiven === 0 ? '' : item.chainGiven)}
+              onChange={(e) => handleInlineChange(index, 'chainGiven', e.target.value)}
+              placeholder="0.000"
+              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+            />
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.chainGiven)}
+          </span>
+        );
+      },
     },
     {
       key: 'chainReceived',
@@ -717,6 +778,15 @@ const CuttingDept: React.FC = () => {
           </span>
         );
       },
+    },
+    {
+      key: 'loss',
+      header: 'Loss (G)',
+      render: (item) => (
+        <span className="font-mono text-sm font-bold text-red-600 dark:text-red-400">
+          {formatNumberDisplay(item.loss)}
+        </span>
+      ),
     },
     {
       key: 'purity',
@@ -924,36 +994,66 @@ const CuttingDept: React.FC = () => {
         </div>
       ) : (
         <div className="px-3 py-4 sm:px-4 md:px-6">
-          {/* History Summary Cards */}
-          <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                  Chain Given (G)
-                </span>
-                <span className="text-lg font-bold text-black dark:text-amber-400">
-                  {formatNumberDisplay(historyTotals.totalGiven)} G
-                </span>
+          {/* History Summary Cards - Updated with Loss */}
+          <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-start justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                    Chain Given
+                  </span>
+                  <span className="text-lg font-bold text-black dark:text-amber-400">
+                    {formatNumberDisplay(historyTotals.totalGiven)} G
+                  </span>
+                </div>
+                <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-amber-900/30 border border-[#785600]/20 dark:border-amber-700/30">
+                  <span className="text-[#785600] dark:text-amber-400">📤</span>
+                </div>
               </div>
             </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                  Chain Received (G)
-                </span>
-                <span className="text-lg font-bold text-black dark:text-blue-400">
-                  {formatNumberDisplay(historyTotals.totalReceived)} G
-                </span>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-start justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                    Chain Received
+                  </span>
+                  <span className="text-lg font-bold text-black dark:text-blue-400">
+                    {formatNumberDisplay(historyTotals.totalReceived)} G
+                  </span>
+                </div>
+                <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-blue-900/30 border border-[#785600]/20 dark:border-blue-700/30">
+                  <span className="text-[#785600] dark:text-blue-400">📥</span>
+                </div>
               </div>
             </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                  Scrap (G)
-                </span>
-                <span className="text-lg font-bold text-black dark:text-green-400">
-                  {formatNumberDisplay(historyTotals.totalScrap)} G
-                </span>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-start justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                    Scrap
+                  </span>
+                  <span className="text-lg font-bold text-black dark:text-green-400">
+                    {formatNumberDisplay(historyTotals.totalScrap)} G
+                  </span>
+                </div>
+                <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-green-900/30 border border-[#785600]/20 dark:border-green-700/30">
+                  <span className="text-[#785600] dark:text-green-400">♻️</span>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-start justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                    Loss
+                  </span>
+                  <span className="text-lg font-bold text-black dark:text-red-400">
+                    {formatNumberDisplay(historyTotals.totalLoss)} G
+                  </span>
+                </div>
+                <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-red-900/30 border border-[#785600]/20 dark:border-red-700/30">
+                  <span className="text-[#785600] dark:text-red-400">⚠️</span>
+                </div>
               </div>
             </div>
           </div>
