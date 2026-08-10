@@ -288,30 +288,8 @@ const JointDept: React.FC = () => {
                 <tbody>
                     ${rows}
                 </tbody>
-                <tfoot>
-                    <tr style="background:#f4f4f2;font-weight:bold;">
-                        <td colspan="4" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">Total</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalChainWeight)}</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalChainReceived)}</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalPowder)}</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalPowderReceived)}</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">-</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalSRP)}</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalScrap)}</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${filteredData.length}</td>
-                    </tr>
-                </tfoot>
-            </table>
 
-            <!-- Footer -->
-            <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
-                <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
-                <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
-                    <span>Powered by Matoshree Gold</span>
-                    <span>|</span>
-                    <span>${new Date().toLocaleString()}</span>
-                </div>
-            </div>
+            </table>
         </div>
     `;
 
