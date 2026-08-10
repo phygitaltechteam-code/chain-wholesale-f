@@ -83,8 +83,12 @@ const Billing: React.FC = () => {
     from: '',
     to: '',
   });
+  // Add refs for date pickers
+  const fromDatePickerRef = useRef<any>(null);
+  const toDatePickerRef = useRef<any>(null);
 
   const { data: billData, isLoading: billLoading } = useGetBill();
+  
   useEffect(() => {
     setDefaultDateRange();
   }, []);
@@ -116,8 +120,11 @@ const Billing: React.FC = () => {
       from: monday.toISOString().split('T')[0],
       to: sunday.toISOString().split('T')[0],
     });
+    
+    // Set the date pickers to Monday and Sunday
+    setFromDate([monday]);
+    setToDate([sunday]);
   };
-
 
   // Process API data
   useEffect(() => {
@@ -364,7 +371,7 @@ const Billing: React.FC = () => {
     // Trigger print
     setTimeout(() => {
       window.print();
-
+      
       // Clean up after print
       setTimeout(() => {
         if (document.body.contains(printContainer)) {
@@ -552,7 +559,7 @@ const Billing: React.FC = () => {
     // Trigger print
     setTimeout(() => {
       window.print();
-
+      
       // Clean up after print
       setTimeout(() => {
         if (document.body.contains(printContainer)) {
@@ -576,7 +583,7 @@ const Billing: React.FC = () => {
     }
   };
 
-
+ 
 
   // Format number with 3 decimals only if needed
   const formatNumberWithDecimals = (value: number) => {
@@ -852,7 +859,6 @@ const Billing: React.FC = () => {
             />
           </div>
 
-          {/* From Date - Default to Monday */}
           <div className="flex items-center gap-2">
             <GenericDatePicker
               id="from-date"
@@ -860,11 +866,9 @@ const Billing: React.FC = () => {
               dateFormat="d/m/Y"
               onDateChange={(dates) => setFromDate(dates)}
               className="w-28 sm:w-32"
-              defaultWeek={true}  // This sets it to Monday
             />
           </div>
 
-          {/* To Date - Set to Sunday */}
           <div className="flex items-center gap-2">
             <GenericDatePicker
               id="to-date"
@@ -872,20 +876,9 @@ const Billing: React.FC = () => {
               dateFormat="d/m/Y"
               onDateChange={(dates) => setToDate(dates)}
               className="w-28 sm:w-32"
-              initialDate={(() => {
-                const today = new Date();
-                const dayOfWeek = today.getDay();
-                const monday = new Date(today);
-                const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-                monday.setDate(today.getDate() - daysToMonday);
-                monday.setHours(0, 0, 0, 0);
-                const sunday = new Date(monday);
-                sunday.setDate(monday.getDate() + 6);
-                sunday.setHours(23, 59, 59, 999);
-                return sunday;
-              })()}
             />
           </div>
+
           {/* Print Report Button */}
           <GenericButton
             onClick={() => {

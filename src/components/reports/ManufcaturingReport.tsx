@@ -257,7 +257,7 @@ export default function ManufacturingReport() {
                   </td>
                   <td className="px-3 py-3 text-center text-sm text-black dark:text-white">
                     <div>{item.dateTime.split(' ')[0]}</div>
-                    <div className="text-xs text-[#4f4535] dark:text-slate-400">{item.dateTime.split(' ').slice(1).join(' ')}</div>
+                    <div>{item.dateTime.split(' ').slice(1).join(' ')}</div>
                   </td>
                   <td className="px-3 py-3 text-center text-sm font-medium text-black dark:text-white">
                     {item.item} ({item.size}) {item.purity > 0 && `(${item.purity}%)`}
@@ -463,7 +463,7 @@ export default function ManufacturingReport() {
     // Trigger print
     setTimeout(() => {
       window.print();
-      
+
       // Clean up after print
       setTimeout(() => {
         if (document.body.contains(printContainer)) {
@@ -524,7 +524,7 @@ export default function ManufacturingReport() {
             </tr>
           ))}
         </tbody>
-      
+
       </table>
 
       <div className="mt-3 pt-2 border-t-2 border-[#785600] text-center">
