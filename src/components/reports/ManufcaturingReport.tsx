@@ -302,30 +302,179 @@ export default function ManufacturingReport() {
     );
   };
 
-  // Print handler
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `Manufacturing-Report`,
-    pageStyle: `
-      @page { 
-        size: A4 landscape; 
-        margin: 10mm; 
+  const handlePrint = () => {
+    if (!filteredData || filteredData.length === 0) {
+      return;
+    }
+
+    // Create a hidden div for printing
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    printContainer.style.cssText = `
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 100%;
+      background: white;
+      padding: 4px;
+      z-index: 9999;
+    `;
+    document.body.appendChild(printContainer);
+
+    // Build the table rows - Compact with minimum padding
+    const rows = filteredData
+      .map((item, index) => {
+        return `
+          <tr>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+              ${item.dateTime}
+            </td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.item}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.size}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.purity}%</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.weight)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.scrap)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.loss)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.currentWeight)}</td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    // Set the content with PDF Header - Minimal padding
+    printContainer.innerHTML = `
+      <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
+        <!-- PDF Header -->
+        <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
+            <span>॥ श्री गणेश प्रसन्न ॥</span>
+            <span>॥ श्री साई प्रसन्न ॥</span>
+          </div>
+          <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
+            मातोश्री चेन फॅक्टरी
+          </div>
+          <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
+            आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+          </div>
+          <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
+            प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+          </div>
+          <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
+        </div>
+
+        <!-- Title -->
+        <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Manufacturing Report</h2>
+        ${fromDate || toDate ? `
+          <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
+            Date Range: ${formatDateForDisplay(fromDate) || 'Start'} to ${formatDateForDisplay(toDate) || 'End'}
+          </p>
+        ` : ''}
+
+        <!-- Table -->
+        <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
+          <thead>
+            <tr style="background:#785600;color:white;font-weight:600;">
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Weight</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Current Wt.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+          <tfoot>
+            <tr style="background:#f4f4f2;font-weight:bold;">
+              <td colspan="5" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">Total</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.totalWeight)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.totalScrap)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.totalLoss)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.currentWeight)}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Footer -->
+        <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
+          <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
+          <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
+            <span>Powered by Matoshree Gold</span>
+            <span>|</span>
+            <span>${new Date().toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add print styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @page {
+        margin: 3mm;
       }
       @media print {
-        body { 
-          -webkit-print-color-adjust: exact; 
-          print-color-adjust: exact; 
+        body * {
+          visibility: hidden;
         }
-        #report-print { 
-          page-break-inside: avoid; 
-          break-inside: avoid; 
+        #print-container, #print-container * {
+          visibility: visible;
         }
-        .no-print { 
-          display: none !important; 
+        #print-container {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          background: white !important;
+          padding: 4px !important;
+          overflow: auto !important;
+          z-index: 9999 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container table {
+          width: 100% !important;
+        }
+        #print-container tr {
+          page-break-inside: avoid !important;
+        }
+        #print-container thead tr {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container thead tr th {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
       }
-    `,
-  });
+    `;
+    document.head.appendChild(style);
+
+    // Trigger print
+    setTimeout(() => {
+      window.print();
+      
+      // Clean up after print
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
+    }, 500);
+  };
 
   // Print Preview Component
   const PrintPreview = () => (
@@ -426,13 +575,6 @@ export default function ManufacturingReport() {
       <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
         <div className="flex flex-col sm:flex-row items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6 gap-3">
           <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
-            <button
-              onClick={() => navigate({ to: '/reports' })}
-              className="inline-flex items-center justify-center rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-              title="Go Back"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
             <div className="h-5 w-px bg-[#d3c4af]/30 dark:bg-slate-600 flex-shrink-0" />
             <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Manufacturing Report
