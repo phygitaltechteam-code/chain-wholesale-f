@@ -268,13 +268,13 @@ const CuttingDept: React.FC = () => {
                     <span>॥ श्री साई प्रसन्न ॥</span>
                 </div>
                 <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
-                    मातोश्री चेन फॅक्टरी
+                    मातोश्री चेन फॅक्टरी, मिरज
                 </div>
                 <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
                     आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
                 </div>
                 <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
-                    प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+                    प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
                 </div>
                 <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
             </div>

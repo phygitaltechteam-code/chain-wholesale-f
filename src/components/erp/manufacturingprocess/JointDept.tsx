@@ -282,24 +282,31 @@ const JointDept: React.FC = () => {
                     <span>॥ श्री साई प्रसन्न ॥</span>
                 </div>
                 <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
-                    मातोश्री चेन फॅक्टरी
+                    मातोश्री चेन फॅक्टरी, मिरज
                 </div>
                 <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
                     आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
                 </div>
                 <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
-                    प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+                    प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
                 </div>
                 <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
             </div>
 
-            <!-- Title -->
-            <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Joint History Report</h2>
-            ${dateRange.length === 2 ? `
-                <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
-                    Date Range: ${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')}
-                </p>
-            ` : ''}
+      <!-- Title and Date Range in one line -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
+  <div style="flex:1;"></div>
+  <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+    Joint History Report
+  </h2>
+  ${dateRange.length === 2 ? `
+    <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
+      From: ${new Date(dateRange[0]).toLocaleDateString('en-IN')} &nbsp; To: ${new Date(dateRange[1]).toLocaleDateString('en-IN')}
+    </div>
+  ` : `
+    <div style="flex:1;"></div>
+  `}
+</div>
 
             <!-- Table -->
             <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
