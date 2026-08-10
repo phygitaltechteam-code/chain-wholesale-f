@@ -640,7 +640,7 @@ const Billing: React.FC = () => {
       .join('');
 
     // Set the content with Date at the top
-   printContainer.innerHTML = `
+    printContainer.innerHTML = `
   <div style="width:297mm;min-height:210mm;margin:0 auto;font-family:Arial,sans-serif;padding:8mm 6mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
     <!-- Header Section -->
     <div>
@@ -668,15 +668,15 @@ const Billing: React.FC = () => {
         </h2>
         <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
           From: ${new Date(fromDate[0]).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          })}
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })}
           &nbsp;&nbsp; To: ${new Date(toDate[0]).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          })}
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })}
         </div>
       </div>
 
@@ -711,8 +711,8 @@ const Billing: React.FC = () => {
 
     // Add print styles
     // Add print styles for Landscape
-const style = document.createElement('style');
-style.textContent = `
+    const style = document.createElement('style');
+    style.textContent = `
   @page {
     size: A4 landscape;
     margin: 0;
@@ -775,7 +775,7 @@ style.textContent = `
     }
   }
 `;
-document.head.appendChild(style);
+    document.head.appendChild(style);
     document.head.appendChild(style);
 
     // Trigger print
@@ -986,73 +986,72 @@ document.head.appendChild(style);
             </GenericButton>
           </div>
         </div>
-
         {/* Summary Cards - Totals for Fin Wt, SRP, Receive, Pending */}
         <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Total Fin Wt Card */}
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-white dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                   Total Fin Wt
                 </span>
-                <span className="text-lg font-bold text-black">
+                <span className="text-lg font-bold text-black dark:text-white">
                   {formatNumberWithDecimals(totalFinWt)} G
                 </span>
               </div>
-              <div className="rounded-full bg-[#785600] p-2 dark:bg-amber-900/30">
-                <Scale className="h-4 w-4 text-white dark:text-amber-400" />
+              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-amber-900/30 border border-[#785600]/20 dark:border-amber-700/30">
+                <Scale className="h-4 w-4 text-[#785600] dark:text-amber-400" />
               </div>
             </div>
           </div>
 
           {/* Total SRP Card */}
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
                 <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                   Total SRP
                 </span>
-                <span className="text-lg font-bold text-black">
-                  {formatNumberWithDecimals(totalSRP)}G
+                <span className="text-lg font-bold text-black dark:text-white">
+                  {formatNumberWithDecimals(totalSRP)} G
                 </span>
               </div>
-              <div className="rounded-full bg-[#785600] p-2 dark:bg-blue-900/30">
-                <DollarSign className="h-4 w-4 text-white dark:text-blue-400" />
+              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-blue-900/30 border border-[#785600]/20 dark:border-blue-700/30">
+                <DollarSign className="h-4 w-4 text-[#785600] dark:text-blue-400" />
               </div>
             </div>
           </div>
 
           {/* Total Receive Card */}
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
                 <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                   Total Receive
                 </span>
-                <span className="text-lg font-bold text-black">
+                <span className="text-lg font-bold text-black dark:text-white">
                   {formatNumberWithDecimals(totalReceive)} G
                 </span>
               </div>
-              <div className="rounded-full bg-[#785600] p-2 dark:bg-green-900/30">
-                <ArrowDownToLine className="h-4 w-4 text-white dark:text-green-400" />
+              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-green-900/30 border border-[#785600]/20 dark:border-green-700/30">
+                <ArrowDownToLine className="h-4 w-4 text-[#785600] dark:text-green-400" />
               </div>
             </div>
           </div>
 
           {/* Total Pending Card */}
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
                 <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                   Total Pending
                 </span>
-                <span className="text-lg font-bold text-black">
+                <span className="text-lg font-bold text-black dark:text-white">
                   {formatNumberWithDecimals(totalPending)} G
                 </span>
               </div>
-              <div className="rounded-full bg-[#785600] p-2 dark:bg-red-900/30">
-                <Clock className="h-4 w-4 text-white dark:text-red-400" />
+              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-red-900/30 border border-[#785600]/20 dark:border-red-700/30">
+                <Clock className="h-4 w-4 text-[#785600] dark:text-red-400" />
               </div>
             </div>
           </div>

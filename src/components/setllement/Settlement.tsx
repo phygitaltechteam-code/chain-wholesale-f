@@ -1409,7 +1409,7 @@ const Settlement: React.FC = () => {
               {/* ACTION BUTTONS */}
               <div className="flex gap-2 pt-2">
 
-                
+
                 <button
                   type="button"
                   onClick={
@@ -1521,7 +1521,7 @@ const Settlement: React.FC = () => {
 
             {/* BUTTONS */}
             <div className="flex gap-2 pt-2">
-       
+
               <button
                 type="button"
                 onClick={handleSaveSettlement}
@@ -1566,114 +1566,81 @@ const Settlement: React.FC = () => {
           />
 
         </div>
-
         {/* =================================================
-            STATISTICS
-        ================================================= */}
+    STATISTICS
+================================================= */}
 
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
           {/* TOTAL CLIENTS */}
-          <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
-
-            <div className="flex items-center justify-between">
-
-              <div>
-                <p className="text-xs text-[#4f4535] dark:text-slate-400">
+          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                   Total Clients
-                </p>
-
-                <p className="text-2xl font-bold text-black">
+                </span>
+                <span className="text-lg font-bold text-black dark:text-white">
                   {settlements.length}
-                </p>
+                </span>
               </div>
-
-              <div className="rounded-full bg-[#785600] p-3 dark:bg-blue-900/30">
-                <Users className="h-5 w-5 text-white dark:text-blue-400" />
+              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-blue-900/30 border border-[#785600]/20 dark:border-blue-700/30">
+                <Users className="h-4 w-4 text-[#785600] dark:text-blue-400" />
               </div>
-
             </div>
-
           </div>
-
 
           {/* PENDING */}
-          <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
-
-            <div className="flex items-center justify-between">
-
-              <div>
-                <p className="text-xs text-[#4f4535] dark:text-slate-400">
+          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                   Pending Settlements
-                </p>
-
-                <p className="text-2xl font-bold text-black">
+                </span>
+                <span className="text-lg font-bold text-black dark:text-white">
                   {totalPending}
-                </p>
+                </span>
               </div>
-
-              <div className="rounded-full bg-[#785600] p-3 dark:bg-yellow-900/30">
-                <Clock className="h-5 w-5 text-white dark:text-yellow-400" />
+              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-yellow-900/30 border border-[#785600]/20 dark:border-yellow-700/30">
+                <Clock className="h-4 w-4 text-[#785600] dark:text-yellow-400" />
               </div>
-
             </div>
-
           </div>
-
 
           {/* SETTLED */}
-          <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
-
-            <div className="flex items-center justify-between">
-
-              <div>
-                <p className="text-xs text-[#4f4535] dark:text-slate-400">
+          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                   Settled
-                </p>
-
-                <p className="text-2xl font-bold text-black">
+                </span>
+                <span className="text-lg font-bold text-black dark:text-white">
                   {totalSettled}
-                </p>
+                </span>
               </div>
-
-              <div className="rounded-full bg-[#785600] p-3 dark:bg-green-900/30">
-                <CheckCircle className="h-5 w-5 text-white dark:text-green-400" />
+              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-green-900/30 border border-[#785600]/20 dark:border-green-700/30">
+                <CheckCircle className="h-4 w-4 text-[#785600] dark:text-green-400" />
               </div>
-
             </div>
-
           </div>
-
 
           {/* NET BALANCE */}
-          <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
-
-            <div className="flex items-center justify-between">
-
-              <div>
-                <p className="text-xs text-[#4f4535] dark:text-slate-400">
+          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                   Net Balance
-                </p>
-
-                <p className="text-2xl font-bold text-black">
+                </span>
+                <span className="text-lg font-bold text-black dark:text-white">
                   {formatNumber(
-                    totalPositiveBalance -
-                    totalNegativeBalance
-                  )}
-                 G
-                </p>
+                    totalPositiveBalance - totalNegativeBalance
+                  )} G
+                </span>
               </div>
-
-              <div className="rounded-full bg-[#785600] p-3 dark:bg-amber-900/30">
-                <Wallet className="h-5 w-5 text-white dark:text-amber-400" />
+              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-amber-900/30 border border-[#785600]/20 dark:border-amber-700/30">
+                <Wallet className="h-4 w-4 text-[#785600] dark:text-amber-400" />
               </div>
-
             </div>
-
           </div>
-
         </div>
-
 
         {/* =================================================
             FILTERS
