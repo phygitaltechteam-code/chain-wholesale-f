@@ -36,8 +36,6 @@ import {
 import { useGetClients } from '@/lib/api/client';
 
 import GenericInputField from '../Forms/Input/GenericInputField';
-import { useReactToPrint } from 'react-to-print';
-import PDFHeader from '../Forms/Common/PDFHeader';
 import GenericButton from '../Forms/Buttons/GenericButton';
 
 // ======================================================
@@ -87,7 +85,6 @@ interface ApiResponse {
 // ======================================================
 // COMPONENT
 // ======================================================
-
 const Settlement: React.FC = () => {
   // ----------------------------------------------------
   // TABLE STATES
@@ -151,13 +148,6 @@ const Settlement: React.FC = () => {
 
   const inputRef =
     useRef<HTMLInputElement>(null);
-
-
-  // ----------------------------------------------------
-  // PRINT REF
-  // ----------------------------------------------------
-
-  const tablePrintRef = useRef<HTMLDivElement>(null);
 
 
   // ======================================================
@@ -425,97 +415,205 @@ const Settlement: React.FC = () => {
 
 
   // ======================================================
-  // PRINT TABLE REPORT - A4 Size
+  // PRINT TABLE REPORT - Full A4 with PDF Header
   // ======================================================
 
-  const handlePrintTable = useReactToPrint({
-    contentRef: tablePrintRef,
-    documentTitle: `Settlement-Report-${new Date().toLocaleDateString()}`,
-    pageStyle: `
-      @page { 
-        size: A4 portrait; 
-        margin: 10mm; 
-      }
-      @media print {
-        body { 
-          -webkit-print-color-adjust: exact; 
-          print-color-adjust: exact; 
-        }
-        #settlement-print { 
-          page-break-inside: avoid; 
-          break-inside: avoid; 
-        }
-        .no-print { 
-          display: none !important; 
-        }
-      }
-    `,
-  });
+  const handlePrintTable = () => {
+    if (!filteredSettlements || filteredSettlements.length === 0) {
+      toast.error('No records available to print');
+      return;
+    }
 
+    // Create a hidden div for printing
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container-settlement';
+    printContainer.style.cssText = `
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 210mm;
+      background: white;
+      padding: 0;
+      z-index: 9999;
+    `;
+    document.body.appendChild(printContainer);
 
-  // ======================================================
-  // SETTLEMENT PRINT PREVIEW - A4 Size with Amount & Remark
-  // ======================================================
+    // Format date for display
+    const formatDateForDisplay = (dateStr: string) => {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    };
 
-  const SettlementPrintPreview = () => {
-    const printData = filteredSettlements;
-    const totalDue = printData.reduce((sum, item) => sum + Math.abs(item.goldBalance), 0);
-    const totalBills = printData.reduce((sum, item) => sum + (item.totalBills || 0), 0);
-    const totalAmount = printData.reduce((sum, item) => sum + Math.abs(item.amount), 0);
+    // Build the table rows
+    const rows = filteredSettlements
+      .map((entry, index) => {
+        return `
+          <tr>
+            <td style="border:1px solid #000;padding:3px 5px;text-align:center;font-size:8px;color:#000;">${index + 1}</td>
+            <td style="border:1px solid #000;padding:3px 5px;text-align:left;font-size:8px;color:#000;">${entry.clientName}</td>
+            <td style="border:1px solid #000;padding:3px 5px;text-align:center;font-size:8px;color:#000;">${entry.phoneNumber}</td>
+            <td style="border:1px solid #000;padding:3px 5px;text-align:right;font-family:monospace;font-size:8px;color:#000;font-weight:bold;">${formatNumber(Math.abs(entry.goldBalance))}</td>
+            <td style="border:1px solid #000;padding:3px 5px;text-align:center;font-size:8px;color:#000;">${entry.totalBills || 0}</td>
+          </tr>
+        `;
+      })
+      .join('');
 
-    return (
-      <div
-        className="bg-white p-6 max-w-full mx-auto font-sans text-xs"
-        ref={tablePrintRef}
-        style={{ width: '297mm', minHeight: '210mm' }}
-      >
-        {/* PDF Header */}
-        <PDFHeader />
+    // Calculate totals
+    const totalDue = filteredSettlements.reduce((sum, item) => sum + Math.abs(item.goldBalance), 0);
+    const totalBills = filteredSettlements.reduce((sum, item) => sum + (item.totalBills || 0), 0);
 
-        <div className="border-b-2 border-[#c43d5c] my-3" />
+    // Set the content with PDF Header
+    printContainer.innerHTML = `
+      <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+        <!-- Header Section -->
+        <div>
+          <!-- PDF Header - All in One Line -->
+          <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
+              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री गणेश प्रसन्न ॥</span>
+              <span style="font-size:20px;font-weight:bold;color:#c43d5c;">मातोश्री चेन फॅक्टरी, मिरज</span>
+              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री साई प्रसन्न ॥</span>
+            </div>
+            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#8b451f;line-height:1.2;">
+              आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+            </div>
+            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#a84b20;line-height:1.2;">
+              प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
+            </div>
+            <div style="border-bottom:2px solid #c43d5c;margin:2px 0 4px 0;"></div>
+          </div>
 
-        {/* Title */}
-        <div className="mb-3 text-center">
-          <h2 className="text-base font-bold text-gray-800">Settlement Report</h2>
+          <!-- Title and Date Range in one line -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
+            <div style="flex:1;"></div>
+            <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+              Settlement Report
+            </h2>
+            <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
+              From: ${formatDateForDisplay(dateRange.from) || 'Start'} 
+              &nbsp;&nbsp; To: ${formatDateForDisplay(dateRange.to) || 'End'}
+            </div>
+          </div>
 
+          <!-- Table -->
+          <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
+            <thead>
+              <tr style="background:#785600;color:white;font-weight:600;">
+                <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:7.5px;">Sr</th>
+                <th style="border:1px solid #785600;padding:4px 5px;text-align:left;font-size:7.5px;">Client Name</th>
+                <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:7.5px;">Phone</th>
+                <th style="border:1px solid #785600;padding:4px 5px;text-align:right;font-size:7.5px;">Due Balance (g)</th>
+                <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:7.5px;">Total Bills</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+            <tfoot>
+              <tr style="background:#f4f4f2;font-weight:bold;">
+                <td colspan="3" style="border:1px solid #000;padding:4px 5px;text-align:right;font-size:8px;color:#000;">Total</td>
+                <td style="border:1px solid #000;padding:4px 5px;text-align:right;font-family:monospace;font-size:8px;color:#000;font-weight:bold;">${formatNumber(totalDue)}</td>
+                <td style="border:1px solid #000;padding:4px 5px;text-align:center;font-size:8px;color:#000;font-weight:bold;">${totalBills}</td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
 
-        {/* Table */}
-        <table className="w-full text-xs border-collapse">
-          <thead>
-            <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-white">
-              <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Sr</th>
-              <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Client Name</th>
-              <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Phone</th>
-              <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Due Balance (g)</th>
-
-              <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Total Bills</th>
-              {/* <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Status</th> */}
-            </tr>
-          </thead>
-          <tbody>
-            {printData.map((entry, index) => (
-              <tr key={entry.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="border border-gray-300 px-2 py-1.5 text-center">{index + 1}</td>
-                <td className="border border-gray-300 px-2 py-1.5">{entry.clientName}</td>
-                <td className="border border-gray-300 px-2 py-1.5">{entry.phoneNumber}</td>
-                <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">
-                  {formatNumber(Math.abs(entry.goldBalance))}
-                </td>
-                <td className="border border-gray-300 px-2 py-1.5 text-right">{entry.totalBills || 0}</td>
-                {/* <td className="border border-gray-300 px-2 py-1.5 text-center"> */}
-                  {/* <span className={`px-2 py-0.5 text-[9px] font-medium capitalize ${entry.status === 'settled' ? 'text-green-600' : 'text-yellow-600'}`}>
-                    {entry.status}
-                  </span> */}
-              
-              </tr>
-            ))}
-          </tbody>
-        
-        </table>
-
+        <!-- Footer -->
+        <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:left;font-size:8px;color:#666;">
+          <div>Contact For Support: 9511640551</div>
+          <div style="font-size:7px;color:#999;margin-top:2px;">Generated: ${new Date().toLocaleString()}</div>
+        </div>
       </div>
-    );
+    `;
+
+    // Add print styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      @media print {
+        html, body {
+          margin: 0;
+          padding: 0;
+          width: 210mm;
+          height: 297mm;
+        }
+        body * {
+          visibility: hidden;
+        }
+        #print-container-settlement, #print-container-settlement * {
+          visibility: visible;
+        }
+        #print-container-settlement {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 210mm !important;
+          height: 297mm !important;
+          background: white !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          overflow: hidden !important;
+          z-index: 9999 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container-settlement > div {
+          width: 210mm !important;
+          min-height: 297mm !important;
+          padding: 6mm 5mm !important;
+          box-sizing: border-box !important;
+        }
+        #print-container-settlement table {
+          width: 100% !important;
+        }
+        #print-container-settlement tr {
+          page-break-inside: avoid !important;
+        }
+        #print-container-settlement thead tr {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container-settlement thead tr th {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container-settlement tfoot tr {
+          background: #f4f4f2 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Trigger print
+    setTimeout(() => {
+      window.print();
+
+      // Clean up after print
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
+    }, 500);
   };
 
 
@@ -661,7 +759,7 @@ const Settlement: React.FC = () => {
   };
 
   // ======================================================
-  // SAVE SETTLEMENT - WITH REMARK
+  // SAVE SETTLEMENT
   // ======================================================
 
   const handleSaveSettlement = async () => {
@@ -683,13 +781,9 @@ const Settlement: React.FC = () => {
         ? amount
         : -amount;
 
-      // Determine remark based on settlement type
-      const remark = settlementDetail.settlementType === 'receive' ? 'Received' : 'Given';
-
       const settlementData = {
         clientId: settlementDetail.clientId,
         amount: signedAmount,
-        // remark: remark,
       };
 
       const response = await submitSettlementMutation.mutateAsync(settlementData);
@@ -841,7 +935,7 @@ const Settlement: React.FC = () => {
 
 
   // ======================================================
-  // TABLE COLUMNS - With Amount and Remark
+  // TABLE COLUMNS
   // ======================================================
 
   const columns: Column<SettlementEntry>[] = [
@@ -929,16 +1023,6 @@ const Settlement: React.FC = () => {
             .settlementAmount;
 
 
-      // Get signed amount display
-      const getSignedDisplay = () => {
-        const amount = settlementDetail.settlementAmount;
-        if (amount <= 0) return '';
-        return settlementDetail.settlementType === 'receive'
-          ? `+${formatNumber(amount)}`
-          : `-${formatNumber(amount)}`;
-      };
-
-
       return (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
@@ -968,7 +1052,7 @@ const Settlement: React.FC = () => {
 
                 <div>
                   <h2 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
-                    Settlement..
+                    Settlement
                   </h2>
                 </div>
 
@@ -1131,7 +1215,7 @@ const Settlement: React.FC = () => {
               </div>
 
 
-              {/* AMOUNT INPUT - With 3 decimal places */}
+              {/* AMOUNT INPUT */}
               <GenericInputField
                 ref={inputRef}
                 name="settlementAmount"
@@ -1757,11 +1841,6 @@ const Settlement: React.FC = () => {
       {renderSettlementModal()}
 
       {renderConfirmModal()}
-
-      {/* Hidden Print Component */}
-      <div className="hidden">
-        <SettlementPrintPreview />
-      </div>
 
     </div>
   );

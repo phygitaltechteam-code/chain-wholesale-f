@@ -383,7 +383,7 @@ export default function ManufacturingReport() {
             <span>॥ श्री साई प्रसन्न ॥</span>
           </div>
           <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
-            मातोश्री चेन फॅक्टरी
+            मातोश्री चेन फॅक्टरी, मिरज
           </div>
           <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
             आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
@@ -393,14 +393,21 @@ export default function ManufacturingReport() {
           </div>
           <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
         </div>
-
-        <!-- Title -->
-        <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Manufacturing Report</h2>
-        ${fromDate || toDate ? `
-          <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
-            Date Range: ${formatDateForDisplay(fromDate) || 'Start'} to ${formatDateForDisplay(toDate) || 'End'}
-          </p>
-        ` : ''}
+<!-- Title and Date Range in one line -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
+  <div style="flex:1;"></div>
+  <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+    Manufacturing Report
+  </h2>
+  ${fromDate || toDate ? `
+    <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
+      From: ${formatDateForDisplay(fromDate) || 'Start'} &nbsp; To: ${formatDateForDisplay(toDate) || 'End'}
+    </div>
+  ` : `
+    <div style="flex:1;"></div>
+  `}
+</div>
+        
 
         <!-- Table -->
         <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
@@ -420,26 +427,8 @@ export default function ManufacturingReport() {
           <tbody>
             ${rows}
           </tbody>
-          <tfoot>
-            <tr style="background:#f4f4f2;font-weight:bold;">
-              <td colspan="5" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">Total</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.totalWeight)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.totalScrap)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.totalLoss)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.currentWeight)}</td>
-            </tr>
-          </tfoot>
+        
         </table>
-
-        <!-- Footer -->
-        <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
-          <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
-          <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
-            <span>Powered by Matoshree Gold</span>
-            <span>|</span>
-            <span>${new Date().toLocaleString()}</span>
-          </div>
-        </div>
       </div>
     `;
 
@@ -519,14 +508,16 @@ export default function ManufacturingReport() {
       <div className="border-b-2 border-[#c43d5c] my-3" />
 
       <div className="mb-4 text-center">
-        <h2 className="text-lg font-bold text-gray-800">Manufacturing Report</h2>
-        <p className="text-xs text-gray-500">Generated: {new Date().toLocaleString()}</p>
-        {(fromDate || toDate) && (
-          <p className="text-xs text-gray-500">
-            Date Range: {formatDateForDisplay(fromDate) || 'Start'} to {formatDateForDisplay(toDate) || 'End'}
-          </p>
-        )}
-      </div>
+  <h2 className="text-lg font-bold text-gray-800">Manufacturing Report</h2>
+  <div className="flex justify-center items-center gap-4 flex-wrap">
+    <p className="text-xs text-gray-500">Generated: {new Date().toLocaleString()}</p>
+    {(fromDate || toDate) && (
+      <p className="text-xs text-gray-500">
+        From: {formatDateForDisplay(fromDate) || 'Start'} &nbsp; To: {formatDateForDisplay(toDate) || 'End'}
+      </p>
+    )}
+  </div>
+</div>
 
       <table className="w-full text-xs border-collapse">
         <thead>
