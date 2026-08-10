@@ -397,16 +397,10 @@ const SKundaDept: React.FC = () => {
     }
   }, [saveIndex, kundaEntries, submitKunda, refetch]);
 
-  const hasEditableValues = (entry: KundaEntry): boolean => {
-    return Boolean(
-      entry.purityRaw?.trim() ||
-      entry.chainReceivedRaw?.trim() ||
-      entry.scrapRaw?.trim()
-    );
-  };
-
+  // Show the Action column as soon as at least one unsaved row is in edit mode.
+  // It does not wait for the user to enter a value.
   const showActionColumn = kundaEntries.some(
-    (entry) => !entry.isSaved && hasEditableValues(entry)
+    (entry) => entry.isEditing === true && entry.isSaved !== true
   );
 
   const columns: Column<KundaEntry>[] = [
@@ -535,7 +529,8 @@ const SKundaDept: React.FC = () => {
           key: 'actions',
           header: 'Action',
           render: (item: KundaEntry, index: number) => {
-            if (item.isSaved || !hasEditableValues(item)) return null;
+            // Only the row currently being edited gets the action button.
+            if (!item.isEditing || item.isSaved) return null;
 
             return (
               <div className="flex items-center justify-center">
