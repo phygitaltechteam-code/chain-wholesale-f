@@ -496,8 +496,7 @@ const Settlement: React.FC = () => {
               <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Client Name</th>
               <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Phone</th>
               <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Due Balance (g)</th>
-              <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Amount (g)</th>
-              <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Remark</th>
+
               <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Total Bills</th>
               <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Status</th>
             </tr>
@@ -510,17 +509,6 @@ const Settlement: React.FC = () => {
                 <td className="border border-gray-300 px-2 py-1.5">{entry.phoneNumber}</td>
                 <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">
                   {formatNumber(Math.abs(entry.goldBalance))}
-                </td>
-                <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">
-                  {formatNumber(entry.amount)}
-                </td>
-                <td className="border border-gray-300 px-2 py-1.5">
-                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-medium ${entry.remark === 'Received'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-red-100 text-red-700'
-                    }`}>
-                    {entry.remark || '-'}
-                  </span>
                 </td>
                 <td className="border border-gray-300 px-2 py-1.5 text-right">{entry.totalBills || 0}</td>
                 <td className="border border-gray-300 px-2 py-1.5 text-center">
@@ -907,7 +895,7 @@ const Settlement: React.FC = () => {
 
     {
       key: 'goldBalance',
-      header: 'Due Balance',
+      header: 'Due Balance(G)',
 
       render: (item) => (
         <div
@@ -1632,7 +1620,7 @@ const Settlement: React.FC = () => {
                     totalPositiveBalance -
                     totalNegativeBalance
                   )}
-                  g
+                 G
                 </p>
               </div>
 
