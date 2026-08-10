@@ -433,7 +433,7 @@ const Settlement: React.FC = () => {
     documentTitle: `Settlement-Report-${new Date().toLocaleDateString()}`,
     pageStyle: `
       @page { 
-        size: A4 landscape; 
+        size: A4 portrait; 
         margin: 10mm; 
       }
       @media print {
@@ -498,7 +498,7 @@ const Settlement: React.FC = () => {
               <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Due Balance (g)</th>
 
               <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">Total Bills</th>
-              <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Status</th>
+              {/* <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Status</th> */}
             </tr>
           </thead>
           <tbody>
@@ -511,35 +511,17 @@ const Settlement: React.FC = () => {
                   {formatNumber(Math.abs(entry.goldBalance))}
                 </td>
                 <td className="border border-gray-300 px-2 py-1.5 text-right">{entry.totalBills || 0}</td>
-                <td className="border border-gray-300 px-2 py-1.5 text-center">
-                  <span className={`px-2 py-0.5 text-[9px] font-medium capitalize ${entry.status === 'settled' ? 'text-green-600' : 'text-yellow-600'}`}>
+                {/* <td className="border border-gray-300 px-2 py-1.5 text-center"> */}
+                  {/* <span className={`px-2 py-0.5 text-[9px] font-medium capitalize ${entry.status === 'settled' ? 'text-green-600' : 'text-yellow-600'}`}>
                     {entry.status}
-                  </span>
-                </td>
+                  </span> */}
+              
               </tr>
             ))}
           </tbody>
-          <tfoot>
-            <tr className="bg-gray-100 font-bold">
-              <td colSpan={3} className="border border-gray-300 px-2 py-1.5 text-right">Total:</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(totalDue)}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(totalAmount)}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-center">-</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-right">{totalBills}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-center">{printData.length} entries</td>
-            </tr>
-          </tfoot>
+        
         </table>
 
-        {/* Footer */}
-        <div className="mt-3 pt-2 border-t-2 border-[#785600] text-center">
-          <p className="text-xs text-gray-500">This is a system-generated report</p>
-          <div className="mt-0.5 flex justify-center gap-3 text-[10px] text-gray-400">
-            <span>Powered by Matoshree Gold</span>
-            <span>|</span>
-            <span>Generated: {new Date().toLocaleString()}</span>
-          </div>
-        </div>
       </div>
     );
   };

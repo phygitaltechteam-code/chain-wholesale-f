@@ -343,74 +343,56 @@ export default function ManufacturingReport() {
       .join('');
 
     // Set the content with PDF Header - Minimal padding
-    printContainer.innerHTML = `
-      <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
-        <!-- PDF Header -->
-        <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
-            <span>॥ श्री गणेश प्रसन्न ॥</span>
-            <span>॥ श्री साई प्रसन्न ॥</span>
-          </div>
-          <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
-            मातोश्री चेन फॅक्टरी
-          </div>
-          <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
-            आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
-          </div>
-          <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
-            प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
-          </div>
-          <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
-        </div>
-
-        <!-- Title -->
-        <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Manufacturing Report</h2>
-        ${fromDate || toDate ? `
-          <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
-            Date Range: ${formatDateForDisplay(fromDate) || 'Start'} to ${formatDateForDisplay(toDate) || 'End'}
-          </p>
-        ` : ''}
-
-        <!-- Table -->
-        <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
-          <thead>
-            <tr style="background:#785600;color:white;font-weight:600;">
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Weight</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Current Wt.</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-          <tfoot>
-            <tr style="background:#f4f4f2;font-weight:bold;">
-              <td colspan="5" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">Total</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.totalWeight)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.totalScrap)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.totalLoss)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.currentWeight)}</td>
-            </tr>
-          </tfoot>
-        </table>
-
-        <!-- Footer -->
-        <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
-          <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
-          <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
-            <span>Powered by Matoshree Gold</span>
-            <span>|</span>
-            <span>${new Date().toLocaleString()}</span>
-          </div>
-        </div>
+   printContainer.innerHTML = `
+  <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
+    <!-- PDF Header -->
+    <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;">
+        <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री गणेश प्रसन्न ॥</span>
+        <span style="font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">मातोश्री चेन फॅक्टरी</span>
+        <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री साई प्रसन्न ॥</span>
       </div>
-    `;
+      <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
+        आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+      </div>
+      <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
+        प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+      </div>
+      <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
+    </div>
+
+    <!-- Title -->
+    <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Manufacturing Report</h2>
+    ${fromDate || toDate ? `
+      <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
+        Date Range: ${formatDateForDisplay(fromDate) || 'Start'} to ${formatDateForDisplay(toDate) || 'End'}
+      </p>
+    ` : ''}
+
+    <!-- Table -->
+    <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
+      <thead>
+        <tr style="background:#785600;color:white;font-weight:600;">
+          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
+          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
+          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
+          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
+          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
+          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Weight</th>
+          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
+          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
+          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Current Wt.</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+
+    <!-- Footer --
+   
+  </div>
+`;
 
     // Add print styles
     const style = document.createElement('style');
