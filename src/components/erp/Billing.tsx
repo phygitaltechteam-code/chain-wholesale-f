@@ -623,7 +623,7 @@ const Billing: React.FC = () => {
                   Total Fin Wt
                 </span>
                 <span className="text-lg font-bold text-black">
-                  {formatNumberWithDecimals(totalFinWt)} g
+                  {formatNumberWithDecimals(totalFinWt)} G
                 </span>
               </div>
               <div className="rounded-full bg-amber-100 p-2 dark:bg-amber-900/30">
@@ -640,7 +640,7 @@ const Billing: React.FC = () => {
                   Total SRP
                 </span>
                     <span className="text-lg font-bold text-black">
-                  {formatNumberWithDecimals(totalSRP)} g
+                  {formatNumberWithDecimals(totalSRP)}G
                 </span>
               </div>
               <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/30">
@@ -657,7 +657,7 @@ const Billing: React.FC = () => {
                   Total Receive
                 </span>
                        <span className="text-lg font-bold text-black">
-                  {formatNumberWithDecimals(totalReceive)} g
+                  {formatNumberWithDecimals(totalReceive)} G
                 </span>
               </div>
               <div className="rounded-full bg-green-100 p-2 dark:bg-green-900/30">
@@ -674,7 +674,7 @@ const Billing: React.FC = () => {
                   Total Pending
                 </span>
                       <span className="text-lg font-bold text-black">
-                  {formatNumberWithDecimals(totalPending)} g
+                  {formatNumberWithDecimals(totalPending)} G
                 </span>
 
               </div>

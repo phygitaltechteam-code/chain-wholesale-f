@@ -25,10 +25,10 @@ const GenericButton: React.FC<GenericButtonProps> = ({
 }) => {
   // Size variants
   const sizeClasses = {
-    xs: 'px-1.5 py-1 text-[8px] sm:text-[10px] gap-1',
+    xs: 'px-1 py-1 text-[8px] sm:text-[10px] gap-1',
     sm: 'px-2 py-1 sm:px-2.5 sm:py-1.5 text-[10px] sm:text-xs gap-1.5',
     md: 'px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm gap-2',
-    lg: 'px-4 py-2 sm:px-6 sm:py-2.5 text-sm sm:text-base gap-2.5',
+    lg: 'px-3 py-2 sm:px-6 sm:py-2.5 text-sm sm:text-base gap-2.5',
   };
 
   // Variant styles

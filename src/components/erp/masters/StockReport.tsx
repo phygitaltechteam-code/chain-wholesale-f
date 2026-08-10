@@ -1,12 +1,13 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Search, Printer } from "lucide-react";
+import { ArrowLeft, Search, Printer, Calendar } from "lucide-react";
 import { GenericTable, Column } from "@/components/Forms/Table/GenericTable";
 import { useReactToPrint } from "react-to-print";
 import PDFHeader from "@/components/Forms/Common/PDFHeader";
 import { Route } from "@/routes/_app/stock/stockreport.$d";
 import { useGetStockReport } from "@/lib/api/reportapi";
 import GenericButton from "@/components/Forms/Buttons/GenericButton";
+import GenericDatePicker from "@/components/Forms/DatePicker/GenericDatePicker";
 
 interface StockReportEntry {
   id: string;
@@ -15,7 +16,7 @@ interface StockReportEntry {
   item: string;
   size: string;
   purity: string;
-  remark: 'Inward' | 'Outward' | 'Scale Manufactured' | 'Received' | 'Given';
+  remark: string;
   wt: number;
   amount?: number;
 }
@@ -60,6 +61,8 @@ export default function StockReport() {
   const navigate = useNavigate();
   const { d } = Route.useParams();
   const [searchTerm, setSearchTerm] = useState("");
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const { data: stockData, isLoading, isError, refetch } = useGetStockReport(d);
 
@@ -72,7 +75,7 @@ export default function StockReport() {
     if (stockData) {
       const responseData = stockData as ApiResponse;
 
-      if (responseData.history && Array.isArray(responseData?.history)) {
+      if (responseData?.history && Array.isArray(responseData.history)) {
         const transformedData: StockReportEntry[] = responseData.history.map((item: ApiDataItem, index: number) => {
           // Format date
           const date = new Date(item.createdAt);
@@ -87,16 +90,8 @@ export default function StockReport() {
             hour12: true
           });
 
-          // Determine remark type
-          let remarkType: 'Inward' | 'Outward' | 'Scale Manufactured' | 'Received' | 'Given' = 'Received';
-          if (item.remark) {
-            const remarkLower = item.remark.toLowerCase();
-            if (remarkLower.includes('inward')) remarkType = 'Inward';
-            else if (remarkLower.includes('outward')) remarkType = 'Outward';
-            else if (remarkLower.includes('scale') || remarkLower.includes('manufactured')) remarkType = 'Scale Manufactured';
-            else if (remarkLower.includes('received')) remarkType = 'Received';
-            else if (remarkLower.includes('given')) remarkType = 'Given';
-          }
+          // Use the actual remark from API
+          const remark = item.remark || 'N/A';
 
           return {
             id: item.id,
@@ -105,7 +100,7 @@ export default function StockReport() {
             item: item.item?.name || 'Unknown Item',
             size: item.size?.size || 'N/A',
             purity: item.purity ? item.purity.toString() : 'N/A',
-            remark: remarkType,
+            remark: remark,
             wt: item.weight || 0
           };
         });
@@ -115,16 +110,43 @@ export default function StockReport() {
     }
   }, [stockData]);
 
-  // Filter data based on search term
-  const filteredData = searchTerm
-    ? reportData.filter(entry =>
+  // Filter data based on search term and date range
+  const filteredData = reportData.filter(entry => {
+    // Search filter
+    const matchesSearch = searchTerm === "" ||
       entry.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.purity.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.remark.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.wt.toString().includes(searchTerm)
-    )
-    : reportData;
+      entry.wt.toString().includes(searchTerm);
+
+    // Date range filter
+    let matchesDate = true;
+    if (fromDate || toDate) {
+      // Parse the date from entry.dateTime (format: "DD/MM/YYYY HH:MM AM/PM")
+      const dateParts = entry.dateTime.split(' ')[0].split('/');
+      if (dateParts.length === 3) {
+        const entryDate = new Date(
+          parseInt(dateParts[2]), // year
+          parseInt(dateParts[1]) - 1, // month (0-indexed)
+          parseInt(dateParts[0]) // day
+        );
+
+        if (fromDate) {
+          const from = new Date(fromDate);
+          from.setHours(0, 0, 0, 0);
+          if (entryDate < from) matchesDate = false;
+        }
+        if (toDate && matchesDate) {
+          const to = new Date(toDate);
+          to.setHours(23, 59, 59, 999);
+          if (entryDate > to) matchesDate = false;
+        }
+      }
+    }
+
+    return matchesSearch && matchesDate;
+  });
 
   // Calculate totals
   const totalWt = filteredData.reduce((sum, entry) => sum + entry.wt, 0);
@@ -137,21 +159,61 @@ export default function StockReport() {
     return str.replace(/\.?0+$/, "");
   };
 
-  // Get remark color
+  // Format date for display
+  const formatDateForDisplay = (date: Date | null) => {
+    if (!date) return '';
+    return date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  // Handle date change from GenericDatePicker
+  const handleFromDateChange = (selectedDates: Date[]) => {
+    if (selectedDates && selectedDates.length > 0) {
+      setFromDate(selectedDates[0]);
+    } else {
+      setFromDate(null);
+    }
+  };
+
+  const handleToDateChange = (selectedDates: Date[]) => {
+    if (selectedDates && selectedDates.length > 0) {
+      setToDate(selectedDates[0]);
+    } else {
+      setToDate(null);
+    }
+  };
+
+  // Reset date filters
+  const handleResetDates = () => {
+    setFromDate(null);
+    setToDate(null);
+  };
+
+  // Get remark color - handles any remark string
   const getRemarkColor = (remark: string) => {
-    switch (remark) {
-      case "Inward":
-        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
-      case "Outward":
-        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-      case "Scale Manufactured":
-        return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
-      case "Received":
-        return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-      case "Given":
-        return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
-      default:
-        return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400";
+    const remarkLower = remark?.toLowerCase() || '';
+    
+    if (remarkLower.includes('inward')) {
+      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+    } else if (remarkLower.includes('outward')) {
+      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+    } else if (remarkLower.includes('scale') || remarkLower.includes('manufactured')) {
+      return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+    } else if (remarkLower.includes('received')) {
+      return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+    } else if (remarkLower.includes('given')) {
+      return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
+    } else if (remarkLower.includes('sale')) {
+      return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400";
+    } else if (remarkLower.includes('settle')) {
+      return "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400";
+    } else if (remarkLower.includes('advance')) {
+      return "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400";
+    } else {
+      return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400";
     }
   };
 
@@ -264,6 +326,11 @@ export default function StockReport() {
         <h2 className="text-lg font-bold text-gray-800">Stock Report</h2>
         <p className="text-xs text-gray-500">Stock ID: {d}</p>
         <p className="text-xs text-gray-500">Generated: {new Date().toLocaleString()}</p>
+        {(fromDate || toDate) && (
+          <p className="text-xs text-gray-500">
+            Date Range: {formatDateForDisplay(fromDate) || 'Start'} to {formatDateForDisplay(toDate) || 'End'}
+          </p>
+        )}
       </div>
 
       <table className="w-full text-xs border-collapse">
@@ -287,12 +354,7 @@ export default function StockReport() {
               <td className="border border-gray-300 px-2 py-1.5">{entry.size}</td>
               <td className="border border-gray-300 px-2 py-1.5">{entry.purity}</td>
               <td className="border border-gray-300 px-2 py-1.5">
-                <span className={`px-2 py-0.5 rounded-full text-[9px] font-medium ${entry.remark === "Inward" ? "bg-green-100 text-green-700" :
-                  entry.remark === "Outward" ? "bg-red-100 text-red-700" :
-                    entry.remark === "Scale Manufactured" ? "bg-blue-100 text-blue-700" :
-                      entry.remark === "Received" ? "bg-emerald-100 text-emerald-700" :
-                        "bg-orange-100 text-orange-700"
-                  }`}>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-medium ${getRemarkColor(entry.remark)}`}>
                   {entry.remark}
                 </span>
               </td>
@@ -392,26 +454,61 @@ export default function StockReport() {
             </h2>
           </div>
 
-          {/* Right side - Search and Print Button */}
+          {/* Right side - Search, Date Pickers and Print Button */}
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64">
+            {/* Search Bar */}
+            <div className="relative w-full sm:w-48">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
               <input
                 type="text"
-                placeholder="Search by item, size, purity..."
+                placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
               />
             </div>
 
+            {/* From Date */}
+            <div className="w-full sm:w-40">
+              <GenericDatePicker
+                id="from-date-stock"
+                initialDate={fromDate || undefined}
+                onDateChange={handleFromDateChange}
+                placeholder="From Date"
+                className="w-full"
+              />
+            </div>
+
+            {/* To Date */}
+            <div className="w-full sm:w-40">
+              <GenericDatePicker
+                id="to-date-stock"
+                initialDate={toDate || undefined}
+                onDateChange={handleToDateChange}
+                placeholder="To Date"
+                className="w-full"
+              />
+            </div>
+
+            {/* Reset Button (shows when dates are selected) */}
+            {(fromDate || toDate) && (
+              <button
+                onClick={handleResetDates}
+                className="px-3 py-2 text-sm text-[#785600] hover:text-[#5d4200] hover:bg-[#785600]/10 rounded-lg transition-colors whitespace-nowrap"
+              >
+                Clear
+              </button>
+            )}
+
             {/* Print Button */}
-            <GenericButton
+            <button
               onClick={() => handlePrint()}
+              className="flex items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white hover:bg-[#5d4200] transition-colors whitespace-nowrap"
             >
               <Printer className="h-4 w-4" />
-              <span>Print</span>
-            </GenericButton>
+              <span className="hidden sm:inline">Print Report</span>
+              <span className="sm:hidden">Print</span>
+            </button>
           </div>
         </div>
       </div>
@@ -424,10 +521,9 @@ export default function StockReport() {
               <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                 Total Weight
               </span>
-              <span className='text-black font-bold'>
+              <span className='text-black font-bold text-lg'>
                 {formatNumber(totalWt)} G
               </span>
-
             </div>
           </div>
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
@@ -435,10 +531,9 @@ export default function StockReport() {
               <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                 Total Entries
               </span>
-              <span className='text-black font-bold'>
+              <span className='text-black font-bold text-lg'>
                 {totalEntries}
               </span>
-
             </div>
           </div>
         </div>
@@ -449,7 +544,7 @@ export default function StockReport() {
             data={filteredData}
             columns={columns}
             onSave={(item) => console.log("Save:", item)}
-            emptyMessage="No stock entries found."
+            emptyMessage={searchTerm || fromDate || toDate ? "No stock entries found matching your filters." : "No stock entries found."}
             isLoading={isLoading || loading}
             showSrNo={true}
             srNoLabel="Sr No."

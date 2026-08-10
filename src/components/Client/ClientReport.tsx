@@ -1,11 +1,7 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { Route } from "../../routes/_app/client/clientreport.$id";
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Search, Printer, User, Phone, MapPin } from "lucide-react";
-import GenericButton from "@/components/Forms/Buttons/GenericButton";
-import { GenericTable, Column } from "@/components/Forms/Table/GenericTable";
-import { useReactToPrint } from "react-to-print";
-import PDFHeader from "@/components/Forms/Common/PDFHeader";
+import { ArrowLeft, Search, Printer } from "lucide-react";
 import { useGetClientReport } from "@/lib/api/reportapi";
 
 interface ClientReportEntry {
@@ -18,6 +14,8 @@ interface ClientReportEntry {
     purity: string;
     remark: string;
     wt: number;
+    groupId: string;
+    isFirstInGroup: boolean;
 }
 
 interface ApiResponse {
@@ -60,21 +58,23 @@ export default function ClientReport() {
     const navigate = useNavigate();
     const { id } = Route.useParams();
     const [searchTerm, setSearchTerm] = useState("");
-    const printRef = useRef<HTMLDivElement>(null);
-    const { data: clientReportData, isLoading, isError, refetch } = useGetClientReport(id);
-
-    // State for transformed data
     const [reportData, setReportData] = useState<ClientReportEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const { data: clientReportData, isLoading, isError, refetch } = useGetClientReport(id);
 
     // Transform API data to match our table structure
     useEffect(() => {
         if (clientReportData) {
             const responseData = clientReportData as ApiResponse;
 
-            if (responseData?.data && Array.isArray(responseData.data)) {
+            if (responseData && Array.isArray(responseData)) {
+                // First, sort all items by createdAt (newest first)
+                const sortedItems = [...responseData].sort((a, b) => 
+                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                );
+
                 // Group by bill number
-                const groupedData = responseData.data.reduce((acc: any, item: ApiDataItem) => {
+                const groupedData = sortedItems.reduce((acc: any, item: ApiDataItem) => {
                     const billKey = item.billNumber || 'N/A';
                     if (!acc[billKey]) {
                         acc[billKey] = [];
@@ -86,12 +86,14 @@ export default function ClientReport() {
                 // Transform grouped data to entries
                 const transformedData: ClientReportEntry[] = [];
                 let srNo = 1;
+                let groupId = 0;
 
                 // Process each bill group
                 Object.keys(groupedData).forEach((billKey) => {
                     const items = groupedData[billKey];
+                    groupId++;
                     
-                    // Group by remark to combine weights
+                    // Group by remark to combine weights within the same bill
                     const remarkGroups = items.reduce((acc: any, item: ApiDataItem) => {
                         const remark = item.remark || 'N/A';
                         if (!acc[remark]) {
@@ -100,15 +102,20 @@ export default function ClientReport() {
                                 item: item.item?.name || 'Unknown Item',
                                 size: item.size?.size || 'N/A',
                                 purity: item.purity !== null ? item.purity.toString() : 'N/A',
-                                createdAt: item.createdAt
+                                createdAt: item.createdAt,
+                                billNumber: billKey,
+                                items: []
                             };
                         }
                         acc[remark].weight += item.weight || 0;
+                        acc[remark].items.push(item);
                         return acc;
                     }, {});
 
                     // Create entries for each remark group
-                    Object.keys(remarkGroups).forEach((remark) => {
+                    const remarkKeys = Object.keys(remarkGroups);
+                    
+                    remarkKeys.forEach((remark, index) => {
                         const group = remarkGroups[remark];
                         const date = new Date(group.createdAt);
                         const formattedDate = date.toLocaleDateString('en-IN', {
@@ -122,30 +129,23 @@ export default function ClientReport() {
                             hour12: true
                         });
 
+                        // Determine if this is the first entry in the bill group
+                        const isFirstInBill = index === 0;
+
                         transformedData.push({
                             id: `group-${srNo}`,
                             srNo: srNo++,
-                            dateTime: `${formattedDate} ${formattedTime}`,
-                            billNo: billKey === 'N/A' ? 'N/A' : billKey,
+                            dateTime: isFirstInBill ? `${formattedDate} ${formattedTime}` : '',
+                            billNo: isFirstInBill ? (group.billNumber === 'N/A' ? 'N/A' : group.billNumber) : '',
                             item: group.item,
                             size: group.size,
                             purity: group.purity,
                             remark: remark,
-                            wt: group.weight
+                            wt: group.weight,
+                            groupId: `group-${groupId}`,
+                            isFirstInGroup: isFirstInBill
                         });
                     });
-                });
-
-                // Sort by date (newest first)
-                transformedData.sort((a, b) => {
-                    const dateA = new Date(a.dateTime);
-                    const dateB = new Date(b.dateTime);
-                    return dateB.getTime() - dateA.getTime();
-                });
-
-                // Reset srNo after sorting
-                transformedData.forEach((item, index) => {
-                    item.srNo = index + 1;
                 });
 
                 setReportData(transformedData);
@@ -180,189 +180,230 @@ export default function ClientReport() {
 
     // Get remark color
     const getRemarkColor = (remark: string) => {
-        switch (remark) {
-            case "Settle":
+        const remarkLower = remark?.toLowerCase() || '';
+        switch (remarkLower) {
+            case "settle":
                 return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
-            case "Advance":
+            case "advance":
                 return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
-            case "Sale":
+            case "sale":
                 return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400";
-            case "Received":
+            case "received":
                 return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-            case "Given":
+            case "given":
                 return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+            case "inward":
+                return "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400";
+            case "outward":
+                return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
             default:
                 return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400";
         }
     };
 
-    // Table columns
-    const columns: Column<ClientReportEntry>[] = [
-        {
-            key: 'dateTime',
-            header: 'Date & Time',
-            render: (item) => {
-                const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
-                const datePart = parts[0] || '';
-                const timePart = parts.slice(1).join(' ') || '';
-
-                return (
-                    <div className="flex flex-col items-center">
-                        <span className="text-sm text-[#1a1c1b] dark:text-white">
-                            {datePart}
-                        </span>
-                        <span className="text-sm text-[#1a1c1b] dark:text-white">
-                            {timePart}
-                        </span>
-                    </div>
-                );
-            },
-        },
-        {
-            key: "billNo",
-            header: "Bill No",
-            render: (item) => (
-                <span className={`text-sm font-medium ${item.billNo !== 'N/A' ? 'text-[#785600] dark:text-amber-400' : 'text-gray-400'}`}>
-                    {item.billNo}
-                </span>
-            ),
-        },
-        {
-            key: "item",
-            header: "Item",
-            render: (item) => (
-                <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-                    {item.item}
-                </span>
-            ),
-        },
-        {
-            key: "size",
-            header: "Size",
-            render: (item) => (
-                <span className="text-sm text-[#1a1c1b] dark:text-white">
-                    {item.size}
-                </span>
-            ),
-        },
-        {
-            key: "purity",
-            header: "Purity",
-            render: (item) => (
-                <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-                    {item.purity}
-                </span>
-            ),
-        },
-        {
-            key: "remark",
-            header: "Remark",
-            render: (item) => (
-                <span className={`text-xs font-medium px-2 py-1 rounded-full ${getRemarkColor(item.remark)}`}>
-                    {item.remark}
-                </span>
-            ),
-        },
-        {
-            key: "wt",
-            header: "WT (G)",
-            render: (item) => (
-                <span className={`text-sm font-mono font-bold ${item.wt > 0 ? 'text-green-600 dark:text-green-400' : item.wt < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500'}`}>
-                    {item.wt > 0 ? '+' : ''}{formatNumber(item.wt)}
-                </span>
-            ),
-        },
-    ];
-
     // Print handler
-    const handlePrint = useReactToPrint({
-        contentRef: printRef,
-        documentTitle: `Client-Report-${id}`,
-        pageStyle: `
-      @page { 
-        size: A4 landscape; 
-        margin: 10mm; 
-      }
-      @media print {
-        body { 
-          -webkit-print-color-adjust: exact; 
-          print-color-adjust: exact; 
+    const handlePrint = () => {
+        if (!filteredData || filteredData.length === 0) {
+            return;
         }
-        #report-print { 
-          page-break-inside: avoid; 
-          break-inside: avoid; 
-        }
-        .no-print { 
-          display: none !important; 
-        }
-      }
-    `,
-    });
 
-    // Print Preview Component
-    const PrintPreview = () => (
-        <div
-            className="bg-white p-6 max-w-full mx-auto font-sans"
-            ref={printRef}
-            id="report-print"
-            style={{ width: '297mm', minHeight: '210mm' }}
-        >
-            <PDFHeader />
-            <div className="border-b-2 border-[#c43d5c] my-3" />
+        // Create a hidden div for printing
+        const printContainer = document.createElement('div');
+        printContainer.id = 'print-container';
+        printContainer.style.cssText = `
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            width: 100%;
+            background: white;
+            padding: 4px;
+            z-index: 9999;
+        `;
+        document.body.appendChild(printContainer);
 
-            <div className="mb-4 text-center">
-                <h2 className="text-lg font-bold text-gray-800">Client Report</h2>
-                <p className="text-xs text-gray-500">Client ID: {id}</p>
-                <p className="text-xs text-gray-500">Generated: {new Date().toLocaleString()}</p>
-            </div>
+        // Group data for print - maintain the same grouping
+        const printGroupedData: { [key: string]: ClientReportEntry[] } = {};
+        filteredData.forEach(entry => {
+            if (!printGroupedData[entry.groupId]) {
+                printGroupedData[entry.groupId] = [];
+            }
+            printGroupedData[entry.groupId].push(entry);
+        });
 
-            <table className="w-full text-xs border-collapse">
-                <thead>
-                    <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-white">
-                        <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Sr</th>
-                        <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Date & Time</th>
-                        <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Bill No</th>
-                        <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Item</th>
-                        <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Size</th>
-                        <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Purity</th>
-                        <th className="border border-[#785600] px-2 py-1.5 text-left font-semibold">Remark</th>
-                        <th className="border border-[#785600] px-2 py-1.5 text-right font-semibold">WT (G)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((entry, index) => (
-                        <tr key={entry.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="border border-gray-300 px-2 py-1.5 text-center">{entry.srNo}</td>
-                            <td className="border border-gray-300 px-2 py-1.5">{entry.dateTime}</td>
-                            <td className="border border-gray-300 px-2 py-1.5">{entry.billNo}</td>
-                            <td className="border border-gray-300 px-2 py-1.5">{entry.item}</td>
-                            <td className="border border-gray-300 px-2 py-1.5">{entry.size}</td>
-                            <td className="border border-gray-300 px-2 py-1.5">{entry.purity}</td>
-                            <td className="border border-gray-300 px-2 py-1.5">{entry.remark}</td>
-                            <td className={`border border-gray-300 px-2 py-1.5 text-right font-mono ${entry.wt > 0 ? 'text-green-600' : entry.wt < 0 ? 'text-red-600' : ''}`}>
-                                {entry.wt > 0 ? '+' : ''}{formatNumber(entry.wt)}
+        // Build the table rows with proper grouping
+        let rows = '';
+        let isFirstGroup = true;
+
+        Object.keys(printGroupedData).forEach((groupId) => {
+            const entries = printGroupedData[groupId];
+            
+            entries.forEach((entry, index) => {
+                // Show separator between groups
+                if (!isFirstGroup && index === 0) {
+                    rows += `
+                        <tr>
+                            <td colspan="7" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;background:#f0f0f0;">
+                                ───────────────────────────────────────
                             </td>
                         </tr>
-                    ))}
-                </tbody>
-                <tfoot>
-                    <tr className="bg-gray-100 font-bold">
-                        <td colSpan={7} className="border border-gray-300 px-2 py-1.5 text-right">Total:</td>
-                        <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{formatNumber(totalWt)}</td>
+                    `;
+                }
+                
+                rows += `
+                    <tr>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${entry.srNo}</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+                            ${entry.dateTime || ' '}
+                        </td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:${entry.billNo && entry.billNo !== 'N/A' && entry.billNo !== '' ? 'bold' : 'normal'};">
+                            ${entry.billNo || ' '}
+                        </td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
+                            ${entry.item} (${entry.size})
+                        </td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
+                            ${entry.purity !== 'N/A' ? `${entry.purity}%` : 'N/A'}
+                        </td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${entry.remark || 'N/A'}</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:${entry.wt > 0 ? '#16a34a' : entry.wt < 0 ? '#dc2626' : '#000'};">
+                            ${entry.wt > 0 ? '+' : ''}${formatNumber(entry.wt)}
+                        </td>
                     </tr>
-                </tfoot>
-            </table>
+                `;
+            });
+            
+            isFirstGroup = false;
+        });
 
-            <div className="mt-3 pt-2 border-t-2 border-[#785600] text-center">
-                <p className="text-xs text-gray-500">This is a system-generated report</p>
-                <div className="mt-0.5 flex justify-center gap-3 text-[10px] text-gray-400">
-                    <span>Powered by Matoshree Gold</span>
-                    <span>|</span>
-                    <span>Generated: {new Date().toLocaleString()}</span>
+        // Set the content with PDF Header
+        printContainer.innerHTML = `
+            <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
+                <!-- PDF Header -->
+                <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
+                        <span>॥ श्री गणेश प्रसन्न ॥</span>
+                        <span>॥ श्री साई प्रसन्न ॥</span>
+                    </div>
+                    <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
+                        मातोश्री चेन फॅक्टरी
+                    </div>
+                    <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
+                        आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+                    </div>
+                    <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
+                        प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+                    </div>
+                    <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
+                </div>
+
+                <!-- Title -->
+                <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Client Report</h2>
+                <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
+                    Client ID: ${id} | Generated: ${new Date().toLocaleString()}
+                </p>
+
+                <!-- Table -->
+                <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
+                    <thead>
+                        <tr style="background:#785600;color:white;font-weight:600;">
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Bill No</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item (Size)</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Remark</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">WT (G)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#f4f4f2;font-weight:bold;">
+                            <td colspan="6" style="border:1px solid #000;padding:1px 2px;text-align:right;font-size:11px;color:#000;">Total:</td>
+                            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalWt)}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <!-- Footer -->
+                <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
+                    <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
+                    <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
+                        <span>Powered by Matoshree Gold</span>
+                        <span>|</span>
+                        <span>${new Date().toLocaleString()}</span>
+                    </div>
                 </div>
             </div>
-        </div>
-    );
+        `;
+
+        // Add print styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @page {
+                margin: 3mm;
+            }
+            @media print {
+                body * {
+                    visibility: hidden;
+                }
+                #print-container, #print-container * {
+                    visibility: visible;
+                }
+                #print-container {
+                    position: fixed !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                    background: white !important;
+                    padding: 4px !important;
+                    overflow: auto !important;
+                    z-index: 9999 !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                #print-container table {
+                    width: 100% !important;
+                }
+                #print-container tr {
+                    page-break-inside: avoid !important;
+                }
+                #print-container thead tr {
+                    background: #785600 !important;
+                    color: white !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                #print-container thead tr th {
+                    background: #785600 !important;
+                    color: white !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                #print-container .group-separator {
+                    background: #f0f0f0 !important;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Trigger print
+        setTimeout(() => {
+            window.print();
+
+            // Clean up after print
+            setTimeout(() => {
+                if (document.body.contains(printContainer)) {
+                    document.body.removeChild(printContainer);
+                }
+                if (document.head.contains(style)) {
+                    document.head.removeChild(style);
+                }
+            }, 1000);
+        }, 500);
+    };
 
     // Show loading state
     if (isLoading || loading) {
@@ -448,9 +489,9 @@ export default function ClientReport() {
                             />
                         </div>
 
-                        {/* Print Button - Right side of search bar */}
+                        {/* Print Button */}
                         <button
-                            onClick={() => handlePrint()}
+                            onClick={handlePrint}
                             className="flex items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white hover:bg-[#5d4200] transition-colors whitespace-nowrap"
                         >
                             <Printer className="h-4 w-4" />
@@ -496,23 +537,98 @@ export default function ClientReport() {
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="-mx-3 sm:-mx-4 md:mx-0">
-                    <GenericTable
-                        data={filteredData}
-                        columns={columns}
-                        onSave={(item) => console.log("Save:", item)}
-                        emptyMessage={searchTerm ? "No entries match your search." : "No entries found for this client."}
-                        isLoading={isLoading || loading}
-                        showSrNo={true}
-                        srNoLabel="Sr No."
-                    />
+                {/* Custom Table with Grouping */}
+                <div className="overflow-x-auto -mx-3 sm:-mx-4 md:mx-0">
+                    <div className="inline-block min-w-full align-middle">
+                        <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                            <table className="min-w-full divide-y divide-gray-300 dark:divide-slate-700">
+                                <thead className="bg-[#785600] dark:bg-[#5d4200]">
+                                    <tr>
+                                        <th scope="col" className="py-3 pl-4 pr-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
+                                            Sr No.
+                                        </th>
+                                        <th scope="col" className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
+                                            Date Time
+                                        </th>
+                                        <th scope="col" className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
+                                            Bill No.
+                                        </th>
+                                        <th scope="col" className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
+                                            Item (Size)
+                                        </th>
+                                        <th scope="col" className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
+                                            Purity
+                                        </th>
+                                        <th scope="col" className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">
+                                            Remark
+                                        </th>
+                                        <th scope="col" className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">
+                                            WT (G)
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
+                                    {filteredData.map((entry, index) => {
+                                        // Check if this is a new group (first item in group)
+                                        const isNewGroup = index === 0 || filteredData[index - 1].groupId !== entry.groupId;
+                                        
+                                        return (
+                                            <tr 
+                                                key={entry.id}
+                                                className={index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-gray-50 dark:bg-slate-800/50'}
+                                            >
+                                                <td className="whitespace-nowrap py-3 pl-4 pr-3 text-sm text-center text-[#1a1c1b] dark:text-white">
+                                                    {entry.srNo}
+                                                </td>
+                                                <td className="whitespace-nowrap px-3 py-3 text-sm text-[#1a1c1b] dark:text-white">
+                                                    {entry.isFirstInGroup ? entry.dateTime : ''}
+                                                </td>
+                                                <td className="whitespace-nowrap px-3 py-3 text-sm">
+                                                    <span className={`font-medium ${entry.isFirstInGroup && entry.billNo !== 'N/A' && entry.billNo !== '' ? 'text-[#785600] dark:text-amber-400' : 'text-gray-400'}`}>
+                                                        {entry.isFirstInGroup ? (entry.billNo || 'N/A') : ''}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-3 text-sm">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium text-[#1a1c1b] dark:text-white">
+                                                            {entry.item}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                            ({entry.size})
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="whitespace-nowrap px-3 py-3 text-sm font-mono text-[#1a1c1b] dark:text-white">
+                                                    {entry.purity !== 'N/A' ? `${entry.purity}%` : 'N/A'}
+                                                </td>
+                                                <td className="whitespace-nowrap px-3 py-3 text-sm">
+                                                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${getRemarkColor(entry.remark)}`}>
+                                                        {entry.remark || 'N/A'}
+                                                    </span>
+                                                </td>
+                                                <td className="whitespace-nowrap px-3 py-3 text-sm font-mono font-bold text-right">
+                                                    <span className={entry.wt > 0 ? 'text-green-600 dark:text-green-400' : entry.wt < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500'}>
+                                                        {entry.wt > 0 ? '+' : ''}{formatNumber(entry.wt)}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                                <tfoot className="bg-gray-100 dark:bg-slate-800">
+                                    <tr>
+                                        <td colSpan={6} className="px-3 py-3 text-sm font-bold text-right text-[#1a1c1b] dark:text-white">
+                                            Total:
+                                        </td>
+                                        <td className="px-3 py-3 text-sm font-mono font-bold text-right text-[#1a1c1b] dark:text-white">
+                                            {formatNumber(totalWt)}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            {/* Hidden Print Component */}
-            <div className="hidden">
-                <PrintPreview />
             </div>
         </div>
     );
