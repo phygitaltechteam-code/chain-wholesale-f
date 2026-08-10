@@ -1,8 +1,90 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { Route } from "../../routes/_app/client/clientreport.$id";
-import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Search, Printer } from "lucide-react";
+import { useState, useRef, useEffect, type FC } from "react";
+import { ArrowLeft, Search, Printer, Calendar } from "lucide-react";
+import flatpickr from "flatpickr";
+import "flatpickr/dist/flatpickr.min.css";
 import { useGetClientReport } from "@/lib/api/reportapi";
+
+const formatIndianDate = (date: Date) =>
+    date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    });
+
+const getCurrentWeekRange = () => {
+    const today = new Date();
+    const day = today.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return { monday, sunday };
+};
+
+interface WeeklyDatePickerProps {
+    id: string;
+    value: Date;
+    placeholder?: string;
+    onChange: (date: Date) => void;
+}
+
+const WeeklyDatePicker: FC<WeeklyDatePickerProps> = ({
+    id,
+    value,
+    placeholder = "DD/MM/YYYY",
+    onChange,
+}) => {
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (!inputRef.current) return;
+
+        const fp = flatpickr(inputRef.current, {
+            mode: "single",
+            defaultDate: value,
+            dateFormat: "d/m/Y",
+            monthSelectorType: "static",
+            position: "auto",
+            static: false,
+            appendTo: document.body,
+            onChange: (dates) => {
+                if (dates.length > 0) {
+                    onChange(dates[0]);
+                }
+            },
+            prevArrow:
+                '<svg class="fill-current" width="7" height="11" viewBox="0 0 7 11"><path d="M5.4 10.8l1.4-1.4-4-4 4-4L5.4 0 0 5.4z" /></svg>',
+            nextArrow:
+                '<svg class="fill-current" width="7" height="11" viewBox="0 0 7 11"><path d="M1.4 10.8L0 9.4l4-4-4-4L1.4 0 0 5.4z" /></svg>',
+        });
+
+        return () => fp.destroy();
+    }, [value, onChange]);
+
+    return (
+        <div className="relative">
+            <input
+                ref={inputRef}
+                id={id}
+                type="text"
+                placeholder={placeholder}
+                readOnly
+                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-10 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            />
+            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                <Calendar className="h-4 w-4 text-[#817563]" />
+            </div>
+        </div>
+    );
+};
 
 interface ClientReportEntry {
     id: string;
@@ -16,6 +98,7 @@ interface ClientReportEntry {
     wt: number;
     groupId: string;
     isFirstInGroup: boolean;
+    groupRowSpan: number;
 }
 
 interface ApiResponse {
@@ -60,110 +143,179 @@ export default function ClientReport() {
     const [searchTerm, setSearchTerm] = useState("");
     const [reportData, setReportData] = useState<ClientReportEntry[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const { monday: defaultMonday, sunday: defaultSunday } =
+        getCurrentWeekRange();
+
+    const [fromDate, setFromDate] = useState<Date>(defaultMonday);
+    const [toDate, setToDate] = useState<Date>(defaultSunday);
     const { data: clientReportData, isLoading, isError, refetch } = useGetClientReport(id);
 
-    // Transform API data to match our table structure
+    // Transform API data and group rows by bill number.
+    // The date filter is applied to the original createdAt value BEFORE grouping.
     useEffect(() => {
-        if (clientReportData) {
-            const responseData = clientReportData as ApiResponse;
+        if (!clientReportData) return;
 
-            if (responseData && Array.isArray(responseData)) {
-                // First, sort all items by createdAt (newest first)
-                const sortedItems = [...responseData].sort((a, b) => 
-                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                );
+        const response = clientReportData as ApiResponse | ApiDataItem[];
 
-                // Group by bill number
-                const groupedData = sortedItems.reduce((acc: any, item: ApiDataItem) => {
-                    const billKey = item.billNumber || 'N/A';
-                    if (!acc[billKey]) {
-                        acc[billKey] = [];
-                    }
-                    acc[billKey].push(item);
-                    return acc;
-                }, {});
+        // Support both { data: [...] } and direct array responses.
+        const apiItems: ApiDataItem[] = Array.isArray(response)
+            ? response
+            : Array.isArray(response?.data)
+                ? response.data
+                : [];
 
-                // Transform grouped data to entries
-                const transformedData: ClientReportEntry[] = [];
-                let srNo = 1;
-                let groupId = 0;
+        const from = new Date(fromDate);
+        from.setHours(0, 0, 0, 0);
 
-                // Process each bill group
-                Object.keys(groupedData).forEach((billKey) => {
-                    const items = groupedData[billKey];
-                    groupId++;
-                    
-                    // Group by remark to combine weights within the same bill
-                    const remarkGroups = items.reduce((acc: any, item: ApiDataItem) => {
-                        const remark = item.remark || 'N/A';
-                        if (!acc[remark]) {
-                            acc[remark] = {
-                                weight: 0,
-                                item: item.item?.name || 'Unknown Item',
-                                size: item.size?.size || 'N/A',
-                                purity: item.purity !== null ? item.purity.toString() : 'N/A',
-                                createdAt: item.createdAt,
-                                billNumber: billKey,
-                                items: []
-                            };
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+
+        const filteredApiItems = apiItems.filter((item) => {
+            const createdAt = new Date(item.createdAt);
+            return createdAt >= from && createdAt <= to;
+        });
+
+        // Newest first.
+        const sortedItems = [...filteredApiItems].sort(
+            (a, b) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+        );
+
+        // Group by bill number.
+        // If bill number is missing, keep that transaction as its own group.
+        const groupedData = sortedItems.reduce(
+            (acc: Record<string, ApiDataItem[]>, item) => {
+                const billKey = item.billNumber
+                    ? `BILL_${item.billNumber}`
+                    : `NO_BILL_${item.id}`;
+
+                if (!acc[billKey]) {
+                    acc[billKey] = [];
+                }
+
+                acc[billKey].push(item);
+                return acc;
+            },
+            {}
+        );
+
+        const transformedData: ClientReportEntry[] = [];
+        let srNo = 1;
+        let groupId = 0;
+
+        Object.entries(groupedData).forEach(([_, items]) => {
+            groupId++;
+
+            // Combine same remarks inside the same bill.
+            const remarkGroups = items.reduce(
+                (
+                    acc: Record<
+                        string,
+                        {
+                            weight: number;
+                            item: string;
+                            size: string;
+                            purity: string;
+                            createdAt: string;
+                            billNumber: string;
                         }
-                        acc[remark].weight += item.weight || 0;
-                        acc[remark].items.push(item);
-                        return acc;
-                    }, {});
+                    >,
+                    item
+                ) => {
+                    const remark = item.remark || "N/A";
 
-                    // Create entries for each remark group
-                    const remarkKeys = Object.keys(remarkGroups);
-                    
-                    remarkKeys.forEach((remark, index) => {
-                        const group = remarkGroups[remark];
-                        const date = new Date(group.createdAt);
-                        const formattedDate = date.toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                        });
-                        const formattedTime = date.toLocaleTimeString('en-IN', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: true
-                        });
+                    if (!acc[remark]) {
+                        acc[remark] = {
+                            weight: 0,
+                            item: item.item?.name || "Unknown Item",
+                            size: item.size?.size || "N/A",
+                            purity:
+                                item.purity !== null
+                                    ? item.purity.toString()
+                                    : "N/A",
+                            createdAt: item.createdAt,
+                            billNumber: item.billNumber || "N/A",
+                        };
+                    }
 
-                        // Determine if this is the first entry in the bill group
-                        const isFirstInBill = index === 0;
+                    acc[remark].weight += item.weight || 0;
 
-                        transformedData.push({
-                            id: `group-${srNo}`,
-                            srNo: srNo++,
-                            dateTime: isFirstInBill ? `${formattedDate} ${formattedTime}` : '',
-                            billNo: isFirstInBill ? (group.billNumber === 'N/A' ? 'N/A' : group.billNumber) : '',
-                            item: group.item,
-                            size: group.size,
-                            purity: group.purity,
-                            remark: remark,
-                            wt: group.weight,
-                            groupId: `group-${groupId}`,
-                            isFirstInGroup: isFirstInBill
-                        });
-                    });
+                    if (
+                        new Date(item.createdAt).getTime() >
+                        new Date(acc[remark].createdAt).getTime()
+                    ) {
+                        acc[remark].createdAt = item.createdAt;
+                    }
+
+                    return acc;
+                },
+                {}
+            );
+
+            const remarkEntries = Object.entries(remarkGroups);
+            const groupRowSpan = remarkEntries.length;
+            const currentSrNo = srNo++;
+
+            remarkEntries.forEach(([remark, group], index) => {
+                const date = new Date(group.createdAt);
+
+                const formattedDate = date.toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
                 });
 
-                setReportData(transformedData);
-            }
-            setLoading(false);
-        }
-    }, [clientReportData]);
+                const formattedTime = date.toLocaleTimeString("en-IN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                });
 
-    // Filter data based on search term
+                const isFirstInBill = index === 0;
+
+                transformedData.push({
+                    id: `group-${groupId}-${index}`,
+                    srNo: currentSrNo,
+                    dateTime: isFirstInBill
+                        ? `${formattedDate} ${formattedTime}`
+                        : "",
+                    billNo: isFirstInBill ? group.billNumber : "",
+                    item: group.item,
+                    size: group.size,
+                    purity: group.purity,
+                    remark,
+                    wt: group.weight,
+                    groupId: `group-${groupId}`,
+                    isFirstInGroup: isFirstInBill,
+                    groupRowSpan,
+                });
+            });
+        });
+
+        setReportData(transformedData);
+        setLoading(false);
+    }, [clientReportData, fromDate, toDate]);
+
+    // Search by complete bill group so rowSpan grouping is never broken.
     const filteredData = searchTerm
-        ? reportData.filter(entry =>
-            entry.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            entry.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            entry.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            entry.remark.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            entry.purity.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            entry.wt.toString().includes(searchTerm)
-        )
+        ? reportData.filter((entry) => {
+            const query = searchTerm.toLowerCase();
+
+            return reportData.some((groupEntry) => {
+                if (groupEntry.groupId !== entry.groupId) return false;
+
+                return (
+                    groupEntry.item.toLowerCase().includes(query) ||
+                    groupEntry.billNo.toLowerCase().includes(query) ||
+                    groupEntry.size.toLowerCase().includes(query) ||
+                    groupEntry.remark.toLowerCase().includes(query) ||
+                    groupEntry.purity.toLowerCase().includes(query) ||
+                    groupEntry.wt.toString().includes(query)
+                );
+            });
+        })
         : reportData;
 
     // Calculate totals
@@ -236,7 +388,7 @@ export default function ClientReport() {
 
         Object.keys(printGroupedData).forEach((groupId) => {
             const entries = printGroupedData[groupId];
-            
+
             entries.forEach((entry, index) => {
                 // Show separator between groups
                 if (!isFirstGroup && index === 0) {
@@ -248,10 +400,10 @@ export default function ClientReport() {
                         </tr>
                     `;
                 }
-                
+
                 rows += `
                     <tr>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${entry.srNo}</td>
+                        ${entry.isFirstInGroup ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;vertical-align:middle;" rowspan="${entry.groupRowSpan}">${entry.srNo}</td>` : ''}
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
                             ${entry.dateTime || ' '}
                         </td>
@@ -271,7 +423,7 @@ export default function ClientReport() {
                     </tr>
                 `;
             });
-            
+
             isFirstGroup = false;
         });
 
@@ -299,7 +451,7 @@ export default function ClientReport() {
                 <!-- Title -->
                 <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Client Report</h2>
                 <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
-                    Client ID: ${id} | Generated: ${new Date().toLocaleString()}
+                    Client ID: ${id} | Date Range: ${formatIndianDate(fromDate)} - ${formatIndianDate(toDate)}
                 </p>
 
                 <!-- Table -->
@@ -318,12 +470,7 @@ export default function ClientReport() {
                     <tbody>
                         ${rows}
                     </tbody>
-                    <tfoot>
-                        <tr style="background:#f4f4f2;font-weight:bold;">
-                            <td colspan="6" style="border:1px solid #000;padding:1px 2px;text-align:right;font-size:11px;color:#000;">Total:</td>
-                            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalWt)}</td>
-                        </tr>
-                    </tfoot>
+                    
                 </table>
 
                 <!-- Footer -->
@@ -476,8 +623,56 @@ export default function ClientReport() {
                         </h2>
                     </div>
 
-                    {/* Right side - Search and Print Button */}
-                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                    {/* Right side - From/To, Search and Print */}
+                    <div className="flex flex-col xl:flex-row items-center gap-2 w-full sm:w-auto">
+                        <div className="flex w-full sm:w-auto items-center gap-2">
+                            <div className="w-full sm:w-36">
+                                <WeeklyDatePicker
+                                    id="client-report-from-date"
+                                    value={fromDate}
+                                    onChange={(date) => {
+                                        const from = new Date(date);
+                                        from.setHours(0, 0, 0, 0);
+
+                                        if (from > toDate) {
+                                            const sunday = new Date(from);
+                                            sunday.setDate(from.getDate() + 6);
+                                            sunday.setHours(23, 59, 59, 999);
+                                            setFromDate(from);
+                                            setToDate(sunday);
+                                        } else {
+                                            setFromDate(from);
+                                        }
+                                    }}
+                                />
+                            </div>
+
+
+
+                            <div className="w-full sm:w-36">
+                                <WeeklyDatePicker
+                                    id="client-report-to-date"
+                                    value={toDate}
+                                    onChange={(date) => {
+                                        const to = new Date(date);
+                                        to.setHours(23, 59, 59, 999);
+
+                                        if (to < fromDate) {
+                                            const monday = new Date(to);
+                                            monday.setDate(to.getDate() - 6);
+                                            monday.setHours(0, 0, 0, 0);
+                                            setFromDate(monday);
+                                            setToDate(to);
+                                        } else {
+                                            setToDate(to);
+                                        }
+                                    }}
+                                />
+                            </div>
+
+
+                        </div>
+
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
                             <input
@@ -569,25 +764,56 @@ export default function ClientReport() {
                                 </thead>
                                 <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
                                     {filteredData.map((entry, index) => {
-                                        // Check if this is a new group (first item in group)
-                                        const isNewGroup = index === 0 || filteredData[index - 1].groupId !== entry.groupId;
-                                        
+                                        const isFirstRowOfGroup =
+                                            entry.isFirstInGroup;
+
                                         return (
-                                            <tr 
+                                            <tr
                                                 key={entry.id}
-                                                className={index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-gray-50 dark:bg-slate-800/50'}
+                                                className={
+                                                    index % 2 === 0
+                                                        ? "bg-white dark:bg-slate-900"
+                                                        : "bg-gray-50 dark:bg-slate-800/50"
+                                                }
                                             >
-                                                <td className="whitespace-nowrap py-3 pl-4 pr-3 text-sm text-center text-[#1a1c1b] dark:text-white">
-                                                    {entry.srNo}
-                                                </td>
-                                                <td className="whitespace-nowrap px-3 py-3 text-sm text-[#1a1c1b] dark:text-white">
-                                                    {entry.isFirstInGroup ? entry.dateTime : ''}
-                                                </td>
-                                                <td className="whitespace-nowrap px-3 py-3 text-sm">
-                                                    <span className={`font-medium ${entry.isFirstInGroup && entry.billNo !== 'N/A' && entry.billNo !== '' ? 'text-[#785600] dark:text-amber-400' : 'text-gray-400'}`}>
-                                                        {entry.isFirstInGroup ? (entry.billNo || 'N/A') : ''}
-                                                    </span>
-                                                </td>
+                                                {isFirstRowOfGroup && (
+                                                    <td
+                                                        rowSpan={entry.groupRowSpan}
+                                                        className="whitespace-nowrap border-r border-[#f4f4f2] py-3 pl-4 pr-3 text-center align-middle text-sm font-medium text-[#1a1c1b] dark:border-slate-700 dark:text-white"
+                                                    >
+                                                        {entry.srNo}
+                                                    </td>
+                                                )}
+                                                {isFirstRowOfGroup && (
+                                                    <td
+                                                        rowSpan={entry.groupRowSpan}
+                                                        className="border-r border-[#f4f4f2] px-3 py-3 text-left align-middle text-sm text-[#1a1c1b] dark:border-slate-700 dark:text-white"
+                                                    >
+                                                        <div className="flex flex-col items-start leading-tight">
+                                                            <span>{entry.dateTime.split(" ")[0]}</span>
+                                                            <span>{entry.dateTime.split(" ").slice(1).join(" ")}</span>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                                {isFirstRowOfGroup && (
+                                                    <td
+                                                        rowSpan={entry.groupRowSpan}
+                                                        className="whitespace-nowrap border-r border-[#f4f4f2] px-3 py-3 align-middle text-sm dark:border-slate-700"
+                                                    >
+                                                        <span
+                                                            className={`font-medium ${entry.billNo !==
+                                                                "N/A" &&
+                                                                entry.billNo !==
+                                                                ""
+                                                                ? "text-[#785600] dark:text-amber-400"
+                                                                : "text-gray-400"
+                                                                }`}
+                                                        >
+                                                            {entry.billNo || "N/A"}
+                                                        </span>
+                                                    </td>
+                                                )}
+
                                                 <td className="px-3 py-3 text-sm">
                                                     <div className="flex flex-col">
                                                         <span className="font-medium text-[#1a1c1b] dark:text-white">
@@ -598,33 +824,42 @@ export default function ClientReport() {
                                                         </span>
                                                     </div>
                                                 </td>
+
                                                 <td className="whitespace-nowrap px-3 py-3 text-sm font-mono text-[#1a1c1b] dark:text-white">
-                                                    {entry.purity !== 'N/A' ? `${entry.purity}%` : 'N/A'}
+                                                    {entry.purity !== "N/A"
+                                                        ? `${entry.purity}%`
+                                                        : "N/A"}
                                                 </td>
+
                                                 <td className="whitespace-nowrap px-3 py-3 text-sm">
-                                                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${getRemarkColor(entry.remark)}`}>
-                                                        {entry.remark || 'N/A'}
+                                                    <span
+                                                        className={`rounded-full px-2 py-1 text-xs font-medium ${getRemarkColor(
+                                                            entry.remark
+                                                        )}`}
+                                                    >
+                                                        {entry.remark || "N/A"}
                                                     </span>
                                                 </td>
-                                                <td className="whitespace-nowrap px-3 py-3 text-sm font-mono font-bold text-right">
-                                                    <span className={entry.wt > 0 ? 'text-green-600 dark:text-green-400' : entry.wt < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500'}>
-                                                        {entry.wt > 0 ? '+' : ''}{formatNumber(entry.wt)}
+
+                                                <td className="whitespace-nowrap px-3 py-3 text-right text-sm font-mono font-bold">
+                                                    <span
+                                                        className={
+                                                            entry.wt > 0
+                                                                ? "text-green-600 dark:text-green-400"
+                                                                : entry.wt < 0
+                                                                    ? "text-red-600 dark:text-red-400"
+                                                                    : "text-gray-500"
+                                                        }
+                                                    >
+                                                        {entry.wt > 0 ? "+" : ""}
+                                                        {formatNumber(entry.wt)}
                                                     </span>
                                                 </td>
                                             </tr>
                                         );
                                     })}
                                 </tbody>
-                                <tfoot className="bg-gray-100 dark:bg-slate-800">
-                                    <tr>
-                                        <td colSpan={6} className="px-3 py-3 text-sm font-bold text-right text-[#1a1c1b] dark:text-white">
-                                            Total:
-                                        </td>
-                                        <td className="px-3 py-3 text-sm font-mono font-bold text-right text-[#1a1c1b] dark:text-white">
-                                            {formatNumber(totalWt)}
-                                        </td>
-                                    </tr>
-                                </tfoot>
+
                             </table>
                         </div>
                     </div>

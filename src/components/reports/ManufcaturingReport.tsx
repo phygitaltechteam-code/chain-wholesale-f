@@ -69,8 +69,28 @@ interface ApiDataItem {
 export default function ManufacturingReport() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [fromDate, setFromDate] = useState<Date | null>(null);
-  const [toDate, setToDate] = useState<Date | null>(null);
+  // Default date range: current Monday -> current Sunday
+  const getCurrentWeekRange = () => {
+    const today = new Date();
+    const day = today.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return { monday, sunday };
+  };
+
+  const { monday: defaultMonday, sunday: defaultSunday } =
+    getCurrentWeekRange();
+
+  const [fromDate, setFromDate] = useState<Date | null>(defaultMonday);
+  const [toDate, setToDate] = useState<Date | null>(defaultSunday);
   const printRef = useRef<HTMLDivElement>(null);
   const { data: manufacturingData, isLoading, isError, refetch } = useGetManufacturingData();
 
@@ -145,25 +165,34 @@ export default function ManufacturingReport() {
 
     // Date range filter
     let matchesDate = true;
+
     if (fromDate || toDate) {
-      // Parse the date from entry.dateTime (format: "DD/MM/YYYY HH:MM AM/PM")
       const dateParts = entry.dateTime.split(' ')[0].split('/');
+
       if (dateParts.length === 3) {
         const entryDate = new Date(
-          parseInt(dateParts[2]), // year
-          parseInt(dateParts[1]) - 1, // month (0-indexed)
-          parseInt(dateParts[0]) // day
+          Number(dateParts[2]),
+          Number(dateParts[1]) - 1,
+          Number(dateParts[0])
         );
+        entryDate.setHours(12, 0, 0, 0);
 
         if (fromDate) {
           const from = new Date(fromDate);
           from.setHours(0, 0, 0, 0);
-          if (entryDate < from) matchesDate = false;
+
+          if (entryDate < from) {
+            matchesDate = false;
+          }
         }
+
         if (toDate && matchesDate) {
           const to = new Date(toDate);
           to.setHours(23, 59, 59, 999);
-          if (entryDate > to) matchesDate = false;
+
+          if (entryDate > to) {
+            matchesDate = false;
+          }
         }
       }
     }
@@ -186,10 +215,11 @@ export default function ManufacturingReport() {
     return str.replace(/\.?0+$/, "");
   };
 
-  // Reset date filters
+  // Reset to current Monday -> Sunday
   const handleResetDates = () => {
-    setFromDate(null);
-    setToDate(null);
+    const { monday, sunday } = getCurrentWeekRange();
+    setFromDate(monday);
+    setToDate(sunday);
   };
 
   // Format date for display
@@ -202,20 +232,21 @@ export default function ManufacturingReport() {
     });
   };
 
-  // Handle date change from GenericDatePicker
+  // Handle From Date
   const handleFromDateChange = (selectedDates: Date[]) => {
-    if (selectedDates && selectedDates.length > 0) {
-      setFromDate(selectedDates[0]);
-    } else {
-      setFromDate(null);
+    if (selectedDates?.length > 0) {
+      const selected = new Date(selectedDates[0]);
+      selected.setHours(0, 0, 0, 0);
+      setFromDate(selected);
     }
   };
 
+  // Handle To Date
   const handleToDateChange = (selectedDates: Date[]) => {
-    if (selectedDates && selectedDates.length > 0) {
-      setToDate(selectedDates[0]);
-    } else {
-      setToDate(null);
+    if (selectedDates?.length > 0) {
+      const selected = new Date(selectedDates[0]);
+      selected.setHours(23, 59, 59, 999);
+      setToDate(selected);
     }
   };
 
@@ -257,7 +288,7 @@ export default function ManufacturingReport() {
                   </td>
                   <td className="px-3 py-3 text-center text-sm text-black dark:text-white">
                     <div>{item.dateTime.split(' ')[0]}</div>
-                    <div className="text-xs text-[#4f4535] dark:text-slate-400">{item.dateTime.split(' ').slice(1).join(' ')}</div>
+                    <div>{item.dateTime.split(' ').slice(1).join(' ')}</div>
                   </td>
                   <td className="px-3 py-3 text-center text-sm font-medium text-black dark:text-white">
                     {item.item} ({item.size}) {item.purity > 0 && `(${item.purity}%)`}
@@ -343,56 +374,74 @@ export default function ManufacturingReport() {
       .join('');
 
     // Set the content with PDF Header - Minimal padding
-   printContainer.innerHTML = `
-  <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
-    <!-- PDF Header -->
-    <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;">
-        <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री गणेश प्रसन्न ॥</span>
-        <span style="font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">मातोश्री चेन फॅक्टरी</span>
-        <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री साई प्रसन्न ॥</span>
-      </div>
-      <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
-        आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
-      </div>
-      <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
-        प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
-      </div>
-      <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
-    </div>
+    printContainer.innerHTML = `
+      <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
+        <!-- PDF Header -->
+        <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
+            <span>॥ श्री गणेश प्रसन्न ॥</span>
+            <span>॥ श्री साई प्रसन्न ॥</span>
+          </div>
+          <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
+            मातोश्री चेन फॅक्टरी
+          </div>
+          <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
+            आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+          </div>
+          <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
+            प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+          </div>
+          <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
+        </div>
 
-    <!-- Title -->
-    <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Manufacturing Report</h2>
-    ${fromDate || toDate ? `
-      <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
-        Date Range: ${formatDateForDisplay(fromDate) || 'Start'} to ${formatDateForDisplay(toDate) || 'End'}
-      </p>
-    ` : ''}
+        <!-- Title -->
+        <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Manufacturing Report</h2>
+        ${fromDate || toDate ? `
+          <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
+            Date Range: ${formatDateForDisplay(fromDate) || 'Start'} to ${formatDateForDisplay(toDate) || 'End'}
+          </p>
+        ` : ''}
 
-    <!-- Table -->
-    <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
-      <thead>
-        <tr style="background:#785600;color:white;font-weight:600;">
-          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
-          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
-          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
-          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
-          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
-          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Weight</th>
-          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
-          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
-          <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Current Wt.</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-      </tbody>
-    </table>
+        <!-- Table -->
+        <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
+          <thead>
+            <tr style="background:#785600;color:white;font-weight:600;">
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Weight</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Current Wt.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+          <tfoot>
+            <tr style="background:#f4f4f2;font-weight:bold;">
+              <td colspan="5" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">Total</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.totalWeight)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.totalScrap)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.totalLoss)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(filteredTotals.currentWeight)}</td>
+            </tr>
+          </tfoot>
+        </table>
 
-    <!-- Footer --
-   
-  </div>
-`;
+        <!-- Footer -->
+        <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
+          <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
+          <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
+            <span>Powered by Matoshree Gold</span>
+            <span>|</span>
+            <span>${new Date().toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+    `;
 
     // Add print styles
     const style = document.createElement('style');
@@ -445,7 +494,7 @@ export default function ManufacturingReport() {
     // Trigger print
     setTimeout(() => {
       window.print();
-      
+
       // Clean up after print
       setTimeout(() => {
         if (document.body.contains(printContainer)) {
@@ -506,7 +555,7 @@ export default function ManufacturingReport() {
             </tr>
           ))}
         </tbody>
-      
+
       </table>
 
       <div className="mt-3 pt-2 border-t-2 border-[#785600] text-center">
@@ -577,37 +626,31 @@ export default function ManufacturingReport() {
               />
             </div>
 
-            {/* From Date - Using your existing DatePicker */}
+            {/* From Date - Monday/start date */}
             <div className="w-full sm:w-40">
               <GenericDatePicker
-                id="from-date"
+                id="manufacturing-from-date"
                 initialDate={fromDate || undefined}
                 onDateChange={handleFromDateChange}
-                placeholder="From Date"
+                placeholder="DD/MM/YYYY"
+                dateFormat="d/m/Y"
                 className="w-full"
               />
             </div>
 
-            {/* To Date - Using your existing DatePicker */}
+            {/* To Date - Sunday/end date */}
             <div className="w-full sm:w-40">
               <GenericDatePicker
-                id="to-date"
+                id="manufacturing-to-date"
                 initialDate={toDate || undefined}
                 onDateChange={handleToDateChange}
-                placeholder="To Date"
+                placeholder="DD/MM/YYYY"
+                dateFormat="d/m/Y"
                 className="w-full"
               />
             </div>
 
-            {/* Reset Button (shows when dates are selected) */}
-            {(fromDate || toDate) && (
-              <button
-                onClick={handleResetDates}
-                className="px-3 py-2 text-sm text-[#785600] hover:text-[#5d4200] hover:bg-[#785600]/10 rounded-lg transition-colors whitespace-nowrap"
-              >
-                Clear
-              </button>
-            )}
+            
 
             {/* Print Button */}
             <button

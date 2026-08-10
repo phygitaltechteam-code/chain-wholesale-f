@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import { useGetBox, useGetBoxHistory, useSubmitBox } from '@/lib/api/box';
-import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
+import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 
 interface BoxEntry {
   id: string;
@@ -58,34 +58,41 @@ const BoxDept: React.FC = () => {
   const { data: boxHistory = [], isLoading: historyLoading, refetch: refetchHistory } = useGetBoxHistory();
   const submitBox = useSubmitBox();
 
-  // Helper function to get week start and end
-  const getWeekRange = (date: Date = new Date()) => {
-    const start = new Date(date);
-    const day = start.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
-    start.setDate(diff);
-    start.setHours(0, 0, 0, 0);
-    
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-    
-    return { start, end };
+  // Helper function to get week start (Monday 00:00) and end (Sunday 23:59:59)
+  const getDefaultWeekRange = () => {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sun, 1 = Mon, ...
+    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now);
+    monday.setDate(diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return { monday, sunday };
   };
 
-  // Set weekly filter
-  const setWeeklyFilter = () => {
-    const { start, end } = getWeekRange();
-    setFromDate([start]);
-    setToDate([end]);
-    setActiveFilter('weekly');
+  const [dateRange, setDateRange] = useState<Date[]>(() => {
+    const { monday, sunday } = getDefaultWeekRange();
+    return [monday, sunday];
+  });
+
+  // Helper function to convert to number safely
+  const toNumber = (value: unknown): number => {
+    if (value === null || value === undefined || value === '') return 0;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
   };
 
-  // Set all filter (clear dates)
-  const setAllFilter = () => {
-    setFromDate([]);
-    setToDate([]);
-    setActiveFilter('all');
+  // Helper function for 3 decimal formatted numbers (NO trailing zeroes)
+  const formatNumberDisplay = (value: unknown): string => {
+    if (value === null || value === undefined || value === '') return '0';
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '0';
+    const str = num.toFixed(3);
+    return str.replace(/\.?0+$/, '');
   };
 
   // Load data from API
@@ -172,27 +179,21 @@ const BoxDept: React.FC = () => {
     return num.toFixed(0);
   };
 
-  // Format number for display
-  const formatNumberDisplay = (value: number) => {
-    if (value === 0 || !value) return '0';
-    const str = value.toString();
-    if (str.includes('.')) {
-      return str.replace(/\.?0+$/, '');
-    }
-    return str;
-  };
-
-  // Filter history by date
+  // Filter history by selected From-To date range.
   const getFilteredHistory = () => {
     let filtered = boxHistory;
 
-    if (fromDate.length > 0 && toDate.length > 0) {
-      const from = new Date(fromDate[0]);
-      const to = new Date(toDate[0]);
+    if (dateRange.length === 2) {
+      const from = new Date(dateRange[0]);
+      const to = new Date(dateRange[1]);
+
+      from.setHours(0, 0, 0, 0);
       to.setHours(23, 59, 59, 999);
-      
+
       filtered = boxHistory.filter((item: any) => {
+        if (!item?.createdAt) return false;
         const itemDate = new Date(item.createdAt);
+        if (Number.isNaN(itemDate.getTime())) return false;
         return itemDate >= from && itemDate <= to;
       });
     }
@@ -200,10 +201,22 @@ const BoxDept: React.FC = () => {
     return filtered;
   };
 
+  // Calculate history totals
+  const filteredHistory = getFilteredHistory();
+  const historyTotals = filteredHistory.reduce(
+    (acc: { totalTar: number; totalChain: number; totalScrap: number; totalLoss: number }, item: any) => ({
+      totalTar: acc.totalTar + toNumber(item?.tarWeight),
+      totalChain: acc.totalChain + toNumber(item?.chainWeight),
+      totalScrap: acc.totalScrap + toNumber(item?.scrap),
+      totalLoss: acc.totalLoss + toNumber(item?.loss ?? ((item?.tarWeight || 0) - (item?.chainWeight || 0))),
+    }),
+    { totalTar: 0, totalChain: 0, totalScrap: 0, totalLoss: 0 }
+  );
+
   // Print History Function
   const handlePrintHistory = () => {
     const filteredData = getFilteredHistory();
-    
+
     if (!filteredData || filteredData.length === 0) {
       toast.error('No history records available to print for the selected date range');
       return;
@@ -231,18 +244,18 @@ const BoxDept: React.FC = () => {
 
         return `
           <tr>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
+            <td style="border:1px solid #861818ff;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
               ${date} ${time}
             </td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.tarWeight)}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.chainWeight)}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.scrap)}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(
-              item?.loss ?? ((item?.tarWeight || 0) - (item?.chainWeight || 0))
-            )}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.tarWeight)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainWeight)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(
+          item?.loss ?? ((item?.tarWeight || 0) - (item?.chainWeight || 0))
+        )}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
               ${proceedDate} ${proceedTime}
             </td>
@@ -312,10 +325,10 @@ const BoxDept: React.FC = () => {
           <tfoot>
             <tr style="background:#f0f0f0;font-weight:bold;">
               <td colspan="4" style="border:1px solid #000;padding:2px 3px;text-align:right;font-size:11px;color:#000;">TOTAL:</td>
-              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalTar)}</td>
-              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalChain)}</td>
-              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalScrap)}</td>
-              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalLoss)}</td>
+              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(totalTar)}</td>
+              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(totalChain)}</td>
+              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(totalScrap)}</td>
+              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(totalLoss)}</td>
               <td style="border:1px solid #000;padding:2px 3px;text-align:center;"></td>
             </tr>
           </tfoot>
@@ -384,7 +397,7 @@ const BoxDept: React.FC = () => {
     // Trigger print
     setTimeout(() => {
       window.print();
-      
+
       // Clean up after print
       setTimeout(() => {
         if (document.body.contains(printContainer)) {
@@ -435,7 +448,7 @@ const BoxDept: React.FC = () => {
       header: 'Tar (तार)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item?.tarWeight)}
+          {formatNumberDisplay(item?.tarWeight)}
         </span>
       ),
     },
@@ -444,7 +457,7 @@ const BoxDept: React.FC = () => {
       header: 'Chain Weight (G)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item?.chainWeight)}
+          {formatNumberDisplay(item?.chainWeight)}
         </span>
       ),
     },
@@ -453,7 +466,7 @@ const BoxDept: React.FC = () => {
       header: 'Scrap (स्क्रॅप)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item?.scrap)}
+          {formatNumberDisplay(item?.scrap)}
         </span>
       ),
     },
@@ -462,7 +475,7 @@ const BoxDept: React.FC = () => {
       header: 'Loss',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item?.loss)}
+          {formatNumberDisplay(item?.loss)}
         </span>
       ),
     },
@@ -594,48 +607,35 @@ const BoxDept: React.FC = () => {
   // Check if all entries are saved
   const allSaved = boxEntries.every((entry) => entry.isSaved);
 
-  // Custom action renderer
-  const renderActions = useCallback(
-    (item: BoxEntry, index: number) => {
-      if (item.isEditing) {
-        return (
-          <button
-            onClick={() => handleSaveClick(index)}
-            disabled={isLoading}
-            className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-            title="Save Entry"
-          >
-            <Save className="h-3 w-3" />
-            <span>Save</span>
-          </button>
-        );
-      }
-      return (
-        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-          ✓ Completed
-        </span>
-      );
-    },
-    [isLoading, handleSaveClick],
+  // Check if any editable field has values
+  const hasEditableValues = (entry: BoxEntry): boolean => {
+    return Boolean(
+      entry.chainWeightRaw?.trim() ||
+      entry.scrapRaw?.trim()
+    );
+  };
+
+  // Action column is shown only when at least one unsaved row is edited.
+  const showActionColumn = boxEntries.some(
+    (entry) => !entry.isSaved && hasEditableValues(entry)
   );
 
-  // Define columns for GenericTable - main table
+  const isSubmitting = submitBox.isPending;
+
+  // Main table columns
   const columns: Column<BoxEntry>[] = [
     {
       key: 'dateTime',
       header: 'Date & Time',
       render: (item) => {
         const parts = item.dateTime ? item.dateTime.split(', ') : ['', ''];
-        const datePart = parts[0] || '';
-        const timePart = parts[1] || '';
-
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {datePart}
+              {parts[0] || ''}
             </span>
             <span className="text-sm text-[#4f4535] dark:text-slate-400">
-              {timePart}
+              {parts.slice(1).join(', ') || ''}
             </span>
           </div>
         );
@@ -680,6 +680,7 @@ const BoxDept: React.FC = () => {
           return (
             <input
               type="text"
+              inputMode="decimal"
               value={
                 item.chainWeightRaw !== undefined
                   ? item.chainWeightRaw
@@ -695,6 +696,7 @@ const BoxDept: React.FC = () => {
             />
           );
         }
+
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
             {formatNumberDisplay(item.chainWeight)}
@@ -710,6 +712,7 @@ const BoxDept: React.FC = () => {
           return (
             <input
               type="text"
+              inputMode="decimal"
               value={
                 item.scrapRaw !== undefined
                   ? item.scrapRaw
@@ -725,6 +728,7 @@ const BoxDept: React.FC = () => {
             />
           );
         }
+
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
             {formatNumberDisplay(item.scrap)}
@@ -741,9 +745,36 @@ const BoxDept: React.FC = () => {
         </span>
       ),
     },
-  ];
 
-  const isSubmitting = submitBox.isPending;
+    // IMPORTANT:
+    // This entire column is added only after the user edits a row.
+    ...(showActionColumn
+      ? [
+          {
+            key: 'actions',
+            header: 'Action',
+            render: (item: BoxEntry, index: number) => {
+              if (item.isSaved || !hasEditableValues(item)) {
+                return null;
+              }
+
+              return (
+                <button
+                  type="button"
+                  onClick={() => handleSaveClick(index)}
+                  disabled={isLoading || isSubmitting}
+                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Save Entry"
+                >
+                  <Save className="h-3 w-3" />
+                  <span>Soldering</span>
+                </button>
+              );
+            },
+          } as Column<BoxEntry>,
+        ]
+      : []),
+  ];
 
   const toggleHistory = () => {
     if (showHistory) {
@@ -755,11 +786,10 @@ const BoxDept: React.FC = () => {
     }
   };
 
-  // Clear date filters
-  const clearDateFilters = () => {
-    setFromDate([]);
-    setToDate([]);
-    setActiveFilter('all');
+  // Reset date range to current week
+  const resetDateRange = () => {
+    const { monday, sunday } = getDefaultWeekRange();
+    setDateRange([monday, sunday]);
   };
 
   return (
@@ -771,74 +801,75 @@ const BoxDept: React.FC = () => {
             <h1 className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white sm:text-base md:text-lg">
               {showHistory ? 'Box History' : 'Box Department'}
             </h1>
-          
           </div>
           <div className="flex items-center gap-2">
             {/* Date Filters - Only show when viewing history */}
             {showHistory && (
-              <>
-                <div className="flex items-center gap-2">
-                  {/* Filter Buttons */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={setAllFilter}
-                      className={`rounded-lg px-2 py-1 text-xs font-medium transition-colors sm:px-3 sm:py-1.5 ${
-                        activeFilter === 'all'
-                          ? 'bg-[#785600] text-white'
-                          : 'bg-[#f4f4f2] text-[#4f4535] hover:bg-[#e8e4dc] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      All
-                    </button>
-                    <button
-                      onClick={setWeeklyFilter}
-                      className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors sm:px-3 sm:py-1.5 ${
-                        activeFilter === 'weekly'
-                          ? 'bg-[#785600] text-white'
-                          : 'bg-[#f4f4f2] text-[#4f4535] hover:bg-[#e8e4dc] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      <Calendar className="h-3 w-3" />
-                      <span>Weekly</span>
-                    </button>
-                  </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {/* From Date - Defaults to Monday */}
+                <GenericWeeklyDatePicker
+                  id="from-date-box"
+                  placeholder="DD/MM/YYYY"
 
-                  <span className="text-[#4f4535] dark:text-slate-400">|</span>
+                  mode="from"
+                  initialDates={dateRange}
+                  onDateChange={(dates) => {
+                    if (dates && dates.length > 0) {
+                      const from = dates[0];
+                      if (dateRange.length === 2) {
+                        const to = dateRange[1];
+                        if (from <= to) {
+                          setDateRange([from, to]);
+                        } else {
+                          const sunday = new Date(from);
+                          sunday.setDate(from.getDate() + 6);
+                          sunday.setHours(23, 59, 59, 999);
+                          setDateRange([from, sunday]);
+                        }
+                      } else {
+                        const sunday = new Date(from);
+                        sunday.setDate(from.getDate() + 6);
+                        sunday.setHours(23, 59, 59, 999);
+                        setDateRange([from, sunday]);
+                      }
+                    }
+                  }}
+                  className="w-32 sm:w-36 md:w-40"
+                />
 
-                  <GenericDatePicker
-                    id="from-date-box"
-                    placeholder="From Date"
-                    dateFormat="d/m/Y"
-                    onDateChange={(dates) => {
-                      setFromDate(dates);
-                      setActiveFilter('custom');
-                    }}
-                    className="w-24 sm:w-28"
-                    value={fromDate}
-                  />
-                  <span className="text-xs text-[#4f4535] dark:text-slate-400">to</span>
-                  <GenericDatePicker
-                    id="to-date-box"
-                    placeholder="To Date"
-                    dateFormat="d/m/Y"
-                    onDateChange={(dates) => {
-                      setToDate(dates);
-                      setActiveFilter('custom');
-                    }}
-                    className="w-24 sm:w-28"
-                    value={toDate}
-                  />
-                  {(fromDate.length > 0 || toDate.length > 0) && (
-                    <button
-                      onClick={clearDateFilters}
-                      className="rounded-lg p-1 text-[#4f4535] hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
-                      title="Clear filters"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              </>
+
+
+                {/* To Date - Defaults to Sunday */}
+                <GenericWeeklyDatePicker
+                  id="to-date-box"
+                  placeholder="DD/MM/YYYY"
+
+                  mode="to"
+                  initialDates={dateRange}
+                  onDateChange={(dates) => {
+                    if (dates && dates.length > 0) {
+                      const to = dates[0];
+                      if (dateRange.length === 2) {
+                        const from = dateRange[0];
+                        if (from <= to) {
+                          setDateRange([from, to]);
+                        } else {
+                          const monday = new Date(to);
+                          monday.setDate(to.getDate() - 6);
+                          monday.setHours(0, 0, 0, 0);
+                          setDateRange([monday, to]);
+                        }
+                      } else {
+                        const monday = new Date(to);
+                        monday.setDate(to.getDate() - 6);
+                        monday.setHours(0, 0, 0, 0);
+                        setDateRange([monday, to]);
+                      }
+                    }
+                  }}
+                  className="w-32 sm:w-36 md:w-40"
+                />
+              </div>
             )}
 
             {/* PRINT HISTORY */}
@@ -857,11 +888,10 @@ const BoxDept: React.FC = () => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
-                showHistory
+              className={`flex items-center gap-1.5 whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${showHistory
                   ? '!bg-amber-600 hover:!bg-amber-700'
                   : '!bg-blue-600 hover:!bg-blue-700'
-              }`}
+                }`}
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -881,22 +911,64 @@ const BoxDept: React.FC = () => {
           <GenericTable<BoxEntry>
             data={boxEntries}
             columns={columns}
-            onSave={(item, index) => handleSaveClick(index)}
             emptyMessage="No box entries found."
             isLoading={boxLoading || isSubmitting}
-            renderActions={!allSaved ? renderActions : undefined}
             showSrNo={true}
             srNoLabel="Sr No."
           />
         </div>
       ) : (
         <div className="px-3 py-4 sm:px-4 md:px-6">
+          {/* History Summary Cards */}
+          <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Total Tar
+                </span>
+                <span className="text-lg font-bold text-black dark:text-amber-400">
+                  {formatNumberDisplay(historyTotals.totalTar)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Total Chain Weight
+                </span>
+                <span className="text-lg font-bold text-black dark:text-blue-400">
+                  {formatNumberDisplay(historyTotals.totalChain)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Total Scrap
+                </span>
+                <span className="text-lg font-bold text-black dark:text-green-400">
+                  {formatNumberDisplay(historyTotals.totalScrap)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Total Loss
+                </span>
+                <span className="text-lg font-bold text-black dark:text-red-400">
+                  {formatNumberDisplay(historyTotals.totalLoss)} G
+                </span>
+              </div>
+            </div>
+          </div>
+
           <GenericTable
             data={getFilteredHistory()}
             columns={historyColumns}
             emptyMessage={
-              fromDate.length > 0 && toDate.length > 0
-                ? `No history records found for the selected date range (${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()})`
+              dateRange.length === 2
+                ? `No history records found for the selected date range (${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')})`
                 : "No history records found. Complete a box process to see history."
             }
             isLoading={historyLoading}

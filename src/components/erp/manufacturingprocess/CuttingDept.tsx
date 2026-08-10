@@ -4,8 +4,8 @@ import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useGetCutting, useGetCuttingHistory, useSubmitCutting } from '@/lib/api/cutting';
-import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
+import { useGetCutting, useGetCuttingHistory, useSubmitCutting, useSubmitMoveKunda } from '@/lib/api/cutting';
+import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 
 interface CuttingEntry {
   id: string;
@@ -48,15 +48,37 @@ const CuttingDept: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [actionType, setActionType] = useState<'stock' | 'kunda' | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [fromDate, setFromDate] = useState<Date[]>([]);
-  const [toDate, setToDate] = useState<Date[]>([]);
+
+  // Helper function to get week start (Monday 00:00) and end (Sunday 23:59:59)
+  const getDefaultWeekRange = () => {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sun, 1 = Mon, ...
+    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now);
+    monday.setDate(diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return { monday, sunday };
+  };
+
+  const [dateRange, setDateRange] = useState<Date[]>(() => {
+    const { monday, sunday } = getDefaultWeekRange();
+    return [monday, sunday];
+  });
+
   const isInitialMount = useRef(true);
 
   // Fetch data from API
   const { data: cuttingData = [], isLoading: cuttingLoading, refetch, error } = useGetCutting();
   const { data: cuttingHistory = [], isLoading: historyLoading, refetch: refetchHistory } = useGetCuttingHistory();
   const submitCutting = useSubmitCutting();
+  const submitMoveKunda = useSubmitMoveKunda();
 
   // Load data from API
   useEffect(() => {
@@ -134,35 +156,36 @@ const CuttingDept: React.FC = () => {
     };
   };
 
-  // Format number helper for history
-  const formatNumber = (value: any) => {
-    if (value === null || value === undefined) return '0';
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(num)) return '0';
-    return num.toFixed(0);
+  const toNumber = (value: unknown): number => {
+    if (value === null || value === undefined || value === '') return 0;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
   };
 
-  // Format number for display
-  const formatNumberDisplay = (value: number) => {
-    if (value === 0 || !value) return '0';
-    const str = value.toString();
-    if (str.includes('.')) {
-      return str.replace(/\.?0+$/, '');
-    }
-    return str;
+  // Indian format, maximum 3 decimals and NO trailing zeros.
+  const formatNumberDisplay = (value: unknown): string => {
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 3,
+      useGrouping: true,
+    }).format(toNumber(value));
   };
 
-  // Filter history by date
+  // Filter history by selected From-To date range.
   const getFilteredHistory = () => {
     let filtered = cuttingHistory;
 
-    if (fromDate.length > 0 && toDate.length > 0) {
-      const from = new Date(fromDate[0]);
-      const to = new Date(toDate[0]);
+    if (dateRange.length === 2) {
+      const from = new Date(dateRange[0]);
+      const to = new Date(dateRange[1]);
+
+      from.setHours(0, 0, 0, 0);
       to.setHours(23, 59, 59, 999);
-      
+
       filtered = cuttingHistory.filter((item: any) => {
+        if (!item?.createdAt) return false;
         const itemDate = new Date(item.createdAt);
+        if (Number.isNaN(itemDate.getTime())) return false;
         return itemDate >= from && itemDate <= to;
       });
     }
@@ -170,10 +193,21 @@ const CuttingDept: React.FC = () => {
     return filtered;
   };
 
+  // Calculate history totals
+  const filteredHistory = getFilteredHistory();
+  const historyTotals = filteredHistory.reduce(
+    (acc: { totalGiven: number; totalReceived: number; totalScrap: number }, item: any) => ({
+      totalGiven: acc.totalGiven + toNumber(item?.chainWeight),
+      totalReceived: acc.totalReceived + toNumber(item?.chainReceived),
+      totalScrap: acc.totalScrap + toNumber(item?.scrap),
+    }),
+    { totalGiven: 0, totalReceived: 0, totalScrap: 0 }
+  );
+
   // Print History Function with filtered data
   const handlePrintHistory = () => {
     const filteredData = getFilteredHistory();
-    
+
     if (!filteredData || filteredData.length === 0) {
       toast.error('No history records available to print for the selected date range');
       return;
@@ -195,11 +229,11 @@ const CuttingDept: React.FC = () => {
 
     // Build the table rows - Compact with minimum padding
     const rows = filteredData
-        .map((item: any, index: number) => {
-            const { date, time } = formatDate(item?.createdAt);
-            const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
+      .map((item: any, index: number) => {
+        const { date, time } = formatDate(item?.createdAt);
+        const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
 
-            return `
+        return `
                 <tr>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
@@ -207,17 +241,17 @@ const CuttingDept: React.FC = () => {
                     </td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.chainWeight)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.chainReceived)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.scrap)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.purity)}%</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainWeight)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainReceived)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
                         ${proceedDate} ${proceedTime}
                     </td>
                 </tr>
             `;
-        })
-        .join('');
+      })
+      .join('');
 
     // Calculate totals
     const totalChainGiven = filteredData.reduce((sum: number, item: any) => sum + (item?.chainWeight || 0), 0);
@@ -247,9 +281,9 @@ const CuttingDept: React.FC = () => {
 
             <!-- Title -->
             <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Cutting History Report</h2>
-            ${fromDate.length > 0 && toDate.length > 0 ? `
+            ${dateRange.length === 2 ? `
                 <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
-                    Date Range: ${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()}
+                    Date Range: ${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')}
                 </p>
             ` : ''}
 
@@ -326,17 +360,17 @@ const CuttingDept: React.FC = () => {
 
     // Trigger print
     setTimeout(() => {
-        window.print();
-        
-        // Clean up after print
-        setTimeout(() => {
-            if (document.body.contains(printContainer)) {
-                document.body.removeChild(printContainer);
-            }
-            if (document.head.contains(style)) {
-                document.head.removeChild(style);
-            }
-        }, 1000);
+      window.print();
+
+      // Clean up after print
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
     }, 500);
   };
 
@@ -378,7 +412,7 @@ const CuttingDept: React.FC = () => {
       header: 'Chain Given (G)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.chainWeight)}
+          {formatNumberDisplay(item.chainWeight)}
         </span>
       ),
     },
@@ -387,7 +421,7 @@ const CuttingDept: React.FC = () => {
       header: 'Chain Received (G)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.chainReceived)}
+          {formatNumberDisplay(item.chainReceived)}
         </span>
       ),
     },
@@ -396,7 +430,7 @@ const CuttingDept: React.FC = () => {
       header: 'Scrap (G)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.scrap)}
+          {formatNumberDisplay(item.scrap)}
         </span>
       ),
     },
@@ -405,7 +439,7 @@ const CuttingDept: React.FC = () => {
       header: 'Purity (%)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.purity)}%
+          {formatNumberDisplay(item.purity)}%
         </span>
       ),
     },
@@ -463,7 +497,7 @@ const CuttingDept: React.FC = () => {
   }, []);
 
   // Open confirmation popup before saving
-  const handleSaveClick = useCallback((index: number) => {
+  const handleSaveClick = useCallback((index: number, target: 'stock' | 'kunda') => {
     const entry = cuttingEntries[index];
 
     if (!entry.chainReceived || entry.chainReceived < 0) {
@@ -482,11 +516,12 @@ const CuttingDept: React.FC = () => {
     }
 
     setSaveIndex(index);
+    setActionType(target);
     setShowConfirmModal(true);
   }, [cuttingEntries]);
 
-  // Confirm and save
-  const confirmSave = useCallback(async () => {
+  // Confirm and save for Stock
+  const confirmSaveStock = useCallback(async () => {
     if (saveIndex === null) return;
 
     const index = saveIndex;
@@ -512,44 +547,79 @@ const CuttingDept: React.FC = () => {
       setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
+      setActionType(null);
       await refetch();
 
       navigate({
         to: '/Stocks/stockpage'
       });
     } catch (error) {
-      console.error('Error saving cutting:', error);
+      console.error('Error saving cutting to Stock:', error);
       toast.error('Failed to save cutting entry');
       setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
+      setActionType(null);
     }
   }, [saveIndex, cuttingEntries, submitCutting, navigate, refetch]);
 
-  // Check if all entries are saved
-  const allSaved = cuttingEntries.every(entry => entry.isSaved);
+  // Confirm and save for S Kunda
+  const confirmSaveKunda = useCallback(async () => {
+    if (saveIndex === null) return;
 
-  // Custom action renderer
-  const renderActions = useCallback((item: CuttingEntry, index: number) => {
-    if (item.isEditing) {
-      return (
-        <button
-          onClick={() => handleSaveClick(index)}
-          disabled={isLoading}
-          className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          title="Save Entry"
-        >
-          <Save className="h-3 w-3" />
-          <span>Save</span>
-        </button>
-      );
+    const index = saveIndex;
+    const entry = cuttingEntries[index];
+
+    setIsLoading(true);
+
+    try {
+      await submitMoveKunda.mutateAsync({
+        id: entry.id,
+        data: {
+          chainReceived: entry.chainReceived,
+          scrap: entry.scrap,
+          purity: entry.purity,
+          isCompleted: true,
+        }
+      });
+
+      setCuttingEntries(prev => prev.map((s, i) =>
+        i === index ? { ...s, isEditing: false, isSaved: true, isCompleted: true } : s
+      ));
+
+      setIsLoading(false);
+      setShowConfirmModal(false);
+      setSaveIndex(null);
+      setActionType(null);
+      await refetch();
+
+      navigate({
+        to: '/manufacturingprocess/process',
+        state: { selectedTab: 'kunda' }
+      });
+    } catch (error) {
+      console.error('Error moving cutting entry to S Kunda:', error);
+      toast.error('Failed to move to S Kunda');
+      setIsLoading(false);
+      setShowConfirmModal(false);
+      setSaveIndex(null);
+      setActionType(null);
     }
-    return (
-      <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-        ✓ Completed
-      </span>
+  }, [saveIndex, cuttingEntries, submitMoveKunda, navigate, refetch]);
+
+  // Action column is shown only when at least one unsaved row
+  // has an entered Chain Received / Scrap / Purity value.
+  const hasEditableValues = (entry: CuttingEntry): boolean => {
+    return Boolean(
+      entry.chainReceivedRaw?.trim() ||
+      entry.scrapRaw?.trim() ||
+      entry.purityRaw?.trim()
     );
-  }, [isLoading, handleSaveClick]);
+  };
+
+  const showActionColumn = cuttingEntries.some(
+    (entry) => !entry.isSaved && hasEditableValues(entry)
+  );
 
   // Define columns for GenericTable
   const columns: Column<CuttingEntry>[] = [
@@ -670,6 +740,49 @@ const CuttingDept: React.FC = () => {
         );
       },
     },
+
+
+    // Same condition as the other departments:
+    // Action column stays hidden until a value is entered.
+    ...(showActionColumn
+      ? [
+        {
+          key: 'actions',
+          header: 'Action',
+          render: (item: CuttingEntry, index: number) => {
+            if (item.isSaved || !hasEditableValues(item)) {
+              return null;
+            }
+
+            return (
+              <div className="flex items-center gap-1.5 justify-center">
+                <button
+                  type="button"
+                  onClick={() => handleSaveClick(index, 'stock')}
+                  disabled={isLoading || submitCutting.isPending || submitMoveKunda.isPending}
+                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Save to Stock"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  <span>Stock</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSaveClick(index, 'kunda')}
+                  disabled={isLoading || submitCutting.isPending || submitMoveKunda.isPending}
+                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Move to S Kunda"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  <span>S Kunda</span>
+                </button>
+              </div>
+            );
+          },
+        } as Column<CuttingEntry>,
+      ]
+      : []),
   ];
 
   const isSubmitting = submitCutting.isPending;
@@ -684,12 +797,6 @@ const CuttingDept: React.FC = () => {
     }
   };
 
-  // Clear date filters
-  const clearDateFilters = () => {
-    setFromDate([]);
-    setToDate([]);
-  };
-
   return (
     <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
       {/* Header */}
@@ -699,43 +806,76 @@ const CuttingDept: React.FC = () => {
             <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
               {showHistory ? 'Cutting History' : 'Cutting Department'}
             </h1>
-          
+
           </div>
           <div className="flex items-center gap-2">
-            {/* Date Filters */}
+            {/* Weekly Date Filter - Only show when viewing history */}
             {showHistory && (
-              <>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    <GenericDatePicker
-                      id="from-date-cutting"
-                      placeholder="From Date"
-                      dateFormat="d/m/Y"
-                      onDateChange={(dates) => setFromDate(dates)}
-                      className="w-24 sm:w-28"
-                    />
-                  </div>
-                  <span className="text-xs text-[#4f4535] dark:text-slate-400">to</span>
-                  <div className="flex items-center gap-1">
-                    <GenericDatePicker
-                      id="to-date-cutting"
-                      placeholder="To Date"
-                      dateFormat="d/m/Y"
-                      onDateChange={(dates) => setToDate(dates)}
-                      className="w-24 sm:w-28"
-                    />
-                  </div>
-                  {(fromDate.length > 0 || toDate.length > 0) && (
-                    <button
-                      onClick={clearDateFilters}
-                      className="rounded-lg p-1 text-[#4f4535] hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
-                      title="Clear filters"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              </>
+              <div className="flex items-center gap-2">
+                {/* From Date - defaults to Monday */}
+                <GenericWeeklyDatePicker
+                  id="from-date-cutting"
+                  placeholder="DD/MM/YYYY"
+                  mode="from"
+                  initialDates={dateRange}
+                  onDateChange={(dates) => {
+                    if (dates && dates.length > 0) {
+                      const from = dates[0];
+
+                      if (dateRange.length === 2) {
+                        const to = dateRange[1];
+
+                        if (from <= to) {
+                          setDateRange([from, to]);
+                        } else {
+                          const sunday = new Date(from);
+                          sunday.setDate(from.getDate() + 6);
+                          sunday.setHours(23, 59, 59, 999);
+                          setDateRange([from, sunday]);
+                        }
+                      } else {
+                        const sunday = new Date(from);
+                        sunday.setDate(from.getDate() + 6);
+                        sunday.setHours(23, 59, 59, 999);
+                        setDateRange([from, sunday]);
+                      }
+                    }
+                  }}
+                  className="w-32 sm:w-36 md:w-40"
+                />
+
+                {/* To Date - defaults to Sunday */}
+                <GenericWeeklyDatePicker
+                  id="to-date-cutting"
+                  placeholder="DD/MM/YYYY"
+                  mode="to"
+                  initialDates={dateRange}
+                  onDateChange={(dates) => {
+                    if (dates && dates.length > 0) {
+                      const to = dates[0];
+
+                      if (dateRange.length === 2) {
+                        const from = dateRange[0];
+
+                        if (from <= to) {
+                          setDateRange([from, to]);
+                        } else {
+                          const monday = new Date(to);
+                          monday.setDate(to.getDate() - 6);
+                          monday.setHours(0, 0, 0, 0);
+                          setDateRange([monday, to]);
+                        }
+                      } else {
+                        const monday = new Date(to);
+                        monday.setDate(to.getDate() - 6);
+                        monday.setHours(0, 0, 0, 0);
+                        setDateRange([monday, to]);
+                      }
+                    }
+                  }}
+                  className="w-32 sm:w-36 md:w-40"
+                />
+              </div>
             )}
 
             {/* Print History Button */}
@@ -754,9 +894,8 @@ const CuttingDept: React.FC = () => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${
-                showHistory ? '!bg-amber-600 hover:!bg-amber-700' : '!bg-blue-600 hover:!bg-blue-700'
-              }`}
+              className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${showHistory ? '!bg-amber-600 hover:!bg-amber-700' : '!bg-blue-600 hover:!bg-blue-700'
+                }`}
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -777,22 +916,54 @@ const CuttingDept: React.FC = () => {
           <GenericTable<CuttingEntry>
             data={cuttingEntries}
             columns={columns}
-            onSave={(item, index) => handleSaveClick(index)}
             emptyMessage="No cutting entries found."
             isLoading={cuttingLoading || isSubmitting}
-            renderActions={!allSaved ? renderActions : undefined}
             showSrNo={true}
             srNoLabel="Sr No."
           />
         </div>
       ) : (
         <div className="px-3 py-4 sm:px-4 md:px-6">
+          {/* History Summary Cards */}
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Chain Given (G)
+                </span>
+                <span className="text-lg font-bold text-black dark:text-amber-400">
+                  {formatNumberDisplay(historyTotals.totalGiven)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Chain Received (G)
+                </span>
+                <span className="text-lg font-bold text-black dark:text-blue-400">
+                  {formatNumberDisplay(historyTotals.totalReceived)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Scrap (G)
+                </span>
+                <span className="text-lg font-bold text-black dark:text-green-400">
+                  {formatNumberDisplay(historyTotals.totalScrap)} G
+                </span>
+              </div>
+            </div>
+          </div>
+
           <GenericTable
             data={getFilteredHistory()}
             columns={historyColumns}
             emptyMessage={
-              fromDate.length > 0 && toDate.length > 0
-                ? `No history records found for the selected date range (${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()})`
+              dateRange.length === 2
+                ? `No history records found for the selected date range (${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')})`
                 : "No history records found. Complete a cutting process to see history."
             }
             isLoading={historyLoading}
@@ -814,23 +985,24 @@ const CuttingDept: React.FC = () => {
                 </div>
               </div>
               <h3 className="text-center text-lg font-bold text-[#1a1c1b] dark:text-white mb-2">
-                Confirm Save
+                Confirm Action
               </h3>
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
-                Are you sure you want to save this cutting entry? This will complete the process.
+                Are you sure you want to save this cutting entry and send it to <strong>{actionType === 'stock' ? 'Stock' : 'S Kunda'}</strong>?
               </p>
               <div className="mt-6 flex justify-center gap-3">
                 <button
                   onClick={() => {
                     setShowConfirmModal(false);
                     setSaveIndex(null);
+                    setActionType(null);
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={confirmSave}
+                  onClick={actionType === 'stock' ? confirmSaveStock : confirmSaveKunda}
                   disabled={isLoading}
                   className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >

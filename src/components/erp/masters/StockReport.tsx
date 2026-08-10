@@ -61,8 +61,29 @@ export default function StockReport() {
   const navigate = useNavigate();
   const { d } = Route.useParams();
   const [searchTerm, setSearchTerm] = useState("");
-  const [fromDate, setFromDate] = useState<Date | null>(null);
-  const [toDate, setToDate] = useState<Date | null>(null);
+
+  // Default date range: current Monday -> current Sunday
+  const getCurrentWeekRange = () => {
+    const today = new Date();
+    const day = today.getDay(); // Sunday = 0
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return { monday, sunday };
+  };
+
+  const { monday: defaultMonday, sunday: defaultSunday } =
+    getCurrentWeekRange();
+
+  const [fromDate, setFromDate] = useState<Date | null>(defaultMonday);
+  const [toDate, setToDate] = useState<Date | null>(defaultSunday);
   const printRef = useRef<HTMLDivElement>(null);
   const { data: stockData, isLoading, isError, refetch } = useGetStockReport(d);
 
@@ -122,25 +143,36 @@ export default function StockReport() {
 
     // Date range filter
     let matchesDate = true;
+
     if (fromDate || toDate) {
-      // Parse the date from entry.dateTime (format: "DD/MM/YYYY HH:MM AM/PM")
+      // Parse DD/MM/YYYY from entry.dateTime.
       const dateParts = entry.dateTime.split(' ')[0].split('/');
+
       if (dateParts.length === 3) {
         const entryDate = new Date(
-          parseInt(dateParts[2]), // year
-          parseInt(dateParts[1]) - 1, // month (0-indexed)
-          parseInt(dateParts[0]) // day
+          Number(dateParts[2]),
+          Number(dateParts[1]) - 1,
+          Number(dateParts[0])
         );
+
+        entryDate.setHours(12, 0, 0, 0);
 
         if (fromDate) {
           const from = new Date(fromDate);
           from.setHours(0, 0, 0, 0);
-          if (entryDate < from) matchesDate = false;
+
+          if (entryDate < from) {
+            matchesDate = false;
+          }
         }
+
         if (toDate && matchesDate) {
           const to = new Date(toDate);
           to.setHours(23, 59, 59, 999);
-          if (entryDate > to) matchesDate = false;
+
+          if (entryDate > to) {
+            matchesDate = false;
+          }
         }
       }
     }
@@ -169,33 +201,35 @@ export default function StockReport() {
     });
   };
 
-  // Handle date change from GenericDatePicker
+  // Handle From Date
   const handleFromDateChange = (selectedDates: Date[]) => {
-    if (selectedDates && selectedDates.length > 0) {
-      setFromDate(selectedDates[0]);
-    } else {
-      setFromDate(null);
+    if (selectedDates?.length > 0) {
+      const selected = new Date(selectedDates[0]);
+      selected.setHours(0, 0, 0, 0);
+      setFromDate(selected);
     }
   };
 
+  // Handle To Date
   const handleToDateChange = (selectedDates: Date[]) => {
-    if (selectedDates && selectedDates.length > 0) {
-      setToDate(selectedDates[0]);
-    } else {
-      setToDate(null);
+    if (selectedDates?.length > 0) {
+      const selected = new Date(selectedDates[0]);
+      selected.setHours(23, 59, 59, 999);
+      setToDate(selected);
     }
   };
 
-  // Reset date filters
+  // Reset to current Monday -> Sunday
   const handleResetDates = () => {
-    setFromDate(null);
-    setToDate(null);
+    const { monday, sunday } = getCurrentWeekRange();
+    setFromDate(monday);
+    setToDate(sunday);
   };
 
   // Get remark color - handles any remark string
   const getRemarkColor = (remark: string) => {
     const remarkLower = remark?.toLowerCase() || '';
-    
+
     if (remarkLower.includes('inward')) {
       return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
     } else if (remarkLower.includes('outward')) {
@@ -364,7 +398,7 @@ export default function StockReport() {
             </tr>
           ))}
         </tbody>
-       
+
       </table>
 
     </div>
@@ -455,37 +489,29 @@ export default function StockReport() {
               />
             </div>
 
-            {/* From Date */}
+            {/* From Date - current week Monday by default */}
             <div className="w-full sm:w-40">
               <GenericDatePicker
                 id="from-date-stock"
                 initialDate={fromDate || undefined}
                 onDateChange={handleFromDateChange}
-                placeholder="From Date"
+                placeholder="DD/MM/YYYY"
+                dateFormat="d/m/Y"
                 className="w-full"
               />
             </div>
 
-            {/* To Date */}
+            {/* To Date - current week Sunday by default */}
             <div className="w-full sm:w-40">
               <GenericDatePicker
                 id="to-date-stock"
                 initialDate={toDate || undefined}
                 onDateChange={handleToDateChange}
-                placeholder="To Date"
+                placeholder="DD/MM/YYYY"
+                dateFormat="d/m/Y"
                 className="w-full"
               />
             </div>
-
-            {/* Reset Button (shows when dates are selected) */}
-            {(fromDate || toDate) && (
-              <button
-                onClick={handleResetDates}
-                className="px-3 py-2 text-sm text-[#785600] hover:text-[#5d4200] hover:bg-[#785600]/10 rounded-lg transition-colors whitespace-nowrap"
-              >
-                Clear
-              </button>
-            )}
 
             {/* Print Button */}
             <button

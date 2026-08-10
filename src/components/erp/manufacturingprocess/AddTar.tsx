@@ -7,7 +7,8 @@ import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import { useGetItems, Item } from '@/lib/api/items';
 import { useGetSizes, Size } from '@/lib/api/sizes';
 import { useTar, useCreateTar, useSaveTar, Tar, useGetTarHistory } from '@/lib/api/tar';
-import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
+import GenericDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
+import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 
 interface TarEntry {
     id: string;
@@ -56,8 +57,23 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isTarCompleted, setIsTarCompleted] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
-    const [fromDate, setFromDate] = useState<Date[]>([]);
-    const [toDate, setToDate] = useState<Date[]>([]);
+
+    // Default date range: Monday to Sunday of current week
+    const [dateRange, setDateRange] = useState<Date[]>(() => {
+        const now = new Date();
+        const day = now.getDay(); // 0 = Sunday, 1 = Monday, ...
+        const diffToMonday = day === 0 ? -6 : 1 - day;
+
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + diffToMonday);
+        monday.setHours(0, 0, 0, 0);
+
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+
+        return [monday, sunday];
+    });
 
     const [formData, setFormData] = useState({
         itemId: '',
@@ -104,35 +120,40 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         };
     };
 
-    // Format number helper
-    const formatNumber = (value: any) => {
-        if (value === null || value === undefined) return '0';
-        const num = typeof value === 'string' ? parseFloat(value) : value;
-        if (isNaN(num)) return '0';
-        return num.toFixed(0);
+    const toNumber = (value: unknown): number => {
+        if (value === null || value === undefined || value === '') return 0;
+        const num = Number(value);
+        return Number.isFinite(num) ? num : 0;
     };
 
-    // Format number for display
-    const formatNumberDisplay = (value: number) => {
-        if (value === 0 || !value) return '0';
-        const str = value.toString();
-        if (str.includes('.')) {
-            return str.replace(/\.?0+$/, '');
-        }
-        return str;
+    // Indian format, maximum 3 decimals and NO trailing zeros.
+    const formatNumber = (value: unknown): string => {
+        return new Intl.NumberFormat('en-IN', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 3,
+            useGrouping: true,
+        }).format(toNumber(value));
     };
 
-    // Filter history by date
+    const formatNumberDisplay = (value: unknown): string => {
+        return formatNumber(value);
+    };
+
+    // Filter history by selected date range
     const getFilteredHistory = () => {
         let filtered = tarHistory;
 
-        if (fromDate.length > 0 && toDate.length > 0) {
-            const from = new Date(fromDate[0]);
-            const to = new Date(toDate[0]);
+        if (dateRange.length === 2) {
+            const from = new Date(dateRange[0]);
+            const to = new Date(dateRange[1]);
+
+            from.setHours(0, 0, 0, 0);
             to.setHours(23, 59, 59, 999);
-            
+
             filtered = tarHistory.filter((item: any) => {
+                if (!item?.createdAt) return false;
                 const itemDate = new Date(item.createdAt);
+                if (Number.isNaN(itemDate.getTime())) return false;
                 return itemDate >= from && itemDate <= to;
             });
         }
@@ -140,10 +161,39 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         return filtered;
     };
 
+    // Calculate history totals
+    const filteredHistory = getFilteredHistory();
+
+    const historyTotals = filteredHistory.reduce(
+        (
+            acc: {
+                totalFine: number;
+                totalTar: number;
+                totalScrap: number;
+                totalLoss: number;
+                totalEntries: number;
+            },
+            item: any
+        ) => ({
+            totalFine: acc.totalFine + toNumber(item?.fine),
+            totalTar: acc.totalTar + toNumber(item?.tar),
+            totalScrap: acc.totalScrap + toNumber(item?.scrap),
+            totalLoss: acc.totalLoss + toNumber(item?.loss ?? item?.lossWeight),
+            totalEntries: acc.totalEntries + 1,
+        }),
+        {
+            totalFine: 0,
+            totalTar: 0,
+            totalScrap: 0,
+            totalLoss: 0,
+            totalEntries: 0,
+        }
+    );
+
     // Print History Function - Minimal Padding
     const handlePrintHistory = () => {
         const filteredData = getFilteredHistory();
-        
+
         if (!filteredData || filteredData.length === 0) {
             toast.error('No history records available to print for the selected date range');
             return;
@@ -190,12 +240,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             })
             .join('');
 
-        // Calculate totals
-        const totalFine = filteredData.reduce((sum: number, item: any) => sum + (item?.fine || 0), 0);
-        const totalTar = filteredData.reduce((sum: number, item: any) => sum + (item?.tar || 0), 0);
-        const totalScrap = filteredData.reduce((sum: number, item: any) => sum + (item?.scrap || 0), 0);
-        const totalLoss = filteredData.reduce((sum: number, item: any) => sum + (item?.loss || 0), 0);
-
         // Set the content with PDF Header - Minimal padding
         printContainer.innerHTML = `
             <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
@@ -219,9 +263,9 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
 
                 <!-- Title -->
                 <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Tar History Report</h2>
-                ${fromDate.length > 0 && toDate.length > 0 ? `
+                ${dateRange.length === 2 ? `
                     <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
-                        Date Range: ${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()}
+                        Date Range: ${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')}
                     </p>
                 ` : ''}
 
@@ -244,8 +288,16 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                     <tbody>
                         ${rows}
                     </tbody>
-                     </table>
+                </table>
 
+                <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
+                    <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
+                    <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
+                        <span>Powered by Matoshree Gold</span>
+                        <span>|</span>
+                        <span>${new Date().toLocaleString()}</span>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -348,7 +400,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         },
         {
             key: 'fine',
-            header: 'Fine (लगड)',
+            header: 'Fine (G)',
             render: (item) => (
                 <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
                     {formatNumber(item.fine)}
@@ -357,7 +409,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         },
         {
             key: 'tar',
-            header: 'Tar (तार)',
+            header: 'Tar (G)',
             render: (item) => (
                 <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
                     {formatNumber(item.tar)}
@@ -366,7 +418,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         },
         {
             key: 'scrap',
-            header: 'Scrap (स्क्रॅप)',
+            header: 'Scrap (G)',
             render: (item) => (
                 <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
                     {formatNumber(item.scrap)}
@@ -375,7 +427,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         },
         {
             key: 'loss',
-            header: 'Loss',
+            header: 'Loss (G)',
             render: (item) => (
                 <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
                     {formatNumber(item.loss)}
@@ -384,7 +436,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         },
         {
             key: 'purity',
-            header: 'Purity % (टंच)',
+            header: 'Purity %',
             render: (item) => (
                 <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
                     {formatNumber(item.purity)}%
@@ -424,11 +476,9 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                     if (tar.isSaved) {
                         setIsTarCompleted(true);
                     }
-
-                    let formattedDateTime = tar.dateTime || '';
-                    if (!formattedDateTime) {
-                        formattedDateTime = formatDateTime(new Date());
-                    }
+                    const formattedDateTime = tar.createdAt
+                        ? formatDateTime(new Date(tar.createdAt))
+                        : '-';
 
                     return {
                         id: tar.id,
@@ -436,15 +486,15 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                         dateTime: formattedDateTime,
                         item: itemValue,
                         size: sizeValue,
-                        fine: tar.fine || 0,
-                        tar: tar.tar || 0,
-                        scrap: tar.scrap || 0,
-                        loss: tar.loss || tar.lossWeight || 0,
-                        purity: typeof tar.purity === 'string' ? parseFloat(tar.purity) : (tar.purity || 0),
+                        fine: toNumber(tar.fine),
+                        tar: toNumber(tar.tar),
+                        scrap: toNumber(tar.scrap),
+                        loss: toNumber(tar.loss ?? tar.lossWeight),
+                        purity: toNumber(tar.purity),
                         isSaved: tar.isSaved || false,
-                        tarRaw: tar.tar ? tar.tar.toString() : '',
-                        scrapRaw: tar.scrap ? tar.scrap.toString() : '',
-                        purityRaw: tar.purity ? tar.purity.toString() : '',
+                        tarRaw: toNumber(tar.tar) > 0 ? String(tar.tar) : '',
+                        scrapRaw: toNumber(tar.scrap) > 0 ? String(tar.scrap) : '',
+                        purityRaw: toNumber(tar.purity) > 0 ? String(tar.purity) : '',
                         itemId: tar.itemId || '',
                         sizeId: tar.sizeId || '',
                     };
@@ -595,7 +645,10 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                         const numValue = parseFloat(sanitized);
                         updated.tar = isNaN(numValue) ? 0 : numValue;
                     }
-                    updated.loss = Math.max(0, entry.fine - (updated.tar || 0));
+                    updated.loss = Math.max(
+                        0,
+                        toNumber(entry.fine) - toNumber(updated.tar)
+                    );
                 } else if (field === 'scrap') {
                     const sanitized = value.replace(/[^0-9.]/g, '');
                     updated.scrapRaw = sanitized;
@@ -712,6 +765,23 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         resetForm();
     };
 
+    // A row is edited only when the user has entered a value.
+    const hasEditableValues = (entry: TarEntry): boolean => {
+        return Boolean(
+            entry.tarRaw?.trim() ||
+            entry.scrapRaw?.trim() ||
+            entry.purityRaw?.trim()
+        );
+    };
+
+    // The whole Action column is conditional.
+    // Therefore the "Action" header also disappears when no row is edited.
+    const showActionColumn = tarEntries.some(
+        entry => !entry.isSaved && hasEditableValues(entry)
+    );
+
+    const isSubmitting = createTar.isPending || saveTar.isPending;
+
     const columns: Column<TarEntry>[] = [
         {
             key: 'dateTime',
@@ -755,26 +825,36 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             key: 'fine',
             header: 'Fine (लगड)',
             render: (item) => (
-                <span className="text-sm text-[#1a1c1b] dark:text-white">
+                <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
                     {formatNumberDisplay(item.fine)}
                 </span>
             ),
         },
         {
             key: 'tar',
-            header: 'Tar(तार)',
+            header: 'Tar (G)',
             render: (item, index) => {
                 if (!item.isSaved) {
                     return (
                         <input
                             type="text"
-                            value={item.tarRaw !== undefined ? item.tarRaw : (item.tar === 0 ? '' : item.tar)}
-                            onChange={(e) => handleInlineChange(index, 'tar', e.target.value)}
+                            inputMode="decimal"
+                            value={
+                                item.tarRaw !== undefined
+                                    ? item.tarRaw
+                                    : item.tar === 0
+                                        ? ''
+                                        : item.tar
+                            }
+                            onChange={(e) =>
+                                handleInlineChange(index, 'tar', e.target.value)
+                            }
                             placeholder="0.000"
                             className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
                         />
                     );
                 }
+
                 return (
                     <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
                         {formatNumberDisplay(item.tar)}
@@ -784,19 +864,29 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         },
         {
             key: 'scrap',
-            header: 'Scrap (स्क्रॅप)',
+            header: 'Scrap (G)',
             render: (item, index) => {
                 if (!item.isSaved) {
                     return (
                         <input
                             type="text"
-                            value={item.scrapRaw !== undefined ? item.scrapRaw : (item.scrap === 0 ? '' : item.scrap)}
-                            onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
+                            inputMode="decimal"
+                            value={
+                                item.scrapRaw !== undefined
+                                    ? item.scrapRaw
+                                    : item.scrap === 0
+                                        ? ''
+                                        : item.scrap
+                            }
+                            onChange={(e) =>
+                                handleInlineChange(index, 'scrap', e.target.value)
+                            }
                             placeholder="0.000"
                             className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
                         />
                     );
                 }
+
                 return (
                     <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
                         {formatNumberDisplay(item.scrap)}
@@ -806,7 +896,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         },
         {
             key: 'loss',
-            header: 'Loss',
+            header: 'Loss (G)',
             render: (item) => (
                 <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
                     {formatNumberDisplay(item.loss)}
@@ -821,13 +911,23 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                     return (
                         <input
                             type="text"
-                            value={item.purityRaw !== undefined ? item.purityRaw : (item.purity === 0 ? '' : item.purity)}
-                            onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
-                            placeholder="e.g., 98 %"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                            inputMode="decimal"
+                            value={
+                                item.purityRaw !== undefined
+                                    ? item.purityRaw
+                                    : item.purity === 0
+                                        ? ''
+                                        : item.purity
+                            }
+                            onChange={(e) =>
+                                handleInlineChange(index, 'purity', e.target.value)
+                            }
+                            placeholder="e.g., 98"
+                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
                         />
                     );
                 }
+
                 return (
                     <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
                         {formatNumberDisplay(item.purity)}
@@ -835,30 +935,34 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                 );
             },
         },
+
+        ...(showActionColumn
+            ? [
+                {
+                    key: 'actions',
+                    header: 'Action',
+                    render: (item: TarEntry, index: number) => {
+                        if (item.isSaved || !hasEditableValues(item)) {
+                            return null;
+                        }
+
+                        return (
+                            <button
+                                type="button"
+                                onClick={() => handleSaveClick(index)}
+                                disabled={isLoading || isSubmitting}
+                                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                                title="Save Entry"
+                            >
+                                <Save className="h-3 w-3" />
+                                <span>Box</span>
+                            </button>
+                        );
+                    },
+                } as Column<TarEntry>,
+            ]
+            : []),
     ];
-
-    const renderActions = (item: TarEntry, index: number) => {
-        if (!item.isSaved) {
-            return (
-                <button
-                    onClick={() => handleSaveClick(index)}
-                    disabled={isLoading}
-                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    title="Save Entry"
-                >
-                    <Save className="h-3 w-3" />
-                    <span>Save</span>
-                </button>
-            );
-        }
-        return (
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                ✓ Saved
-            </span>
-        );
-    };
-
-    const isSubmitting = createTar.isPending || saveTar.isPending;
 
     const toggleHistory = () => {
         if (showHistory) {
@@ -870,10 +974,36 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         }
     };
 
-    // Clear date filters
+    // Clear date filters - resets to current week
     const clearDateFilters = () => {
-        setFromDate([]);
-        setToDate([]);
+        const now = new Date();
+        const day = now.getDay();
+        const diffToMonday = day === 0 ? -6 : 1 - day;
+
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + diffToMonday);
+        monday.setHours(0, 0, 0, 0);
+
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+
+        setDateRange([monday, sunday]);
+    };
+
+    // Handle From-To date range
+    const handleWeeklyDateChange = (dates: Date[]) => {
+        if (dates.length === 2) {
+            const from = new Date(dates[0]);
+            const to = new Date(dates[1]);
+
+            from.setHours(0, 0, 0, 0);
+            to.setHours(23, 59, 59, 999);
+
+            setDateRange([from, to]);
+        } else {
+            setDateRange(dates);
+        }
     };
 
     return (
@@ -885,7 +1015,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                         <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
                             {showHistory ? 'Tar History' : 'Tar Management'}
                         </h1>
-                      
                     </div>
                     <div className="flex items-center gap-2">
                         {!showHistory && (
@@ -907,34 +1036,79 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
 
                         {/* Date Filters - Only show when viewing history */}
                         {showHistory && (
-                            <>
-                                <div className="flex items-center gap-2">
-                                    <GenericDatePicker
-                                        id="from-date-tar"
-                                        placeholder="From Date"
-                                        dateFormat="d/m/Y"
-                                        onDateChange={(dates) => setFromDate(dates)}
-                                        className="w-24 sm:w-28"
-                                    />
-                                    <span className="text-xs text-[#4f4535] dark:text-slate-400">to</span>
-                                    <GenericDatePicker
-                                        id="to-date-tar"
-                                        placeholder="To Date"
-                                        dateFormat="d/m/Y"
-                                        onDateChange={(dates) => setToDate(dates)}
-                                        className="w-24 sm:w-28"
-                                    />
-                                    {(fromDate.length > 0 || toDate.length > 0) && (
-                                        <button
-                                            onClick={clearDateFilters}
-                                            className="rounded-lg p-1 text-[#4f4535] hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
-                                            title="Clear filters"
-                                        >
-                                            ✕
-                                        </button>
-                                    )}
-                                </div>
-                            </>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {/* From Date - Defaults to Monday */}
+                                <GenericWeeklyDatePicker
+                                    id="from-date-tar"
+                                    placeholder="DD/MM/YYYY"
+
+                                    mode="from"
+                                    initialDates={dateRange}
+                                    onDateChange={(dates) => {
+                                        if (dates && dates.length > 0) {
+                                            const from = dates[0];
+                                            if (dateRange.length === 2) {
+                                                // Update only the from date
+                                                const to = dateRange[1];
+                                                // Ensure from <= to
+                                                if (from <= to) {
+                                                    setDateRange([from, to]);
+                                                } else {
+                                                    // If from > to, set both to same week
+                                                    const sunday = new Date(from);
+                                                    sunday.setDate(from.getDate() + 6);
+                                                    sunday.setHours(23, 59, 59, 999);
+                                                    setDateRange([from, sunday]);
+                                                }
+                                            } else {
+                                                // If no to date, set to Sunday
+                                                const sunday = new Date(from);
+                                                sunday.setDate(from.getDate() + 6);
+                                                sunday.setHours(23, 59, 59, 999);
+                                                setDateRange([from, sunday]);
+                                            }
+                                        }
+                                    }}
+                                    className="w-32 sm:w-36 md:w-40"
+                                />
+
+
+
+                                {/* To Date - Defaults to Sunday */}
+                                <GenericWeeklyDatePicker
+                                    id="to-date-tar"
+                                    placeholder="DD/MM/YYYY"
+
+                                    mode="to"
+                                    initialDates={dateRange}
+                                    onDateChange={(dates) => {
+                                        if (dates && dates.length > 0) {
+                                            const to = dates[0];
+                                            if (dateRange.length === 2) {
+                                                // Update only the to date
+                                                const from = dateRange[0];
+                                                // Ensure from <= to
+                                                if (from <= to) {
+                                                    setDateRange([from, to]);
+                                                } else {
+                                                    // If to < from, set both to same week
+                                                    const monday = new Date(to);
+                                                    monday.setDate(to.getDate() - 6);
+                                                    monday.setHours(0, 0, 0, 0);
+                                                    setDateRange([monday, to]);
+                                                }
+                                            } else {
+                                                // If no from date, set to Monday
+                                                const monday = new Date(to);
+                                                monday.setDate(to.getDate() - 6);
+                                                monday.setHours(0, 0, 0, 0);
+                                                setDateRange([monday, to]);
+                                            }
+                                        }
+                                    }}
+                                    className="w-32 sm:w-36 md:w-40"
+                                />
+                            </div>
                         )}
 
                         {/* Print History Button */}
@@ -975,23 +1149,66 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                     <GenericTable<TarEntry>
                         data={tarEntries}
                         columns={columns}
-                        onSave={(item, index) => handleSaveClick(index)}
                         emptyMessage="No tar entries found. Click 'Add Tar' to create one."
                         isLoading={tarLoading || itemsLoading || sizesLoading || isSubmitting}
-                        renderActions={renderActions}
                         showSrNo={true}
                         srNoLabel="Sr No."
                     />
                 </div>
             ) : (
-                /* History Table */
+                /* History Section */
                 <div className="px-3 py-4 sm:px-4 md:px-6">
+                    {/* History Summary Cards */}
+                    <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                                    Total Fine
+                                </span>
+                                <span className="text-lg font-bold text-black dark:text-amber-400">
+                                    {formatNumberDisplay(historyTotals.totalFine)} G
+                                </span>
+                            </div>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                                    Total Tar
+                                </span>
+                                <span className="text-lg font-bold text-black dark:text-blue-400">
+                                    {formatNumberDisplay(historyTotals.totalTar)} G
+                                </span>
+                            </div>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                                    Total Scrap
+                                </span>
+                                <span className="text-lg font-bold text-black dark:text-green-400">
+                                    {formatNumberDisplay(historyTotals.totalScrap)} G
+                                </span>
+                            </div>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                                    Total Loss
+                                </span>
+                                <span className="text-lg font-bold text-black dark:text-red-400">
+                                    {formatNumberDisplay(historyTotals.totalLoss)} G
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* History Table */}
                     <GenericTable
                         data={getFilteredHistory()}
                         columns={historyColumns}
                         emptyMessage={
-                            fromDate.length > 0 && toDate.length > 0
-                                ? `No history records found for the selected date range (${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()})`
+                            dateRange.length === 2
+                                ? `No history records found for the selected date range (${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')})`
                                 : "No history records found. Complete a tar process to see history."
                         }
                         isLoading={tarHistoryLoading}

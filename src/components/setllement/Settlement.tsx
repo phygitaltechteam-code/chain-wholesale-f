@@ -697,7 +697,7 @@ const Settlement: React.FC = () => {
       const settlementData = {
         clientId: settlementDetail.clientId,
         amount: signedAmount,
-        remark: remark,
+        // remark: remark,
       };
 
       const response = await submitSettlementMutation.mutateAsync(settlementData);

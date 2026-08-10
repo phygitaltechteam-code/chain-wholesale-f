@@ -13,7 +13,6 @@ interface GenericDatePickerProps {
   required?: boolean;
   className?: string;
   value?: string;
-  defaultWeek?: boolean; // Add this prop
 }
 
 const GenericDatePicker: React.FC<GenericDatePickerProps> = ({
@@ -26,37 +25,23 @@ const GenericDatePicker: React.FC<GenericDatePickerProps> = ({
   required = false,
   className = '',
   value,
-  defaultWeek = false, // Default to false
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!inputRef.current) return;
 
-    // Calculate default date for current week (Monday)
-    let defaultDate = initialDate || value || undefined;
-    
-    if (defaultWeek && !defaultDate) {
-      const today = new Date();
-      const dayOfWeek = today.getDay();
-      
-      // Calculate Monday (start of week)
-      const monday = new Date(today);
-      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      monday.setDate(today.getDate() - daysToMonday);
-      monday.setHours(0, 0, 0, 0);
-      
-      defaultDate = monday;
-    }
-
     const fp = flatpickr(inputRef.current, {
       mode: 'single',
-      defaultDate: defaultDate,
+      defaultDate: initialDate || value || undefined,
       dateFormat: dateFormat,
       onChange: onDateChange,
       monthSelectorType: 'static',
+      // Position the calendar properly
       position: 'auto',
+      // Ensure calendar appears above other elements
       static: false,
+      // Append to body to avoid overflow issues
       appendTo: document.body,
       prevArrow:
         '<svg class="fill-current" width="7" height="11" viewBox="0 0 7 11"><path d="M5.4 10.8l1.4-1.4-4-4 4-4L5.4 0 0 5.4z" /></svg>',
@@ -64,23 +49,10 @@ const GenericDatePicker: React.FC<GenericDatePickerProps> = ({
         '<svg class="fill-current" width="7" height="11" viewBox="0 0 7 11"><path d="M1.4 10.8L0 9.4l4-4-4-4L1.4 0l5.4 5.4z" /></svg>',
     });
 
-    // If defaultWeek is true, trigger onDateChange with Monday
-    if (defaultWeek && onDateChange && !initialDate && !value) {
-      const today = new Date();
-      const dayOfWeek = today.getDay();
-      
-      const monday = new Date(today);
-      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      monday.setDate(today.getDate() - daysToMonday);
-      monday.setHours(0, 0, 0, 0);
-      
-      onDateChange([monday]);
-    }
-
     return () => {
       fp.destroy();
     };
-  }, [id, initialDate, dateFormat, onDateChange, value, defaultWeek]);
+  }, [id, initialDate, dateFormat, onDateChange, value]);
 
   return (
     <div className={className}>
