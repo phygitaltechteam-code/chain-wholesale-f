@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Square, Save, ChevronRight, ChevronDown, Printer } from 'lucide-react';
+import { Square, Save, ChevronRight, ChevronDown, Printer, ArrowLeft, Scale, DollarSign, ArrowDownToLine, Clock } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetKunda, useGetKundaHistory, useSubmitKunda } from '@/lib/api/cutting';
+import PageHeader from '@/components/Forms/Common/PageHeader';
 
 interface KundaEntry {
   id: string;
@@ -42,6 +44,7 @@ const getSizeName = (size: any): string => {
 };
 
 const SKundaDept: React.FC = () => {
+  const navigate = useNavigate();
   const [kundaEntries, setKundaEntries] = useState<KundaEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
@@ -384,6 +387,7 @@ const SKundaDept: React.FC = () => {
       setShowConfirmModal(false);
       setSaveIndex(null);
       await refetch();
+      toast.success('S Kunda process stopped successfully!');
     } catch (error) {
       console.error('Error stopping S Kunda process:', error);
       toast.error('Failed to stop S Kunda process');
@@ -539,7 +543,7 @@ const SKundaDept: React.FC = () => {
                   type="button"
                   onClick={() => handleStopClick(index)}
                   disabled={isLoading || submitKunda.isPending}
-                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:bg-red-700 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:bg-[#5d4200] hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                   title="Stop Process"
                 >
                   <Square className="h-3.5 w-3.5 fill-current" />
@@ -659,72 +663,63 @@ const SKundaDept: React.FC = () => {
 
   return (
     <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
-      <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
-        <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
-          <div className="flex items-center gap-2 min-w-0">
+      <div className="px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8">
+        {/* Header */}
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex items-center gap-3">
             <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
               {showHistory ? 'S Kunda History' : 'S Kunda Department'}
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-auto">
             {showHistory && (
-              <div className="flex items-center gap-2">
-                <GenericWeeklyDatePicker
-                  id="from-date-kunda"
-                  placeholder="DD/MM/YYYY"
-                  mode="from"
-                  initialDates={dateRange}
-                  onDateChange={(dates) => {
-                    if (dates?.length) {
-                      const from = dates[0];
-                      const sunday = new Date(from);
-                      sunday.setDate(from.getDate() + 6);
-                      sunday.setHours(23, 59, 59, 999);
-                      setDateRange([from, sunday]);
-                    }
-                  }}
-                  className="w-32 sm:w-36 md:w-40"
-                />
+              <>
+                <div className="flex items-center gap-2">
+                  <GenericWeeklyDatePicker
+                    id="from-date-kunda"
+                    placeholder="DD/MM/YYYY"
+                    mode="from"
+                    initialDates={dateRange}
+                    onDateChange={(dates) => {
+                      if (dates?.length) {
+                        const from = dates[0];
+                        const sunday = new Date(from);
+                        sunday.setDate(from.getDate() + 6);
+                        sunday.setHours(23, 59, 59, 999);
+                        setDateRange([from, sunday]);
+                      }
+                    }}
+                    className="w-32 sm:w-36 md:w-40"
+                  />
 
-                <GenericWeeklyDatePicker
-                  id="to-date-kunda"
-                  placeholder="DD/MM/YYYY"
-                  mode="to"
-                  initialDates={dateRange}
-                  onDateChange={(dates) => {
-                    if (dates?.length) {
-                      const to = dates[0];
-                      const monday = new Date(to);
-                      monday.setDate(to.getDate() - 6);
-                      monday.setHours(0, 0, 0, 0);
-                      setDateRange([monday, to]);
-                    }
-                  }}
-                  className="w-32 sm:w-36 md:w-40"
-                />
+                  <GenericWeeklyDatePicker
+                    id="to-date-kunda"
+                    placeholder="DD/MM/YYYY"
+                    mode="to"
+                    initialDates={dateRange}
+                    onDateChange={(dates) => {
+                      if (dates?.length) {
+                        const to = dates[0];
+                        const monday = new Date(to);
+                        monday.setDate(to.getDate() - 6);
+                        monday.setHours(0, 0, 0, 0);
+                        setDateRange([monday, to]);
+                      }
+                    }}
+                    className="w-32 sm:w-36 md:w-40"
+                  />
 
-                <button
-                  onClick={() => {
-                    const { monday, sunday } = getDefaultWeekRange();
-                    setDateRange([monday, sunday]);
-                  }}
-                  className="rounded-lg p-1 text-[#4f4535] hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
-                  title="Reset to current week"
+                </div>
+
+                <GenericButton
+                  type="button"
+                  onClick={handlePrintHistory}
+                  className="flex items-center gap-1.5 whitespace-nowrap !bg-green-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-green-700 sm:!px-4 sm:!py-2 sm:!text-sm"
                 >
-                  ✕
-                </button>
-              </div>
-            )}
-
-            {showHistory && (
-              <GenericButton
-                type="button"
-                onClick={handlePrintHistory}
-                className="flex items-center gap-1.5 whitespace-nowrap !bg-green-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-green-700 sm:!px-4 sm:!py-2 sm:!text-sm"
-              >
-                <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span>Print</span>
-              </GenericButton>
+                  <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span>Print</span>
+                </GenericButton>
+              </>
             )}
 
             <GenericButton
@@ -742,87 +737,108 @@ const SKundaDept: React.FC = () => {
             </GenericButton>
           </div>
         </div>
+
+        {!showHistory ? (
+          <div>
+            <GenericTable<KundaEntry>
+              data={kundaEntries}
+              columns={columns}
+              emptyMessage="No S Kunda entries found."
+              isLoading={kundaLoading || isSubmitting}
+              showSrNo={true}
+              srNoLabel="Sr No."
+            />
+          </div>
+        ) : (
+          <div>
+            {/* Summary Cards - History Totals */}
+            <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Chain Given */}
+              <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                      Chain Given
+                    </span>
+                    <span className="text-lg font-bold text-black dark:text-amber-400">
+                      {formatNumberDisplay(historyTotals.totalGiven)} G
+                    </span>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Chain Received */}
+              <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                      Chain Received
+                    </span>
+                    <span className="text-lg font-bold text-black dark:text-blue-400">
+                      {formatNumberDisplay(historyTotals.totalReceived)} G
+                    </span>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Scrap */}
+              <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                      Scrap
+                    </span>
+                    <span className="text-lg font-bold text-black dark:text-green-400">
+                      {formatNumberDisplay(historyTotals.totalScrap)} G
+                    </span>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Loss */}
+              <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                      Loss
+                    </span>
+                    <span className="text-lg font-bold text-black dark:text-red-400">
+                      {formatNumberDisplay(historyTotals.totalLoss)} G
+                    </span>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <GenericTable
+              data={getFilteredHistory()}
+              columns={historyColumns}
+              emptyMessage={
+                dateRange.length === 2
+                  ? `No history records found for the selected date range (${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')})`
+                  : 'No history records found.'
+              }
+              isLoading={historyLoading}
+              showSrNo={true}
+              srNoLabel="Sr No."
+              className="shadow-sm"
+            />
+          </div>
+        )}
       </div>
 
-      {!showHistory ? (
-        <div className="px-3 py-4 sm:px-4 md:px-6">
-          <GenericTable<KundaEntry>
-            data={kundaEntries}
-            columns={columns}
-            emptyMessage="No S Kunda entries found."
-            isLoading={kundaLoading || isSubmitting}
-            showSrNo={true}
-            srNoLabel="Sr No."
-          />
-        </div>
-      ) : (
-        <div className="px-3 py-4 sm:px-4 md:px-6">
-          <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                  Chain Given (G)
-                </span>
-                <span className="text-lg font-bold text-black dark:text-amber-400">
-                  {formatNumberDisplay(historyTotals.totalGiven)} G
-                </span>
-              </div>
-            </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                  Chain Received (G)
-                </span>
-                <span className="text-lg font-bold text-black dark:text-blue-400">
-                  {formatNumberDisplay(historyTotals.totalReceived)} G
-                </span>
-              </div>
-            </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                  Scrap (G)
-                </span>
-                <span className="text-lg font-bold text-black dark:text-green-400">
-                  {formatNumberDisplay(historyTotals.totalScrap)} G
-                </span>
-              </div>
-            </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                  Loss (G)
-                </span>
-                <span className="text-lg font-bold text-black dark:text-red-400">
-                  {formatNumberDisplay(historyTotals.totalLoss)} G
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <GenericTable
-            data={getFilteredHistory()}
-            columns={historyColumns}
-            emptyMessage={
-              dateRange.length === 2
-                ? `No history records found for the selected date range (${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')})`
-                : 'No history records found.'
-            }
-            isLoading={historyLoading}
-            showSrNo={true}
-            srNoLabel="Sr No."
-            className="shadow-sm"
-          />
-        </div>
-      )}
-
+      {/* Confirm Stop Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
               <div className="flex items-center justify-center mb-4">
-                <div className="rounded-full bg-red-100 p-3 dark:bg-red-900/30">
-                  <Square className="h-6 w-6 text-red-600 dark:text-red-400 fill-current" />
+                <div className="rounded-full bg-[#785600]/10 p-3 dark:bg-amber-900/30 border border-[#785600]/20 dark:border-amber-700/30">
+                  <Square className="h-6 w-6 text-[#785600] dark:text-amber-400 fill-current" />
                 </div>
               </div>
               <h3 className="text-center text-lg font-bold text-[#1a1c1b] dark:text-white mb-2">
@@ -844,7 +860,7 @@ const SKundaDept: React.FC = () => {
                 <button
                   onClick={confirmStop}
                   disabled={isLoading}
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-red-700 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-[#785600] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-[#5d4200] hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isLoading ? 'Stopping...' : 'Confirm Stop'}
                 </button>
