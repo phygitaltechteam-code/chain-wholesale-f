@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Save, History, ChevronRight, ChevronDown, Printer } from 'lucide-react';
+import { Save, History, ChevronRight, ChevronDown, Printer, Calendar } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
@@ -50,12 +50,43 @@ const BoxDept: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [fromDate, setFromDate] = useState<Date[]>([]);
   const [toDate, setToDate] = useState<Date[]>([]);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'weekly' | 'custom'>('all');
   const isInitialMount = useRef(true);
 
   // Fetch data from API
   const { data: boxData = [], isLoading: boxLoading, refetch } = useGetBox();
   const { data: boxHistory = [], isLoading: historyLoading, refetch: refetchHistory } = useGetBoxHistory();
   const submitBox = useSubmitBox();
+
+  // Helper function to get week start and end
+  const getWeekRange = (date: Date = new Date()) => {
+    const start = new Date(date);
+    const day = start.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+    start.setDate(diff);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    
+    return { start, end };
+  };
+
+  // Set weekly filter
+  const setWeeklyFilter = () => {
+    const { start, end } = getWeekRange();
+    setFromDate([start]);
+    setToDate([end]);
+    setActiveFilter('weekly');
+  };
+
+  // Set all filter (clear dates)
+  const setAllFilter = () => {
+    setFromDate([]);
+    setToDate([]);
+    setActiveFilter('all');
+  };
 
   // Load data from API
   useEffect(() => {
@@ -273,26 +304,26 @@ const BoxDept: React.FC = () => {
           <tbody>
             ${rows}
           </tbody>
+      
+        </table>
+
+        <!-- Totals Row -->
+        <table style="width:100%;border-collapse:collapse;font-size:11px;margin:4px 0 0 0;padding:0;">
           <tfoot>
-            <tr style="background:#f4f4f2;font-weight:bold;">
-              <td colspan="4" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">Total</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalTar)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalChain)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalScrap)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalLoss)}</td>
-              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${filteredData.length}</td>
+            <tr style="background:#f0f0f0;font-weight:bold;">
+              <td colspan="4" style="border:1px solid #000;padding:2px 3px;text-align:right;font-size:11px;color:#000;">TOTAL:</td>
+              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalTar)}</td>
+              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalChain)}</td>
+              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalScrap)}</td>
+              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(totalLoss)}</td>
+              <td style="border:1px solid #000;padding:2px 3px;text-align:center;"></td>
             </tr>
           </tfoot>
         </table>
 
         <!-- Footer -->
-        <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
-          <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
-          <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
-            <span>Powered by Matoshree Gold</span>
-            <span>|</span>
-            <span>${new Date().toLocaleString()}</span>
-          </div>
+        <div style="margin-top:4px;padding-top:2px;border-top:1px solid #ccc;text-align:center;font-size:9px;color:#666;">
+          Printed on: ${new Date().toLocaleString()}
         </div>
       </div>
     `;
@@ -338,6 +369,11 @@ const BoxDept: React.FC = () => {
         #print-container thead tr th {
           background: #785600 !important;
           color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container tfoot tr {
+          background: #f0f0f0 !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
@@ -723,6 +759,7 @@ const BoxDept: React.FC = () => {
   const clearDateFilters = () => {
     setFromDate([]);
     setToDate([]);
+    setActiveFilter('all');
   };
 
   return (
@@ -741,20 +778,55 @@ const BoxDept: React.FC = () => {
             {showHistory && (
               <>
                 <div className="flex items-center gap-2">
+                  {/* Filter Buttons */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={setAllFilter}
+                      className={`rounded-lg px-2 py-1 text-xs font-medium transition-colors sm:px-3 sm:py-1.5 ${
+                        activeFilter === 'all'
+                          ? 'bg-[#785600] text-white'
+                          : 'bg-[#f4f4f2] text-[#4f4535] hover:bg-[#e8e4dc] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={setWeeklyFilter}
+                      className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors sm:px-3 sm:py-1.5 ${
+                        activeFilter === 'weekly'
+                          ? 'bg-[#785600] text-white'
+                          : 'bg-[#f4f4f2] text-[#4f4535] hover:bg-[#e8e4dc] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <Calendar className="h-3 w-3" />
+                      <span>Weekly</span>
+                    </button>
+                  </div>
+
+                  <span className="text-[#4f4535] dark:text-slate-400">|</span>
+
                   <GenericDatePicker
                     id="from-date-box"
                     placeholder="From Date"
                     dateFormat="d/m/Y"
-                    onDateChange={(dates) => setFromDate(dates)}
+                    onDateChange={(dates) => {
+                      setFromDate(dates);
+                      setActiveFilter('custom');
+                    }}
                     className="w-24 sm:w-28"
+                    value={fromDate}
                   />
                   <span className="text-xs text-[#4f4535] dark:text-slate-400">to</span>
                   <GenericDatePicker
                     id="to-date-box"
                     placeholder="To Date"
                     dateFormat="d/m/Y"
-                    onDateChange={(dates) => setToDate(dates)}
+                    onDateChange={(dates) => {
+                      setToDate(dates);
+                      setActiveFilter('custom');
+                    }}
                     className="w-24 sm:w-28"
+                    value={toDate}
                   />
                   {(fromDate.length > 0 || toDate.length > 0) && (
                     <button
