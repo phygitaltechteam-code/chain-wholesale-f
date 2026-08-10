@@ -280,24 +280,32 @@ const BoxDept: React.FC = () => {
             <span>॥ श्री साई प्रसन्न ॥</span>
           </div>
           <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
-            मातोश्री चेन फॅक्टरी
+            मातोश्री चेन फॅक्टरी, मिरज 
           </div>
           <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
             आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
           </div>
           <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
-            प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+            प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
           </div>
           <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
         </div>
 
         <!-- Title -->
-        <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Box History Report</h2>
-        ${fromDate.length > 0 && toDate.length > 0 ? `
-          <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
-            Date Range: ${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()}
-          </p>
-        ` : ''}
+<!-- Title and Date Range in one line -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
+  <div style="flex:1;"></div>
+  <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+    Box History Report
+  </h2>
+  ${fromDate.length > 0 && toDate.length > 0 ? `
+    <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
+      From: ${new Date(fromDate[0]).toLocaleDateString('en-IN')} &nbsp; To: ${new Date(toDate[0]).toLocaleDateString('en-IN')}
+    </div>
+  ` : `
+    <div style="flex:1;"></div>
+  `}
+</div>
 
         <!-- Table -->
         <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
@@ -322,22 +330,11 @@ const BoxDept: React.FC = () => {
 
         <!-- Totals Row -->
         <table style="width:100%;border-collapse:collapse;font-size:11px;margin:4px 0 0 0;padding:0;">
-          <tfoot>
-            <tr style="background:#f0f0f0;font-weight:bold;">
-              <td colspan="4" style="border:1px solid #000;padding:2px 3px;text-align:right;font-size:11px;color:#000;">TOTAL:</td>
-              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(totalTar)}</td>
-              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(totalChain)}</td>
-              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(totalScrap)}</td>
-              <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(totalLoss)}</td>
-              <td style="border:1px solid #000;padding:2px 3px;text-align:center;"></td>
-            </tr>
-          </tfoot>
+         
         </table>
 
         <!-- Footer -->
-        <div style="margin-top:4px;padding-top:2px;border-top:1px solid #ccc;text-align:center;font-size:9px;color:#666;">
-          Printed on: ${new Date().toLocaleString()}
-        </div>
+    
       </div>
     `;
 

@@ -417,8 +417,7 @@ const Settlement: React.FC = () => {
   // ======================================================
   // PRINT TABLE REPORT - Full A4 with PDF Header
   // ======================================================
-
-  const handlePrintTable = () => {
+const handlePrintTable = () => {
     if (!filteredSettlements || filteredSettlements.length === 0) {
       toast.error('No records available to print');
       return;
@@ -515,21 +514,9 @@ const Settlement: React.FC = () => {
             <tbody>
               ${rows}
             </tbody>
-            <tfoot>
-              <tr style="background:#f4f4f2;font-weight:bold;">
-                <td colspan="3" style="border:1px solid #000;padding:4px 5px;text-align:right;font-size:8px;color:#000;">Total</td>
-                <td style="border:1px solid #000;padding:4px 5px;text-align:right;font-family:monospace;font-size:8px;color:#000;font-weight:bold;">${formatNumber(totalDue)}</td>
-                <td style="border:1px solid #000;padding:4px 5px;text-align:center;font-size:8px;color:#000;font-weight:bold;">${totalBills}</td>
-              </tr>
-            </tfoot>
           </table>
         </div>
 
-        <!-- Footer -->
-        <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:left;font-size:8px;color:#666;">
-          <div>Contact For Support: 9511640551</div>
-          <div style="font-size:7px;color:#999;margin-top:2px;">Generated: ${new Date().toLocaleString()}</div>
-        </div>
       </div>
     `;
 
