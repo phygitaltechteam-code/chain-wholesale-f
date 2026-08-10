@@ -1,9 +1,8 @@
-// components/reciept/ReceiptAdd.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   X, Save, Edit, Trash2,
   Plus, Minus, ArrowLeft, Loader2,
-  FileText, CheckCircle, AlertCircle
+  FileText, CheckCircle, AlertCircle, Search, UserPlus
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
@@ -17,6 +16,7 @@ import { z } from 'zod';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
 import { useGetQuantity, useBill } from '@/lib/api/bill';
 import GenericInputField from '../Forms/Input/GenericInputField';
+import { ClientSearch } from './ClientSearch';
 
 interface ReceiptItem {
   id: string;
@@ -48,13 +48,6 @@ interface ReceiptFormData {
   };
 }
 
-// Client Schema for validation
-const ClientSchema = z.object({
-  fullName: z.string().min(1, "Name is required"),
-  phoneNumber: z.string().min(10, "Phone number must be at least 10 digits"),
-  address: z.string().min(1, "Address is required"),
-  openingBalance: z.number().min(0, "Opening balance cannot be negative"),
-});
 
 const ReceiptAdd: React.FC = () => {
   const navigate = useNavigate();
@@ -74,6 +67,8 @@ const ReceiptAdd: React.FC = () => {
     }
   });
   const [showClientModal, setShowClientModal] = useState(false);
+  const [showStockErrorModal, setShowStockErrorModal] = useState(false);
+  const [stockErrorMessage, setStockErrorMessage] = useState('');
   const [clientFormData, setClientFormData] = useState({
     fullName: '',
     phoneNumber: '',
@@ -100,24 +95,6 @@ const ReceiptAdd: React.FC = () => {
   // API hooks
   const getQuantity = useGetQuantity();
   const savebill = useBill();
-
-  const handleClientSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-
-    if (value === '__add_new__') {
-      setShowClientModal(true);
-      return;
-    }
-
-    const selected = clients.find((c: any) => c.id === value);
-    if (selected) {
-      setFormData({
-        ...formData,
-        clientId: selected.id,
-        clientName: selected.fullName
-      });
-    }
-  };
 
   const handleAddClientFromPopup = async () => {
     try {
@@ -341,7 +318,7 @@ const ReceiptAdd: React.FC = () => {
 
     // Update total fine
     const newTotalFine = updateTotalFine(updatedItems);
-    
+
     setFormData({
       ...formData,
       items: updatedItems,
@@ -452,13 +429,22 @@ const ReceiptAdd: React.FC = () => {
   };
 
   const calculateRemainingWeight = () => {
-    return calculateTotalGrossWt() - formData.customerWeight;
+    const advance = Number(formData.customerWeight) || 0;
+    const issue = Number(formData.totalFine) || 0;
+    return Math.round((advance - issue) * 1000) / 1000;
   };
 
   const formatNumberThreeDecimals = (value: number) => {
     if (value === 0 || !value) return '0';
-    const str = value.toFixed(3);
-    return str.replace(/\.0+$/, '');
+    return Number(value.toFixed(3)).toString();
+  };
+
+  // Negative opening balance means the client has a due balance.
+  const getClientDueBalance = (client: any) => {
+    const openingBalance = Number(client?.openingBalance) || 0;
+    return openingBalance < 0
+      ? Math.round(Math.abs(openingBalance) * 1000) / 1000
+      : 0;
   };
 
   // Save as Draft - Use 'DRAFT' (uppercase)
@@ -521,16 +507,6 @@ const ReceiptAdd: React.FC = () => {
       return;
     }
 
-    if (formData.customerWeight <= 0) {
-      toast.error('Please enter customer weight');
-      return;
-    }
-
-    if (formData.customerWeight > calculateTotalGrossWt()) {
-      toast.error('Customer weight cannot be greater than total gross weight');
-      return;
-    }
-
     try {
       const totalGrossWt = calculateTotalGrossWt();
       const remainingWeight = calculateRemainingWeight();
@@ -559,9 +535,26 @@ const ReceiptAdd: React.FC = () => {
       await savebill.mutateAsync(billData);
       toast.success(`Bill saved successfully!`);
       navigate({ to: '/billing' });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving receipt:', error);
-      toast.error('Failed to save bill');
+
+      // Show the exact backend error when stock is insufficient.
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        '';
+
+      if (
+        typeof backendMessage === 'string' &&
+        backendMessage.toLowerCase().includes('insufficient stock')
+      ) {
+        setStockErrorMessage(backendMessage);
+        setShowStockErrorModal(true);
+        return;
+      }
+
+      toast.error(backendMessage || 'Failed to save bill');
     }
   };
 
@@ -599,7 +592,7 @@ const ReceiptAdd: React.FC = () => {
           <select
             value={item.item}
             onChange={(e) => handleItemChange(actualIndex, 'item', e.target.value)}
-            className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+            className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-white px-1.5 py-1.5 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
           >
             <option value="">Select Item</option>
             {items.map((item: any) => (
@@ -618,7 +611,7 @@ const ReceiptAdd: React.FC = () => {
           <select
             value={item.size}
             onChange={(e) => handleItemChange(actualIndex, 'size', e.target.value)}
-            className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+            className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-white px-1.5 py-1.5 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
           >
             <option value="">Select Size</option>
             {sizes.map((size: any) => (
@@ -644,7 +637,7 @@ const ReceiptAdd: React.FC = () => {
               onChange={(e) => handleItemChange(actualIndex, 'purity', parseFloat(e.target.value) || 0)}
               placeholder="0"
               suffix="%"
-              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-8 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+              className="!w-full !min-w-0 text-right !px-1.5 !py-1.5 !pr-6 text-xs"
               decimalScale={2}
             />
             {item.isLoadingQty && (
@@ -659,15 +652,18 @@ const ReceiptAdd: React.FC = () => {
       header: 'Available Qty',
       render: (item) => {
         return (
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={item.availableQty || ''}
-            placeholder="Auto-fetched"
-            className="w-24 rounded-lg border border-[#d3c4af]/30 bg-gray-50 px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white dark:border-slate-700 cursor-not-allowed"
-            readOnly
-          />
+          <div className="relative w-full">
+            <input
+              type="number"
+              step="0.001"
+              min="0"
+              value={item.availableQty || ''}
+              placeholder="Auto"
+              className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-gray-50 px-1.5 py-1.5 pr-6 text-right text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white dark:border-slate-700 cursor-not-allowed"
+              readOnly
+            />
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-500 dark:text-slate-400">G</span>
+          </div>
         );
       },
     },
@@ -700,7 +696,7 @@ const ReceiptAdd: React.FC = () => {
             }}
             placeholder="0.000"
             suffix="G"
-            className="w-24 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+            className="!w-full !min-w-0 text-right !px-1.5 !py-1.5 !pr-6 text-xs"
             decimalScale={3}
           />
         );
@@ -719,7 +715,8 @@ const ReceiptAdd: React.FC = () => {
             value={item.srp || ''}
             onChange={(e) => handleItemChange(actualIndex, 'srp', parseFloat(e.target.value) || 0)}
             placeholder="0.00"
-            className="w-24 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+            suffix="G"
+            className="!w-full !min-w-0 text-right !px-1.5 !py-1.5 !pr-6 text-xs"
             decimalScale={2}
           />
         );
@@ -729,14 +726,17 @@ const ReceiptAdd: React.FC = () => {
       key: 'fineWt',
       header: 'Fine Wt (G)',
       render: (item) => (
-        <span className="font-mono font-bold text-[#785600] dark:text-amber-400">
-          {formatNumberThreeDecimals(item.fineWt)}
-        </span>
+        <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+          <span className="font-mono font-bold text-[#785600] dark:text-amber-400">
+            {formatNumberThreeDecimals(item.fineWt)}
+          </span>
+          <span className="text-[10px] text-gray-500 dark:text-slate-400">G</span>
+        </div>
       ),
     },
     {
       key: 'laborRate',
-      header: 'Labor Rate',
+      header: 'Labor Rate (G)',
       render: (item, index) => {
         const actualIndex = formData.items.indexOf(item);
         return (
@@ -747,7 +747,8 @@ const ReceiptAdd: React.FC = () => {
             value={item.laborRate || ''}
             onChange={(e) => handleItemChange(actualIndex, 'laborRate', parseFloat(e.target.value) || 0)}
             placeholder="0.00"
-            className="w-24 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+             suffix="G"
+            className="!w-full !min-w-0 text-right !px-1.5 !py-1.5 !pr-6 text-xs"
             decimalScale={2}
           />
         );
@@ -777,39 +778,38 @@ const ReceiptAdd: React.FC = () => {
 
         {/* Client & Date Section */}
         <div className="mb-4 rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm dark:bg-slate-900 dark:border-slate-700">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-[#4f4535] dark:text-slate-300 mb-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
+            <div className="relative">
+              <label className="mb-1.5 block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
                 Client <span className="text-red-500">*</span>
               </label>
-              <select
-                value={formData.clientId}
-                onChange={handleClientSelect}
-                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-4 py-2.5 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
-              >
-                <option value="">Select Client</option>
-                {clients.map((client: any) => (
-                  <option key={client.id} value={client.id}>
-                    {client.fullName}
-                  </option>
-                ))}
-                <option value="__add_new__" className="text-[#785600] font-bold">
-                  + Add New Client
-                </option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-[#4f4535] dark:text-slate-300 mb-1.5">
-                Date
-              </label>
-              <GenericDatePicker
-                id="date-picker"
-                placeholder="DD/MM/YYYY"
-                dateFormat="d/m/Y"
-                onDateChange={(dates) => setSelectedDate(dates)}
-                className="w-full"
+
+              <ClientSearch
+                clients={clients as any[]}
+                selectedClient={
+                  clients.find(
+                    (client: any) => client.id === formData.clientId
+                  ) || null
+                }
+                onSelectClient={(client: any) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    clientId: client.id,
+                    clientName: client.fullName || client.fullname || '',
+                  }));
+                }}
+                onClearClient={() => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    clientId: '',
+                    clientName: '',
+                  }));
+                }}
+                isLoading={false}
+                onAddNewClient={() => setShowClientModal(true)}
               />
             </div>
+
           </div>
         </div>
 
@@ -824,72 +824,131 @@ const ReceiptAdd: React.FC = () => {
             </p>
           </div>
 
-          <GenericTable<ReceiptItem>
-            data={formData.items}
-            columns={columns}
-            emptyMessage="No items added yet."
-            isLoading={false}
-            renderActions={renderActions}
-            showSrNo={true}
-            srNoLabel="Sr No."
-          />
+          <div className="w-full min-w-0 overflow-hidden [&_table]:w-full [&_table]:table-fixed [&_th]:px-1.5 [&_th]:py-2 [&_th]:text-[11px] [&_td]:px-1.5 [&_td]:py-1.5 [&_td]:text-xs">
+            <GenericTable<ReceiptItem>
+              data={formData.items}
+              columns={columns}
+              emptyMessage="No items added yet."
+              isLoading={false}
+              renderActions={renderActions}
+              showSrNo={true}
+              srNoLabel="Sr No."
+            />
+          </div>
         </div>
+        {/* Right Column - Weight Payment Details */}
+        <div className="space-y-3">
 
-        {/* Simple Payment Summary */}
-        {formData.items.length > 0 && (
-          <div className="mb-4 rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm dark:bg-slate-900 dark:border-slate-700">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Advance - Editable */}
-              <div>
-                <GenericInputField
-                  label="Advance (G)"
-                  type="text"
-                  inputMode="decimal"
-                  value={formData.customerWeight || ''}
-                  onChange={handleCustomerWeightChange}
-                  placeholder="0.000"
-                  suffix="G"
-                  required
-                  decimalScale={3}
-                  className="text-left"
-                />
+          {/* Card 1: Advance & Issue */}
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+
+              {/* Advance - Optional */}
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
+                  Advance (Optional)
+                </span>
+
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={formData.customerWeight || ''}
+                    onChange={handleCustomerWeightChange}
+                    placeholder="0.000"
+                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 pr-8 text-right text-sm font-mono text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#817563] dark:text-slate-400">
+                    G
+                  </span>
+                </div>
               </div>
 
-              {/* Issue (Total Fine) - Editable */}
-              <div>
-                <GenericInputField
-                  label="Issue (Total Fine) (G)"
-                  type="text"
-                  inputMode="decimal"
-                  value={formData.totalFine || ''}
-                  onChange={handleTotalFineChange}
-                  placeholder="0.000"
-                  suffix="G"
-                  decimalScale={3}
-                  className="text-left"
-                />
+              {/* Issue - Editable */}
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
+                  Issue
+                </span>
+
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={formData.totalFine || ''}
+                    onChange={handleTotalFineChange}
+                    placeholder="0.000"
+                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 pr-8 text-right text-sm font-mono text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#817563] dark:text-slate-400">
+                    G
+                  </span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Due Balance + Remaining */}
+            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+
+              {/* Due Balance - Read Only */}
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
+                  Due Balance
+                </span>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formatNumberThreeDecimals(
+                      getClientDueBalance(
+                        clients.find(
+                          (client: any) =>
+                            client.id === formData.clientId
+                        )
+                      )
+                    )}
+                    readOnly
+                    className="w-full cursor-default rounded-lg border border-[#d3c4af]/20 bg-gray-50 px-3 py-1.5 pr-8 text-right text-sm font-mono text-[#1a1c1b] outline-none dark:border-slate-700 dark:bg-slate-700 dark:text-white"
+                  />
+
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#817563] dark:text-slate-400">
+                    G
+                  </span>
+                </div>
               </div>
 
               {/* Remaining - Read Only */}
-              <div>
-                <GenericInputField
-                  label="Remaining (G)"
-                  type="text"
-                  inputMode="decimal"
-                  value={calculateRemainingWeight()}
-                  placeholder="0.000"
-                  suffix="G"
-                  readOnly
-                  className={`text-left ${calculateRemainingWeight() === 0
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-amber-600 dark:text-amber-400'
-                    }`}
-                  decimalScale={3}
-                />
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
+                  Remaining
+                </span>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formatNumberThreeDecimals(
+                      calculateRemainingWeight()
+                    )}
+                    readOnly
+                    className="w-full cursor-default rounded-lg border border-[#d3c4af]/20 bg-gray-50 px-3 py-1.5 pr-8 text-right text-sm font-mono text-[#1a1c1b] outline-none dark:border-slate-700 dark:bg-slate-700 dark:text-white"
+                  />
+
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#817563] dark:text-slate-400">
+                    G
+                  </span>
+                </div>
               </div>
+
             </div>
+
           </div>
-        )}
+
+        </div>
 
         {/* Action Buttons */}
         <div className="sticky bottom-0 bg-[#f9f9f7] dark:bg-slate-950 p-4 border-t border-[#d3c4af]/20 dark:border-slate-700 z-50">
@@ -898,7 +957,7 @@ const ReceiptAdd: React.FC = () => {
               type="button"
               onClick={handleSaveAsDraft}
               disabled={savebill.isPending}
-              className="!bg-gray-600 hover:!bg-gray-700 !text-white"
+              className="!bg-gradient-to-br from-[#d97706] to-[#92400e] hover:!bg-gray-700 !text-white"
             >
               <FileText className="h-5 w-5" />
               {savebill.isPending ? 'Saving...' : 'Save as Draft'}
@@ -919,6 +978,68 @@ const ReceiptAdd: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Insufficient Stock Modal */}
+      {showStockErrorModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-slate-900">
+            <div className="flex items-center gap-3 border-b border-[#d3c4af]/20 bg-red-50 px-5 py-4 dark:border-slate-700 dark:bg-red-950/30">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40">
+                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+
+              <div>
+                <h3 className="text-base font-bold text-[#1a1c1b] dark:text-white">
+                  Insufficient Stock
+                </h3>
+                <p className="text-xs text-[#817563] dark:text-slate-400">
+                  This bill cannot be completed with the available stock.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-5 py-5">
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/20">
+                <p className="break-words text-sm font-medium leading-6 text-red-700 dark:text-red-300">
+                  {stockErrorMessage}
+                </p>
+              </div>
+
+              <p className="mt-4 text-sm leading-6 text-[#4f4535] dark:text-slate-300">
+                You can save this bill as a draft and complete it later after
+                the required stock is available.
+              </p>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 border-t border-[#d3c4af]/20 bg-[#f9f9f7] p-4 sm:flex-row sm:justify-end dark:border-slate-700 dark:bg-slate-950">
+              <button
+                type="button"
+                onClick={() => setShowStockErrorModal(false)}
+                className="rounded-lg border border-[#d3c4af]/40 px-4 py-2.5 text-sm font-medium text-[#4f4535] transition-colors hover:bg-white dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowStockErrorModal(false);
+                  void handleSaveAsDraft();
+                }}
+                disabled={savebill.isPending}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {savebill.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4" />
+                )}
+                {savebill.isPending ? 'Saving...' : 'Save as Draft'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Client Modal */}
       {showClientModal && (

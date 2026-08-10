@@ -102,7 +102,7 @@ export const submitKundaApi = async ({ id, data }: { id: string; data: any }) =>
 
 export const submitMoveKundaApi = async ({ id, data }: { id: string; data: any }) => {
   try {
-    const response = await api.put(`/admin/cutting/kunda/${id}`, data);
+    const response = await api.put(`/admin/kunda/${id}`, data);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
