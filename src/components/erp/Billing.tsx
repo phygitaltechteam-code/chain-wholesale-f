@@ -7,14 +7,13 @@ import toast from 'react-hot-toast';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import { useGetBill } from '@/lib/api/bill';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
-import { useReactToPrint } from 'react-to-print';
-import PDFHeader from '../Forms/Common/PDFHeader';
 import {
   Scale,
   DollarSign,
   ArrowDownToLine,
   Clock
 } from 'lucide-react';
+
 interface ReceiptItem {
   id: string;
   receiptID: string;
@@ -68,7 +67,7 @@ interface BillingEntry {
   srp: number;
   receive: number;
   pending: number;
-  type: 'DRAFT' | 'BILL' ;
+  type: 'DRAFT' | 'BILL';
   createdAt: string;
 }
 
@@ -80,10 +79,45 @@ const Billing: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [fromDate, setFromDate] = useState<Date[]>([]);
   const [toDate, setToDate] = useState<Date[]>([]);
-  const printRef = useRef<HTMLDivElement>(null);
-  const tablePrintRef = useRef<HTMLDivElement>(null);
+  const [dateRange, setDateRange] = useState({
+    from: '',
+    to: '',
+  });
 
   const { data: billData, isLoading: billLoading } = useGetBill();
+  useEffect(() => {
+    setDefaultDateRange();
+  }, []);
+
+
+  const setDefaultDateRange = () => {
+    const now = new Date();
+
+    const dayOfWeek = now.getDay();
+
+    const diffToMonday =
+      dayOfWeek === 0
+        ? 6
+        : dayOfWeek - 1;
+
+    const monday = new Date(now);
+
+    monday.setDate(
+      now.getDate() - diffToMonday
+    );
+
+    const sunday = new Date(monday);
+
+    sunday.setDate(
+      monday.getDate() + 6
+    );
+
+    setDateRange({
+      from: monday.toISOString().split('T')[0],
+      to: sunday.toISOString().split('T')[0],
+    });
+  };
+
 
   // Process API data
   useEffect(() => {
@@ -100,7 +134,7 @@ const Billing: React.FC = () => {
         const fineWeight = firstItem?.fineWeight || 0;
         const srp = firstItem?.srp || 0;
 
-        let type : 'DRAFT' | 'BILL';
+        let type: 'DRAFT' | 'BILL';
         if (receipt.remainingWeight === 0) {
           type = 'BILL';
         } else if (receipt.customerWeight === 0) {
@@ -170,61 +204,365 @@ const Billing: React.FC = () => {
   const totalPending = filteredEntries.reduce((sum, item) => sum + item.pending, 0);
   const totalEntries = filteredEntries.length;
 
-  // Direct print without popup
-  const handleDirectPrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle: `Receipt-${selectedEntry?.billNo || 'bill'}`,
-    pageStyle: `
-      @page { 
-        size: A4 portrait; 
-        margin: 5mm; 
+  // Print Receipt - Full A4 page with proper spacing
+  const handlePrintReceipt = (entry: BillingEntry) => {
+    // Create a hidden div for printing
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    printContainer.style.cssText = `
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 100%;
+      background: white;
+      padding: 8px;
+      z-index: 9999;
+    `;
+    document.body.appendChild(printContainer);
+
+    // Build receipt HTML - Full A4 page
+    printContainer.innerHTML = `
+      <div style="max-width:210mm;margin:0 auto;font-family:Arial,sans-serif;padding:12px;min-height:297mm;display:flex;flex-direction:column;justify-content:space-between;">
+        <!-- Header Section -->
+        <div>
+          <!-- PDF Header -->
+          <div style="width:100%;text-align:center;margin:0;padding:4px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:12px;font-weight:bold;color:#a84b20;">
+              <span>॥ श्री गणेश प्रसन्न ॥</span>
+              <span>॥ श्री साई प्रसन्न ॥</span>
+            </div>
+            <div style="margin:2px 0 0 0;padding:0;font-size:24px;font-weight:bold;color:#c43d5c;line-height:1.2;">
+              मातोश्री चेन फॅक्टरी
+            </div>
+            <div style="margin:2px 0 0 0;padding:0;font-size:11px;font-weight:bold;color:#8b451f;line-height:1.3;">
+              आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+            </div>
+            <div style="margin:2px 0 0 0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;line-height:1.3;">
+              प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+            </div>
+            <div style="border-bottom:2px solid #c43d5c;margin:4px 0 6px 0;"></div>
+          </div>
+
+          <!-- Title -->
+          <h2 style="text-align:center;margin:6px 0 10px 0;font-size:20px;color:#000;padding:0;font-weight:bold;letter-spacing:2px;">TAX INVOICE</h2>
+
+          <!-- Client Info and Receipt Info - Two Columns -->
+          <div style="display:flex;justify-content:space-between;align-items:stretch;margin:8px 0 12px 0;gap:12px;">
+            <!-- Left - Client Info -->
+            <div style="border:1px solid #333;padding:10px 12px;flex:1;border-radius:4px;">
+              <h4 style="font-size:11px;font-weight:bold;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;border-bottom:1px solid #ddd;padding-bottom:4px;">Client Details</h4>
+              <div style="font-size:13px;line-height:1.8;">
+                <div><strong>Name:</strong> ${entry.clientName}</div>
+                <div><strong>Phone:</strong> ${entry.phoneNumber}</div>
+              </div>
+            </div>
+
+            <!-- Right - Receipt Info -->
+            <div style="border:1px solid #333;padding:10px 12px;flex:1;border-radius:4px;">
+              <h4 style="font-size:11px;font-weight:bold;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px 0;border-bottom:1px solid #ddd;padding-bottom:4px;">Receipt Details</h4>
+              <div style="font-size:13px;line-height:1.8;">
+                <div><strong>Receipt No:</strong> <span style="color:#785600;font-weight:bold;">${entry.billNo}</span></div>
+                <div><strong>Date:</strong> ${entry.dateTime}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <table style="width:100%;border-collapse:collapse;font-size:13px;margin:8px 0;">
+            <thead>
+              <tr style="background:#785600;color:white;font-weight:600;">
+                <th style="border:1px solid #785600;padding:6px 8px;text-align:center;font-size:11px;">Sr</th>
+                <th style="border:1px solid #785600;padding:6px 8px;text-align:left;font-size:11px;">Item</th>
+                <th style="border:1px solid #785600;padding:6px 8px;text-align:left;font-size:11px;">Size</th>
+                <th style="border:1px solid #785600;padding:6px 8px;text-align:right;font-size:11px;">Fin Wt (G)</th>
+                <th style="border:1px solid #785600;padding:6px 8px;text-align:right;font-size:11px;">SRP (G)</th>
+                <th style="border:1px solid #785600;padding:6px 8px;text-align:right;font-size:11px;">Amount (G)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border:1px solid #000;padding:6px 8px;text-align:center;">1</td>
+                <td style="border:1px solid #000;padding:6px 8px;">${entry.item}</td>
+                <td style="border:1px solid #000;padding:6px 8px;">${entry.size}</td>
+                <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;font-weight:500;">${formatNumberWithDecimals(entry.finWt)}</td>
+                <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;font-weight:500;">${formatNumberWithDecimals(entry.srp)}</td>
+                <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;font-weight:bold;font-size:14px;">${formatNumberWithDecimals(entry.finWt * entry.srp)}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr style="background:#f4f4f2;font-weight:bold;">
+                <td colspan="5" style="border:1px solid #000;padding:6px 8px;text-align:right;font-size:14px;">Total Amount</td>
+                <td style="border:1px solid #000;padding:6px 8px;text-align:right;font-family:monospace;font-size:14px;color:#785600;">${formatNumberWithDecimals(entry.finWt * entry.srp)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Footer Section - Pushed to bottom -->
+        <div>
+          <div style="margin-top:12px;padding-top:8px;border-top:2px solid #785600;text-align:center;">
+            <p style="font-size:11px;color:#555;margin:2px 0;">This is a system-generated receipt</p>
+            <div style="display:flex;justify-content:center;gap:12px;font-size:10px;color:#888;margin-top:2px;">
+              <span>Powered by Matoshree Gold</span>
+              <span>|</span>
+              <span>Generated: ${new Date().toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add print styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @page {
+        size: A4 portrait;
+        margin: 5mm;
       }
       @media print {
-        body { 
-          -webkit-print-color-adjust: exact; 
-          print-color-adjust: exact; 
+        body * {
+          visibility: hidden;
         }
-        #receipt { 
-          page-break-inside: avoid; 
-          break-inside: avoid; 
+        #print-container, #print-container * {
+          visibility: visible;
         }
-        .no-print { 
-          display: none !important; 
+        #print-container {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          background: white !important;
+          padding: 8px !important;
+          overflow: auto !important;
+          z-index: 9999 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container table {
+          width: 100% !important;
+        }
+        #print-container tr {
+          page-break-inside: avoid !important;
+        }
+        #print-container thead tr {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container thead tr th {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
       }
-    `,
-  });
+    `;
+    document.head.appendChild(style);
 
-  // Print table with filters - A4 size with proper margins
-  const handlePrintTable = useReactToPrint({
-    contentRef: tablePrintRef,
-    documentTitle: `Billing-Report-${new Date().toLocaleDateString()}`,
-    pageStyle: `
-      @page { 
-        size: A4 landscape; 
-        margin: 8mm; 
-      }
-      @media print {
-        body { 
-          -webkit-print-color-adjust: exact; 
-          print-color-adjust: exact; 
-        }
-        #table-print { 
-          page-break-inside: avoid; 
-          break-inside: avoid; 
-        }
-        .no-print { 
-          display: none !important; 
-        }
-      }
-    `,
-  });
-
-  const handlePrint = (entry: BillingEntry) => {
-    setSelectedEntry(entry);
+    // Trigger print
     setTimeout(() => {
-      handleDirectPrint();
-    }, 100);
+      window.print();
+
+      // Clean up after print
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
+    }, 500);
+  };
+
+  // Print Table Report - Full A4 landscape
+  const handlePrintTable = () => {
+    if (!filteredEntries || filteredEntries.length === 0) {
+      toast.error('No records available to print');
+      return;
+    }
+
+    // Create a hidden div for printing
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container-table';
+    printContainer.style.cssText = `
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 100%;
+      background: white;
+      padding: 4px;
+      z-index: 9999;
+    `;
+    document.body.appendChild(printContainer);
+
+    // Build the table rows
+    const rows = filteredEntries
+      .map((entry, index) => {
+        return `
+          <tr>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${index + 1}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:9px;color:#000;white-space:nowrap;">${entry.dateTime}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;font-weight:bold;">${entry.billNo}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${entry.clientName}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${entry.phoneNumber}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${entry.item}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${entry.size}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${entry.purity}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(entry.finWt)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(entry.srp)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(entry.receive)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(entry.pending)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:9px;color:#000;">
+              <span style="background:${entry.type === 'BILL' ? '#22c55e' : '#f59e0b'};color:white;padding:1px 4px;border-radius:3px;font-size:8px;font-weight:bold;">
+                ${entry.type}
+              </span>
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    // Set the content with PDF Header
+    printContainer.innerHTML = `
+      <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
+        <!-- PDF Header -->
+        <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
+            <span>॥ श्री गणेश प्रसन्न ॥</span>
+            <span>॥ श्री साई प्रसन्न ॥</span>
+          </div>
+          <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
+            मातोश्री चेन फॅक्टरी
+          </div>
+          <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
+            आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+          </div>
+          <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
+            प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+          </div>
+          <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
+        </div>
+
+        <!-- Title -->
+        <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Billing Report</h2>
+        ${fromDate.length > 0 && toDate.length > 0 ? `
+          <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
+            Date Range: ${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()}
+          </p>
+        ` : ''}
+
+        <!-- Table -->
+        <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
+          <thead>
+            <tr style="background:#785600;color:white;font-weight:600;">
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Sr</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Date & Time</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Bill No</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Client</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Phone</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Item</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Size</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Purity %</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Fin Wt</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">SRP</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Receive</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Pending</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:9px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+          <tfoot>
+            <tr style="background:#f4f4f2;font-weight:bold;">
+              <td colspan="8" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">Total</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(totalFinWt)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(totalSRP)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(totalReceive)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(totalPending)}</td>
+              <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;">${filteredEntries.length}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Footer -->
+        <div style="margin-top:4px;padding-top:4px;border-top:2px solid #785600;text-align:center;">
+          <p style="font-size:10px;color:#000;margin:1px 0;">This is a system-generated report</p>
+          <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#000;margin-top:1px;">
+            <span>Powered by Matoshree Gold</span>
+            <span>|</span>
+            <span>${new Date().toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add print styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @page {
+        size: A4 landscape;
+        margin: 3mm;
+      }
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #print-container-table, #print-container-table * {
+          visibility: visible;
+        }
+        #print-container-table {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          background: white !important;
+          padding: 4px !important;
+          overflow: auto !important;
+          z-index: 9999 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container-table table {
+          width: 100% !important;
+        }
+        #print-container-table tr {
+          page-break-inside: avoid !important;
+        }
+        #print-container-table thead tr {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container-table thead tr th {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Trigger print
+    setTimeout(() => {
+      window.print();
+
+      // Clean up after print
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
+    }, 500);
   };
 
   const handleRowClick = (entry: BillingEntry) => {
@@ -238,15 +576,7 @@ const Billing: React.FC = () => {
     }
   };
 
-  // Format number - remove trailing zeros
-  const formatNumber = (value: number) => {
-    if (value === 0 || !value) return '0';
-    const str = value.toString();
-    if (str.includes('.')) {
-      return str.replace(/\.?0+$/, '');
-    }
-    return str;
-  };
+
 
   // Format number with 3 decimals only if needed
   const formatNumberWithDecimals = (value: number) => {
@@ -257,12 +587,10 @@ const Billing: React.FC = () => {
 
   const gettypeColor = (type: string) => {
     switch (type) {
-      case 'completed':
+      case 'BILL':
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'draft':
+      case 'DRAFT':
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -271,7 +599,7 @@ const Billing: React.FC = () => {
   const renderActions = (item: BillingEntry, index: number) => (
     <div className="flex items-center justify-center gap-1">
       <button
-        onClick={(e) => { e.stopPropagation(); handlePrint(item); }}
+        onClick={(e) => { e.stopPropagation(); handlePrintReceipt(item); }}
         className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
         title="Print Receipt"
       >
@@ -400,7 +728,7 @@ const Billing: React.FC = () => {
     },
     {
       key: 'type',
-      header: 'status',
+      header: 'Status',
       render: (item) => (
         <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium capitalize ${gettypeColor(item.type)}`}>
           {item.type || "-"}
@@ -408,178 +736,6 @@ const Billing: React.FC = () => {
       ),
     },
   ];
-
-  // Receipt Preview Component for Print with PDF Header
-  const ReceiptPreview = ({ entry }: { entry: BillingEntry }) => (
-    <div
-      className="bg-white p-4 max-w-4xl mx-auto font-sans"
-      ref={printRef}
-      id="receipt"
-      style={{ width: '210mm', minHeight: '297mm' }}
-    >
-      {/* PDF Header */}
-      <PDFHeader />
-
-      <div className="border-b-2 border-[#c43d5c] my-2" />
-
-      {/* Client Info (Left) and Receipt Info (Right) */}
-      <div className="flex justify-between items-start my-3">
-        {/* Left - Client Info */}
-        <div className="border border-gray-300 p-3 flex-1 mr-4">
-          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Client Details</h4>
-          <div className="space-y-0.5 text-sm">
-            <div>
-              <span className="text-gray-600">Name:</span>
-              <span className="ml-1 font-medium">{entry.clientName}</span>
-            </div>
-            <div>
-              <span className="text-gray-600">Phone:</span>
-              <span className="ml-1">{entry.phoneNumber}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right - Receipt Info */}
-        <div className="border border-gray-300 p-3 flex-1">
-          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Receipt Details</h4>
-          <div className="space-y-0.5 text-sm">
-            <div>
-              <span className="text-gray-600">Receipt No:</span>
-              <span className="ml-1 font-bold text-[#785600]">{entry.billNo}</span>
-            </div>
-            <div>
-              <span className="text-gray-600">Date:</span>
-              <span className="ml-1">{entry.dateTime}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="my-3">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-white">
-              <th className="border border-[#785600] px-2 py-1 text-left text-xs font-semibold">Sr No.</th>
-              <th className="border border-[#785600] px-2 py-1 text-left text-xs font-semibold">Item</th>
-              <th className="border border-[#785600] px-2 py-1 text-left text-xs font-semibold">Size</th>
-              <th className="border border-[#785600] px-2 py-1 text-right text-xs font-semibold">Fin Wt (G)</th>
-              <th className="border border-[#785600] px-2 py-1 text-right text-xs font-semibold">SRP (G)</th>
-              <th className="border border-[#785600] px-2 py-1 text-right text-xs font-semibold">Amount (G)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="border border-gray-300 px-2 py-1 text-center">1</td>
-              <td className="border border-gray-300 px-2 py-1">{entry.item}</td>
-              <td className="border border-gray-300 px-2 py-1">{entry.size}</td>
-              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.finWt)}</td>
-              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.srp)}</td>
-              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.finWt * entry.srp)}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-3 pt-2 border-t-2 border-[#785600] text-center">
-        <p className="text-xs text-gray-500">This is a system-generated receipt</p>
-        <div className="mt-0.5 flex justify-center gap-3 text-[10px] text-gray-400">
-          <span>Powered by Matoshree Gold</span>
-          <span>|</span>
-          <span>Generated: {new Date().toLocaleString()}</span>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Table Print Preview Component - A4 size with proper design
-  const TablePrintPreview = () => {
-    const printData = filteredEntries;
-
-    return (
-      <div
-        className="bg-white p-4 max-w-full mx-auto font-sans"
-        ref={tablePrintRef}
-        id="table-print"
-        style={{ width: '297mm', minHeight: '210mm' }}
-      >
-        {/* PDF Header */}
-        <PDFHeader />
-
-        <div className="border-b-2 border-[#c43d5c] my-2" />
-
-        {/* Title */}
-        <div className="mb-2 text-center">
-          <h2 className="text-lg font-bold text-black">Billing Report</h2>
-        </div>
-
-        {/* Table */}
-        <table className="w-full text-xs border-collapse">
-          <thead>
-            <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-white">
-              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Sr</th>
-              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Date & Time</th>
-              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Bill No</th>
-              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Client</th>
-              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Phone</th>
-              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Item</th>
-              <th className="border border-[#785600] px-2 py-1 text-left font-semibold">Size</th>
-              <th className="border border-[#785600] px-2 py-1 text-right font-semibold">Purity %</th>
-              <th className="border border-[#785600] px-2 py-1 text-right font-semibold">Fin Wt (G)</th>
-              <th className="border border-[#785600] px-2 py-1 text-right font-semibold">SRP (G)</th>
-              <th className="border border-[#785600] px-2 py-1 text-right font-semibold">Receive (G)</th>
-              <th className="border border-[#785600] px-2 py-1 text-right font-semibold">Pending (G)</th>
-              <th className="border border-[#785600] px-2 py-1 text-center font-semibold">type</th>
-            </tr>
-          </thead>
-          <tbody>
-            {printData.map((entry, index) => (
-              <tr key={entry.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="border border-gray-300 px-2 py-1 text-center">{index + 1}</td>
-                <td className="border border-gray-300 px-2 py-1 text-xs">{entry.dateTime}</td>
-                <td className="border border-gray-300 px-2 py-1 font-medium">{entry.billNo}</td>
-                <td className="border border-gray-300 px-2 py-1">{entry.clientName}</td>
-                <td className="border border-gray-300 px-2 py-1">{entry.phoneNumber}</td>
-                <td className="border border-gray-300 px-2 py-1">{entry.item}</td>
-                <td className="border border-gray-300 px-2 py-1">{entry.size}</td>
-                <td className="border border-gray-300 px-2 py-1 text-right">{entry.purity}</td>
-                <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.finWt)}</td>
-                <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.srp)}</td>
-                <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.receive)}</td>
-                <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(entry.pending)}</td>
-                <td className="border border-gray-300 px-2 py-1 text-center">
-                  <span className={`px-1.5 py-0.5 text-[9px] font-medium capitalize ${gettypeColor(entry.type)}`}>
-                    {entry.type}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="bg-gray-100 font-bold">
-              <td colSpan={8} className="border border-gray-300 px-2 py-1 text-right">Total:</td>
-              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(totalFinWt)}</td>
-              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(totalSRP)}</td>
-              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(totalReceive)}</td>
-              <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatNumberWithDecimals(totalPending)}</td>
-              <td className="border border-gray-300 px-2 py-1 text-center text-[10px]">{printData.length} entries</td>
-            </tr>
-          </tfoot>
-        </table>
-
-        {/* Footer */}
-        <div className="mt-3 pt-2 border-t-2 border-[#785600] text-center">
-          <p className="text-xs text-gray-500">This is a system-generated report</p>
-          <div className="mt-0.5 flex justify-center gap-3 text-[10px] text-gray-400">
-            <span>Powered by Matoshree Gold</span>
-            <span>|</span>
-            <span>Generated: {new Date().toLocaleString()}</span>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   if (isLoading) {
     return (
@@ -612,7 +768,6 @@ const Billing: React.FC = () => {
           </div>
         </div>
 
-
         {/* Summary Cards - Totals for Fin Wt, SRP, Receive, Pending */}
         <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Total Fin Wt Card */}
@@ -639,7 +794,7 @@ const Billing: React.FC = () => {
                 <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                   Total SRP
                 </span>
-                    <span className="text-lg font-bold text-black">
+                <span className="text-lg font-bold text-black">
                   {formatNumberWithDecimals(totalSRP)}G
                 </span>
               </div>
@@ -656,7 +811,7 @@ const Billing: React.FC = () => {
                 <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                   Total Receive
                 </span>
-                       <span className="text-lg font-bold text-black">
+                <span className="text-lg font-bold text-black">
                   {formatNumberWithDecimals(totalReceive)} G
                 </span>
               </div>
@@ -673,10 +828,9 @@ const Billing: React.FC = () => {
                 <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                   Total Pending
                 </span>
-                      <span className="text-lg font-bold text-black">
+                <span className="text-lg font-bold text-black">
                   {formatNumberWithDecimals(totalPending)} G
                 </span>
-
               </div>
               <div className="rounded-full bg-red-100 p-2 dark:bg-red-900/30">
                 <Clock className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -684,6 +838,7 @@ const Billing: React.FC = () => {
             </div>
           </div>
         </div>
+
         {/* Row 2: Search and Date Filters with Print Button on Right */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
           <div className="relative flex-1 min-w-[140px] sm:min-w-[200px]">
@@ -697,6 +852,7 @@ const Billing: React.FC = () => {
             />
           </div>
 
+          {/* From Date - Default to Monday */}
           <div className="flex items-center gap-2">
             <GenericDatePicker
               id="from-date"
@@ -704,9 +860,11 @@ const Billing: React.FC = () => {
               dateFormat="d/m/Y"
               onDateChange={(dates) => setFromDate(dates)}
               className="w-28 sm:w-32"
+              defaultWeek={true}  // This sets it to Monday
             />
           </div>
 
+          {/* To Date - Set to Sunday */}
           <div className="flex items-center gap-2">
             <GenericDatePicker
               id="to-date"
@@ -714,9 +872,20 @@ const Billing: React.FC = () => {
               dateFormat="d/m/Y"
               onDateChange={(dates) => setToDate(dates)}
               className="w-28 sm:w-32"
+              initialDate={(() => {
+                const today = new Date();
+                const dayOfWeek = today.getDay();
+                const monday = new Date(today);
+                const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                monday.setDate(today.getDate() - daysToMonday);
+                monday.setHours(0, 0, 0, 0);
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+                sunday.setHours(23, 59, 59, 999);
+                return sunday;
+              })()}
             />
           </div>
-
           {/* Print Report Button */}
           <GenericButton
             onClick={() => {
@@ -758,16 +927,6 @@ const Billing: React.FC = () => {
           srNoLabel="Sr No."
           onRowClick={handleRowClick}
         />
-      </div>
-
-      {/* Hidden Print Components */}
-      <div className="hidden">
-        {selectedEntry && <ReceiptPreview entry={selectedEntry} />}
-      </div>
-
-      {/* Hidden Table Print Component */}
-      <div className="hidden">
-        <TablePrintPreview />
       </div>
     </div>
   );
