@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import { useGetJoint, useGetJointHistory, useSubmitJoint } from '@/lib/api/joint';
-import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
+import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 
 interface JointEntry {
   id: string;
@@ -53,8 +53,28 @@ const JointDept: React.FC = () => {
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [fromDate, setFromDate] = useState<Date[]>([]);
-  const [toDate, setToDate] = useState<Date[]>([]);
+
+  // Helper function to get week start (Monday 00:00) and end (Sunday 23:59:59)
+  const getDefaultWeekRange = () => {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sun, 1 = Mon, ...
+    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now);
+    monday.setDate(diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return { monday, sunday };
+  };
+
+  const [dateRange, setDateRange] = useState<Date[]>(() => {
+    const { monday, sunday } = getDefaultWeekRange();
+    return [monday, sunday];
+  });
+
   const isInitialMount = useRef(true);
 
   // Fetch data from API
@@ -142,41 +162,55 @@ const JointDept: React.FC = () => {
     };
   };
 
-  // Format number helper for history
-  const formatNumber = (value: any) => {
-    if (value === null || value === undefined) return '0';
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(num)) return '0';
-    return num.toFixed(0);
+  const toNumber = (value: unknown): number => {
+    if (value === null || value === undefined || value === '') return 0;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
   };
 
-  // Format number for display
-  const formatNumberDisplay = (value: number) => {
-    if (value === 0 || !value) return '0';
-    const str = value.toString();
-    if (str.includes('.')) {
-      return str.replace(/\.?0+$/, '');
-    }
-    return str;
+  // Indian format, maximum 3 decimals and NO trailing zeros.
+  const formatNumberDisplay = (value: unknown): string => {
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 3,
+      useGrouping: true,
+    }).format(toNumber(value));
   };
 
-  // Filter history by date
+  // Filter history by selected From-To date range.
   const getFilteredHistory = () => {
     let filtered = jointHistory;
 
-    if (fromDate.length > 0 && toDate.length > 0) {
-      const from = new Date(fromDate[0]);
-      const to = new Date(toDate[0]);
+    if (dateRange.length === 2) {
+      const from = new Date(dateRange[0]);
+      const to = new Date(dateRange[1]);
+
+      from.setHours(0, 0, 0, 0);
       to.setHours(23, 59, 59, 999);
-      
+
       filtered = jointHistory.filter((item: any) => {
+        if (!item?.createdAt) return false;
         const itemDate = new Date(item.createdAt);
+        if (Number.isNaN(itemDate.getTime())) return false;
         return itemDate >= from && itemDate <= to;
       });
     }
 
     return filtered;
   };
+
+  // Calculate history totals
+  const filteredHistory = getFilteredHistory();
+  const historyTotals = filteredHistory.reduce(
+    (acc: { totalGiven: number; totalReceived: number; totalPowder: number; totalPowderReceived: number; totalScrap: number }, item: any) => ({
+      totalGiven: acc.totalGiven + toNumber(item?.chainWeight),
+      totalReceived: acc.totalReceived + toNumber(item?.chainReceived),
+      totalPowder: acc.totalPowder + toNumber(item?.powder),
+      totalPowderReceived: acc.totalPowderReceived + toNumber(item?.powderReceived),
+      totalScrap: acc.totalScrap + toNumber(item?.scrap),
+    }),
+    { totalGiven: 0, totalReceived: 0, totalPowder: 0, totalPowderReceived: 0, totalScrap: 0 }
+  );
 
   // Print History Function
   const handlePrintHistory = () => {
@@ -215,13 +249,13 @@ const JointDept: React.FC = () => {
                     </td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.chainWeight)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.chainReceived)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.powder)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.powderReceived)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.purity)}%</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.srp)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.scrap)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainWeight)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainReceived)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.powder)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.powderReceived)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.srp)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
                         ${proceedDate} ${proceedTime}
                     </td>
@@ -261,9 +295,9 @@ const JointDept: React.FC = () => {
 
             <!-- Title -->
             <h2 style="text-align:center;margin:2px 0 2px 0;font-size:16px;color:#000;padding:0;">Joint History Report</h2>
-            ${fromDate.length > 0 && toDate.length > 0 ? `
+            ${dateRange.length === 2 ? `
                 <p style="text-align:center;font-size:10px;color:#000;margin:0 0 2px 0;">
-                    Date Range: ${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()}
+                    Date Range: ${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')}
                 </p>
             ` : ''}
 
@@ -392,37 +426,37 @@ const JointDept: React.FC = () => {
     },
     {
       key: 'chainWeight',
-      header: 'Chain Given',
+      header: 'Chain Given (G)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.chainWeight)}
+          {formatNumberDisplay(item.chainWeight)}
         </span>
       ),
     },
     {
       key: 'chainReceived',
-      header: 'Chain Received',
+      header: 'Chain Received (G)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.chainReceived)}
+          {formatNumberDisplay(item.chainReceived)}
         </span>
       ),
     },
     {
       key: 'powder',
-      header: 'Powder',
+      header: 'Powder (G)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.powder)}
+          {formatNumberDisplay(item.powder)}
         </span>
       ),
     },
     {
       key: 'powderReceived',
-      header: 'Powder Received',
+      header: 'Powder Received (G)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.powderReceived)}
+          {formatNumberDisplay(item.powderReceived)}
         </span>
       ),
     },
@@ -431,25 +465,16 @@ const JointDept: React.FC = () => {
       header: 'Purity (%)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.purity)}%
-        </span>
-      ),
-    },
-    {
-      key: 'srp',
-      header: 'SRP (Majuri)',
-      render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.srp)}
+          {formatNumberDisplay(item.purity)}%
         </span>
       ),
     },
     {
       key: 'scrap',
-      header: 'Scrap (स्क्रॅप)',
+      header: 'Scrap (G)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.scrap)}
+          {formatNumberDisplay(item.scrap)}
         </span>
       ),
     },
@@ -585,30 +610,20 @@ const JointDept: React.FC = () => {
     }
   }, [saveIndex, jointEntries, submitJoint, navigate, refetch]);
 
-  // Check if all entries are saved
-  const allSaved = jointEntries.every(entry => entry.isSaved);
-
-  // Custom action renderer
-  const renderActions = useCallback((item: JointEntry, index: number) => {
-    if (item.isEditing) {
-      return (
-        <button
-          onClick={() => handleSaveClick(index)}
-          disabled={isLoading}
-          className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          title="Save Entry"
-        >
-          <Save className="h-3 w-3" />
-          <span>Save</span>
-        </button>
-      );
-    }
-    return (
-      <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-        ✓ Completed
-      </span>
+  // Action column is shown only when at least one unsaved row
+  // has an entered Powder Received / SRP / Purity / Scrap value.
+  const hasEditableValues = (entry: JointEntry): boolean => {
+    return Boolean(
+      entry.powderReceivedRaw?.trim() ||
+      entry.srpRaw?.trim() ||
+      entry.purityRaw?.trim() ||
+      entry.scrapRaw?.trim()
     );
-  }, [isLoading, handleSaveClick]);
+  };
+
+  const showActionColumn = jointEntries.some(
+    (entry) => !entry.isSaved && hasEditableValues(entry)
+  );
 
   // Define columns for GenericTable
   const columns: Column<JointEntry>[] = [
@@ -769,6 +784,37 @@ const JointDept: React.FC = () => {
         );
       },
     },
+
+
+    // Action column appears only after the user enters a value.
+    ...(showActionColumn
+      ? [
+          {
+            key: 'actions',
+            header: 'Action',
+            render: (item: JointEntry, index: number) => {
+              if (item.isSaved || !hasEditableValues(item)) {
+                return null;
+              }
+
+              return (
+                <div className="flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveClick(index)}
+                    disabled={isLoading || isSubmitting}
+                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Save Entry"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    <span>cutting</span>
+                  </button>
+                </div>
+              );
+            },
+          } as Column<JointEntry>,
+        ]
+      : []),
   ];
 
   const isSubmitting = submitJoint.isPending;
@@ -783,12 +829,6 @@ const JointDept: React.FC = () => {
     }
   };
 
-  // Clear date filters
-  const clearDateFilters = () => {
-    setFromDate([]);
-    setToDate([]);
-  };
-
   return (
     <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
       {/* Header */}
@@ -801,36 +841,75 @@ const JointDept: React.FC = () => {
            
           </div>
           <div className="flex items-center gap-2">
-            {/* Date Filters - Only show when viewing history */}
+            {/* Weekly Date Filter - Only show when viewing history */}
             {showHistory && (
-              <>
-                <div className="flex items-center gap-2">
-                  <GenericDatePicker
-                    id="from-date-joint"
-                    placeholder="From Date"
-                    dateFormat="d/m/Y"
-                    onDateChange={(dates) => setFromDate(dates)}
-                    className="w-24 sm:w-28"
-                  />
-                  <span className="text-xs text-[#4f4535] dark:text-slate-400">to</span>
-                  <GenericDatePicker
-                    id="to-date-joint"
-                    placeholder="To Date"
-                    dateFormat="d/m/Y"
-                    onDateChange={(dates) => setToDate(dates)}
-                    className="w-24 sm:w-28"
-                  />
-                  {(fromDate.length > 0 || toDate.length > 0) && (
-                    <button
-                      onClick={clearDateFilters}
-                      className="rounded-lg p-1 text-[#4f4535] hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
-                      title="Clear filters"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              </>
+              <div className="flex items-center gap-2">
+                {/* From Date - defaults to Monday */}
+                <GenericWeeklyDatePicker
+                  id="from-date-joint"
+                  placeholder="DD/MM/YYYY"
+                  mode="from"
+                  initialDates={dateRange}
+                  onDateChange={(dates) => {
+                    if (dates && dates.length > 0) {
+                      const from = dates[0];
+
+                      if (dateRange.length === 2) {
+                        const to = dateRange[1];
+
+                        if (from <= to) {
+                          setDateRange([from, to]);
+                        } else {
+                          const sunday = new Date(from);
+                          sunday.setDate(from.getDate() + 6);
+                          sunday.setHours(23, 59, 59, 999);
+                          setDateRange([from, sunday]);
+                        }
+                      } else {
+                        const sunday = new Date(from);
+                        sunday.setDate(from.getDate() + 6);
+                        sunday.setHours(23, 59, 59, 999);
+                        setDateRange([from, sunday]);
+                      }
+                    }
+                  }}
+                  className="w-32 sm:w-36 md:w-40"
+                />
+
+                {/* To Date - defaults to Sunday */}
+                <GenericWeeklyDatePicker
+                  id="to-date-joint"
+                  placeholder="DD/MM/YYYY"
+                  mode="to"
+                  initialDates={dateRange}
+                  onDateChange={(dates) => {
+                    if (dates && dates.length > 0) {
+                      const to = dates[0];
+
+                      if (dateRange.length === 2) {
+                        const from = dateRange[0];
+
+                        if (from <= to) {
+                          setDateRange([from, to]);
+                        } else {
+                          const monday = new Date(to);
+                          monday.setDate(to.getDate() - 6);
+                          monday.setHours(0, 0, 0, 0);
+                          setDateRange([monday, to]);
+                        }
+                      } else {
+                        const monday = new Date(to);
+                        monday.setDate(to.getDate() - 6);
+                        monday.setHours(0, 0, 0, 0);
+                        setDateRange([monday, to]);
+                      }
+                    }
+                  }}
+                  className="w-32 sm:w-36 md:w-40"
+                />
+
+             
+              </div>
             )}
 
             {/* Print History Button */}
@@ -873,10 +952,8 @@ const JointDept: React.FC = () => {
           <GenericTable<JointEntry>
             data={jointEntries}
             columns={columns}
-            onSave={(item, index) => handleSaveClick(index)}
             emptyMessage="No joint entries found."
             isLoading={jointLoading || isSubmitting}
-            renderActions={!allSaved ? renderActions : undefined}
             showSrNo={true}
             srNoLabel="Sr No."
           />
@@ -884,12 +961,66 @@ const JointDept: React.FC = () => {
       ) : (
         /* History Table */
         <div className="px-3 py-4 sm:px-4 md:px-6">
+          {/* History Summary Cards */}
+          <div className="mb-4 grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Chain Given
+                </span>
+                <span className="text-lg font-bold text-black dark:text-amber-400">
+                  {formatNumberDisplay(historyTotals.totalGiven)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Chain Received
+                </span>
+                <span className="text-lg font-bold text-black dark:text-blue-400">
+                  {formatNumberDisplay(historyTotals.totalReceived)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Powder
+                </span>
+                <span className="text-lg font-bold text-black dark:text-purple-400">
+                  {formatNumberDisplay(historyTotals.totalPowder)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Powder Received
+                </span>
+                <span className="text-lg font-bold text-black dark:text-indigo-400">
+                  {formatNumberDisplay(historyTotals.totalPowderReceived)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  SCRP
+                </span>
+                <span className="text-lg font-bold text-black dark:text-green-400">
+                  {formatNumberDisplay(historyTotals.totalScrap)} G
+                </span>
+              </div>
+            </div>
+          </div>
+
           <GenericTable
             data={getFilteredHistory()}
             columns={historyColumns}
             emptyMessage={
-              fromDate.length > 0 && toDate.length > 0
-                ? `No history records found for the selected date range (${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()})`
+              dateRange.length === 2
+                ? `No history records found for the selected date range (${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')})`
                 : "No history records found. Complete a joint process to see history."
             }
             isLoading={historyLoading}

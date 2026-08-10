@@ -68,7 +68,7 @@ interface BillingEntry {
   receive: number;
   pending: number;
   grossWeight: number;
-  
+
   type: 'DRAFT' | 'BILL';
   createdAt: string;
 }
@@ -79,51 +79,54 @@ const Billing: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEntry, setSelectedEntry] = useState<BillingEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [fromDate, setFromDate] = useState<Date[]>([]);
-  const [toDate, setToDate] = useState<Date[]>([]);
+  // Default date range: current Monday -> current Sunday
+  const getCurrentWeekRange = () => {
+    const today = new Date();
+
+    const day = today.getDay(); // Sunday = 0, Monday = 1
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return { monday, sunday };
+  };
+
+  const { monday: defaultMonday, sunday: defaultSunday } =
+    getCurrentWeekRange();
+
+  const [fromDate, setFromDate] = useState<Date[]>([defaultMonday]);
+  const [toDate, setToDate] = useState<Date[]>([defaultSunday]);
+
   const [dateRange, setDateRange] = useState({
-    from: '',
-    to: '',
+    from: defaultMonday.toISOString().split('T')[0],
+    to: defaultSunday.toISOString().split('T')[0],
   });
+
   // Add refs for date pickers
   const fromDatePickerRef = useRef<any>(null);
   const toDatePickerRef = useRef<any>(null);
 
   const { data: billData, isLoading: billLoading } = useGetBill();
-  
+
   useEffect(() => {
     setDefaultDateRange();
   }, []);
 
 
   const setDefaultDateRange = () => {
-    const now = new Date();
-
-    const dayOfWeek = now.getDay();
-
-    const diffToMonday =
-      dayOfWeek === 0
-        ? 6
-        : dayOfWeek - 1;
-
-    const monday = new Date(now);
-
-    monday.setDate(
-      now.getDate() - diffToMonday
-    );
-
-    const sunday = new Date(monday);
-
-    sunday.setDate(
-      monday.getDate() + 6
-    );
+    const { monday, sunday } = getCurrentWeekRange();
 
     setDateRange({
       from: monday.toISOString().split('T')[0],
       to: sunday.toISOString().split('T')[0],
     });
-    
-    // Set the date pickers to Monday and Sunday
+
     setFromDate([monday]);
     setToDate([sunday]);
   };
@@ -195,11 +198,16 @@ const Billing: React.FC = () => {
       entry.item.toLowerCase().includes(searchTerm.toLowerCase());
 
     let matchesDate = true;
+
     if (fromDate.length > 0 && toDate.length > 0) {
       const entryDate = new Date(entry.createdAt);
+
       const from = new Date(fromDate[0]);
+      from.setHours(0, 0, 0, 0);
+
       const to = new Date(toDate[0]);
       to.setHours(23, 59, 59, 999);
+
       matchesDate = entryDate >= from && entryDate <= to;
     }
 
@@ -245,7 +253,7 @@ const Billing: React.FC = () => {
     const amount = entry.finWt * entry.srp;
 
     // Build receipt HTML - Full A4 page
-   printContainer.innerHTML = `
+    printContainer.innerHTML = `
   <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:10mm 8mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
     <!-- Header Section -->
     <div>
@@ -576,7 +584,7 @@ const Billing: React.FC = () => {
     // Trigger print
     setTimeout(() => {
       window.print();
-      
+
       // Clean up after print
       setTimeout(() => {
         if (document.body.contains(printContainer)) {
@@ -588,17 +596,17 @@ const Billing: React.FC = () => {
       }, 1000);
     }, 500);
   };
- // Print Table Report - Full A4 portrait with totals
-const handlePrintTable = () => {
-  if (!filteredEntries || filteredEntries.length === 0) {
-    toast.error('No records available to print');
-    return;
-  }
+  // Print Table Report - Full A4 portrait with totals
+  const handlePrintTable = () => {
+    if (!filteredEntries || filteredEntries.length === 0) {
+      toast.error('No records available to print');
+      return;
+    }
 
-  // Create a hidden div for printing
-  const printContainer = document.createElement('div');
-  printContainer.id = 'print-container-table';
-  printContainer.style.cssText = `
+    // Create a hidden div for printing
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container-table';
+    printContainer.style.cssText = `
     position: fixed;
     left: -9999px;
     top: 0;
@@ -607,12 +615,12 @@ const handlePrintTable = () => {
     padding: 0;
     z-index: 9999;
   `;
-  document.body.appendChild(printContainer);
+    document.body.appendChild(printContainer);
 
-  // Build the table rows - Status column removed
-  const rows = filteredEntries
-    .map((entry, index) => {
-      return `
+    // Build the table rows - Status column removed
+    const rows = filteredEntries
+      .map((entry, index) => {
+        return `
         <tr>
           <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:7px;color:#000;">${index + 1}</td>
           <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:6.5px;color:#000;white-space:nowrap;">${entry.dateTime}</td>
@@ -628,23 +636,15 @@ const handlePrintTable = () => {
           <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:7px;color:#000;">${formatNumberWithDecimals(entry.pending)}</td>
         </tr>
       `;
-    })
-    .join('');
+      })
+      .join('');
 
-  // Set the content with Date at the top
-  printContainer.innerHTML = `
+    // Set the content with Date at the top
+    printContainer.innerHTML = `
     <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
       <!-- Header Section -->
       <div>
-        <!-- Date Range at the very top -->
-        ${fromDate.length > 0 && toDate.length > 0 ? `
-          <div style="text-align:center;font-size:9px;color:#333;margin:0 0 3px 0;padding:2px;background:#f5f5f5;border-radius:3px;font-weight:bold;">
-            📅 ${new Date(fromDate[0]).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })} 
-            to 
-            ${new Date(toDate[0]).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-          </div>
-        ` : ''}
-
+        
         <!-- PDF Header -->
         <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:9px;font-weight:bold;color:#a84b20;">
@@ -681,15 +681,15 @@ const handlePrintTable = () => {
   font-weight:bold;
 ">
   From: ${new Date(fromDate[0]).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  })}
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })}
   &nbsp;&nbsp; To: ${new Date(toDate[0]).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  })}
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })}
 </h2>
 
 <!-- Table - Status column removed -->  <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
@@ -720,9 +720,9 @@ const handlePrintTable = () => {
     </div>
   `;
 
-  // Add print styles
-  const style = document.createElement('style');
-  style.textContent = `
+    // Add print styles
+    const style = document.createElement('style');
+    style.textContent = `
     @page {
       size: A4 portrait;
       margin: 0;
@@ -785,23 +785,23 @@ const handlePrintTable = () => {
       }
     }
   `;
-  document.head.appendChild(style);
+    document.head.appendChild(style);
 
-  // Trigger print
-  setTimeout(() => {
-    window.print();
-
-    // Clean up after print
+    // Trigger print
     setTimeout(() => {
-      if (document.body.contains(printContainer)) {
-        document.body.removeChild(printContainer);
-      }
-      if (document.head.contains(style)) {
-        document.head.removeChild(style);
-      }
-    }, 1000);
-  }, 500);
-};
+      window.print();
+
+      // Clean up after print
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
+    }, 500);
+  };
   const handleRowClick = (entry: BillingEntry) => {
     navigate({ to: "/billiupdate/$id", params: { id: entry.id } });
   };
@@ -1080,23 +1080,46 @@ const handlePrintTable = () => {
             />
           </div>
 
+          {/* From Date - current week Monday */}
           <div className="flex items-center gap-2">
             <GenericDatePicker
               id="from-date"
-              placeholder="From Date"
+              placeholder="DD/MM/YYYY"
               dateFormat="d/m/Y"
-              onDateChange={(dates) => setFromDate(dates)}
+              initialDate={fromDate[0]}
+              onDateChange={(dates) => {
+                if (dates?.length > 0) {
+                  const selected = new Date(dates[0]);
+                  selected.setHours(0, 0, 0, 0);
+                  setFromDate([selected]);
+                  setDateRange(prev => ({
+                    ...prev,
+                    from: selected.toISOString().split('T')[0],
+                  }));
+                }
+              }}
               className="w-28 sm:w-32"
-              defaultWeek={true}
             />
           </div>
 
+          {/* To Date - current week Sunday */}
           <div className="flex items-center gap-2">
             <GenericDatePicker
               id="to-date"
-              placeholder="To Date"
+              placeholder="DD/MM/YYYY"
               dateFormat="d/m/Y"
-              onDateChange={(dates) => setToDate(dates)}
+              initialDate={toDate[0]}
+              onDateChange={(dates) => {
+                if (dates?.length > 0) {
+                  const selected = new Date(dates[0]);
+                  selected.setHours(23, 59, 59, 999);
+                  setToDate([selected]);
+                  setDateRange(prev => ({
+                    ...prev,
+                    to: selected.toISOString().split('T')[0],
+                  }));
+                }
+              }}
               className="w-28 sm:w-32"
             />
           </div>
@@ -1115,19 +1138,7 @@ const handlePrintTable = () => {
             <span>Print</span>
           </GenericButton>
 
-          {(fromDate.length > 0 || toDate.length > 0 || searchTerm) && (
-            <button
-              onClick={() => {
-                setFromDate([]);
-                setToDate([]);
-                setSearchTerm('');
-              }}
-              className="flex items-center gap-1 text-sm text-[#785600] hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300 font-medium whitespace-nowrap"
-            >
-              <X className="h-4 w-4" />
-              Clear
-            </button>
-          )}
+
         </div>
 
         {/* Generic Table with Row Click */}

@@ -6,7 +6,7 @@ import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import { useGetSoldering, useGetSolderingHistory, useSubmitSoldering } from '@/lib/api/soldering';
 import { useSubmitCutting, useSubmitMoveCutting } from '@/lib/api/cutting';
-import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
+import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 
 interface SolderingEntry {
   id: string;
@@ -54,8 +54,28 @@ const SolderingDept: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [actionType, setActionType] = useState<'joint' | 'cutting' | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [fromDate, setFromDate] = useState<Date[]>([]);
-  const [toDate, setToDate] = useState<Date[]>([]);
+
+  // Helper function to get week start (Monday 00:00) and end (Sunday 23:59:59)
+  const getDefaultWeekRange = () => {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sun, 1 = Mon, ...
+    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now);
+    monday.setDate(diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return { monday, sunday };
+  };
+
+  const [dateRange, setDateRange] = useState<Date[]>(() => {
+    const { monday, sunday } = getDefaultWeekRange();
+    return [monday, sunday];
+  });
+
   const isInitialMount = useRef(true);
 
   // Fetch data from API
@@ -144,35 +164,36 @@ const SolderingDept: React.FC = () => {
     };
   };
 
-  // Format number helper for history
-  const formatNumber = (value: any) => {
-    if (value === null || value === undefined) return '0';
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(num)) return '0';
-    return num.toFixed(0);
+  const toNumber = (value: unknown): number => {
+    if (value === null || value === undefined || value === '') return 0;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
   };
 
-  // Format number for display
-  const formatNumberDisplay = (value: number) => {
-    if (value === 0 || !value) return '0';
-    const str = value.toString();
-    if (str.includes('.')) {
-      return str.replace(/\.?0+$/, '');
-    }
-    return str;
+  // Indian format, maximum 3 decimals and NO trailing zeros.
+  const formatNumberDisplay = (value: unknown): string => {
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 3,
+      useGrouping: true,
+    }).format(toNumber(value));
   };
 
-  // Filter history by date
+  // Filter history by selected From-To date range.
   const getFilteredHistory = () => {
     let filtered = solderingHistory;
 
-    if (fromDate.length > 0 && toDate.length > 0) {
-      const from = new Date(fromDate[0]);
-      const to = new Date(toDate[0]);
+    if (dateRange.length === 2) {
+      const from = new Date(dateRange[0]);
+      const to = new Date(dateRange[1]);
+
+      from.setHours(0, 0, 0, 0);
       to.setHours(23, 59, 59, 999);
-      
+
       filtered = solderingHistory.filter((item: any) => {
+        if (!item?.createdAt) return false;
         const itemDate = new Date(item.createdAt);
+        if (Number.isNaN(itemDate.getTime())) return false;
         return itemDate >= from && itemDate <= to;
       });
     }
@@ -180,10 +201,28 @@ const SolderingDept: React.FC = () => {
     return filtered;
   };
 
+  // Calculate history totals
+  const filteredHistory = getFilteredHistory();
+  const historyTotals = filteredHistory.reduce(
+    (acc: { totalGiven: number; totalReceived: number; totalPowder: number; totalScrap: number; totalIncrease: number }, item: any) => {
+      const given = toNumber(item?.chainWeight);
+      const powder = toNumber(item?.powder);
+      const inc = powder > given ? powder - given : 0;
+      return {
+        totalGiven: acc.totalGiven + given,
+        totalReceived: acc.totalReceived + toNumber(item?.chainReceived),
+        totalPowder: acc.totalPowder + powder,
+        totalScrap: acc.totalScrap + toNumber(item?.scrap),
+        totalIncrease: acc.totalIncrease + inc,
+      };
+    },
+    { totalGiven: 0, totalReceived: 0, totalPowder: 0, totalScrap: 0, totalIncrease: 0 }
+  );
+
   // Print History Function
   const handlePrintHistory = () => {
     const filteredData = getFilteredHistory();
-    
+
     if (!filteredData || filteredData.length === 0) {
       toast.error('No history records available to print for the selected date range');
       return;
@@ -205,11 +244,11 @@ const SolderingDept: React.FC = () => {
 
     // Build the table rows - Compact with minimum padding
     const rows = filteredData
-        .map((item: any, index: number) => {
-            const { date, time } = formatDate(item?.createdAt);
-            const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
+      .map((item: any, index: number) => {
+        const { date, time } = formatDate(item?.createdAt);
+        const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
 
-            return `
+        return `
                 <tr>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
@@ -218,18 +257,18 @@ const SolderingDept: React.FC = () => {
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item?.purity || '-'}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.chainWeight)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.chainReceived)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.powder)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.increase)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.scrap)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainWeight)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainReceived)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.powder)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.increase)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
                         ${proceedDate} ${proceedTime}
                     </td>
                 </tr>
             `;
-        })
-        .join('');
+      })
+      .join('');
 
     // Calculate totals
     const totalChainGiven = filteredData.reduce((sum: number, item: any) => sum + (item?.chainWeight || 0), 0);
@@ -342,17 +381,17 @@ const SolderingDept: React.FC = () => {
 
     // Trigger print
     setTimeout(() => {
-        window.print();
-        
-        // Clean up after print
-        setTimeout(() => {
-            if (document.body.contains(printContainer)) {
-                document.body.removeChild(printContainer);
-            }
-            if (document.head.contains(style)) {
-                document.head.removeChild(style);
-            }
-        }, 1000);
+      window.print();
+
+      // Clean up after print
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
     }, 500);
   };
 
@@ -403,7 +442,7 @@ const SolderingDept: React.FC = () => {
       header: 'Chain Given (G)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.chainWeight)}
+          {formatNumberDisplay(item.chainWeight)}
         </span>
       ),
     },
@@ -412,7 +451,7 @@ const SolderingDept: React.FC = () => {
       header: 'Chain Received (G)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.chainReceived)}
+          {formatNumberDisplay(item.chainReceived)}
         </span>
       ),
     },
@@ -421,7 +460,7 @@ const SolderingDept: React.FC = () => {
       header: 'Powder (G)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.powder)}
+          {formatNumberDisplay(item.powder)}
         </span>
       ),
     },
@@ -430,7 +469,7 @@ const SolderingDept: React.FC = () => {
       header: 'Increase',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.increase)}
+          {formatNumberDisplay(item.increase)}
         </span>
       ),
     },
@@ -439,7 +478,7 @@ const SolderingDept: React.FC = () => {
       header: 'Scrap (स्क्रॅप)',
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.scrap)}
+          {formatNumberDisplay(item.scrap)}
         </span>
       ),
     },
@@ -625,42 +664,19 @@ const SolderingDept: React.FC = () => {
     }
   }, [saveIndex, solderingEntries, submitSoldering, submitCutting, navigate, refetch]);
 
-  // Check if all entries are saved
-  const allSaved = solderingEntries.every(entry => entry.isSaved);
-
-  // Custom action renderer for GenericTable
-  const renderActions = useCallback((item: SolderingEntry, index: number) => {
-    if (!item.isEditing) {
-      return (
-        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-          ✓ Completed
-        </span>
-      );
-    }
-
-    return (
-      <div className="flex items-center justify-center gap-2">
-        <button
-          onClick={() => handleSaveClick(index, 'joint')}
-          disabled={isLoading}
-          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-3 py-1.5 text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          title="Go to Joint"
-        >
-          <Hammer className="h-4 w-4" />
-          <span className="text-xs">Joint</span>
-        </button>
-        <button
-          onClick={() => handleSaveClick(index, 'cutting')}
-          disabled={isLoading}
-          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          title="Go to Cutting"
-        >
-          <Scissors className="h-4 w-4" />
-          <span className="text-xs">Cutting</span>
-        </button>
-      </div>
+  // Action column is shown only when at least one unsaved row has
+  // an entered Chain Received / Powder / Scrap value.
+  const hasEditableValues = (entry: SolderingEntry): boolean => {
+    return Boolean(
+      entry.chainReceivedRaw?.trim() ||
+      entry.powderRaw?.trim() ||
+      entry.scrapRaw?.trim()
     );
-  }, [isLoading, handleSaveClick]);
+  };
+
+  const showActionColumn = solderingEntries.some(
+    (entry) => !entry.isSaved && hasEditableValues(entry)
+  );
 
   // Define columns for GenericTable
   const columns: Column<SolderingEntry>[] = [
@@ -790,6 +806,49 @@ const SolderingDept: React.FC = () => {
         );
       },
     },
+
+
+    // Same condition as Box Department:
+    // the entire Action column is hidden until a value is entered.
+    ...(showActionColumn
+      ? [
+        {
+          key: 'actions',
+          header: 'Action',
+          render: (item: SolderingEntry, index: number) => {
+            if (item.isSaved || !hasEditableValues(item)) {
+              return null;
+            }
+
+            return (
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSaveClick(index, 'joint')}
+                  disabled={isLoading || isSubmitting}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-3 py-1.5 text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Go to Joint"
+                >
+                  <Hammer className="h-4 w-4" />
+                  <span className="text-xs">Joint</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSaveClick(index, 'cutting')}
+                  disabled={isLoading || isSubmitting}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Go to Cutting"
+                >
+                  <Scissors className="h-4 w-4" />
+                  <span className="text-xs">Cutting</span>
+                </button>
+              </div>
+            );
+          },
+        } as Column<SolderingEntry>,
+      ]
+      : []),
   ];
 
   const isSubmitting = submitSoldering.isPending || submitCutting.isPending;
@@ -819,39 +878,77 @@ const SolderingDept: React.FC = () => {
             <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
               {showHistory ? 'Soldering History' : 'Soldering Department'}
             </h1>
-           
+
           </div>
           <div className="flex items-center gap-2">
-            {/* Date Filters - Only show when viewing history */}
+            {/* Weekly Date Filter - Only show when viewing history */}
             {showHistory && (
-              <>
-                <div className="flex items-center gap-2">
-                  <GenericDatePicker
-                    id="from-date-soldering"
-                    placeholder="From Date"
-                    dateFormat="d/m/Y"
-                    onDateChange={(dates) => setFromDate(dates)}
-                    className="w-24 sm:w-28"
-                  />
-                  <span className="text-xs text-[#4f4535] dark:text-slate-400">to</span>
-                  <GenericDatePicker
-                    id="to-date-soldering"
-                    placeholder="To Date"
-                    dateFormat="d/m/Y"
-                    onDateChange={(dates) => setToDate(dates)}
-                    className="w-24 sm:w-28"
-                  />
-                  {(fromDate.length > 0 || toDate.length > 0) && (
-                    <button
-                      onClick={clearDateFilters}
-                      className="rounded-lg p-1 text-[#4f4535] hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
-                      title="Clear filters"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              </>
+              <div className="flex items-center gap-2">
+                {/* From Date - defaults to Monday */}
+                <GenericWeeklyDatePicker
+                  id="from-date-soldering"
+                  placeholder="DD/MM/YYYY"
+                  mode="from"
+                  initialDates={dateRange}
+                  onDateChange={(dates) => {
+                    if (dates && dates.length > 0) {
+                      const from = dates[0];
+
+                      if (dateRange.length === 2) {
+                        const to = dateRange[1];
+
+                        if (from <= to) {
+                          setDateRange([from, to]);
+                        } else {
+                          const sunday = new Date(from);
+                          sunday.setDate(from.getDate() + 6);
+                          sunday.setHours(23, 59, 59, 999);
+                          setDateRange([from, sunday]);
+                        }
+                      } else {
+                        const sunday = new Date(from);
+                        sunday.setDate(from.getDate() + 6);
+                        sunday.setHours(23, 59, 59, 999);
+                        setDateRange([from, sunday]);
+                      }
+                    }
+                  }}
+                  className="w-32 sm:w-36 md:w-40"
+                />
+
+                {/* To Date - defaults to Sunday */}
+                <GenericWeeklyDatePicker
+                  id="to-date-soldering"
+                  placeholder="DD/MM/YYYY"
+                  mode="to"
+                  initialDates={dateRange}
+                  onDateChange={(dates) => {
+                    if (dates && dates.length > 0) {
+                      const to = dates[0];
+
+                      if (dateRange.length === 2) {
+                        const from = dateRange[0];
+
+                        if (from <= to) {
+                          setDateRange([from, to]);
+                        } else {
+                          const monday = new Date(to);
+                          monday.setDate(to.getDate() - 6);
+                          monday.setHours(0, 0, 0, 0);
+                          setDateRange([monday, to]);
+                        }
+                      } else {
+                        const monday = new Date(to);
+                        monday.setDate(to.getDate() - 6);
+                        monday.setHours(0, 0, 0, 0);
+                        setDateRange([monday, to]);
+                      }
+                    }
+                  }}
+                  className="w-32 sm:w-36 md:w-40"
+                />
+
+              </div>
             )}
 
             {/* Print History Button */}
@@ -870,9 +967,8 @@ const SolderingDept: React.FC = () => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${
-                showHistory ? '!bg-amber-600 hover:!bg-amber-700' : '!bg-blue-600 hover:!bg-blue-700'
-              }`}
+              className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${showHistory ? '!bg-amber-600 hover:!bg-amber-700' : '!bg-blue-600 hover:!bg-blue-700'
+                }`}
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -892,10 +988,8 @@ const SolderingDept: React.FC = () => {
           <GenericTable<SolderingEntry>
             data={solderingEntries}
             columns={columns}
-            onSave={(item, index) => handleSaveClick(index, 'joint')}
             emptyMessage="No soldering entries found."
             isLoading={solderingLoading || isSubmitting}
-            renderActions={!allSaved ? renderActions : undefined}
             showSrNo={true}
             srNoLabel="Sr No."
           />
@@ -903,12 +997,66 @@ const SolderingDept: React.FC = () => {
       ) : (
         /* History Table */
         <div className="px-3 py-4 sm:px-4 md:px-6">
+          {/* History Summary Cards */}
+          <div className="mb-4 grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Total Chain Given
+                </span>
+                <span className="text-lg font-bold text-black dark:text-amber-400">
+                  {formatNumberDisplay(historyTotals.totalGiven)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Total Chain Received
+                </span>
+                <span className="text-lg font-bold text-black dark:text-blue-400">
+                  {formatNumberDisplay(historyTotals.totalReceived)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Power Given
+                </span>
+                <span className="text-lg font-bold text-black dark:text-purple-400">
+                  {formatNumberDisplay(historyTotals.totalPowder)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Scrap
+                </span>
+                <span className="text-lg font-bold text-black dark:text-green-400">
+                  {formatNumberDisplay(historyTotals.totalScrap)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  Increase
+                </span>
+                <span className="text-lg font-bold text-black dark:text-emerald-400">
+                  {formatNumberDisplay(historyTotals.totalIncrease)} G
+                </span>
+              </div>
+            </div>
+          </div>
+
           <GenericTable
             data={getFilteredHistory()}
             columns={historyColumns}
             emptyMessage={
-              fromDate.length > 0 && toDate.length > 0
-                ? `No history records found for the selected date range (${new Date(fromDate[0]).toLocaleDateString()} to ${new Date(toDate[0]).toLocaleDateString()})`
+              dateRange.length === 2
+                ? `No history records found for the selected date range (${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')})`
                 : "No history records found. Complete a soldering process to see history."
             }
             isLoading={historyLoading}

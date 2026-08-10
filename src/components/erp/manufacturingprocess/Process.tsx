@@ -17,6 +17,7 @@ import BoxDept from './BoxDept';
 import SolderingDept from './SolderingDept';
 import JointDept from './JointDept';
 import CuttingDept from './CuttingDept';
+import SKundaDept from './SKundaDept';
 
 interface ProcessStep {
   id: string;
@@ -74,6 +75,14 @@ const Process: React.FC = () => {
       icon: <Scissors className="h-4 w-4" />,
       component: <CuttingDept />,
       path: '/manufacturingprocess/cutting/cuttingdept',
+      status: 'pending',
+    },
+    {
+      id: 'kunda',
+      name: 'S Kunda',
+      icon: <CheckCircle className="h-4 w-4" />,
+      component: <SKundaDept />,
+      path: '/manufacturingprocess/skunda',
       status: 'pending',
     },
   ];

@@ -775,7 +775,7 @@ const BillEdit: React.FC = () => {
     },
     {
       key: 'srp',
-      header: 'SRP (₹)',
+      header: 'SRP (G)',
       render: (item, index) => {
         const actualIndex = index;
         return (
@@ -786,7 +786,6 @@ const BillEdit: React.FC = () => {
             value={item.srp || ''}
             onChange={(e) => handleItemChange(actualIndex, 'srp', parseFloat(e.target.value) || 0)}
             placeholder="0.00"
-            suffix="₹"
             className="w-24 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-right text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
             decimalScale={2}
           />
