@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   X, Save, Edit, Trash2,
   Plus, Minus, ArrowLeft, Loader2,
-  FileText, CheckCircle, AlertCircle, Search, UserPlus
+  FileText, CheckCircle, AlertCircle, Search, UserPlus, Printer
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
@@ -540,12 +540,414 @@ const BillEdit: React.FC = () => {
     return Number(value.toFixed(3)).toString();
   };
 
+  const formatNumberWith2Decimals = (value: number) => {
+    if (value === 0 || !value) return '0';
+    return Number(value.toFixed(2)).toString();
+  };
+
   // Negative opening balance means the client has a due balance.
   const getClientDueBalance = (client: any) => {
     const openingBalance = Number(client?.openingBalance) || 0;
     return openingBalance < 0
       ? Math.round(Math.abs(openingBalance) * 1000) / 1000
       : 0;
+  };
+
+  // ======================================================
+  // PRINT RECEIPT - A5 Landscape
+  // ======================================================
+  const handlePrintReceipt = (billData: any) => {
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    printContainer.style.cssText = `
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 210mm;
+      height: 140mm;
+      background: white;
+      padding: 0;
+      z-index: 9999;
+    `;
+
+    document.body.appendChild(printContainer);
+
+    // Get client phone
+    const client = clients.find((c: any) => c.id === formData.clientId);
+    const phoneNumber = client?.phoneNumber || 'N/A';
+
+    // Format date
+    const receiptDate = formData.date ? new Date(formData.date) : new Date();
+    const dateStr = receiptDate.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+
+    // Calculate amounts
+    const totalFineWt = calculateTotalFineWt();
+    const totalGrossWt = calculateTotalGrossWt();
+    const totalSRP = calculateTotalSRP();
+    const totalLabor = calculateTotalLabor();
+    const totalAmount = totalSRP + totalLabor;
+    const receive = formData.customerWeight || 0;
+    const pending = calculateRemainingWeight();
+
+    // Build items table rows
+    let itemsRows = '';
+    formData.items.forEach((item, index) => {
+      const itemAmount = (item.srp || 0) + (item.laborRate || 0);
+      itemsRows += `
+        <tr>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:center;font-size:9px;color:#000;">${index + 1}</td>
+          <td style="border:1px solid #222;padding:3px 4px;font-size:9px;color:#000;">${item.item || '-'}</td>
+          <td style="border:1px solid #222;padding:3px 4px;font-size:9px;color:#000;">${item.size || '-'}</td>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberThreeDecimals(item.purity)}</td>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-weight:bold;font-size:9px;color:#000;">${formatNumberThreeDecimals(item.fineWt)}</td>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberThreeDecimals(item.grossWt)}</td>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberThreeDecimals(item.srp)}</td>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberThreeDecimals(item.laborRate)}</td>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-weight:bold;font-size:9px;color:#000;">₹${formatNumberWith2Decimals(itemAmount)}</td>
+        </tr>
+      `;
+    });
+
+    printContainer.innerHTML = `
+      <div style="
+        width:210mm;
+        height:135mm;
+        margin:0 auto;
+        background:#ffffff;
+        font-family:Arial,Helvetica,sans-serif;
+        padding:4mm 6mm;
+        box-sizing:border-box;
+        color:#111111;
+        overflow:hidden;
+      ">
+
+        <!-- HEADER -->
+        <div style="width:100%;text-align:center;">
+          <div style="
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            margin:0;
+            padding:0;
+          ">
+            <span style="
+              font-size:10px;
+              font-weight:bold;
+              color:#a84b20;
+              white-space:nowrap;
+            ">
+              ॥ श्री गणेश प्रसन्न ॥
+            </span>
+
+            <span style="
+              font-size:18px;
+              font-weight:bold;
+              color:#c43d5c;
+              line-height:1.1;
+              white-space:nowrap;
+            ">
+              मातोश्री चेन फॅक्टरी, मिरज
+            </span>
+
+            <span style="
+              font-size:10px;
+              font-weight:bold;
+              color:#a84b20;
+              white-space:nowrap;
+            ">
+              ॥ श्री साई प्रसन्न ॥
+            </span>
+          </div>
+
+          <div style="
+            margin:2px 0 0;
+            font-size:9px;
+            font-weight:bold;
+            color:#8b451f;
+            line-height:1.2;
+          ">
+            आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+          </div>
+
+          <div style="
+            margin:2px 0 0;
+            font-size:9px;
+            font-weight:bold;
+            color:#a84b20;
+            line-height:1.2;
+          ">
+            प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
+          </div>
+
+          <div style="
+            border-bottom:2px solid #c43d5c;
+            margin:2px 0 3px;
+          "></div>
+        </div>
+
+        <!-- RECEIPT TITLE -->
+        <div style="
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          margin:0 0 3px;
+        ">
+          <div style="width:25%;"></div>
+
+          <h2 style="
+            width:50%;
+            margin:0;
+            text-align:center;
+            font-size:15px;
+            font-weight:bold;
+            letter-spacing:2px;
+            color:#111111;
+          ">
+            RECEIPT
+          </h2>
+        </div>
+
+        <!-- SIMPLE RECEIPT INFO -->
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          margin:0 0 4px;
+          padding:0 1px;
+          font-size:10px;
+          line-height:1.3;
+        ">
+          <div>
+            <span style="font-weight:bold;">Client:</span>
+            ${formData.clientName}
+            <span style="margin-left:14px;font-weight:bold;">Phone:</span>
+            ${phoneNumber}
+          </div>
+
+          <div style="text-align:right;">
+            <span style="font-weight:bold;">Date:</span>
+            ${dateStr}
+          </div>
+        </div>
+
+        <!-- ITEM TABLE -->
+        <table style="
+          width:100%;
+          border-collapse:collapse;
+          font-size:10px;
+          margin:0 0 3px;
+        ">
+          <thead>
+            <tr style="
+              background:#785600;
+              color:#ffffff;
+            ">
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Sr</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:left;font-size:8px;">Item</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:left;font-size:8px;">Size</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Purity %</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Fine Wt (G)</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Gross Wt (G)</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">SRP (G)</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Labor (G)</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Amount</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${itemsRows}
+          </tbody>
+        </table>
+
+        <!-- PAYMENT SUMMARY -->
+        <div style="
+          display:flex;
+          justify-content:flex-end;
+          margin-top:1px;
+        ">
+          <div style="
+            width:38%;
+            border:1px solid #d6c08a;
+            border-radius:5px;
+            background:#fffdf7;
+            overflow:hidden;
+          ">
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              padding:3px 7px;
+              border-bottom:1px dashed #dddddd;
+              font-size:10px;
+            ">
+              <span style="font-weight:bold;color:#666666;">Total Fine Wt</span>
+              <span style="font-family:monospace;font-weight:bold;">
+                ${formatNumberThreeDecimals(totalFineWt)} G
+              </span>
+            </div>
+
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              padding:3px 7px;
+              border-bottom:1px dashed #dddddd;
+              font-size:10px;
+            ">
+              <span style="font-weight:bold;color:#666666;">Receive</span>
+              <span style="font-family:monospace;font-weight:bold;">
+                ${formatNumberThreeDecimals(receive)} G
+              </span>
+            </div>
+
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              padding:3px 7px;
+              border-bottom:1px dashed #dddddd;
+              font-size:10px;
+            ">
+              <span style="font-weight:bold;color:#666666;">Pending</span>
+              <span style="font-family:monospace;font-weight:bold;">
+                ${formatNumberThreeDecimals(pending)} G
+              </span>
+            </div>
+
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              padding:4px 7px;
+              background:#f4f0e5;
+              font-size:11px;
+            ">
+              <span style="font-weight:bold;">Total Amount</span>
+              <span style="font-family:monospace;font-weight:bold;">
+                ₹${formatNumberWith2Decimals(totalAmount)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:flex-end;
+          margin:4px 0 0;
+          padding:4px 0 0;
+          border-top:1px dashed #aaaaaa;
+          font-size:9px;
+          line-height:1;
+          color:#444444;
+        ">
+          <div style="
+            margin:0;
+            padding:0;
+          ">
+            Contact For Support: 9511640351
+          </div>
+
+          <div style="
+            width:120px;
+            margin:0;
+            padding:0;
+            text-align:center;
+          ">
+            <div style="
+              border-top:1px solid #555555;
+              padding-top:2px;
+              margin:0;
+            ">
+              Authorized Signature
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      @page {
+        size: A5 landscape;
+        margin: 0;
+      }
+
+      @media print {
+        html,
+        body {
+          width: 210mm !important;
+          height: 148mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+          background: #ffffff !important;
+        }
+
+        body * {
+          visibility: hidden;
+        }
+
+        #print-container,
+        #print-container * {
+          visibility: visible;
+        }
+
+        #print-container {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 210mm !important;
+          height: 148mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #ffffff !important;
+          overflow: hidden !important;
+          z-index: 999999 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        #print-container > div {
+          width: 210mm !important;
+          height: 148mm !important;
+          min-height: 148mm !important;
+          max-height: 148mm !important;
+          box-sizing: border-box !important;
+          overflow: hidden !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        #print-container table {
+          width: 100% !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+
+        #print-container tr {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+
+    setTimeout(() => {
+      window.print();
+
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
+    }, 300);
   };
 
   // Save as Draft
@@ -593,7 +995,7 @@ const BillEdit: React.FC = () => {
     }
   };
 
-  // Save as Completed
+  // Save as Completed with Print
   const handleUpdateReceipt = async () => {
     if (!formData.clientId || !formData.clientName) {
       toast.error('Please select a client');
@@ -635,7 +1037,17 @@ const BillEdit: React.FC = () => {
 
       await updateBill.mutateAsync({ id, data: billData });
       toast.success('Bill updated successfully!');
-      navigate({ to: '/billing' });
+
+      // Print the receipt after successful update
+      setTimeout(() => {
+        handlePrintReceipt(billData);
+      }, 500);
+
+      // Navigate after print
+      setTimeout(() => {
+        navigate({ to: '/billing' });
+      }, 2000);
+
     } catch (error: any) {
       console.error('Error updating receipt:', error);
 
@@ -1083,7 +1495,9 @@ const BillEdit: React.FC = () => {
               {updateBill.isPending ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <Save className="h-5 w-5" />
+                <>
+                  <Save className="h-5 w-5" />
+                </>
               )}
               {updateBill.isPending ? 'Updating...' : 'Update Bill'}
             </GenericButton>
