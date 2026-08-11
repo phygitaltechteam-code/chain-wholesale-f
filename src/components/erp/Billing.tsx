@@ -5,7 +5,7 @@ import PageHeader from '@/components/Forms/Common/PageHeader';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import toast from 'react-hot-toast';
 import GenericButton from '../Forms/Buttons/GenericButton';
-import { useGetBill } from '@/lib/api/bill';
+import { useDeleteBill, useGetBill } from '@/lib/api/bill';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
 import {
   Scale,
@@ -78,6 +78,8 @@ const Billing: React.FC = () => {
   const [billingEntries, setBillingEntries] = useState<BillingEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEntry, setSelectedEntry] = useState<BillingEntry | null>(null);
+  
+      const deleteClient = useDeleteBill();
   const [isLoading, setIsLoading] = useState(true);
   // Default date range: current Monday -> current Sunday
   const getCurrentWeekRange = () => {
@@ -829,12 +831,34 @@ const Billing: React.FC = () => {
     navigate({ to: "/billiupdate/$id", params: { id: entry.id } });
   };
 
-  const handleDelete = (entry: BillingEntry) => {
-    if (window.confirm(`Are you sure you want to delete bill ${entry.billNo}?`)) {
-      setBillingEntries(prev => prev.filter(e => e.id !== entry.id));
+  // const handleDelete = (entry: BillingEntry) => {
+  //   if (window.confirm(`Are you sure you want to delete bill ${entry.billNo}?`)) {
+  //     setBillingEntries(prev => prev.filter(e => e.id !== entry.id));
+  //     toast.success(`Bill ${entry.billNo} deleted successfully....`);
+  //   }
+  // };
+const handleDelete = (entry: BillingEntry) => {
+  if (!window.confirm(`Are you sure you want to delete bill ${entry.billNo}?`)) {
+    return;
+  }
+
+  deleteClient.mutate(entry.id, {
+    onSuccess: () => {
+      // Remove from UI after successful API delete
+      setBillingEntries((prev) =>
+        prev.filter((e) => e.id !== entry.id)
+      );
+
       toast.success(`Bill ${entry.billNo} deleted successfully`);
-    }
-  };
+    },
+    onError: (error: any) => {
+      console.error('Delete bill error:', error);
+      toast.error(
+        error?.response?.data?.message || 'Failed to delete bill'
+      );
+    },
+  });
+};
 
   const gettypeColor = (type: string) => {
     switch (type) {
@@ -856,13 +880,17 @@ const Billing: React.FC = () => {
       >
         <Printer className="h-4 w-4" />
       </button>
-      <button
-        onClick={(e) => { e.stopPropagation(); handleDelete(item); }}
-        className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
-        title="Delete"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
+<button
+  onClick={(e) => {
+    e.stopPropagation();
+    handleDelete(item);
+  }}
+  disabled={deleteClient.isPending}
+  className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors disabled:opacity-50"
+  title="Delete"
+>
+  <Trash2 className="h-4 w-4" />
+</button>
     </div>
   );
 

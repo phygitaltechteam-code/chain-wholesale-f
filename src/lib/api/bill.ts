@@ -70,7 +70,6 @@ export const useDeleteBill= () => {
   return useMutation({
     mutationFn: deleteBillApi,
     onSuccess: () => {
-      toast.success('deleted added successfully');
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Insufficient stock');
