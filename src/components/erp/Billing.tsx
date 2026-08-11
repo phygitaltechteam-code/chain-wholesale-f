@@ -354,15 +354,6 @@ const Billing: React.FC = () => {
             RECEIPT
           </h2>
 
-          <div style="
-            width:25%;
-            text-align:right;
-            font-size:9px;
-            font-weight:bold;
-            color:#444444;
-          ">
-            ${entry.type}
-          </div>
         </div>
 
         <!-- SIMPLE RECEIPT INFO -->
