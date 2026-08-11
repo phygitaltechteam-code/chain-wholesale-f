@@ -415,30 +415,30 @@ const handlePrint = () => {
 
     // Set the content with PDF Header
     printContainer.innerHTML = `
-        <div style="max-width:1200px;margin:0 auto;font-family:Arial,sans-serif;padding:0;">
-            <!-- PDF Header -->
-            <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin:0;padding:0;font-size:11px;font-weight:bold;color:#a84b20;">
-                    <span>॥ श्री गणेश प्रसन्न ॥</span>
-                    <span>॥ श्री साई प्रसन्न ॥</span>
-                </div>
-                <div style="margin:1px 0 0 0;padding:0;font-size:20px;font-weight:bold;color:#c43d5c;line-height:1.1;">
-                    मातोश्री चेन फॅक्टरी
-                </div>
-                <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#8b451f;line-height:1.2;">
-                    आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
-                </div>
-                <div style="margin:1px 0 0 0;padding:0;font-size:10px;font-weight:bold;color:#a84b20;line-height:1.2;">
-                    प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
-                </div>
-                <div style="border-bottom:2px solid #c43d5c;margin:2px 0 3px 0;"></div>
+<div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+        <!-- Header Section -->
+        <div>
+          <!-- PDF Header -->
+          <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
+              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री गणेश प्रसन्न ॥</span>
+              <span style="font-size:20px;font-weight:bold;color:#c43d5c;">मातोश्री चेन फॅक्टरी, मिरज</span>
+              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री साई प्रसन्न ॥</span>
             </div>
+            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#8b451f;line-height:1.2;">
+              आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+            </div>
+            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#a84b20;line-height:1.2;">
+              प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
+            </div>
+            <div style="border-bottom:2px solid #c43d5c;margin:2px 0 4px 0;"></div>
+          </div>
 
             <!-- Title and Date Range in one line -->
             <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
                 <div style="flex:1;"></div>
                 <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
-                    Client Report
+                    Client Report.
                 </h2>
                 <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
                     From: ${formatIndianDate(fromDate)} &nbsp; To: ${formatIndianDate(toDate)}
@@ -667,7 +667,7 @@ const handlePrint = () => {
                             className="flex items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white hover:bg-[#5d4200] transition-colors whitespace-nowrap"
                         >
                             <Printer className="h-4 w-4" />
-                            <span className="hidden sm:inline">Print Report</span>
+                            <span className="hidden sm:inline">Print</span>
                             <span className="sm:hidden">Print</span>
                         </button>
                     </div>

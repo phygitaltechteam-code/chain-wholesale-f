@@ -1506,9 +1506,6 @@ const Settlement: React.FC = () => {
             />
 
 
-            <span className="text-[#4f4535] dark:text-slate-400">
-              to
-            </span>
 
 
             <input

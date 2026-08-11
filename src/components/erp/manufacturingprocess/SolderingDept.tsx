@@ -842,7 +842,6 @@ const SolderingDept: React.FC = () => {
                     onDateChange={(dates) => setFromDate(dates)}
                     className="w-24 sm:w-28"
                   />
-                  <span className="text-xs text-[#4f4535] dark:text-slate-400">to</span>
                   <GenericDatePicker
                     id="to-date-soldering"
                     placeholder="To Date"
