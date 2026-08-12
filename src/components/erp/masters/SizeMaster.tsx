@@ -102,13 +102,29 @@ const SizeMaster: React.FC = () => {
 
   // Handle delete size
   const handleDeleteSize = async (item: Size) => {
-    if (window.confirm(`Are you sure you want to delete size "${item.size}"?`)) {
-      try {
-        await deleteSize.mutateAsync(item.id);
-        refetch();
-      } catch (error) {
-        // Error handled in mutation
+    if (
+      !window.confirm(
+        `Are you sure you want to delete size "${item.size}"?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await deleteSize.mutateAsync(item.id);
+
+      // If the deleted size was being edited,
+      // clear the edit state and form.
+      if (editingSize?.id === item.id) {
+        resetForm();
+        setIsModalOpen(false);
       }
+
+      // Refresh the latest list.
+      await refetch();
+    } catch (error) {
+      console.error('Error deleting size:', error);
+      // Error toast is already handled by the mutation.
     }
   };
 
@@ -170,7 +186,11 @@ const SizeMaster: React.FC = () => {
     },
   ];
 
-  const isSubmitting = createSize.isPending || updateSize.isPending || deleteSize.isPending;
+  // Delete must not disable the Add/Edit form.
+  const isFormSubmitting =
+    createSize.isPending || updateSize.isPending;
+
+  const isDeleting = deleteSize.isPending;
 
   return (
     <div className="bg-[#f9f9f7] dark:bg-slate-950">
@@ -230,7 +250,7 @@ const SizeMaster: React.FC = () => {
             }}
             renderActions={renderActions}
             emptyMessage="No sizes found. Click 'Add Size' to create one."
-            isLoading={isLoading || isSubmitting}
+            isLoading={isLoading}
           />
         </div>
       </div>
@@ -282,10 +302,10 @@ const SizeMaster: React.FC = () => {
               <GenericButton
                 type="button"
                 onClick={editingSize ? handleEditSize : handleAddSize}
-                disabled={isSubmitting}
+                disabled={isFormSubmitting}
                 className="!px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !bg-amber-600 hover:!bg-amber-700 !text-white"
               >
-                {isSubmitting
+                {isFormSubmitting
                   ? 'Saving...'
                   : editingSize
                     ? 'Update Size'

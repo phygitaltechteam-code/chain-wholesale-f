@@ -113,13 +113,30 @@ const ItemMaster: React.FC = () => {
       toast.error('Cannot delete GOLD item');
       return;
     }
-    if (window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
-      try {
-        await deleteItem.mutateAsync(item.id);
-        refetch();
-      } catch (error) {
-        // Error handled in mutation
+
+    if (
+      !window.confirm(
+        `Are you sure you want to delete "${item.name}"?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await deleteItem.mutateAsync(item.id);
+
+      // If the deleted item was being edited,
+      // clear the edit state and form.
+      if (editingItem?.id === item.id) {
+        resetForm();
+        setIsModalOpen(false);
       }
+
+      // Refresh the list after deletion.
+      await refetch();
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      // Error toast is already handled by the mutation.
     }
   };
 
@@ -166,12 +183,15 @@ const ItemMaster: React.FC = () => {
     },
   ];
 
-  const isSubmitting = createItem.isPending || updateItem.isPending || deleteItem.isPending;
+  const isFormSubmitting =
+    createItem.isPending || updateItem.isPending;
+
+  const isDeleting = deleteItem.isPending;
 
   // Custom actions renderer - hide Edit and Delete for GOLD
   const renderActions = (item: Item, index: number) => {
     const isGold = item.name?.toUpperCase() === 'GOLD';
-    
+
     if (isGold) {
       return (
         <span className="text-xs text-[#4f4535] dark:text-slate-400 italic">
@@ -179,7 +199,7 @@ const ItemMaster: React.FC = () => {
         </span>
       );
     }
-    
+
     return (
       <div className="flex items-center justify-center gap-2">
         <button
@@ -259,7 +279,7 @@ const ItemMaster: React.FC = () => {
               console.log('Save item:', item);
             }}
             emptyMessage="No items found. Click 'Add Item' to create one."
-            isLoading={isLoading || isSubmitting}
+            isLoading={isLoading}
             renderActions={renderActions}
             srNoLabel="Sr No."
           />
@@ -319,10 +339,10 @@ const ItemMaster: React.FC = () => {
               <GenericButton
                 type="button"
                 onClick={editingItem ? handleEditItem : handleAddItem}
-                disabled={isSubmitting}
+                disabled={isFormSubmitting}
                 className="!px-4 !py-2 !text-sm !bg-amber-600 hover:!bg-amber-700 !text-white"
               >
-                {isSubmitting
+                {isFormSubmitting
                   ? 'Saving...'
                   : editingItem
                     ? 'Update Item'

@@ -139,18 +139,36 @@ const ClientMaster: React.FC = () => {
         }
     };
 
-    // Handle delete client
     const handleDeleteClient = async (client: Client) => {
-        if (window.confirm(`Are you sure you want to delete "${client.fullName}"?`)) {
-            try {
-                await deleteClient.mutateAsync(client.id);
-                refetch();
-            } catch (error) {
-                // Error handled in mutation
-            }
+        if (
+            !window.confirm(
+                `Are you sure you want to delete "${client.fullName}"?`
+            )
+        ) {
+            return;
+        }
+
+        try {
+            await deleteClient.mutateAsync(client.id);
+
+            // Clear any edit state
+            setEditingClient(null);
+
+            // Reset form
+            resetForm();
+
+            // Close modal
+            setIsModalOpen(false);
+
+            // Clear validation errors
+            setFormErrors({});
+
+            // Refresh latest clients
+            await refetch();
+        } catch (error) {
+            console.error('Error deleting client:', error);
         }
     };
-
     // Handle edit button click
     const handleEditClick = (client: Client) => {
         setEditingClient(client);

@@ -145,12 +145,28 @@ export const useDeleteItem = () => {
 
   return useMutation({
     mutationFn: deleteItemApi,
-    onSuccess: () => {
-      toast.success('Item deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['items'] });
+    onSuccess: async (_, deletedId) => {
+      toast.success("Item deleted successfully");
+
+      // Remove deleted size immediately from React Query cache.
+      queryClient.setQueryData<Item[]>(
+        ["items"],
+        (oldItems = []) =>
+          oldItems.filter(
+            (item) => item.id !== deletedId
+          )
+      );
+
+      // Refresh latest data from the database.
+      await queryClient.invalidateQueries({
+        queryKey: ["items"],
+      });
     },
+
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete item');
+      toast.error(
+        error.message || "Failed to delete item"
+      );
     },
   });
 };

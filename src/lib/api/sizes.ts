@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { api } from "@/utils/axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -26,7 +25,7 @@ const createSizeApi = async (data: SizeFormData) => {
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to add size');
+      throw new Error(error.message || "Failed to add size");
     }
     throw error;
   }
@@ -38,21 +37,27 @@ const getSizesApi = async () => {
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to fetch sizes');
+      throw new Error(error.message || "Failed to fetch sizes");
     }
     throw error;
   }
 };
 
-
-
-const updateSizeApi = async ({ id, data }: { id: string; data: SizeFormData }) => {
+const updateSizeApi = async ({
+  id,
+  data,
+}: {
+  id: string;
+  data: SizeFormData;
+}) => {
   try {
     const response = await api.put(`/admin/size/${id}`, data);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || `Failed to update size with ID: ${id}`);
+      throw new Error(
+        error.message || `Failed to update size with ID: ${id}`
+      );
     }
     throw error;
   }
@@ -64,13 +69,14 @@ const deleteSizeApi = async (id: string) => {
     return { success: true };
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || `Failed to delete size with ID: ${id}`);
+      throw new Error(
+        error.message || `Failed to delete size with ID: ${id}`
+      );
     }
     throw error;
   }
 };
 
-// Export individual functions
 export {
   createSizeApi,
   getSizesApi,
@@ -78,27 +84,31 @@ export {
   deleteSizeApi,
 };
 
-// React Query Hooks
 export const useGetSizes = () => {
   return useQuery({
-    queryKey: ['sizes'],
+    queryKey: ["sizes"],
     queryFn: getSizesApi,
   });
 };
-
-
 
 export const useCreateSize = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: createSizeApi,
+
     onSuccess: () => {
-      toast.success('Size added successfully');
-      queryClient.invalidateQueries({ queryKey: ['sizes'] });
+      toast.success("Size added successfully");
+
+      queryClient.invalidateQueries({
+        queryKey: ["sizes"],
+      });
     },
+
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to add size');
+      toast.error(
+        error.message || "Failed to add size"
+      );
     },
   });
 };
@@ -108,12 +118,19 @@ export const useUpdateSize = () => {
 
   return useMutation({
     mutationFn: updateSizeApi,
+
     onSuccess: () => {
-      toast.success('Size updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['sizes'] });
+      toast.success("Size updated successfully");
+
+      queryClient.invalidateQueries({
+        queryKey: ["sizes"],
+      });
     },
+
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update size');
+      toast.error(
+        error.message || "Failed to update size"
+      );
     },
   });
 };
@@ -123,12 +140,29 @@ export const useDeleteSize = () => {
 
   return useMutation({
     mutationFn: deleteSizeApi,
-    onSuccess: () => {
-      toast.success('Size deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['sizes'] });
+
+    onSuccess: async (_, deletedId) => {
+      toast.success("Size deleted successfully");
+
+      // Remove deleted size immediately from React Query cache.
+      queryClient.setQueryData<Size[]>(
+        ["sizes"],
+        (oldSizes = []) =>
+          oldSizes.filter(
+            (size) => size.id !== deletedId
+          )
+      );
+
+      // Refresh latest data from the database.
+      await queryClient.invalidateQueries({
+        queryKey: ["sizes"],
+      });
     },
+
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete size');
+      toast.error(
+        error.message || "Failed to delete size"
+      );
     },
   });
 };
