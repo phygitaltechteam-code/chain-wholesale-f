@@ -25,8 +25,10 @@ import {
   MdReceiptLong,
   MdAccountBalance,
   MdReceipt,
+  MdBackup,
 } from 'react-icons/md';
 import { useAuthContext } from '@/context/AuthContext';
+import { useGetBackUp } from '@/lib/api/backup';
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
@@ -68,6 +70,7 @@ const Sidebar = ({
 
   const role = user?.role;
   const isMobileDevice = propIsMobile !== undefined ? propIsMobile : isMobile;
+
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -189,12 +192,18 @@ const Sidebar = ({
       icon: <MdGroups size={22} />,
       roles: ['ADMIN'],
     },
-
+    // ========== BACKUP ==========
     // ========== MANUFACTURING REPORT ==========
     {
       label: 'Manufacturing Report',
       path: '/reports/manufacturingreport',
       icon: <MdAssessment size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
+      label: 'Backup & Restore',
+      path: '/backup&restore',
+      icon: <MdBackup size={22} />,
       roles: ['ADMIN'],
     },
   ];
