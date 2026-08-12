@@ -616,7 +616,7 @@ const Settlement: React.FC = () => {
       });
 
       await refetchSettlements();
-      toast.success('Settlement saved successfully');
+      // toast.success('Settlement saved successfully');
 
     } catch (error) {
       console.error('Settlement error:', error);

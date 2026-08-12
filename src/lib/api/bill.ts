@@ -82,7 +82,7 @@ export const useBillUpdate = () => {
   return useMutation({
     mutationFn: updateBillApi,
     onSuccess: () => {
-      // toast.success('Bill added successfully');
+      toast.success('Bill updated successfully');
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Insufficient stock');

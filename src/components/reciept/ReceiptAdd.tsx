@@ -128,7 +128,7 @@ const ReceiptAdd: React.FC = () => {
       setClientFormErrors({});
       setShowClientModal(false);
       await refetchClients();
-      toast.success('Client added successfully!');
+      // toast.success('Client added successfully!');
     } catch (error) {
       if (error instanceof z.ZodError) {
         const errors: any = {};
@@ -906,7 +906,7 @@ const ReceiptAdd: React.FC = () => {
       };
 
       await savebill.mutateAsync(billData);
-      toast.success('Bill saved as draft successfully!');
+      // toast.success('Bill saved as draft successfully!');
       navigate({ to: '/billing' });
     } catch (error) {
       console.error('Error saving draft:', error);
@@ -955,7 +955,7 @@ const ReceiptAdd: React.FC = () => {
       };
 
       const response = await savebill.mutateAsync(billData);
-      toast.success('Bill saved successfully!');
+      // toast.success('Bill saved successfully!');
 
       // Store the bill data for printing
       setSavedBillData(response?.data || billData);

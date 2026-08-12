@@ -244,7 +244,7 @@ const OpeningStock: React.FC = () => {
     try {
       if (entry.isSaved) {
         await updateStock.mutateAsync({ id: entry.id, data: stockDataPayload });
-        toast.success('Opening stock updated successfully!');
+        // toast.success('Opening stock updated successfully!');
       } else {
         const result = await createStock.mutateAsync(stockDataPayload);
         entry.id = result.id;
@@ -310,14 +310,7 @@ const OpeningStock: React.FC = () => {
     setOpeningEntries(prev => [...prev, newEntry]);
   };
 
-  const formatNumber = (value: number) => {
-    if (value === 0) return '0';
-    const str = value.toString();
-    if (str.includes('.')) {
-      return str.replace(/\.?0+$/, '');
-    }
-    return str;
-  };
+ 
 
   // Check if a row is the gold row
   const isGoldRow = (entry: OpeningStockEntry) => {
@@ -405,7 +398,7 @@ const OpeningStock: React.FC = () => {
             <select
               value={item.itemId || ''}
               onChange={(e) => handleInlineChange(index, 'itemId', e.target.value)}
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="w-28 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             >
               <option value="">Select Item</option>
               {items && items.map((i) => (
@@ -441,7 +434,7 @@ const OpeningStock: React.FC = () => {
             <select
               value={item.sizeId || ''}
               onChange={(e) => handleInlineChange(index, 'sizeId', e.target.value)}
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="w-28 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             >
               <option value="">Select Size</option>
               {sizes && sizes.map((s) => (
