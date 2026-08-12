@@ -334,14 +334,7 @@ const ClientMaster: React.FC = () => {
                     />
                 </div>
 
-                {/* Footer */}
-                {clients.length > 0 && (
-                    <div className="mt-3 flex items-center justify-end border-t border-[#d3c4af]/10 pt-3 text-xs text-[#4f4535] dark:border-slate-700 dark:text-slate-400">
-                        <span className="font-medium text-[#785600] dark:text-[#986d00]">
-                            Total Clients: {clients.length}
-                        </span>
-                    </div>
-                )}
+
             </div>
 
             {/* Add/Edit Modal */}
