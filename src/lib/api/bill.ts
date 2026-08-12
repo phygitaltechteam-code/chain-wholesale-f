@@ -28,7 +28,7 @@ const saveBillApi = async (data: any) => {
   return response.data;
 };
 
-const getQuantityApi = async (payload: { itemId: string; sizeId: string; purity: number }) => {
+const getQuantityApi = async (payload: { itemId: string; sizeId: string; purity: number; customerId:string }) => {
   const response = await api.put('/admin/billing/check', payload);
   return response.data;
 };

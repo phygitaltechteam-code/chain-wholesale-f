@@ -279,7 +279,7 @@ const BillEdit: React.FC = () => {
     }));
     toast.success('Item removed');
   };
-
+  // ─── Update the fetchQuantity function in BillEdit ────────────────────────
   const fetchQuantity = async (index: number, item: string, size: string, purity: number) => {
     if (!item || !size || !purity || purity <= 0) {
       return;
@@ -310,13 +310,18 @@ const BillEdit: React.FC = () => {
     }));
 
     try {
+     
       const response = await getQuantity.mutateAsync({
+        customerId: formData.clientId, 
         itemId: selectedItem.id,
         sizeId: selectedSize.id,
         purity: purity
       });
 
       let weight = 0;
+      let srpValue = 0;
+
+      // Extract weight
       if (response?.data?.weight !== undefined && response.data.weight !== null) {
         weight = Number(response.data.weight);
       } else if (response?.weight !== undefined && response.weight !== null) {
@@ -327,6 +332,13 @@ const BillEdit: React.FC = () => {
         weight = Number(response.quantity);
       }
 
+    
+      if (response?.data?.srp !== undefined && response.data.srp !== null) {
+        srpValue = Number(response.data.srp);
+      } else if (response?.srp !== undefined && response.srp !== null) {
+        srpValue = Number(response.srp);
+      }
+
       if (!isNaN(weight) && weight >= 0) {
         setFormData(prev => ({
           ...prev,
@@ -334,6 +346,7 @@ const BillEdit: React.FC = () => {
             i === index ? {
               ...entry,
               availableQty: weight,
+              srp: srpValue > 0 ? srpValue : entry.srp,
               isLoadingQty: false
             } : entry
           )

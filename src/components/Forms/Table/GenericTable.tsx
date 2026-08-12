@@ -35,7 +35,6 @@ export interface GenericTableProps<T> {
     enableInlineEdit?: boolean;
     showSrNo?: boolean;
     srNoLabel?: string;
-    // New props for row styling and click
     rowClassName?: (item: T, index: number) => string;
     rowTextColor?: (item: T, index: number) => string;
     onRowClick?: (item: T, index: number) => void;
@@ -70,8 +69,8 @@ export function GenericTable<T extends { id: string | number }>({
     onRowClick,
     hoverColor = 'hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50',
     evenRowColor = 'bg-white dark:bg-slate-900',
-    oddRowColor = 'bg-[#fafaf8] dark:bg-slate-900/80',
-    selectedRowColor = 'dark:bg-amber-900/10',
+    oddRowColor = 'bg-[#f8f6f4] dark:bg-slate-800/60',
+    selectedRowColor = 'bg-[#785600]/5 dark:bg-amber-900/10',
 }: GenericTableProps<T>) {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -172,17 +171,14 @@ export function GenericTable<T extends { id: string | number }>({
     };
 
     const getRowColor = (item: T, index: number) => {
-        // If row has custom class, use it
         if (rowClassName) {
             return rowClassName(item, index);
         }
 
-        // If selected row, use selected color
         if (selectedRowIndex === index) {
             return selectedRowColor;
         }
 
-        // Alternate row colors
         return index % 2 === 0 ? evenRowColor : oddRowColor;
     };
 
@@ -193,7 +189,6 @@ export function GenericTable<T extends { id: string | number }>({
         return 'text-[#1a1c1b] dark:text-white';
     };
 
-    // If loading, show loading state
     if (isLoading) {
         return (
             <div className="bg-[#f9f9f7] dark:bg-slate-950">
@@ -212,16 +207,13 @@ export function GenericTable<T extends { id: string | number }>({
                 {/* Header with Title, Search and Add Button */}
                 {(title || onAdd || searchFields.length > 0) && (
                     <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        {/* Left side - Title */}
                         {title && (
                             <h2 className="text-xl font-bold text-[#1a1c1b] dark:text-white">
                                 {title}
                             </h2>
                         )}
 
-                        {/* Right side - Search and Add Button on same line */}
                         <div className="flex flex-col sm:flex-row items-center gap-3">
-                            {/* Search */}
                             {searchFields.length > 0 && (
                                 <div className="relative w-full sm:w-auto">
                                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
@@ -235,7 +227,6 @@ export function GenericTable<T extends { id: string | number }>({
                                 </div>
                             )}
 
-                            {/* Add Button - same line as search */}
                             {onAdd && (
                                 <GenericButton
                                     type="button"
@@ -280,7 +271,6 @@ export function GenericTable<T extends { id: string | number }>({
                                 ) : (
                                     filteredData.map((item, index) => {
                                         const isItemEditing = isEditing(index);
-                                        const originalIndex = data.indexOf(item);
                                         const rowColor = getRowColor(item, index);
                                         const textColor = getRowTextColorClass(item, index);
                                         const isClickable = !!onRowClick;
@@ -288,7 +278,7 @@ export function GenericTable<T extends { id: string | number }>({
                                         return (
                                             <tr
                                                 key={item.id || index}
-                                                className={`group transition-colors ${rowColor} ${hoverColor} ${isClickable ? 'cursor-pointer' : ''} ${isItemEditing ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}
+                                                className={`group transition-colors duration-150 ${rowColor} ${hoverColor} ${isClickable ? 'cursor-pointer' : ''} ${isItemEditing ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}
                                                 onClick={() => handleRowClick(item, index)}
                                             >
                                                 {allColumns.map((column, colIdx) => {
