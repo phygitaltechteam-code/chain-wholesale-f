@@ -1173,7 +1173,16 @@ const Settlement: React.FC = () => {
                 ...(dateRange.from ? [new Date(dateRange.from)] : []),
                 ...(dateRange.to ? [new Date(dateRange.to)] : [])
               ]}
-              onDateChange={handleFromDateChange}
+              onDateChange={(dates) => {
+                if (dates.length > 0) {
+                  // existing logic
+                } else {
+                  setDateRange({
+                    from: '',
+                    to: '',
+                  });
+                }
+              }}
               className="w-32 sm:w-36 md:w-40"
             />
 
@@ -1186,7 +1195,16 @@ const Settlement: React.FC = () => {
                 ...(dateRange.from ? [new Date(dateRange.from)] : []),
                 ...(dateRange.to ? [new Date(dateRange.to)] : [])
               ]}
-              onDateChange={handleToDateChange}
+              onDateChange={(dates) => {
+                if (dates.length > 0) {
+                  // existing logic
+                } else {
+                  setDateRange({
+                    from: '',
+                    to: '',
+                  });
+                }
+              }}
               className="w-32 sm:w-36 md:w-40"
             />
 

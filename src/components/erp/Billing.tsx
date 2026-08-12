@@ -1,5 +1,3 @@
-// ─── Updated Billing.tsx ────────────────────────────────────────────────────────
-
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, Printer, Edit, Trash2, Plus, Calendar } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
@@ -448,7 +446,7 @@ const Billing: React.FC = () => {
       header: 'Pending (g)',
       render: (item) => (
         <span className="text-sm font-mono font-semibold text-black dark:text-red-400">
-          {formatNumberWithDecimals(item.pending)}
+          {formatNumberWithDecimals(Math.abs(item.pending))}
         </span>
       ),
     },
@@ -550,7 +548,7 @@ const Billing: React.FC = () => {
                   Total Pending
                 </span>
                 <span className="text-lg font-bold text-black dark:text-white">
-                  {formatNumberWithDecimals(totalPending)} G
+                  {formatNumberWithDecimals(Math.abs(totalPending))} G
                 </span>
               </div>
               <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-red-900/30 border border-[#785600]/20 dark:border-red-700/30">

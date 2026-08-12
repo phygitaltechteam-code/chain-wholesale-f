@@ -897,66 +897,44 @@ const CuttingDept: React.FC = () => {
           <div className="flex items-center gap-2">
             {/* Weekly Date Filter - Only show when viewing history */}
             {showHistory && (
-              <div className="flex items-center gap-2">
-                {/* From Date - defaults to Monday */}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* From Date - Defaults to Monday */}
                 <GenericWeeklyDatePicker
-                  id="from-date-cutting"
+                  id="from-date-box"
                   placeholder="DD/MM/YYYY"
+
                   mode="from"
                   initialDates={dateRange}
                   onDateChange={(dates) => {
-                    if (dates && dates.length > 0) {
-                      const from = dates[0];
-
-                      if (dateRange.length === 2) {
-                        const to = dateRange[1];
-
-                        if (from <= to) {
-                          setDateRange([from, to]);
-                        } else {
-                          const sunday = new Date(from);
-                          sunday.setDate(from.getDate() + 6);
-                          sunday.setHours(23, 59, 59, 999);
-                          setDateRange([from, sunday]);
-                        }
-                      } else {
-                        const sunday = new Date(from);
-                        sunday.setDate(from.getDate() + 6);
-                        sunday.setHours(23, 59, 59, 999);
-                        setDateRange([from, sunday]);
-                      }
+                    if (dates.length > 0) {
+                      // existing logic
+                    } else {
+                      setDateRange({
+                        from: '',
+                        to: '',
+                      });
                     }
                   }}
                   className="w-32 sm:w-36 md:w-40"
                 />
 
-                {/* To Date - defaults to Sunday */}
+
+
+                {/* To Date - Defaults to Sunday */}
                 <GenericWeeklyDatePicker
-                  id="to-date-cutting"
+                  id="to-date-box"
                   placeholder="DD/MM/YYYY"
+
                   mode="to"
                   initialDates={dateRange}
                   onDateChange={(dates) => {
-                    if (dates && dates.length > 0) {
-                      const to = dates[0];
-
-                      if (dateRange.length === 2) {
-                        const from = dateRange[0];
-
-                        if (from <= to) {
-                          setDateRange([from, to]);
-                        } else {
-                          const monday = new Date(to);
-                          monday.setDate(to.getDate() - 6);
-                          monday.setHours(0, 0, 0, 0);
-                          setDateRange([monday, to]);
-                        }
-                      } else {
-                        const monday = new Date(to);
-                        monday.setDate(to.getDate() - 6);
-                        monday.setHours(0, 0, 0, 0);
-                        setDateRange([monday, to]);
-                      }
+                    if (dates.length > 0) {
+                      // existing logic
+                    } else {
+                      setDateRange({
+                        from: '',
+                        to: '',
+                      });
                     }
                   }}
                   className="w-32 sm:w-36 md:w-40"

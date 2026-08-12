@@ -87,7 +87,25 @@ export default function ClientReport() {
     const [searchTerm, setSearchTerm] = useState("");
     const [reportData, setReportData] = useState<ClientReportEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const getDefaultWeekRange = () => {
+        const now = new Date();
+        const day = now.getDay();
+        const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(now);
+        monday.setDate(diffToMonday);
+        monday.setHours(0, 0, 0, 0);
 
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+
+        return { monday, sunday };
+    };
+
+    const [dateRange, setDateRange] = useState<Date[]>(() => {
+        const { monday, sunday } = getDefaultWeekRange();
+        return [monday, sunday];
+    });
     const { monday: defaultMonday, sunday: defaultSunday } =
         getCurrentWeekRange();
 
@@ -574,27 +592,44 @@ export default function ClientReport() {
                     {/* Right side - From/To, Search and Print */}
                     <div className="flex flex-col xl:flex-row items-center gap-2 w-full sm:w-auto">
                         <div className="flex w-full sm:w-auto items-center gap-2">
-                            <div className="w-full sm:w-36">
-                                <GenericWeeklyDatePicker
-                                    id="client-report-from-date"
-                                    mode="from"
-                                    initialDates={[fromDate, toDate]}
-                                    onDateChange={handleFromDateChange}
-                                    placeholder="DD/MM/YYYY"
-                                    className="w-full"
-                                />
-                            </div>
+                            <GenericWeeklyDatePicker
+                                id="to-date-box"
+                                placeholder="DD/MM/YYYY"
 
-                            <div className="w-full sm:w-36">
-                                <GenericWeeklyDatePicker
-                                    id="client-report-to-date"
-                                    mode="to"
-                                    initialDates={[fromDate, toDate]}
-                                    onDateChange={handleToDateChange}
-                                    placeholder="DD/MM/YYYY"
-                                    className="w-full"
-                                />
-                            </div>
+                                mode="to"
+                                initialDates={dateRange}
+                                onDateChange={(dates) => {
+                                    if (dates.length > 0) {
+                                        // existing logic
+                                    } else {
+                                        setDateRange({
+                                            from: '',
+                                            to: '',
+                                        });
+                                    }
+                                }}
+                                className="w-32 sm:w-36 md:w-40"
+                            />
+
+                            <GenericWeeklyDatePicker
+                                id="from-date-box"
+                                mode="from"
+                                placeholder="DD/MM/YYYY"
+                                initialDates={dateRange}
+                                onDateChange={(dates) => {
+                                    if (dates.length > 0) {
+                                        setDateRange(dates);
+                                        setFromDate(dates[0]);
+                                        if (dates[1]) setToDate(dates[1]);
+                                    } else {
+                                        setDateRange({
+                                            from: '',
+                                            to: '',
+                                        });
+                                    }
+                                }}
+                                className="w-32 sm:w-36 md:w-40"
+                            />
                         </div>
 
                         <div className="relative w-full sm:w-64">

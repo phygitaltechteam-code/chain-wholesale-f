@@ -70,14 +70,12 @@ interface ApiDataItem {
 export default function ManufacturingReport() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  // Default date range: current Monday -> current Sunday
-  const getCurrentWeekRange = () => {
-    const today = new Date();
-    const day = today.getDay();
-    const diffToMonday = day === 0 ? -6 : 1 - day;
-
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + diffToMonday);
+  const getDefaultWeekRange = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now);
+    monday.setDate(diffToMonday);
     monday.setHours(0, 0, 0, 0);
 
     const sunday = new Date(monday);
@@ -87,11 +85,12 @@ export default function ManufacturingReport() {
     return { monday, sunday };
   };
 
-  const { monday: defaultMonday, sunday: defaultSunday } =
-    getCurrentWeekRange();
-
-  const [fromDate, setFromDate] = useState<Date | null>(defaultMonday);
-  const [toDate, setToDate] = useState<Date | null>(defaultSunday);
+  const [dateRange, setDateRange] = useState<Date[]>(() => {
+    const { monday, sunday } = getDefaultWeekRange();
+    return [monday, sunday];
+  });
+  const [fromDate, setFromDate] = useState<Date | null>();
+  const [toDate, setToDate] = useState<Date | null>();
   const printRef = useRef<HTMLDivElement>(null);
   const { data: manufacturingData, isLoading, isError, refetch } = useGetManufacturingData();
 
@@ -618,27 +617,47 @@ export default function ManufacturingReport() {
                 className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
               />
             </div>
-            {/* From Date - Monday/start date */}
-            <div className="w-full sm:w-40">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* From Date - Defaults to Monday */}
               <GenericWeeklyDatePicker
-                id="manufacturing-from-date"
-                mode="from"
-                initialDates={[fromDate, toDate]}
-                onDateChange={handleFromDateChange}
+                id="from-date-box"
                 placeholder="DD/MM/YYYY"
-                className="w-full"
-              />
-            </div>
 
-            {/* To Date - Sunday/end date */}
-            <div className="w-full sm:w-40">
+                mode="from"
+                initialDates={dateRange}
+                onDateChange={(dates) => {
+                  if (dates.length > 0) {
+                    // existing logic
+                  } else {
+                    setDateRange({
+                      from: '',
+                      to: '',
+                    });
+                  }
+                }}
+                className="w-32 sm:w-36 md:w-40"
+              />
+
+
+
+              {/* To Date - Defaults to Sunday */}
               <GenericWeeklyDatePicker
-                id="manufacturing-to-date"
-                mode="to"
-                initialDates={[fromDate, toDate]}
-                onDateChange={handleToDateChange}
+                id="to-date-box"
                 placeholder="DD/MM/YYYY"
-                className="w-full"
+
+                mode="to"
+                initialDates={dateRange}
+                onDateChange={(dates) => {
+                  if (dates.length > 0) {
+                    // existing logic
+                  } else {
+                    setDateRange({
+                      from: '',
+                      to: '',
+                    });
+                  }
+                }}
+                className="w-32 sm:w-36 md:w-40"
               />
             </div>
 

@@ -979,37 +979,20 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             refetchHistory();
         }
     };
-
-    // Clear date filters - resets to current week
-    const clearDateFilters = () => {
-        const now = new Date();
-        const day = now.getDay();
+    const getCurrentWeekRange = () => {
+        const today = new Date();
+        const day = today.getDay();
         const diffToMonday = day === 0 ? -6 : 1 - day;
 
-        const monday = new Date(now);
-        monday.setDate(now.getDate() + diffToMonday);
+        const monday = new Date(today);
+        monday.setDate(today.getDate() + diffToMonday);
         monday.setHours(0, 0, 0, 0);
 
         const sunday = new Date(monday);
         sunday.setDate(monday.getDate() + 6);
         sunday.setHours(23, 59, 59, 999);
 
-        setDateRange([monday, sunday]);
-    };
-
-    // Handle From-To date range
-    const handleWeeklyDateChange = (dates: Date[]) => {
-        if (dates.length === 2) {
-            const from = new Date(dates[0]);
-            const to = new Date(dates[1]);
-
-            from.setHours(0, 0, 0, 0);
-            to.setHours(23, 59, 59, 999);
-
-            setDateRange([from, to]);
-        } else {
-            setDateRange(dates);
-        }
+        return { monday, sunday };
     };
 
     return (
@@ -1040,80 +1023,49 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                             </GenericButton>
                         )}
 
-                        {/* Date Filters - Only show when viewing history */}
                         {showHistory && (
                             <div className="flex flex-wrap items-center gap-2">
                                 {/* From Date - Defaults to Monday */}
-                                <GenericWeeklyDatePicker
-                                    id="from-date-tar"
-                                    placeholder="DD/MM/YYYY"
-
-                                    mode="from"
-                                    initialDates={dateRange}
-                                    onDateChange={(dates) => {
-                                        if (dates && dates.length > 0) {
-                                            const from = dates[0];
-                                            if (dateRange.length === 2) {
-                                                // Update only the from date
-                                                const to = dateRange[1];
-                                                // Ensure from <= to
-                                                if (from <= to) {
-                                                    setDateRange([from, to]);
-                                                } else {
-                                                    // If from > to, set both to same week
-                                                    const sunday = new Date(from);
-                                                    sunday.setDate(from.getDate() + 6);
-                                                    sunday.setHours(23, 59, 59, 999);
-                                                    setDateRange([from, sunday]);
-                                                }
+                                <div className="w-32 sm:w-36 md:w-40">
+                                    <GenericWeeklyDatePicker
+                                        id="from-date-tar"
+                                        placeholder="DD/MM/YYYY"
+                                        mode="from"
+                                        initialDates={dateRange.length === 2 ? dateRange : []}
+                                        onDateChange={(dates) => {
+                                            if (dates.length > 0) {
+                                                // existing logic
                                             } else {
-                                                // If no to date, set to Sunday
-                                                const sunday = new Date(from);
-                                                sunday.setDate(from.getDate() + 6);
-                                                sunday.setHours(23, 59, 59, 999);
-                                                setDateRange([from, sunday]);
+                                                setDateRange({
+                                                    from: '',
+                                                    to: '',
+                                                });
                                             }
-                                        }
-                                    }}
-                                    className="w-32 sm:w-36 md:w-40"
-                                />
-
-
+                                        }}
+                                        className="w-full"
+                                    />
+                                </div>
 
                                 {/* To Date - Defaults to Sunday */}
-                                <GenericWeeklyDatePicker
-                                    id="to-date-tar"
-                                    placeholder="DD/MM/YYYY"
-
-                                    mode="to"
-                                    initialDates={dateRange}
-                                    onDateChange={(dates) => {
-                                        if (dates && dates.length > 0) {
-                                            const to = dates[0];
-                                            if (dateRange.length === 2) {
-                                                // Update only the to date
-                                                const from = dateRange[0];
-                                                // Ensure from <= to
-                                                if (from <= to) {
-                                                    setDateRange([from, to]);
-                                                } else {
-                                                    // If to < from, set both to same week
-                                                    const monday = new Date(to);
-                                                    monday.setDate(to.getDate() - 6);
-                                                    monday.setHours(0, 0, 0, 0);
-                                                    setDateRange([monday, to]);
-                                                }
+                                <div className="w-32 sm:w-36 md:w-40">
+                                    <GenericWeeklyDatePicker
+                                        id="to-date-tar"
+                                        placeholder="DD/MM/YYYY"
+                                        mode="to"
+                                        initialDates={dateRange.length === 2 ? dateRange : []}
+                                        onDateChange={(dates) => {
+                                            if (dates.length > 0) {
+                                                // existing logic
                                             } else {
-                                                // If no from date, set to Monday
-                                                const monday = new Date(to);
-                                                monday.setDate(to.getDate() - 6);
-                                                monday.setHours(0, 0, 0, 0);
-                                                setDateRange([monday, to]);
+                                                setDateRange({
+                                                    from: '',
+                                                    to: '',
+                                                });
                                             }
-                                        }
-                                    }}
-                                    className="w-32 sm:w-36 md:w-40"
-                                />
+                                        }}
+                                        className="w-full"
+                                    />
+                                </div>
                             </div>
                         )}
 

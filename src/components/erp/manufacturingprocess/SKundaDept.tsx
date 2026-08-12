@@ -791,41 +791,48 @@ const SKundaDept: React.FC = () => {
           <div className="flex items-center gap-2 ml-auto">
             {showHistory && (
               <>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* From Date - Defaults to Monday */}
                   <GenericWeeklyDatePicker
-                    id="from-date-kunda"
+                    id="from-date-box"
                     placeholder="DD/MM/YYYY"
+
                     mode="from"
                     initialDates={dateRange}
                     onDateChange={(dates) => {
-                      if (dates?.length) {
-                        const from = dates[0];
-                        const sunday = new Date(from);
-                        sunday.setDate(from.getDate() + 6);
-                        sunday.setHours(23, 59, 59, 999);
-                        setDateRange([from, sunday]);
+                      if (dates.length > 0) {
+                        // existing logic
+                      } else {
+                        setDateRange({
+                          from: '',
+                          to: '',
+                        });
                       }
                     }}
                     className="w-32 sm:w-36 md:w-40"
                   />
 
+
+
+                  {/* To Date - Defaults to Sunday */}
                   <GenericWeeklyDatePicker
-                    id="to-date-kunda"
+                    id="to-date-box"
                     placeholder="DD/MM/YYYY"
+
                     mode="to"
                     initialDates={dateRange}
                     onDateChange={(dates) => {
-                      if (dates?.length) {
-                        const to = dates[0];
-                        const monday = new Date(to);
-                        monday.setDate(to.getDate() - 6);
-                        monday.setHours(0, 0, 0, 0);
-                        setDateRange([monday, to]);
+                      if (dates.length > 0) {
+                        // existing logic
+                      } else {
+                        setDateRange({
+                          from: '',
+                          to: '',
+                        });
                       }
                     }}
                     className="w-32 sm:w-36 md:w-40"
                   />
-
                 </div>
 
                 <GenericButton

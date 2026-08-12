@@ -9,6 +9,25 @@ import { useSubmitCutting, useSubmitMoveCutting } from '@/lib/api/cutting';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 
+// ======================================================
+// HELPER: Get Current Week Range
+// ======================================================
+const getCurrentWeekRange = () => {
+  const today = new Date();
+  const day = today.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  return { monday, sunday };
+};
+
 interface SolderingEntry {
   id: string;
   srNo: number;
@@ -56,10 +75,27 @@ const SolderingDept: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [actionType, setActionType] = useState<'joint' | 'cutting' | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [fromDate, setFromDate] = useState<Date[]>([]);
-  const [toDate, setToDate] = useState<Date[]>([]);
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
   const isInitialMount = useRef(true);
+  const getDefaultWeekRange = () => {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sun, 1 = Mon, ...
+    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now);
+    monday.setDate(diffToMonday);
+    monday.setHours(0, 0, 0, 0);
 
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return { monday, sunday };
+  };
+  const [dateRange, setDateRange] = useState<Date[]>(() => {
+    const { monday, sunday } = getDefaultWeekRange();
+    return [monday, sunday];
+  });
   // Fetch data from API
   const {
     data: solderingData = [],
@@ -222,9 +258,9 @@ const SolderingDept: React.FC = () => {
   const getFilteredHistory = () => {
     let filtered = solderingHistory;
 
-    if (fromDate.length > 0 && toDate.length > 0) {
-      const from = new Date(fromDate[0]);
-      const to = new Date(toDate[0]);
+    if (fromDate && toDate) {
+      const from = new Date(fromDate);
+      const to = new Date(toDate);
 
       to.setHours(23, 59, 59, 999);
 
@@ -326,44 +362,6 @@ const SolderingDept: React.FC = () => {
       })
       .join('');
 
-    // Calculate totals
-    const totalChainGiven = filteredData.reduce(
-      (sum: number, item: any) =>
-        sum + (item?.chainWeight || 0),
-      0
-    );
-
-    const totalChainReceived = filteredData.reduce(
-      (sum: number, item: any) =>
-        sum + (item?.chainReceived || 0),
-      0
-    );
-
-    const totalPowder = filteredData.reduce(
-      (sum: number, item: any) =>
-        sum + (item?.powder || 0),
-      0
-    );
-
-    const totalIncrease = filteredData.reduce(
-      (sum: number, item: any) =>
-        sum + (item?.increase || 0),
-      0
-    );
-
-    const totalScrap = filteredData.reduce(
-      (sum: number, item: any) =>
-        sum + (item?.scrap || 0),
-      0
-    );
-
-    // Prevent unused-variable lint errors
-    void totalChainGiven;
-    void totalChainReceived;
-    void totalPowder;
-    void totalIncrease;
-    void totalScrap;
-
     // Set print content
     printContainer.innerHTML = `
      <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
@@ -410,14 +408,14 @@ const SolderingDept: React.FC = () => {
               Soldering History Report
             </h2>
 
-            ${fromDate.length > 0 && toDate.length > 0
+            ${fromDate && toDate
         ? `
                   <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
-                    From: ${new Date(fromDate[0]).toLocaleDateString(
+                    From: ${new Date(fromDate).toLocaleDateString(
           'en-IN'
         )}
                     &nbsp; To:
-                    ${new Date(toDate[0]).toLocaleDateString('en-IN')}
+                    ${new Date(toDate).toLocaleDateString('en-IN')}
                   </div>
                 `
         : `
@@ -1222,17 +1220,23 @@ const SolderingDept: React.FC = () => {
   const toggleHistory = () => {
     if (showHistory) {
       setShowHistory(false);
+      setFromDate(null);
+      setToDate(null);
       refetch();
     } else {
       setShowHistory(true);
+      // Set default dates when showing history
+      const { monday, sunday } = getCurrentWeekRange();
+      setFromDate(monday);
+      setToDate(sunday);
       refetchHistory();
     }
   };
 
   // Clear date filters
   const clearDateFilters = () => {
-    setFromDate([]);
-    setToDate([]);
+    setFromDate(null);
+    setToDate(null);
   };
 
   return (
@@ -1253,34 +1257,50 @@ const SolderingDept: React.FC = () => {
 
           </div>
 
-          <div className="flex items-center gap-2">
-
+          <div className="flex items-center gap-2 flex-wrap">
             {/* Date Filters */}
             {showHistory && (
               <>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div>
+                    <GenericWeeklyDatePicker
+                      id="from-date-box"
+                      placeholder="DD/MM/YYYY"
+
+                      mode="from"
+                      initialDates={dateRange}
+                      onDateChange={(dates) => {
+                        if (dates.length > 0) {
+                          // existing logic
+                        } else {
+                          setDateRange({
+                            from: '',
+                            to: '',
+                          });
+                        }
+                      }}
+                      className="w-32 sm:w-36 md:w-40"
+                    />
+                  </div>
 
                   <GenericWeeklyDatePicker
-                    id="from-date-soldering"
-                    placeholder="From Date"
-                    dateFormat="dd/mm/Y"
-                    onDateChange={(dates) =>
-                      setFromDate(dates)
-                    }
-                    className="w-24 sm:w-28"
+                    id="to-date-box"
+                    placeholder="DD/MM/YYYY"
+
+                    mode="to"
+                    initialDates={dateRange}
+                    onDateChange={(dates) => {
+                      if (dates.length > 0) {
+                        // existing logic
+                      } else {
+                        setDateRange({
+                          from: '',
+                          to: '',
+                        });
+                      }
+                    }}
+                    className="w-32 sm:w-36 md:w-40"
                   />
-
-                  <GenericWeeklyDatePicker
-                    id="to-date-soldering"
-                    placeholder="To Date"
-                    dateFormat="d/m/Y"
-                    onDateChange={(dates) =>
-                      setToDate(dates)
-                    }
-                    className="w-24 sm:w-28"
-                  />
-
-
 
                 </div>
               </>
@@ -1291,13 +1311,9 @@ const SolderingDept: React.FC = () => {
               <GenericButton
                 type="button"
                 onClick={handlePrintHistory}
-                className="flex items-center gap-1.5 whitespace-nowrap !bg-green-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-green-700 sm:!px-4 sm:!py-2 sm:!text-sm"
               >
                 <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-
-                <span>
-                  Print
-                </span>
+                <span>Print</span>
               </GenericButton>
             )}
 
@@ -1315,14 +1331,8 @@ const SolderingDept: React.FC = () => {
               ) : (
                 <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               )}
-
-              <span>
-                {showHistory
-                  ? 'Show Soldering'
-                  : 'History'}
-              </span>
+              <span>{showHistory ? 'Show Soldering' : 'History'}</span>
             </GenericButton>
-
           </div>
 
         </div>
@@ -1367,12 +1377,11 @@ const SolderingDept: React.FC = () => {
             data={getFilteredHistory()}
             columns={historyColumns}
             emptyMessage={
-              fromDate.length > 0 &&
-                toDate.length > 0
+              fromDate && toDate
                 ? `No history records found for the selected date range (${new Date(
-                  fromDate[0]
+                  fromDate
                 ).toLocaleDateString()} to ${new Date(
-                  toDate[0]
+                  toDate
                 ).toLocaleDateString()})`
                 : 'No history records found. Complete a soldering process to see history.'
             }
