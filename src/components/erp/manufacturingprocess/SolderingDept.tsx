@@ -614,18 +614,6 @@ const SolderingDept: React.FC = () => {
         </span>
       ),
     },
-
-    {
-      key: 'purity',
-      header: 'Purity',
-
-      render: (item) => (
-        <span className="text-sm text-[#1a1c1b] dark:text-white">
-          {item.purity || '-'}
-        </span>
-      ),
-    },
-
     {
       key: 'chainWeight',
       header: 'Chain Given (G)',
@@ -1318,8 +1306,8 @@ const SolderingDept: React.FC = () => {
               type="button"
               onClick={toggleHistory}
               className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${showHistory
-                  ? '!bg-amber-600 hover:!bg-amber-700'
-                  : '!bg-blue-600 hover:!bg-blue-700'
+                ? '!bg-amber-600 hover:!bg-amber-700'
+                : '!bg-blue-600 hover:!bg-blue-700'
                 }`}
             >
               {showHistory ? (
