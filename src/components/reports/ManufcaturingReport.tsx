@@ -7,6 +7,7 @@ import PDFHeader from "@/components/Forms/Common/PDFHeader";
 import { useGetManufacturingData } from "@/lib/api/reportapi";
 import GenericButton from "../Forms/Buttons/GenericButton";
 import GenericDatePicker from "../Forms/DatePicker/GenericDatePicker";
+import GenericWeeklyDatePicker from "../Forms/DatePicker/GenericWeeklyDatePicker";
 
 
 interface ManufacturingEntry {
@@ -69,14 +70,12 @@ interface ApiDataItem {
 export default function ManufacturingReport() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  // Default date range: current Monday -> current Sunday
-  const getCurrentWeekRange = () => {
-    const today = new Date();
-    const day = today.getDay();
-    const diffToMonday = day === 0 ? -6 : 1 - day;
-
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + diffToMonday);
+  const getDefaultWeekRange = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now);
+    monday.setDate(diffToMonday);
     monday.setHours(0, 0, 0, 0);
 
     const sunday = new Date(monday);
@@ -86,11 +85,12 @@ export default function ManufacturingReport() {
     return { monday, sunday };
   };
 
-  const { monday: defaultMonday, sunday: defaultSunday } =
-    getCurrentWeekRange();
-
-  const [fromDate, setFromDate] = useState<Date | null>(defaultMonday);
-  const [toDate, setToDate] = useState<Date | null>(defaultSunday);
+  const [dateRange, setDateRange] = useState<Date[]>(() => {
+    const { monday, sunday } = getDefaultWeekRange();
+    return [monday, sunday];
+  });
+  const [fromDate, setFromDate] = useState<Date | null>();
+  const [toDate, setToDate] = useState<Date | null>();
   const printRef = useRef<HTMLDivElement>(null);
   const { data: manufacturingData, isLoading, isError, refetch } = useGetManufacturingData();
 
@@ -509,16 +509,16 @@ export default function ManufacturingReport() {
       <div className="border-b-2 border-[#c43d5c] my-3" />
 
       <div className="mb-4 text-center">
-  <h2 className="text-lg font-bold text-gray-800">Manufacturing Report</h2>
-  <div className="flex justify-center items-center gap-4 flex-wrap">
-    <p className="text-xs text-gray-500">Generated: {new Date().toLocaleString()}</p>
-    {(fromDate || toDate) && (
-      <p className="text-xs text-gray-500">
-        From: {formatDateForDisplay(fromDate) || 'Start'} &nbsp; To: {formatDateForDisplay(toDate) || 'End'}
-      </p>
-    )}
-  </div>
-</div>
+        <h2 className="text-lg font-bold text-gray-800">Manufacturing Report</h2>
+        <div className="flex justify-center items-center gap-4 flex-wrap">
+          <p className="text-xs text-gray-500">Generated: {new Date().toLocaleString()}</p>
+          {(fromDate || toDate) && (
+            <p className="text-xs text-gray-500">
+              From: {formatDateForDisplay(fromDate) || 'Start'} &nbsp; To: {formatDateForDisplay(toDate) || 'End'}
+            </p>
+          )}
+        </div>
+      </div>
 
       <table className="w-full text-xs border-collapse">
         <thead>
@@ -617,32 +617,51 @@ export default function ManufacturingReport() {
                 className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
               />
             </div>
-
-            {/* From Date - Monday/start date */}
-            <div className="w-full sm:w-40">
-              <GenericDatePicker
-                id="manufacturing-from-date"
-                initialDate={fromDate || undefined}
-                onDateChange={handleFromDateChange}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* From Date - Defaults to Monday */}
+              <GenericWeeklyDatePicker
+                id="from-date-box"
                 placeholder="DD/MM/YYYY"
-                dateFormat="d/m/Y"
-                className="w-full"
+
+                mode="from"
+                initialDates={dateRange}
+                onDateChange={(dates) => {
+                  if (dates.length > 0) {
+                    // existing logic
+                  } else {
+                    setDateRange({
+                      from: '',
+                      to: '',
+                    });
+                  }
+                }}
+                className="w-32 sm:w-36 md:w-40"
+              />
+
+
+
+              {/* To Date - Defaults to Sunday */}
+              <GenericWeeklyDatePicker
+                id="to-date-box"
+                placeholder="DD/MM/YYYY"
+
+                mode="to"
+                initialDates={dateRange}
+                onDateChange={(dates) => {
+                  if (dates.length > 0) {
+                    // existing logic
+                  } else {
+                    setDateRange({
+                      from: '',
+                      to: '',
+                    });
+                  }
+                }}
+                className="w-32 sm:w-36 md:w-40"
               />
             </div>
 
-            {/* To Date - Sunday/end date */}
-            <div className="w-full sm:w-40">
-              <GenericDatePicker
-                id="manufacturing-to-date"
-                initialDate={toDate || undefined}
-                onDateChange={handleToDateChange}
-                placeholder="DD/MM/YYYY"
-                dateFormat="d/m/Y"
-                className="w-full"
-              />
-            </div>
 
-            
 
             {/* Print Button */}
             <button

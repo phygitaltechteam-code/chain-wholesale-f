@@ -851,7 +851,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                                 handleInlineChange(index, 'tar', e.target.value)
                             }
                             placeholder="0.000"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                            className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
                         />
                     );
                 }
@@ -883,7 +883,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                                 handleInlineChange(index, 'scrap', e.target.value)
                             }
                             placeholder="0.000"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                            className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
                         />
                     );
                 }
@@ -910,22 +910,27 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             render: (item, index) => {
                 if (!item.isSaved) {
                     return (
-                        <input
-                            type="text"
-                            inputMode="decimal"
-                            value={
-                                item.purityRaw !== undefined
-                                    ? item.purityRaw
-                                    : item.purity === 0
-                                        ? ''
-                                        : item.purity
-                            }
-                            onChange={(e) =>
-                                handleInlineChange(index, 'purity', e.target.value)
-                            }
-                            placeholder="e.g., 98"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                        />
+                        <div className="relative inline-block">
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                value={
+                                    item.purityRaw !== undefined
+                                        ? item.purityRaw
+                                        : item.purity === 0
+                                            ? ''
+                                            : item.purity
+                                }
+                                onChange={(e) =>
+                                    handleInlineChange(index, 'purity', e.target.value)
+                                }
+                                placeholder="98"
+                                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+                                %
+                            </span>
+                        </div>
                     );
                 }
 
@@ -974,37 +979,20 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             refetchHistory();
         }
     };
-
-    // Clear date filters - resets to current week
-    const clearDateFilters = () => {
-        const now = new Date();
-        const day = now.getDay();
+    const getCurrentWeekRange = () => {
+        const today = new Date();
+        const day = today.getDay();
         const diffToMonday = day === 0 ? -6 : 1 - day;
 
-        const monday = new Date(now);
-        monday.setDate(now.getDate() + diffToMonday);
+        const monday = new Date(today);
+        monday.setDate(today.getDate() + diffToMonday);
         monday.setHours(0, 0, 0, 0);
 
         const sunday = new Date(monday);
         sunday.setDate(monday.getDate() + 6);
         sunday.setHours(23, 59, 59, 999);
 
-        setDateRange([monday, sunday]);
-    };
-
-    // Handle From-To date range
-    const handleWeeklyDateChange = (dates: Date[]) => {
-        if (dates.length === 2) {
-            const from = new Date(dates[0]);
-            const to = new Date(dates[1]);
-
-            from.setHours(0, 0, 0, 0);
-            to.setHours(23, 59, 59, 999);
-
-            setDateRange([from, to]);
-        } else {
-            setDateRange(dates);
-        }
+        return { monday, sunday };
     };
 
     return (
@@ -1035,80 +1023,49 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                             </GenericButton>
                         )}
 
-                        {/* Date Filters - Only show when viewing history */}
                         {showHistory && (
                             <div className="flex flex-wrap items-center gap-2">
                                 {/* From Date - Defaults to Monday */}
-                                <GenericWeeklyDatePicker
-                                    id="from-date-tar"
-                                    placeholder="DD/MM/YYYY"
-
-                                    mode="from"
-                                    initialDates={dateRange}
-                                    onDateChange={(dates) => {
-                                        if (dates && dates.length > 0) {
-                                            const from = dates[0];
-                                            if (dateRange.length === 2) {
-                                                // Update only the from date
-                                                const to = dateRange[1];
-                                                // Ensure from <= to
-                                                if (from <= to) {
-                                                    setDateRange([from, to]);
-                                                } else {
-                                                    // If from > to, set both to same week
-                                                    const sunday = new Date(from);
-                                                    sunday.setDate(from.getDate() + 6);
-                                                    sunday.setHours(23, 59, 59, 999);
-                                                    setDateRange([from, sunday]);
-                                                }
+                                <div className="w-32 sm:w-36 md:w-40">
+                                    <GenericWeeklyDatePicker
+                                        id="from-date-tar"
+                                        placeholder="DD/MM/YYYY"
+                                        mode="from"
+                                        initialDates={dateRange.length === 2 ? dateRange : []}
+                                        onDateChange={(dates) => {
+                                            if (dates.length > 0) {
+                                                // existing logic
                                             } else {
-                                                // If no to date, set to Sunday
-                                                const sunday = new Date(from);
-                                                sunday.setDate(from.getDate() + 6);
-                                                sunday.setHours(23, 59, 59, 999);
-                                                setDateRange([from, sunday]);
+                                                setDateRange({
+                                                    from: '',
+                                                    to: '',
+                                                });
                                             }
-                                        }
-                                    }}
-                                    className="w-32 sm:w-36 md:w-40"
-                                />
-
-
+                                        }}
+                                        className="w-full"
+                                    />
+                                </div>
 
                                 {/* To Date - Defaults to Sunday */}
-                                <GenericWeeklyDatePicker
-                                    id="to-date-tar"
-                                    placeholder="DD/MM/YYYY"
-
-                                    mode="to"
-                                    initialDates={dateRange}
-                                    onDateChange={(dates) => {
-                                        if (dates && dates.length > 0) {
-                                            const to = dates[0];
-                                            if (dateRange.length === 2) {
-                                                // Update only the to date
-                                                const from = dateRange[0];
-                                                // Ensure from <= to
-                                                if (from <= to) {
-                                                    setDateRange([from, to]);
-                                                } else {
-                                                    // If to < from, set both to same week
-                                                    const monday = new Date(to);
-                                                    monday.setDate(to.getDate() - 6);
-                                                    monday.setHours(0, 0, 0, 0);
-                                                    setDateRange([monday, to]);
-                                                }
+                                <div className="w-32 sm:w-36 md:w-40">
+                                    <GenericWeeklyDatePicker
+                                        id="to-date-tar"
+                                        placeholder="DD/MM/YYYY"
+                                        mode="to"
+                                        initialDates={dateRange.length === 2 ? dateRange : []}
+                                        onDateChange={(dates) => {
+                                            if (dates.length > 0) {
+                                                // existing logic
                                             } else {
-                                                // If no from date, set to Monday
-                                                const monday = new Date(to);
-                                                monday.setDate(to.getDate() - 6);
-                                                monday.setHours(0, 0, 0, 0);
-                                                setDateRange([monday, to]);
+                                                setDateRange({
+                                                    from: '',
+                                                    to: '',
+                                                });
                                             }
-                                        }
-                                    }}
-                                    className="w-32 sm:w-36 md:w-40"
-                                />
+                                        }}
+                                        className="w-full"
+                                    />
+                                </div>
                             </div>
                         )}
 
@@ -1279,15 +1236,20 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                                 <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
                                     Fine (लगड) <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="text"
-                                    name="fine"
-                                    value={formData.fine}
-                                    onChange={handleFormChange}
-                                    placeholder="e.g., 5.000"
-                                    className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white font-mono"
-                                    autoFocus
-                                />
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        name="fine"
+                                        value={formData.fine}
+                                        onChange={handleFormChange}
+                                        placeholder="e.g., 5.000"
+                                        className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 pr-8 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white font-mono"
+                                        autoFocus
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+                                        G
+                                    </span>
+                                </div>
                             </div>
                         </div>
 

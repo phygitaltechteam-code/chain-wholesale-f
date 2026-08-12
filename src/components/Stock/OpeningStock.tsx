@@ -39,7 +39,6 @@ interface OpeningStockEntry {
 const OpeningStock: React.FC = () => {
   const navigate = useNavigate();
   const [openingEntries, setOpeningEntries] = useState<OpeningStockEntry[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch items and sizes from API
@@ -57,10 +56,6 @@ const OpeningStock: React.FC = () => {
   // Initialize with existing stock data or empty row
   useEffect(() => {
     if (itemsLoading || sizesLoading || stockLoading) {
-      return;
-    }
-
-    if (isInitialized) {
       return;
     }
 
@@ -97,8 +92,7 @@ const OpeningStock: React.FC = () => {
       setOpeningEntries([]);
     }
 
-    setIsInitialized(true);
-  }, [stockData, items, sizes, itemsLoading, sizesLoading, stockLoading, isInitialized]);
+  }, [stockData, items, sizes, itemsLoading, sizesLoading, stockLoading]);
 
   // Filter data based on search term
   const filteredData = searchTerm
@@ -244,7 +238,7 @@ const OpeningStock: React.FC = () => {
     try {
       if (entry.isSaved) {
         await updateStock.mutateAsync({ id: entry.id, data: stockDataPayload });
-        toast.success('Opening stock updated successfully!');
+        // toast.success('Opening stock updated successfully!');
       } else {
         const result = await createStock.mutateAsync(stockDataPayload);
         entry.id = result.id;
@@ -274,19 +268,34 @@ const OpeningStock: React.FC = () => {
   // Handle delete
   const handleDelete = async (index: number) => {
     const entry = openingEntries[index];
-    if (window.confirm(`Are you sure you want to delete this opening stock entry?`)) {
-      try {
-        if (entry.isSaved) {
-          await deleteStock.mutateAsync(entry.id);
-          toast.success('Opening stock entry deleted successfully');
-          await refetch();
-        }
-        setOpeningEntries(prev => prev.filter((_, i) => i !== index));
-        setOpeningEntries(prev => prev.map((e, i) => ({ ...e, srNo: i + 1 })));
-      } catch (error) {
-        console.error('Error deleting opening stock:', error);
-        toast.error('Failed to delete opening stock');
+
+    if (
+      !window.confirm(
+        'Are you sure you want to delete this opening stock entry?'
+      )
+    ) {
+      return;
+    }
+
+    try {
+      if (entry.isSaved) {
+        await deleteStock.mutateAsync(entry.id);
       }
+
+      // Remove the deleted row immediately from the local table.
+      setOpeningEntries((prev) =>
+        prev
+          .filter((_, i) => i !== index)
+          .map((entry, i) => ({
+            ...entry,
+            srNo: i + 1,
+          }))
+      );
+
+      // React Query invalidation in useDeleteStock refreshes the server data.
+    } catch (error) {
+      console.error('Error deleting opening stock:', error);
+      toast.error('Failed to delete opening stock');
     }
   };
 
@@ -310,14 +319,7 @@ const OpeningStock: React.FC = () => {
     setOpeningEntries(prev => [...prev, newEntry]);
   };
 
-  const formatNumber = (value: number) => {
-    if (value === 0) return '0';
-    const str = value.toString();
-    if (str.includes('.')) {
-      return str.replace(/\.?0+$/, '');
-    }
-    return str;
-  };
+
 
   // Check if a row is the gold row
   const isGoldRow = (entry: OpeningStockEntry) => {
@@ -353,13 +355,13 @@ const OpeningStock: React.FC = () => {
     if (isGoldRow(item)) {
       return (
         <div className="flex">
-          {/* <button
+          <button
             onClick={() => handleRowEdit(index)}
             className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:bg-[#785600]/10 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
             title="Edit"
           >
             <Edit className="h-4 w-4" />
-          </button> */}
+          </button>
         </div>
       );
     }
@@ -405,7 +407,7 @@ const OpeningStock: React.FC = () => {
             <select
               value={item.itemId || ''}
               onChange={(e) => handleInlineChange(index, 'itemId', e.target.value)}
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="w-28 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             >
               <option value="">Select Item</option>
               {items && items.map((i) => (
@@ -441,7 +443,7 @@ const OpeningStock: React.FC = () => {
             <select
               value={item.sizeId || ''}
               onChange={(e) => handleInlineChange(index, 'sizeId', e.target.value)}
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="w-28 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             >
               <option value="">Select Size</option>
               {sizes && sizes.map((s) => (
@@ -462,17 +464,21 @@ const OpeningStock: React.FC = () => {
     {
       key: 'grams',
       header: 'Weight (G)',
-
       render: (item, index) => {
         if (item.isEditing) {
           return (
-            <input
-              type="text"
-              value={item.gramsRaw !== undefined ? item.gramsRaw : (item.grams === 0 ? '' : item.grams)}
-              onChange={(e) => handleInlineChange(index, 'grams', e.target.value)}
-              placeholder="0.000"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
+            <div className="relative inline-block">
+              <input
+                type="text"
+                value={item.gramsRaw !== undefined ? item.gramsRaw : (item.grams === 0 ? '' : item.grams)}
+                onChange={(e) => handleInlineChange(index, 'grams', e.target.value)}
+                placeholder="0.000"
+                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+                G
+              </span>
+            </div>
           );
         }
         return (
@@ -485,7 +491,6 @@ const OpeningStock: React.FC = () => {
     {
       key: 'purity',
       header: 'Purity (%)',
-
       render: (item, index) => {
         // If it's a gold row, show "-" as read-only
         if (isGoldRow(item) && item.isSaved) {
@@ -497,13 +502,18 @@ const OpeningStock: React.FC = () => {
         }
         if (item.isEditing) {
           return (
-            <input
-              type="text"
-              value={item.purityRaw !== undefined ? item.purityRaw : (item.purity ? item.purity.toString() : '')}
-              onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
-              placeholder="e.g., 98"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
+            <div className="relative inline-block">
+              <input
+                type="text"
+                value={item.purityRaw !== undefined ? item.purityRaw : (item.purity ? item.purity.toString() : '')}
+                onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
+                placeholder="e.g., 98"
+                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+                %
+              </span>
+            </div>
           );
         }
         return (

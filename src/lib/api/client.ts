@@ -106,12 +106,29 @@ export const useDeleteClient = () => {
 
   return useMutation({
     mutationFn: deleteClientApi,
-    onSuccess: () => {
+
+    onSuccess: async (_, deletedClientId) => {
       toast.success('Client deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+
+      // Remove deleted client immediately from React Query cache
+      queryClient.setQueryData<Client[]>(
+        ['clients'],
+        (oldClients = []) =>
+          oldClients.filter(
+            (client) => client.id !== deletedClientId
+          )
+      );
+
+      // Make sure latest data comes from database
+      await queryClient.invalidateQueries({
+        queryKey: ['clients'],
+      });
     },
+
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete client');
+      toast.error(
+        error.message || 'Failed to delete client'
+      );
     },
   });
 };

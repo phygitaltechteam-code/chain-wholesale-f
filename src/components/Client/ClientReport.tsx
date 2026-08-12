@@ -5,6 +5,7 @@ import { ArrowLeft, Search, Printer, Calendar } from "lucide-react";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import { useGetClientReport } from "@/lib/api/reportapi";
+import GenericWeeklyDatePicker from "@/components/Forms/DatePicker/GenericWeeklyDatePicker";
 
 const formatIndianDate = (date: Date) =>
     date.toLocaleDateString("en-IN", {
@@ -27,63 +28,6 @@ const getCurrentWeekRange = () => {
     sunday.setHours(23, 59, 59, 999);
 
     return { monday, sunday };
-};
-
-interface WeeklyDatePickerProps {
-    id: string;
-    value: Date;
-    placeholder?: string;
-    onChange: (date: Date) => void;
-}
-
-const WeeklyDatePicker: FC<WeeklyDatePickerProps> = ({
-    id,
-    value,
-    placeholder = "DD/MM/YYYY",
-    onChange,
-}) => {
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        if (!inputRef.current) return;
-
-        const fp = flatpickr(inputRef.current, {
-            mode: "single",
-            defaultDate: value,
-            dateFormat: "d/m/Y",
-            monthSelectorType: "static",
-            position: "auto",
-            static: false,
-            appendTo: document.body,
-            onChange: (dates) => {
-                if (dates.length > 0) {
-                    onChange(dates[0]);
-                }
-            },
-            prevArrow:
-                '<svg class="fill-current" width="7" height="11" viewBox="0 0 7 11"><path d="M5.4 10.8l1.4-1.4-4-4 4-4L5.4 0 0 5.4z" /></svg>',
-            nextArrow:
-                '<svg class="fill-current" width="7" height="11" viewBox="0 0 7 11"><path d="M1.4 10.8L0 9.4l4-4-4-4L1.4 0 0 5.4z" /></svg>',
-        });
-
-        return () => fp.destroy();
-    }, [value, onChange]);
-
-    return (
-        <div className="relative">
-            <input
-                ref={inputRef}
-                id={id}
-                type="text"
-                placeholder={placeholder}
-                readOnly
-                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-10 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-            />
-            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                <Calendar className="h-4 w-4 text-[#817563]" />
-            </div>
-        </div>
-    );
 };
 
 interface ClientReportEntry {
@@ -143,7 +87,25 @@ export default function ClientReport() {
     const [searchTerm, setSearchTerm] = useState("");
     const [reportData, setReportData] = useState<ClientReportEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const getDefaultWeekRange = () => {
+        const now = new Date();
+        const day = now.getDay();
+        const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(now);
+        monday.setDate(diffToMonday);
+        monday.setHours(0, 0, 0, 0);
 
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+
+        return { monday, sunday };
+    };
+
+    const [dateRange, setDateRange] = useState<Date[]>(() => {
+        const { monday, sunday } = getDefaultWeekRange();
+        return [monday, sunday];
+    });
     const { monday: defaultMonday, sunday: defaultSunday } =
         getCurrentWeekRange();
 
@@ -152,13 +114,11 @@ export default function ClientReport() {
     const { data: clientReportData, isLoading, isError, refetch } = useGetClientReport(id);
 
     // Transform API data and group rows by bill number.
-    // The date filter is applied to the original createdAt value BEFORE grouping.
     useEffect(() => {
         if (!clientReportData) return;
 
         const response = clientReportData as ApiResponse | ApiDataItem[];
 
-        // Support both { data: [...] } and direct array responses.
         const apiItems: ApiDataItem[] = Array.isArray(response)
             ? response
             : Array.isArray(response?.data)
@@ -176,15 +136,12 @@ export default function ClientReport() {
             return createdAt >= from && createdAt <= to;
         });
 
-        // Newest first.
         const sortedItems = [...filteredApiItems].sort(
             (a, b) =>
                 new Date(b.createdAt).getTime() -
                 new Date(a.createdAt).getTime()
         );
 
-        // Group by bill number.
-        // If bill number is missing, keep that transaction as its own group.
         const groupedData = sortedItems.reduce(
             (acc: Record<string, ApiDataItem[]>, item) => {
                 const billKey = item.billNumber
@@ -208,7 +165,6 @@ export default function ClientReport() {
         Object.entries(groupedData).forEach(([_, items]) => {
             groupId++;
 
-            // Combine same remarks inside the same bill.
             const remarkGroups = items.reduce(
                 (
                     acc: Record<
@@ -298,7 +254,7 @@ export default function ClientReport() {
         setLoading(false);
     }, [clientReportData, fromDate, toDate]);
 
-    // Search by complete bill group so rowSpan grouping is never broken.
+    // Search by complete bill group
     const filteredData = searchTerm
         ? reportData.filter((entry) => {
             const query = searchTerm.toLowerCase();
@@ -353,16 +309,59 @@ export default function ClientReport() {
         }
     };
 
-    // Print handler
-const handlePrint = () => {
-    if (!filteredData || filteredData.length === 0) {
-        return;
-    }
+    // Handle From Date Change
+    const handleFromDateChange = (dates: Date[]) => {
+        if (dates && dates.length > 0) {
+            const from = new Date(dates[0]);
+            from.setHours(0, 0, 0, 0);
 
-    // Create a hidden div for printing
-    const printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
-    printContainer.style.cssText = `
+            if (from > toDate) {
+                const sunday = new Date(from);
+                sunday.setDate(from.getDate() + 6);
+                sunday.setHours(23, 59, 59, 999);
+                setFromDate(from);
+                setToDate(sunday);
+            } else {
+                setFromDate(from);
+            }
+        } else {
+            // Clear - set to default Monday
+            const { monday } = getCurrentWeekRange();
+            setFromDate(monday);
+        }
+    };
+
+    // Handle To Date Change
+    const handleToDateChange = (dates: Date[]) => {
+        if (dates && dates.length > 0) {
+            const to = new Date(dates[0]);
+            to.setHours(23, 59, 59, 999);
+
+            if (to < fromDate) {
+                const monday = new Date(to);
+                monday.setDate(to.getDate() - 6);
+                monday.setHours(0, 0, 0, 0);
+                setFromDate(monday);
+                setToDate(to);
+            } else {
+                setToDate(to);
+            }
+        } else {
+            // Clear - set to default Sunday
+            const { sunday } = getCurrentWeekRange();
+            setToDate(sunday);
+        }
+    };
+
+    // Print handler
+    const handlePrint = () => {
+        if (!filteredData || filteredData.length === 0) {
+            return;
+        }
+
+        const printContainer = document.createElement('div');
+        printContainer.id = 'print-container';
+        printContainer.style.cssText = `
         position: fixed;
         left: -9999px;
         top: 0;
@@ -371,38 +370,36 @@ const handlePrint = () => {
         padding: 4px;
         z-index: 9999;
     `;
-    document.body.appendChild(printContainer);
+        document.body.appendChild(printContainer);
 
-    // Group data for print - maintain the same grouping
-    const printGroupedData: { [key: string]: ClientReportEntry[] } = {};
-    filteredData.forEach(entry => {
-        if (!printGroupedData[entry.groupId]) {
-            printGroupedData[entry.groupId] = [];
-        }
-        printGroupedData[entry.groupId].push(entry);
-    });
+        const printGroupedData: { [key: string]: ClientReportEntry[] } = {};
+        filteredData.forEach(entry => {
+            if (!printGroupedData[entry.groupId]) {
+                printGroupedData[entry.groupId] = [];
+            }
+            printGroupedData[entry.groupId].push(entry);
+        });
 
-    // Build the table rows without separator rows
-    let rows = '';
+        let rows = '';
 
-    Object.keys(printGroupedData).forEach((groupId) => {
-        const entries = printGroupedData[groupId];
+        Object.keys(printGroupedData).forEach((groupId) => {
+            const entries = printGroupedData[groupId];
 
-        entries.forEach((entry, index) => {
-            rows += `
+            entries.forEach((entry, index) => {
+                rows += `
                 <tr>
                     ${entry.isFirstInGroup ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;vertical-align:middle;" rowspan="${entry.groupRowSpan}">${entry.srNo}</td>` : ''}
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
                         ${entry.dateTime || ' '}
                     </td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:${entry.billNo && entry.billNo !== 'N/A' && entry.billNo !== '' ? 'bold' : 'normal'};">
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:${entry.billNo !== "N/A" && entry.billNo !== "" ? 'bold' : 'normal'};">
                         ${entry.billNo || ' '}
                     </td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
                         ${entry.item} (${entry.size})
                     </td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-                        ${entry.purity !== 'N/A' ? `${entry.purity}%` : 'N/A'}
+                        ${entry.purity !== "N/A" ? `${entry.purity}%` : 'N/A'}
                     </td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${entry.remark || 'N/A'}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:${entry.wt > 0 ? '#16a34a' : entry.wt < 0 ? '#dc2626' : '#000'};">
@@ -410,15 +407,12 @@ const handlePrint = () => {
                     </td>
                 </tr>
             `;
+            });
         });
-    });
 
-    // Set the content with PDF Header
-    printContainer.innerHTML = `
+        printContainer.innerHTML = `
 <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
-        <!-- Header Section -->
         <div>
-          <!-- PDF Header -->
           <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
               <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री गणेश प्रसन्न ॥</span>
@@ -434,7 +428,6 @@ const handlePrint = () => {
             <div style="border-bottom:2px solid #c43d5c;margin:2px 0 4px 0;"></div>
           </div>
 
-            <!-- Title and Date Range in one line -->
             <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
                 <div style="flex:1;"></div>
                 <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
@@ -445,7 +438,6 @@ const handlePrint = () => {
                 </div>
             </div>
 
-            <!-- Table -->
             <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
                 <thead>
                     <tr style="background:#785600;color:white;font-weight:600;">
@@ -465,9 +457,8 @@ const handlePrint = () => {
         </div>
     `;
 
-    // Add print styles
-    const style = document.createElement('style');
-    style.textContent = `
+        const style = document.createElement('style');
+        style.textContent = `
         @page {
             margin: 3mm;
         }
@@ -511,23 +502,21 @@ const handlePrint = () => {
             }
         }
     `;
-    document.head.appendChild(style);
+        document.head.appendChild(style);
 
-    // Trigger print
-    setTimeout(() => {
-        window.print();
-
-        // Clean up after print
         setTimeout(() => {
-            if (document.body.contains(printContainer)) {
-                document.body.removeChild(printContainer);
-            }
-            if (document.head.contains(style)) {
-                document.head.removeChild(style);
-            }
-        }, 1000);
-    }, 500);
-};
+            window.print();
+
+            setTimeout(() => {
+                if (document.body.contains(printContainer)) {
+                    document.body.removeChild(printContainer);
+                }
+                if (document.head.contains(style)) {
+                    document.head.removeChild(style);
+                }
+            }, 1000);
+        }, 500);
+    };
 
     // Show loading state
     if (isLoading || loading) {
@@ -603,51 +592,44 @@ const handlePrint = () => {
                     {/* Right side - From/To, Search and Print */}
                     <div className="flex flex-col xl:flex-row items-center gap-2 w-full sm:w-auto">
                         <div className="flex w-full sm:w-auto items-center gap-2">
-                            <div className="w-full sm:w-36">
-                                <WeeklyDatePicker
-                                    id="client-report-from-date"
-                                    value={fromDate}
-                                    onChange={(date) => {
-                                        const from = new Date(date);
-                                        from.setHours(0, 0, 0, 0);
+                            <GenericWeeklyDatePicker
+                                id="to-date-box"
+                                placeholder="DD/MM/YYYY"
 
-                                        if (from > toDate) {
-                                            const sunday = new Date(from);
-                                            sunday.setDate(from.getDate() + 6);
-                                            sunday.setHours(23, 59, 59, 999);
-                                            setFromDate(from);
-                                            setToDate(sunday);
-                                        } else {
-                                            setFromDate(from);
-                                        }
-                                    }}
-                                />
-                            </div>
+                                mode="to"
+                                initialDates={dateRange}
+                                onDateChange={(dates) => {
+                                    if (dates.length > 0) {
+                                        // existing logic
+                                    } else {
+                                        setDateRange({
+                                            from: '',
+                                            to: '',
+                                        });
+                                    }
+                                }}
+                                className="w-32 sm:w-36 md:w-40"
+                            />
 
-
-
-                            <div className="w-full sm:w-36">
-                                <WeeklyDatePicker
-                                    id="client-report-to-date"
-                                    value={toDate}
-                                    onChange={(date) => {
-                                        const to = new Date(date);
-                                        to.setHours(23, 59, 59, 999);
-
-                                        if (to < fromDate) {
-                                            const monday = new Date(to);
-                                            monday.setDate(to.getDate() - 6);
-                                            monday.setHours(0, 0, 0, 0);
-                                            setFromDate(monday);
-                                            setToDate(to);
-                                        } else {
-                                            setToDate(to);
-                                        }
-                                    }}
-                                />
-                            </div>
-
-
+                            <GenericWeeklyDatePicker
+                                id="from-date-box"
+                                mode="from"
+                                placeholder="DD/MM/YYYY"
+                                initialDates={dateRange}
+                                onDateChange={(dates) => {
+                                    if (dates.length > 0) {
+                                        setDateRange(dates);
+                                        setFromDate(dates[0]);
+                                        if (dates[1]) setToDate(dates[1]);
+                                    } else {
+                                        setDateRange({
+                                            from: '',
+                                            to: '',
+                                        });
+                                    }
+                                }}
+                                className="w-32 sm:w-36 md:w-40"
+                            />
                         </div>
 
                         <div className="relative w-full sm:w-64">
@@ -682,7 +664,7 @@ const handlePrint = () => {
                             <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
                                 Total WT
                             </span>
-                            <span className={`text-lg font-bold ${totalWt > 0 ? 'text-green-600' : totalWt < 0 ? 'text-red-600' : 'text-[#1a1c1b]'} dark:text-amber-400`}>
+                            <span className={`text-lg font-bold text-black dark:text-white`}>
                                 {formatNumber(totalWt)} G
                             </span>
                         </div>
@@ -690,9 +672,9 @@ const handlePrint = () => {
                     <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
                         <div className="flex flex-col">
                             <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                                Received (+)
+                                Received
                             </span>
-                            <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                            <span className={`text-lg font-bold text-black dark:text-white`}>
                                 +{formatNumber(totalReceived)} G
                             </span>
                         </div>
@@ -700,9 +682,9 @@ const handlePrint = () => {
                     <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
                         <div className="flex flex-col">
                             <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                                Given (-)
+                                Given
                             </span>
-                            <span className="text-lg font-bold text-red-600 dark:text-red-400">
+                            <span className={`text-lg font-bold text-black dark:text-white`}>
                                 -{formatNumber(totalGiven)} G
                             </span>
                         </div>
@@ -778,10 +760,7 @@ const handlePrint = () => {
                                                         className="whitespace-nowrap border-r border-[#f4f4f2] px-3 py-3 align-middle text-sm dark:border-slate-700"
                                                     >
                                                         <span
-                                                            className={`font-medium ${entry.billNo !==
-                                                                "N/A" &&
-                                                                entry.billNo !==
-                                                                ""
+                                                            className={`font-medium ${entry.billNo !== "N/A" && entry.billNo !== ""
                                                                 ? "text-[#785600] dark:text-amber-400"
                                                                 : "text-gray-400"
                                                                 }`}
@@ -836,7 +815,6 @@ const handlePrint = () => {
                                         );
                                     })}
                                 </tbody>
-
                             </table>
                         </div>
                     </div>

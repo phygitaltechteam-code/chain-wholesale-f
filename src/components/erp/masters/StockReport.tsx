@@ -8,6 +8,7 @@ import { Route } from "@/routes/_app/stock/stockreport.$d";
 import { useGetStockReport } from "@/lib/api/reportapi";
 import GenericButton from "@/components/Forms/Buttons/GenericButton";
 import GenericDatePicker from "@/components/Forms/DatePicker/GenericDatePicker";
+import GenericWeeklyDatePicker from "@/components/Forms/DatePicker/GenericWeeklyDatePicker";
 
 interface StockReportEntry {
   id: string;
@@ -61,15 +62,12 @@ export default function StockReport() {
   const navigate = useNavigate();
   const { d } = Route.useParams();
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Default date range: current Monday -> current Sunday
-  const getCurrentWeekRange = () => {
-    const today = new Date();
-    const day = today.getDay(); // Sunday = 0
-    const diffToMonday = day === 0 ? -6 : 1 - day;
-
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + diffToMonday);
+  const getDefaultWeekRange = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now);
+    monday.setDate(diffToMonday);
     monday.setHours(0, 0, 0, 0);
 
     const sunday = new Date(monday);
@@ -79,11 +77,13 @@ export default function StockReport() {
     return { monday, sunday };
   };
 
-  const { monday: defaultMonday, sunday: defaultSunday } =
-    getCurrentWeekRange();
+  const [dateRange, setDateRange] = useState<Date[]>(() => {
+    const { monday, sunday } = getDefaultWeekRange();
+    return [monday, sunday];
+  });
 
-  const [fromDate, setFromDate] = useState<Date | null>(defaultMonday);
-  const [toDate, setToDate] = useState<Date | null>(defaultSunday);
+  const [fromDate, setFromDate] = useState<Date | null>();
+  const [toDate, setToDate] = useState<Date | null>();
   const printRef = useRef<HTMLDivElement>(null);
   const { data: stockData, isLoading, isError, refetch } = useGetStockReport(d);
 
@@ -313,7 +313,7 @@ export default function StockReport() {
       key: "wt",
       header: "WT (G)",
       render: (item) => (
-        <span className={`text-sm font-mono font-bold ${item.wt > 0 ? 'text-green-600 dark:text-green-400' : item.wt < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500'}`}>
+        <span className='text-black font-bold'>
           {item.wt > 0 ? '+' : ''}{formatNumber(item.wt)}
         </span>
       ),
@@ -591,26 +591,55 @@ export default function StockReport() {
               />
             </div>
 
-            {/* From Date - current week Monday by default */}
-            <div className="w-full sm:w-40">
-              <GenericDatePicker
-                id="from-date-stock"
-                initialDate={fromDate || undefined}
-                onDateChange={handleFromDateChange}
+            <div className="flex w-full sm:w-auto items-center gap-2">
+              <GenericWeeklyDatePicker
+                id="to-date-box"
                 placeholder="DD/MM/YYYY"
-                dateFormat="d/m/Y"
-                className="w-full"
+
+                mode="to"
+                initialDates={dateRange}
+                onDateChange={(dates) => {
+                  if (dates.length > 0) {
+                    // existing logic
+                  } else {
+                    setDateRange({
+                      from: '',
+                      to: '',
+                    });
+                  }
+                }}
+                className="w-32 sm:w-36 md:w-40"
+              />
+
+              <GenericWeeklyDatePicker
+                id="from-date-box"
+                mode="from"
+                placeholder="DD/MM/YYYY"
+                initialDates={dateRange}
+                onDateChange={(dates) => {
+                  if (dates.length > 0) {
+                    setDateRange(dates);
+                    setFromDate(dates[0]);
+                    if (dates[1]) setToDate(dates[1]);
+                  } else {
+                    setDateRange({
+                      from: '',
+                      to: '',
+                    });
+                  }
+                }}
+                className="w-32 sm:w-36 md:w-40"
               />
             </div>
 
-            {/* To Date - current week Sunday by default */}
+            {/* To Date - Sunday/end date */}
             <div className="w-full sm:w-40">
-              <GenericDatePicker
-                id="to-date-stock"
-                initialDate={toDate || undefined}
+              <GenericWeeklyDatePicker
+                id="manufacturing-to-date"
+                mode="to"
+                initialDates={[fromDate, toDate]}
                 onDateChange={handleToDateChange}
                 placeholder="DD/MM/YYYY"
-                dateFormat="d/m/Y"
                 className="w-full"
               />
             </div>

@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { api } from "@/utils/axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -27,7 +26,7 @@ const getStockApi = async () => {
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to fetch stock data');
+      throw new Error(error.message || "Failed to fetch stock data");
     }
     throw error;
   }
@@ -39,7 +38,9 @@ const getStockByIdApi = async (id: string) => {
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || `Failed to fetch stock with ID: ${id}`);
+      throw new Error(
+        error.message || `Failed to fetch stock with ID: ${id}`
+      );
     }
     throw error;
   }
@@ -51,31 +52,45 @@ const getStockByItemApi = async (item: string) => {
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || `Failed to fetch stock for item: ${item}`);
+      throw new Error(
+        error.message || `Failed to fetch stock for item: ${item}`
+      );
     }
     throw error;
   }
 };
 
-const createStockApi = async (data: Omit<Stock, 'id' | 'createdAt' | 'updatedAt'>) => {
+const createStockApi = async (
+  data: Omit<Stock, "id" | "createdAt" | "updatedAt">
+) => {
   try {
     const response = await api.post("/admin/stock", data);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to create stock entry');
+      throw new Error(
+        error.message || "Failed to create stock entry"
+      );
     }
     throw error;
   }
 };
 
-const updateStockApi = async ({ id, data }: { id: string; data: Partial<Stock> }) => {
+const updateStockApi = async ({
+  id,
+  data,
+}: {
+  id: string;
+  data: Partial<Stock>;
+}) => {
   try {
     const response = await api.put(`/admin/stock/${id}`, data);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || `Failed to update stock with ID: ${id}`);
+      throw new Error(
+        error.message || `Failed to update stock with ID: ${id}`
+      );
     }
     throw error;
   }
@@ -87,7 +102,9 @@ const deleteStockApi = async (id: string) => {
     return { success: true };
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || `Failed to delete stock with ID: ${id}`);
+      throw new Error(
+        error.message || `Failed to delete stock with ID: ${id}`
+      );
     }
     throw error;
   }
@@ -106,14 +123,14 @@ export {
 // React Query Hooks
 export const useGetStock = () => {
   return useQuery({
-    queryKey: ['stock'],
+    queryKey: ["stock"],
     queryFn: getStockApi,
   });
 };
 
 export const useStockById = (id: string) => {
   return useQuery({
-    queryKey: ['stock', id],
+    queryKey: ["stock", id],
     queryFn: () => getStockByIdApi(id),
     enabled: !!id,
   });
@@ -121,7 +138,7 @@ export const useStockById = (id: string) => {
 
 export const useStockByItem = (item: string) => {
   return useQuery({
-    queryKey: ['stock', 'item', item],
+    queryKey: ["stock", "item", item],
     queryFn: () => getStockByItemApi(item),
     enabled: !!item,
   });
@@ -129,45 +146,76 @@ export const useStockByItem = (item: string) => {
 
 export const useCreateStock = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: createStockApi,
+
     onSuccess: () => {
-      toast.success('Stock entry created successfully');
-      queryClient.invalidateQueries({ queryKey: ['stock'] });
+      toast.success("Stock entry created successfully");
+
+      queryClient.invalidateQueries({
+        queryKey: ["stock"],
+      });
     },
+
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create stock entry');
+      toast.error(
+        error.message || "Failed to create stock entry"
+      );
     },
   });
 };
 
 export const useUpdateStock = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: updateStockApi,
+
     onSuccess: () => {
-      toast.success('Stock entry updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['stock'] });
+      toast.success("Stock entry updated successfully");
+
+      queryClient.invalidateQueries({
+        queryKey: ["stock"],
+      });
     },
+
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update stock entry');
+      toast.error(
+        error.message || "Failed to update stock entry"
+      );
     },
   });
 };
 
 export const useDeleteStock = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: deleteStockApi,
-    onSuccess: () => {
-      toast.success('Stock entry deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['stock'] });
+
+    onSuccess: async (_, deletedId) => {
+      toast.success("Stock entry deleted successfully");
+
+      // Immediately remove the deleted record from the cache.
+      queryClient.setQueryData<Stock[]>(
+        ["stock"],
+        (oldStock = []) =>
+          oldStock.filter(
+            (stock) => stock.id !== deletedId
+          )
+      );
+
+      // Refresh the stock query from the database.
+      await queryClient.invalidateQueries({
+        queryKey: ["stock"],
+      });
     },
+
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete stock entry');
+      toast.error(
+        error.message || "Failed to delete stock entry"
+      );
     },
   });
 };

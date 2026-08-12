@@ -1,5 +1,3 @@
-// ─── Updated Billing.tsx ────────────────────────────────────────────────────────
-
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, Printer, Edit, Trash2, Plus, Calendar } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
@@ -312,7 +310,7 @@ const Billing: React.FC = () => {
           handleDelete(item);
         }}
         disabled={deleteClient.isPending}
-        className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+        className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
         title="Delete"
       >
         <Trash2 className="h-4 w-4" />
@@ -448,7 +446,7 @@ const Billing: React.FC = () => {
       header: 'Pending (g)',
       render: (item) => (
         <span className="text-sm font-mono font-semibold text-black dark:text-red-400">
-          {formatNumberWithDecimals(item.pending)}
+          {formatNumberWithDecimals(Math.abs(item.pending))}
         </span>
       ),
     },
@@ -550,7 +548,7 @@ const Billing: React.FC = () => {
                   Total Pending
                 </span>
                 <span className="text-lg font-bold text-black dark:text-white">
-                  {formatNumberWithDecimals(totalPending)} G
+                  {formatNumberWithDecimals(Math.abs(totalPending))} G
                 </span>
               </div>
               <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-red-900/30 border border-[#785600]/20 dark:border-red-700/30">

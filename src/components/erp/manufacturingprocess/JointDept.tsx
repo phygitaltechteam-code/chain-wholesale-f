@@ -215,7 +215,7 @@ const JointDept: React.FC = () => {
   // Print History Function
   const handlePrintHistory = () => {
     const filteredData = getFilteredHistory();
-    
+
     if (!filteredData || filteredData.length === 0) {
       toast.error('No history records available to print for the selected date range');
       return;
@@ -237,11 +237,11 @@ const JointDept: React.FC = () => {
 
     // Build the table rows - Compact with minimum padding
     const rows = filteredData
-        .map((item: any, index: number) => {
-            const { date, time } = formatDate(item?.createdAt);
-            const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
+      .map((item: any, index: number) => {
+        const { date, time } = formatDate(item?.createdAt);
+        const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
 
-            return `
+        return `
                 <tr>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
@@ -261,8 +261,8 @@ const JointDept: React.FC = () => {
                     </td>
                 </tr>
             `;
-        })
-        .join('');
+      })
+      .join('');
 
     // Calculate totals
     const totalChainWeight = filteredData.reduce((sum: number, item: any) => sum + (item?.chainWeight || 0), 0);
@@ -383,17 +383,17 @@ const JointDept: React.FC = () => {
 
     // Trigger print
     setTimeout(() => {
-        window.print();
-        
-        // Clean up after print
-        setTimeout(() => {
-            if (document.body.contains(printContainer)) {
-                document.body.removeChild(printContainer);
-            }
-            if (document.head.contains(style)) {
-                document.head.removeChild(style);
-            }
-        }, 1000);
+      window.print();
+
+      // Clean up after print
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
     }, 500);
   };
 
@@ -713,7 +713,7 @@ const JointDept: React.FC = () => {
               value={item.powderReceivedRaw !== undefined ? item.powderReceivedRaw : (item.powderReceived === 0 ? '' : item.powderReceived)}
               onChange={(e) => handleInlineChange(index, 'powderReceived', e.target.value)}
               placeholder="0.000"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             />
           );
         }
@@ -730,13 +730,18 @@ const JointDept: React.FC = () => {
       render: (item, index) => {
         if (item.isEditing) {
           return (
-            <input
-              type="text"
-              value={item.purityRaw !== undefined ? item.purityRaw : (item.purity === 0 ? '' : item.purity)}
-              onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
-              placeholder="e.g., 98 %"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
+            <div className="relative inline-block">
+              <input
+                type="text"
+                value={item.purityRaw !== undefined ? item.purityRaw : (item.purity === 0 ? '' : item.purity)}
+                onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
+                placeholder="e.g., 98"
+                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+                %
+              </span>
+            </div>
           );
         }
         return (
@@ -757,7 +762,7 @@ const JointDept: React.FC = () => {
               value={item.srpRaw !== undefined ? item.srpRaw : (item.srp === 0 ? '' : item.srp)}
               onChange={(e) => handleInlineChange(index, 'srp', e.target.value)}
               placeholder="0.000"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             />
           );
         }
@@ -779,7 +784,7 @@ const JointDept: React.FC = () => {
               value={item.scrapRaw !== undefined ? item.scrapRaw : (item.scrap === 0 ? '' : item.scrap)}
               onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
               placeholder="0.000"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             />
           );
         }
@@ -795,31 +800,31 @@ const JointDept: React.FC = () => {
     // Action column appears only after the user enters a value.
     ...(showActionColumn
       ? [
-          {
-            key: 'actions',
-            header: 'Action',
-            render: (item: JointEntry, index: number) => {
-              if (item.isSaved || !hasEditableValues(item)) {
-                return null;
-              }
+        {
+          key: 'actions',
+          header: 'Action',
+          render: (item: JointEntry, index: number) => {
+            if (item.isSaved || !hasEditableValues(item)) {
+              return null;
+            }
 
-              return (
-                <div className="flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => handleSaveClick(index)}
-                    disabled={isLoading || isSubmitting}
-                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    title="Save Entry"
-                  >
-                    <Save className="h-3.5 w-3.5" />
-                    <span>cutting</span>
-                  </button>
-                </div>
-              );
-            },
-          } as Column<JointEntry>,
-        ]
+            return (
+              <div className="flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => handleSaveClick(index)}
+                  disabled={isLoading || isSubmitting}
+                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Save Entry"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  <span>cutting</span>
+                </button>
+              </div>
+            );
+          },
+        } as Column<JointEntry>,
+      ]
       : []),
   ];
 
@@ -844,77 +849,57 @@ const JointDept: React.FC = () => {
             <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
               {showHistory ? 'Joint History' : 'Joint Department'}
             </h1>
-           
+
           </div>
           <div className="flex items-center gap-2">
             {/* Weekly Date Filter - Only show when viewing history */}
             {showHistory && (
               <div className="flex items-center gap-2">
-                {/* From Date - defaults to Monday */}
-                <GenericWeeklyDatePicker
-                  id="from-date-joint"
-                  placeholder="DD/MM/YYYY"
-                  mode="from"
-                  initialDates={dateRange}
-                  onDateChange={(dates) => {
-                    if (dates && dates.length > 0) {
-                      const from = dates[0];
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* From Date - Defaults to Monday */}
+                  <GenericWeeklyDatePicker
+                    id="from-date-box"
+                    placeholder="DD/MM/YYYY"
 
-                      if (dateRange.length === 2) {
-                        const to = dateRange[1];
-
-                        if (from <= to) {
-                          setDateRange([from, to]);
-                        } else {
-                          const sunday = new Date(from);
-                          sunday.setDate(from.getDate() + 6);
-                          sunday.setHours(23, 59, 59, 999);
-                          setDateRange([from, sunday]);
-                        }
+                    mode="from"
+                    initialDates={dateRange}
+                    onDateChange={(dates) => {
+                      if (dates.length > 0) {
+                        // existing logic
                       } else {
-                        const sunday = new Date(from);
-                        sunday.setDate(from.getDate() + 6);
-                        sunday.setHours(23, 59, 59, 999);
-                        setDateRange([from, sunday]);
+                        setDateRange({
+                          from: '',
+                          to: '',
+                        });
                       }
-                    }
-                  }}
-                  className="w-32 sm:w-36 md:w-40"
-                />
+                    }}
+                    className="w-32 sm:w-36 md:w-40"
+                  />
 
-                {/* To Date - defaults to Sunday */}
-                <GenericWeeklyDatePicker
-                  id="to-date-joint"
-                  placeholder="DD/MM/YYYY"
-                  mode="to"
-                  initialDates={dateRange}
-                  onDateChange={(dates) => {
-                    if (dates && dates.length > 0) {
-                      const to = dates[0];
 
-                      if (dateRange.length === 2) {
-                        const from = dateRange[0];
 
-                        if (from <= to) {
-                          setDateRange([from, to]);
-                        } else {
-                          const monday = new Date(to);
-                          monday.setDate(to.getDate() - 6);
-                          monday.setHours(0, 0, 0, 0);
-                          setDateRange([monday, to]);
-                        }
+                  {/* To Date - Defaults to Sunday */}
+                  <GenericWeeklyDatePicker
+                    id="to-date-box"
+                    placeholder="DD/MM/YYYY"
+
+                    mode="to"
+                    initialDates={dateRange}
+                    onDateChange={(dates) => {
+                      if (dates.length > 0) {
+                        // existing logic
                       } else {
-                        const monday = new Date(to);
-                        monday.setDate(to.getDate() - 6);
-                        monday.setHours(0, 0, 0, 0);
-                        setDateRange([monday, to]);
+                        setDateRange({
+                          from: '',
+                          to: '',
+                        });
                       }
-                    }
-                  }}
-                  className="w-32 sm:w-36 md:w-40"
-                />
+                    }}
+                    className="w-32 sm:w-36 md:w-40"
+                  />
+                </div>
 
-             
+
               </div>
             )}
 
@@ -934,9 +919,8 @@ const JointDept: React.FC = () => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${
-                showHistory ? '!bg-amber-600 hover:!bg-amber-700' : '!bg-blue-600 hover:!bg-blue-700'
-              }`}
+              className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${showHistory ? '!bg-amber-600 hover:!bg-amber-700' : '!bg-blue-600 hover:!bg-blue-700'
+                }`}
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
