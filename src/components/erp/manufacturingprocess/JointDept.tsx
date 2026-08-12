@@ -713,7 +713,7 @@ const JointDept: React.FC = () => {
               value={item.powderReceivedRaw !== undefined ? item.powderReceivedRaw : (item.powderReceived === 0 ? '' : item.powderReceived)}
               onChange={(e) => handleInlineChange(index, 'powderReceived', e.target.value)}
               placeholder="0.000"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             />
           );
         }
@@ -724,28 +724,33 @@ const JointDept: React.FC = () => {
         );
       },
     },
-    {
-      key: 'purity',
-      header: 'Purity (%)',
-      render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <input
-              type="text"
-              value={item.purityRaw !== undefined ? item.purityRaw : (item.purity === 0 ? '' : item.purity)}
-              onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
-              placeholder="e.g., 98 %"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
-          );
-        }
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.purity)}
+   {
+  key: 'purity',
+  header: 'Purity (%)',
+  render: (item, index) => {
+    if (item.isEditing) {
+      return (
+        <div className="relative inline-block">
+          <input
+            type="text"
+            value={item.purityRaw !== undefined ? item.purityRaw : (item.purity === 0 ? '' : item.purity)}
+            onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
+            placeholder="e.g., 98"
+            className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+          />
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+            %
           </span>
-        );
-      },
-    },
+        </div>
+      );
+    }
+    return (
+      <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+        {formatNumberDisplay(item.purity)}
+      </span>
+    );
+  },
+},
     {
       key: 'srp',
       header: 'SRP (Majuri)',
@@ -757,7 +762,7 @@ const JointDept: React.FC = () => {
               value={item.srpRaw !== undefined ? item.srpRaw : (item.srp === 0 ? '' : item.srp)}
               onChange={(e) => handleInlineChange(index, 'srp', e.target.value)}
               placeholder="0.000"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             />
           );
         }
@@ -779,7 +784,7 @@ const JointDept: React.FC = () => {
               value={item.scrapRaw !== undefined ? item.scrapRaw : (item.scrap === 0 ? '' : item.scrap)}
               onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
               placeholder="0.000"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             />
           );
         }

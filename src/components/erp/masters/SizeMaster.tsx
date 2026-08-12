@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X, ArrowLeft, Search } from 'lucide-react';
+import { Plus, X, ArrowLeft, Search, Edit, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import { useNavigate } from '@tanstack/react-router';
@@ -33,15 +33,14 @@ const SizeMaster: React.FC = () => {
   // Filter data based on search term
   const filteredData = searchTerm
     ? sizes.filter(item =>
-        item.size.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      item.size.toLowerCase().includes(searchTerm.toLowerCase())
+    )
     : sizes;
 
-  // Handle form input change - REMOVED number-only validation
+  // Handle form input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
-    // Allow any character (no sanitization)
+
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (formErrors.size) {
       setFormErrors({});
@@ -134,7 +133,30 @@ const SizeMaster: React.FC = () => {
     resetForm();
   };
 
-  // Table columns - removed align property
+  const renderActions = (item: Size) => (
+    <div className="flex items-center justify-center gap-1">
+      {/* Edit Button - Same style as delete but with edit icon */}
+      <button
+        onClick={() => handleEditClick(item)}
+        className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
+        title="Edit Size"
+      >
+        <Edit className="h-4 w-4" />
+      </button>
+
+      {/* Delete Button - Same style as edit */}
+      <button
+        onClick={() => handleDeleteSize(item)}
+        disabled={deleteSize.isPending}
+        className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
+        title="Delete Size"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
+  );
+
+  // Table columns
   const columns: Column<Size>[] = [
     {
       key: 'size',
@@ -151,7 +173,7 @@ const SizeMaster: React.FC = () => {
   const isSubmitting = createSize.isPending || updateSize.isPending || deleteSize.isPending;
 
   return (
-    <div className=" bg-[#f9f9f7] dark:bg-slate-950">
+    <div className="bg-[#f9f9f7] dark:bg-slate-950">
       {/* Header - Back Button, Title, Search, and Add Button on Same Line */}
       <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
         <div className="flex flex-col sm:flex-row items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6 gap-3">
@@ -206,10 +228,7 @@ const SizeMaster: React.FC = () => {
             onSave={(item) => {
               console.log('Save size:', item);
             }}
-            onEdit={handleEditClick}
-            onDelete={handleDeleteSize}
-            showEdit={true}
-            showDelete={true}
+            renderActions={renderActions}
             emptyMessage="No sizes found. Click 'Add Size' to create one."
             isLoading={isLoading || isSubmitting}
           />
@@ -225,14 +244,12 @@ const SizeMaster: React.FC = () => {
               <h3 className="text-base sm:text-lg font-bold text-[#1a1c1b] dark:text-white">
                 {editingSize ? 'Edit Size' : 'Add New Size'}
               </h3>
-              <GenericButton
-                type="button"
-                variant="ghost"
+              <button
                 onClick={closeModal}
-                className="!p-1 !h-8 !w-8 !min-w-0"
+                className="rounded-lg p-1 transition-colors hover:bg-[#f4f4f2] dark:hover:bg-slate-800"
               >
-                <X className="h-4 w-4 sm:h-5 sm:w-5 text-[#4f4535] dark:text-slate-400" />
-              </GenericButton>
+                <X className="h-5 w-5 text-[#4f4535] dark:text-slate-400" />
+              </button>
             </div>
 
             {/* Modal Body */}

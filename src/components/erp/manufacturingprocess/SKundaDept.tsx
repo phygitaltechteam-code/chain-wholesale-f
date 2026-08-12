@@ -27,6 +27,7 @@ interface KundaEntry {
   itemId?: string;
   sizeId?: string;
   isCompleted?: boolean;
+  isDirty?: boolean;
 }
 
 const getItemName = (item: any): string => {
@@ -128,6 +129,7 @@ const SKundaDept: React.FC = () => {
           itemId: kunda.itemId,
           sizeId: kunda.sizeId,
           isCompleted: kunda.isCompleted || false,
+          isDirty: false,
         };
       });
       setKundaEntries(entries);
@@ -439,6 +441,8 @@ const SKundaDept: React.FC = () => {
             }
 
             updated.loss = Math.max(0, updated.chainGiven - (updated.chainReceived + updated.scrap));
+            // Show Action column only after the user actually changes an input field.
+            updated.isDirty = true;
             return updated;
           }
           return entry;
@@ -492,7 +496,7 @@ const SKundaDept: React.FC = () => {
 
       setKundaEntries((prev) =>
         prev.map((s, i) =>
-          i === index ? { ...s, isEditing: false, isSaved: true, isCompleted: true } : s
+          i === index ? { ...s, isEditing: false, isSaved: true, isCompleted: true, isDirty: false } : s
         )
       );
 
@@ -510,10 +514,10 @@ const SKundaDept: React.FC = () => {
     }
   }, [saveIndex, kundaEntries, submitKunda, refetch]);
 
-  // Show the Action column as soon as at least one unsaved row is in edit mode.
-  // It does not wait for the user to enter a value.
+  // Action column is hidden initially.
+  // It appears only after the user changes one of the input fields.
   const showActionColumn = kundaEntries.some(
-    (entry) => entry.isEditing === true && entry.isSaved !== true
+    (entry) => entry.isDirty === true && entry.isSaved !== true
   );
 
   const columns: Column<KundaEntry>[] = [
@@ -557,13 +561,18 @@ const SKundaDept: React.FC = () => {
       render: (item, index) => {
         if (item.isEditing) {
           return (
-            <input
-              type="text"
-              value={item.purityRaw !== undefined ? item.purityRaw : (item.purity === 0 ? '' : item.purity)}
-              onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
-              placeholder="e.g., 91.6"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
+            <div className="relative inline-block">
+              <input
+                type="text"
+                value={item.purityRaw !== undefined ? item.purityRaw : (item.purity === 0 ? '' : item.purity)}
+                onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
+                placeholder="e.g., 98"
+                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+                %
+              </span>
+            </div>
           );
         }
         return (
@@ -593,7 +602,7 @@ const SKundaDept: React.FC = () => {
               value={item.chainReceivedRaw !== undefined ? item.chainReceivedRaw : (item.chainReceived === 0 ? '' : item.chainReceived)}
               onChange={(e) => handleInlineChange(index, 'chainReceived', e.target.value)}
               placeholder="0.000"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             />
           );
         }
@@ -615,7 +624,7 @@ const SKundaDept: React.FC = () => {
               value={item.scrapRaw !== undefined ? item.scrapRaw : (item.scrap === 0 ? '' : item.scrap)}
               onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
               placeholder="0.000"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             />
           );
         }
@@ -642,8 +651,8 @@ const SKundaDept: React.FC = () => {
           key: 'actions',
           header: 'Action',
           render: (item: KundaEntry, index: number) => {
-            // Only the row currently being edited gets the action button.
-            if (!item.isEditing || item.isSaved) return null;
+            // Only show the action button after the user has changed an input.
+            if (!item.isDirty || item.isSaved || !item.isEditing) return null;
 
             return (
               <div className="flex items-center justify-center">
@@ -771,10 +780,10 @@ const SKundaDept: React.FC = () => {
 
   return (
     <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
-      <div className="px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8">
+      <div>
         {/* Header */}
-        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
+          <div className="flex items-center gap-2 min-w-0">
             <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
               {showHistory ? 'S Kunda History' : 'S Kunda Department'}
             </h1>

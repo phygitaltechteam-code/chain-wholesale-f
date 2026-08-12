@@ -689,7 +689,7 @@ const BoxDept: React.FC = () => {
                 handleInlineChange(index, 'chainWeight', e.target.value)
               }
               placeholder="0.000"
-              className="font-mono w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             />
           );
         }
@@ -721,7 +721,7 @@ const BoxDept: React.FC = () => {
                 handleInlineChange(index, 'scrap', e.target.value)
               }
               placeholder="0.000"
-              className="font-mono w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             />
           );
         }

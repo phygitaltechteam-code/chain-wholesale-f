@@ -312,7 +312,7 @@ const Billing: React.FC = () => {
           handleDelete(item);
         }}
         disabled={deleteClient.isPending}
-        className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+        className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
         title="Delete"
       >
         <Trash2 className="h-4 w-4" />

@@ -8,6 +8,7 @@ import { Route } from "@/routes/_app/stock/stockreport.$d";
 import { useGetStockReport } from "@/lib/api/reportapi";
 import GenericButton from "@/components/Forms/Buttons/GenericButton";
 import GenericDatePicker from "@/components/Forms/DatePicker/GenericDatePicker";
+import GenericWeeklyDatePicker from "@/components/Forms/DatePicker/GenericWeeklyDatePicker";
 
 interface StockReportEntry {
   id: string;
@@ -313,7 +314,7 @@ export default function StockReport() {
       key: "wt",
       header: "WT (G)",
       render: (item) => (
-        <span className={`text-sm font-mono font-bold ${item.wt > 0 ? 'text-green-600 dark:text-green-400' : item.wt < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500'}`}>
+        <span className='text-black font-bold'>
           {item.wt > 0 ? '+' : ''}{formatNumber(item.wt)}
         </span>
       ),
@@ -591,26 +592,26 @@ export default function StockReport() {
               />
             </div>
 
-            {/* From Date - current week Monday by default */}
+            {/* From Date - Monday/start date */}
             <div className="w-full sm:w-40">
-              <GenericDatePicker
-                id="from-date-stock"
-                initialDate={fromDate || undefined}
+              <GenericWeeklyDatePicker
+                id="manufacturing-from-date"
+                mode="from"
+                initialDates={[fromDate, toDate]}
                 onDateChange={handleFromDateChange}
                 placeholder="DD/MM/YYYY"
-                dateFormat="d/m/Y"
                 className="w-full"
               />
             </div>
 
-            {/* To Date - current week Sunday by default */}
+            {/* To Date - Sunday/end date */}
             <div className="w-full sm:w-40">
-              <GenericDatePicker
-                id="to-date-stock"
-                initialDate={toDate || undefined}
+              <GenericWeeklyDatePicker
+                id="manufacturing-to-date"
+                mode="to"
+                initialDates={[fromDate, toDate]}
                 onDateChange={handleToDateChange}
                 placeholder="DD/MM/YYYY"
-                dateFormat="d/m/Y"
                 className="w-full"
               />
             </div>

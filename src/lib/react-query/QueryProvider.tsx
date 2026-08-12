@@ -4,6 +4,10 @@ import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
 
 export const QueryProvider = ({children}: {children: ReactNode}) => {
   const queryClient = new QueryClient();
+  defualtOption:{
+    
+  }
+  
   return (
     <QueryClientProvider client={queryClient}>
       {children}

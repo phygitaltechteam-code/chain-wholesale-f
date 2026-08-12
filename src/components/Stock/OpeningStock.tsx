@@ -353,13 +353,13 @@ const OpeningStock: React.FC = () => {
     if (isGoldRow(item)) {
       return (
         <div className="flex">
-          {/* <button
+          <button
             onClick={() => handleRowEdit(index)}
             className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:bg-[#785600]/10 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
             title="Edit"
           >
             <Edit className="h-4 w-4" />
-          </button> */}
+          </button>
         </div>
       );
     }
@@ -459,60 +459,68 @@ const OpeningStock: React.FC = () => {
         );
       },
     },
-    {
-      key: 'grams',
-      header: 'Weight (G)',
-
-      render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <input
-              type="text"
-              value={item.gramsRaw !== undefined ? item.gramsRaw : (item.grams === 0 ? '' : item.grams)}
-              onChange={(e) => handleInlineChange(index, 'grams', e.target.value)}
-              placeholder="0.000"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
-          );
-        }
-        return (
-          <span className="font-mono text-[#1a1c1b] dark:text-white">
-            {formatGrams(item.grams || 0)}
+  {
+  key: 'grams',
+  header: 'Weight (G)',
+  render: (item, index) => {
+    if (item.isEditing) {
+      return (
+        <div className="relative inline-block">
+          <input
+            type="text"
+            value={item.gramsRaw !== undefined ? item.gramsRaw : (item.grams === 0 ? '' : item.grams)}
+            onChange={(e) => handleInlineChange(index, 'grams', e.target.value)}
+            placeholder="0.000"
+            className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+          />
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+            G
           </span>
-        );
-      },
-    },
-    {
-      key: 'purity',
-      header: 'Purity (%)',
-
-      render: (item, index) => {
-        // If it's a gold row, show "-" as read-only
-        if (isGoldRow(item) && item.isSaved) {
-          return (
-            <span className="text-[#4f4535] dark:text-slate-400">
-              -
-            </span>
-          );
-        }
-        if (item.isEditing) {
-          return (
-            <input
-              type="text"
-              value={item.purityRaw !== undefined ? item.purityRaw : (item.purity ? item.purity.toString() : '')}
-              onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
-              placeholder="e.g., 98"
-              className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
-          );
-        }
-        return (
-          <span className="font-mono text-[#1a1c1b] dark:text-white">
-            {item.purity || '-'}
+        </div>
+      );
+    }
+    return (
+      <span className="font-mono text-[#1a1c1b] dark:text-white">
+        {formatGrams(item.grams || 0)}
+      </span>
+    );
+  },
+},
+{
+  key: 'purity',
+  header: 'Purity (%)',
+  render: (item, index) => {
+    // If it's a gold row, show "-" as read-only
+    if (isGoldRow(item) && item.isSaved) {
+      return (
+        <span className="text-[#4f4535] dark:text-slate-400">
+          -
+        </span>
+      );
+    }
+    if (item.isEditing) {
+      return (
+        <div className="relative inline-block">
+          <input
+            type="text"
+            value={item.purityRaw !== undefined ? item.purityRaw : (item.purity ? item.purity.toString() : '')}
+            onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
+            placeholder="e.g., 98"
+            className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+          />
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+            %
           </span>
-        );
-      },
-    },
+        </div>
+      );
+    }
+    return (
+      <span className="font-mono text-[#1a1c1b] dark:text-white">
+        {item.purity || '-'}
+      </span>
+    );
+  },
+},
   ];
 
   const isSubmitting = createStock.isPending || updateStock.isPending || deleteStock.isPending;

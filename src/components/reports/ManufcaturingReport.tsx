@@ -7,6 +7,7 @@ import PDFHeader from "@/components/Forms/Common/PDFHeader";
 import { useGetManufacturingData } from "@/lib/api/reportapi";
 import GenericButton from "../Forms/Buttons/GenericButton";
 import GenericDatePicker from "../Forms/DatePicker/GenericDatePicker";
+import GenericWeeklyDatePicker from "../Forms/DatePicker/GenericWeeklyDatePicker";
 
 
 interface ManufacturingEntry {
@@ -509,16 +510,16 @@ export default function ManufacturingReport() {
       <div className="border-b-2 border-[#c43d5c] my-3" />
 
       <div className="mb-4 text-center">
-  <h2 className="text-lg font-bold text-gray-800">Manufacturing Report</h2>
-  <div className="flex justify-center items-center gap-4 flex-wrap">
-    <p className="text-xs text-gray-500">Generated: {new Date().toLocaleString()}</p>
-    {(fromDate || toDate) && (
-      <p className="text-xs text-gray-500">
-        From: {formatDateForDisplay(fromDate) || 'Start'} &nbsp; To: {formatDateForDisplay(toDate) || 'End'}
-      </p>
-    )}
-  </div>
-</div>
+        <h2 className="text-lg font-bold text-gray-800">Manufacturing Report</h2>
+        <div className="flex justify-center items-center gap-4 flex-wrap">
+          <p className="text-xs text-gray-500">Generated: {new Date().toLocaleString()}</p>
+          {(fromDate || toDate) && (
+            <p className="text-xs text-gray-500">
+              From: {formatDateForDisplay(fromDate) || 'Start'} &nbsp; To: {formatDateForDisplay(toDate) || 'End'}
+            </p>
+          )}
+        </div>
+      </div>
 
       <table className="w-full text-xs border-collapse">
         <thead>
@@ -617,32 +618,31 @@ export default function ManufacturingReport() {
                 className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
               />
             </div>
-
             {/* From Date - Monday/start date */}
             <div className="w-full sm:w-40">
-              <GenericDatePicker
+              <GenericWeeklyDatePicker
                 id="manufacturing-from-date"
-                initialDate={fromDate || undefined}
+                mode="from"
+                initialDates={[fromDate, toDate]}
                 onDateChange={handleFromDateChange}
                 placeholder="DD/MM/YYYY"
-                dateFormat="d/m/Y"
                 className="w-full"
               />
             </div>
 
             {/* To Date - Sunday/end date */}
             <div className="w-full sm:w-40">
-              <GenericDatePicker
+              <GenericWeeklyDatePicker
                 id="manufacturing-to-date"
-                initialDate={toDate || undefined}
+                mode="to"
+                initialDates={[fromDate, toDate]}
                 onDateChange={handleToDateChange}
                 placeholder="DD/MM/YYYY"
-                dateFormat="d/m/Y"
                 className="w-full"
               />
             </div>
 
-            
+
 
             {/* Print Button */}
             <button

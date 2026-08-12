@@ -851,7 +851,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                                 handleInlineChange(index, 'tar', e.target.value)
                             }
                             placeholder="0.000"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                            className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
                         />
                     );
                 }
@@ -883,7 +883,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                                 handleInlineChange(index, 'scrap', e.target.value)
                             }
                             placeholder="0.000"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                            className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
                         />
                     );
                 }
@@ -910,22 +910,27 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             render: (item, index) => {
                 if (!item.isSaved) {
                     return (
-                        <input
-                            type="text"
-                            inputMode="decimal"
-                            value={
-                                item.purityRaw !== undefined
-                                    ? item.purityRaw
-                                    : item.purity === 0
-                                        ? ''
-                                        : item.purity
-                            }
-                            onChange={(e) =>
-                                handleInlineChange(index, 'purity', e.target.value)
-                            }
-                            placeholder="e.g., 98"
-                            className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                        />
+                        <div className="relative inline-block">
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                value={
+                                    item.purityRaw !== undefined
+                                        ? item.purityRaw
+                                        : item.purity === 0
+                                            ? ''
+                                            : item.purity
+                                }
+                                onChange={(e) =>
+                                    handleInlineChange(index, 'purity', e.target.value)
+                                }
+                                placeholder="98"
+                                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+                                %
+                            </span>
+                        </div>
                     );
                 }
 
@@ -1279,15 +1284,20 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                                 <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
                                     Fine (लगड) <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="text"
-                                    name="fine"
-                                    value={formData.fine}
-                                    onChange={handleFormChange}
-                                    placeholder="e.g., 5.000"
-                                    className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white font-mono"
-                                    autoFocus
-                                />
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        name="fine"
+                                        value={formData.fine}
+                                        onChange={handleFormChange}
+                                        placeholder="e.g., 5.000"
+                                        className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 pr-8 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white font-mono"
+                                        autoFocus
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+                                        G
+                                    </span>
+                                </div>
                             </div>
                         </div>
 

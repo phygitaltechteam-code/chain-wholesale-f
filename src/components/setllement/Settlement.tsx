@@ -1,5 +1,3 @@
-// manufacturingprocess/Settlement.tsx
-
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Search,
@@ -37,6 +35,7 @@ import { useGetClients } from '@/lib/api/client';
 
 import GenericInputField from '../Forms/Input/GenericInputField';
 import GenericButton from '../Forms/Buttons/GenericButton';
+import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
 
 // ======================================================
 // TYPES
@@ -73,6 +72,24 @@ interface SettlementDetail {
   due?: number | null;
 }
 
+// ======================================================
+// HELPER: Get Current Week Range
+// ======================================================
+const getCurrentWeekRange = () => {
+  const today = new Date();
+  const day = today.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  return { monday, sunday };
+};
 
 // ======================================================
 // COMPONENT
@@ -83,64 +100,49 @@ const Settlement: React.FC = () => {
   // ----------------------------------------------------
 
   const [settlements, setSettlements] = useState<SettlementEntry[]>([]);
-
   const [searchTerm, setSearchTerm] = useState('');
-
-  const [balanceFilter, setBalanceFilter] =
-    useState<string>('all');
-
+  const [balanceFilter, setBalanceFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState({
     from: '',
     to: '',
   });
 
-
   // ----------------------------------------------------
   // MODAL STATES
   // ----------------------------------------------------
 
-  const [showSettleModal, setShowSettleModal] =
-    useState(false);
-
-  const [showConfirmModal, setShowConfirmModal] =
-    useState(false);
-
+  const [showSettleModal, setShowSettleModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // ----------------------------------------------------
   // AMOUNT STATE
   // ----------------------------------------------------
 
-  const [localAmount, setLocalAmount] =
-    useState<string>('');
-
+  const [localAmount, setLocalAmount] = useState<string>('');
 
   // ----------------------------------------------------
   // SETTLEMENT DETAIL
   // ----------------------------------------------------
 
-  const [settlementDetail, setSettlementDetail] =
-    useState<SettlementDetail>({
-      clientName: '',
-      phoneNumber: '',
-      address: '',
-      pendingBalance: 0,
-      totalBills: 0,
-      settlementAmount: 0,
-      settlementType: 'receive',
-      date: new Date().toISOString().split('T')[0],
-      clientId: '',
-      openingBalance: 0,
-      due: null,
-    });
-
+  const [settlementDetail, setSettlementDetail] = useState<SettlementDetail>({
+    clientName: '',
+    phoneNumber: '',
+    address: '',
+    pendingBalance: 0,
+    totalBills: 0,
+    settlementAmount: 0,
+    settlementType: 'receive',
+    date: new Date().toISOString().split('T')[0],
+    clientId: '',
+    openingBalance: 0,
+    due: null,
+  });
 
   // ----------------------------------------------------
   // INPUT REF
   // ----------------------------------------------------
 
-  const inputRef =
-    useRef<HTMLInputElement>(null);
-
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // ======================================================
   // AUTO FOCUS WHEN SETTLEMENT MODAL OPENS
@@ -157,7 +159,6 @@ const Settlement: React.FC = () => {
     return () => clearTimeout(timer);
   }, [showSettleModal]);
 
-
   // ======================================================
   // API
   // ======================================================
@@ -168,9 +169,7 @@ const Settlement: React.FC = () => {
     refetch: refetchSettlements,
   } = useGetClients();
 
-  const submitSettlementMutation =
-    useSubmitSettlement();
-
+  const submitSettlementMutation = useSubmitSettlement();
 
   // ======================================================
   // DEFAULT DATE RANGE
@@ -180,198 +179,83 @@ const Settlement: React.FC = () => {
     setDefaultDateRange();
   }, []);
 
-
   const setDefaultDateRange = () => {
-    const now = new Date();
-
-    const dayOfWeek = now.getDay();
-
-    const diffToMonday =
-      dayOfWeek === 0
-        ? 6
-        : dayOfWeek - 1;
-
-    const monday = new Date(now);
-
-    monday.setDate(
-      now.getDate() - diffToMonday
-    );
-
-    const sunday = new Date(monday);
-
-    sunday.setDate(
-      monday.getDate() + 6
-    );
-
+    const { monday, sunday } = getCurrentWeekRange();
     setDateRange({
       from: monday.toISOString().split('T')[0],
       to: sunday.toISOString().split('T')[0],
     });
   };
 
-
   // ======================================================
   // PROCESS API DATA
   // ======================================================
 
   useEffect(() => {
-    if (
-      settlementsData &&
-      Array.isArray(settlementsData)
-    ) {
-      const apiData: SettlementEntry[] =
-        settlementsData.map(
-          (item: any, index: number) => ({
-            id:
-              item.id ||
-              `settlement-${index}`,
-
-            srNo: index + 1,
-
-            clientName:
-              item.fullName ||
-              item.clientName ||
-              item.client?.name ||
-              'Unknown Client',
-
-            phoneNumber:
-              item.phoneNumber ||
-              item.client?.phone ||
-              'N/A',
-
-            goldBalance:
-              Number(
-                item.openingBalance ??
-                item.balance ??
-                item.goldBalance ??
-                0
-              ),
-
-            totalBill:
-              Number(
-                item.totalBills ??
-                item.totalBill ??
-                item.totalGiven ??
-                0
-              ),
-
-            status:
-              item.status ||
-              (
-                Number(
-                  item.openingBalance ?? 0
-                ) === 0
-                  ? 'settled'
-                  : 'pending'
-              ),
-
-            clientId:
-              item.id ||
-              item.clientId ||
-              item.client?.id ||
-              '',
-
-            openingBalance:
-              Number(
-                item.openingBalance ?? 0
-              ),
-
-            due:
-              item.due ?? null,
-
-            address:
-              item.address || '',
-
-            totalBills:
-              Number(
-                item.totalBills ??
-                item._count?.receipts ??
-                0
-              ),
-
-            amount: Number(item.openingBalance ?? 0),
-
-            remark: Number(item.openingBalance ?? 0) > 0 ? 'Received' : 'Given',
-          })
-        );
-
-      setSettlements(apiData);
-    } else if (
-      settlementsData &&
-      !settlementsData?.status
-    ) {
-      toast.error(
-        settlementsData?.message ||
-        'Failed to fetch settlement data'
+    if (settlementsData && Array.isArray(settlementsData)) {
+      const apiData: SettlementEntry[] = settlementsData.map(
+        (item: any, index: number) => ({
+          id: item.id || `settlement-${index}`,
+          srNo: index + 1,
+          clientName: item.fullName || item.clientName || item.client?.name || 'Unknown Client',
+          phoneNumber: item.phoneNumber || item.client?.phone || 'N/A',
+          goldBalance: Number(item.openingBalance ?? item.balance ?? item.goldBalance ?? 0),
+          totalBill: Number(item.totalBills ?? item.totalBill ?? item.totalGiven ?? 0),
+          status: item.status || (Number(item.openingBalance ?? 0) === 0 ? 'settled' : 'pending'),
+          clientId: item.id || item.clientId || item.client?.id || '',
+          openingBalance: Number(item.openingBalance ?? 0),
+          due: item.due ?? null,
+          address: item.address || '',
+          totalBills: Number(item.totalBills ?? item._count?.receipts ?? 0),
+          amount: Number(item.openingBalance ?? 0),
+          remark: Number(item.openingBalance ?? 0) > 0 ? 'Received' : 'Given',
+        })
       );
 
+      setSettlements(apiData);
+    } else if (settlementsData && !settlementsData?.status) {
+      toast.error(settlementsData?.message || 'Failed to fetch settlement data');
       setSettlements([]);
     }
   }, [settlementsData]);
 
-
   // ======================================================
-  // NUMBER FORMAT - Removed trailing zeros
+  // NUMBER FORMAT
   // ======================================================
 
-  const formatNumber = (
-    value: number | string | null | undefined
-  ) => {
+  const formatNumber = (value: number | string | null | undefined) => {
     const numberValue = Number(value ?? 0);
-
     if (Number.isNaN(numberValue)) {
       return '0';
     }
-
     return parseFloat(numberValue.toFixed(3)).toString();
   };
-
 
   // ======================================================
   // BALANCE COLOR
   // ======================================================
 
-  const getBalanceColor = (
-    balance: number
-  ) => {
-    if (balance > 0) {
-      return 'text-green-600 dark:text-green-400';
-    }
-
-    if (balance < 0) {
-      return 'text-red-600 dark:text-red-400';
-    }
-
+  const getBalanceColor = (balance: number) => {
+    if (balance > 0) return 'text-green-600 dark:text-green-400';
+    if (balance < 0) return 'text-red-600 dark:text-red-400';
     return 'text-gray-600 dark:text-gray-400';
   };
-
 
   // ======================================================
   // BALANCE ICON
   // ======================================================
 
-  const getBalanceIcon = (
-    balance: number
-  ) => {
-    if (balance > 0) {
-      return <Plus className="h-3 w-3" />;
-    }
-
-    if (balance < 0) {
-      return <Minus className="h-3 w-3" />;
-    }
-
+  const getBalanceIcon = (balance: number) => {
+    if (balance > 0) return <Plus className="h-3 w-3" />;
+    if (balance < 0) return <Minus className="h-3 w-3" />;
     return null;
   };
-
 
   // ======================================================
   // STATUS BADGE
   // ======================================================
 
-  const getStatusBadge = (
-    status: string
-  ) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'settled':
         return (
@@ -380,7 +264,6 @@ const Settlement: React.FC = () => {
             Settled
           </span>
         );
-
       case 'pending':
         return (
           <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
@@ -388,7 +271,6 @@ const Settlement: React.FC = () => {
             Pending
           </span>
         );
-
       case 'partial':
         return (
           <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
@@ -396,15 +278,13 @@ const Settlement: React.FC = () => {
             Partial
           </span>
         );
-
       default:
         return null;
     }
   };
 
-
   // ======================================================
-  // PRINT TABLE REPORT - Full A4 with PDF Header
+  // PRINT TABLE REPORT
   // ======================================================
   const handlePrintTable = () => {
     if (!filteredSettlements || filteredSettlements.length === 0) {
@@ -570,70 +450,69 @@ const Settlement: React.FC = () => {
       }, 1000);
     }, 500);
   };
+  // ======================================================
+  // HANDLE DATE CHANGES - FIXED CLEAR
+  // ======================================================
 
+  const handleFromDateChange = (dates: Date[]) => {
+    if (dates && dates.length > 0) {
+      const selected = new Date(dates[0]);
+      selected.setHours(0, 0, 0, 0);
 
+      setDateRange((prev) => ({
+        ...prev,
+        from: selected.toISOString().split('T')[0],
+      }));
+    } else {
+      // Clear - set to empty string
+      setDateRange((prev) => ({
+        ...prev,
+        from: '',
+      }));
+    }
+  };
+
+  const handleToDateChange = (dates: Date[]) => {
+    if (dates && dates.length > 0) {
+      const selected = new Date(dates[0]);
+      selected.setHours(23, 59, 59, 999);
+
+      setDateRange((prev) => ({
+        ...prev,
+        to: selected.toISOString().split('T')[0],
+      }));
+    } else {
+      // Clear - set to empty string
+      setDateRange((prev) => ({
+        ...prev,
+        to: '',
+      }));
+    }
+  };
   // ======================================================
   // OPEN SETTLEMENT MODAL
   // ======================================================
 
-  const handleSettle = (
-    entry: SettlementEntry
-  ) => {
-    const amount =
-      Math.abs(
-        Number(entry.goldBalance || 0)
-      );
+  const handleSettle = (entry: SettlementEntry) => {
+    const amount = Math.abs(Number(entry.goldBalance || 0));
 
     setSettlementDetail({
-      clientName:
-        entry.clientName,
-
-      phoneNumber:
-        entry.phoneNumber,
-
-      address:
-        entry.address || '',
-
-      pendingBalance:
-        amount,
-
-      totalBills:
-        entry.totalBills || 0,
-
-      settlementAmount:
-        amount,
-
-      settlementType:
-        entry.goldBalance > 0
-          ? 'receive'
-          : 'give',
-
-      date:
-        new Date()
-          .toISOString()
-          .split('T')[0],
-
-      clientId:
-        entry.clientId,
-
-      openingBalance:
-        entry.openingBalance || 0,
-
-      due:
-        entry.due || null,
+      clientName: entry.clientName,
+      phoneNumber: entry.phoneNumber,
+      address: entry.address || '',
+      pendingBalance: amount,
+      totalBills: entry.totalBills || 0,
+      settlementAmount: amount,
+      settlementType: entry.goldBalance > 0 ? 'receive' : 'give',
+      date: new Date().toISOString().split('T')[0],
+      clientId: entry.clientId,
+      openingBalance: entry.openingBalance || 0,
+      due: entry.due || null,
     });
 
-
-    setLocalAmount(
-      amount > 0
-        ? amount.toString()
-        : ''
-    );
-
-
+    setLocalAmount(amount > 0 ? amount.toString() : '');
     setShowSettleModal(true);
   };
-
 
   // ======================================================
   // CLOSE SETTLEMENT MODAL
@@ -641,9 +520,7 @@ const Settlement: React.FC = () => {
 
   const closeSettlementModal = () => {
     setShowSettleModal(false);
-
     setLocalAmount('');
-
     setSettlementDetail({
       clientName: '',
       phoneNumber: '',
@@ -652,63 +529,41 @@ const Settlement: React.FC = () => {
       totalBills: 0,
       settlementAmount: 0,
       settlementType: 'receive',
-      date: new Date()
-        .toISOString()
-        .split('T')[0],
+      date: new Date().toISOString().split('T')[0],
       clientId: '',
       openingBalance: 0,
       due: null,
     });
   };
 
-
   // ======================================================
   // PROCEED TO CONFIRM
   // ======================================================
 
   const handleProceedToConfirm = () => {
-    const amount =
-      Number(
-        settlementDetail.settlementAmount
-      );
+    const amount = Number(settlementDetail.settlementAmount);
 
-    if (
-      !amount ||
-      Number.isNaN(amount) ||
-      amount <= 0
-    ) {
-      toast.error(
-        'Please enter a valid settlement amount'
-      );
+    if (!amount || Number.isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid settlement amount');
       return;
     }
 
-
-    if (
-      !settlementDetail.clientId
-    ) {
-      toast.error(
-        'Client ID is missing'
-      );
+    if (!settlementDetail.clientId) {
+      toast.error('Client ID is missing');
       return;
     }
 
-
     if (
-      settlementDetail.settlementType ===
-      'receive' &&
-      amount >
-      settlementDetail.pendingBalance
+      settlementDetail.settlementType === 'receive' &&
+      amount > settlementDetail.pendingBalance
     ) {
       toast.error(
         `Settlement amount cannot exceed pending balance of ${formatNumber(
           settlementDetail.pendingBalance
         )}g`
       );
-
       return;
     }
-
 
     setShowConfirmModal(true);
   };
@@ -740,7 +595,7 @@ const Settlement: React.FC = () => {
         amount: signedAmount,
       };
 
-      const response = await submitSettlementMutation.mutateAsync(settlementData);
+      await submitSettlementMutation.mutateAsync(settlementData);
 
       setShowConfirmModal(false);
       setShowSettleModal(false);
@@ -761,6 +616,7 @@ const Settlement: React.FC = () => {
       });
 
       await refetchSettlements();
+      toast.success('Settlement saved successfully');
 
     } catch (error) {
       console.error('Settlement error:', error);
@@ -768,105 +624,52 @@ const Settlement: React.FC = () => {
     }
   };
 
-
   // ======================================================
   // FILTER
   // ======================================================
 
-  const filteredSettlements =
-    settlements.filter(
-      (entry) => {
-        const search =
-          searchTerm.toLowerCase();
+  const filteredSettlements = settlements.filter((entry) => {
+    const search = searchTerm.toLowerCase();
 
-        const matchesSearch =
-          entry.clientName
-            .toLowerCase()
-            .includes(search) ||
-          entry.phoneNumber
-            .includes(search);
+    const matchesSearch =
+      entry.clientName.toLowerCase().includes(search) ||
+      entry.phoneNumber.includes(search);
 
+    const matchesBalance =
+      balanceFilter === 'all' ||
+      (balanceFilter === 'positive' && entry.goldBalance > 0) ||
+      (balanceFilter === 'negative' && entry.goldBalance < 0) ||
+      (balanceFilter === 'zero' && entry.goldBalance === 0);
 
-        const matchesBalance =
-          balanceFilter === 'all' ||
-          (
-            balanceFilter === 'positive' &&
-            entry.goldBalance > 0
-          ) ||
-          (
-            balanceFilter === 'negative' &&
-            entry.goldBalance < 0
-          ) ||
-          (
-            balanceFilter === 'zero' &&
-            entry.goldBalance === 0
-          );
-
-
-        return (
-          matchesSearch &&
-          matchesBalance
-        );
-      }
-    );
-
+    return matchesSearch && matchesBalance;
+  });
 
   // ======================================================
   // TOTALS
   // ======================================================
 
-  const totalPositiveBalance =
-    settlements.reduce(
-      (sum, item) =>
-        item.goldBalance > 0
-          ? sum + item.goldBalance
-          : sum,
-      0
-    );
+  const totalPositiveBalance = settlements.reduce(
+    (sum, item) => item.goldBalance > 0 ? sum + item.goldBalance : sum,
+    0
+  );
 
+  const totalNegativeBalance = settlements.reduce(
+    (sum, item) => item.goldBalance < 0 ? sum + Math.abs(item.goldBalance) : sum,
+    0
+  );
 
-  const totalNegativeBalance =
-    settlements.reduce(
-      (sum, item) =>
-        item.goldBalance < 0
-          ? sum +
-          Math.abs(
-            item.goldBalance
-          )
-          : sum,
-      0
-    );
-
-
-  const totalPending =
-    settlements.filter(
-      (item) =>
-        item.status !== 'settled'
-    ).length;
-
-
-  const totalSettled =
-    settlements.filter(
-      (item) =>
-        item.status === 'settled'
-    ).length;
-
+  const totalPending = settlements.filter((item) => item.status !== 'settled').length;
+  const totalSettled = settlements.filter((item) => item.status === 'settled').length;
 
   // ======================================================
   // ACTION BUTTON
   // ======================================================
 
-  const renderActions = (
-    item: SettlementEntry
-  ) => (
+  const renderActions = (item: SettlementEntry) => (
     <button
       type="button"
-      onClick={() =>
-        handleSettle(item)
-      }
-      disabled={
-        item.status === 'settled'
-      }
+      onClick={() => handleSettle(item)}
+      disabled={item.status === 'settled'}
       className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${item.status === 'settled'
         ? 'cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-600'
         : 'bg-[#785600] text-white hover:bg-[#5d4200]'
@@ -886,7 +689,6 @@ const Settlement: React.FC = () => {
     </button>
   );
 
-
   // ======================================================
   // TABLE COLUMNS
   // ======================================================
@@ -895,53 +697,33 @@ const Settlement: React.FC = () => {
     {
       key: 'clientName',
       header: 'Client Name',
-
       render: (item) => (
         <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
           {item.clientName}
         </span>
       ),
     },
-
     {
       key: 'phoneNumber',
       header: 'Phone',
-
       render: (item) => (
         <span className="text-sm text-[#1a1c1b] dark:text-white">
           {item.phoneNumber}
         </span>
       ),
     },
-
     {
       key: 'goldBalance',
       header: 'Due Balance(G)',
-
       render: (item) => (
-        <div
-          className={`inline-flex items-center gap-1 rounded-lg px-3 py-1 text-sm font-bold ${getBalanceColor(
-            item.goldBalance
-          )}`}
-        >
-          {getBalanceIcon(
-            item.goldBalance
-          )}
-
-          {formatNumber(
-            Math.abs(
-              item.goldBalance
-            )
-          )}
-
-          {' g'}
+        <div className='text-black dark:text-white'>
+          {formatNumber(Math.abs(item.goldBalance))} g
         </div>
       ),
     },
     {
       key: 'totalBills',
       header: 'Total Bills',
-
       render: (item) => (
         <span className="font-mono text-sm text-black dark:text-white">
           {item.totalBills || 0}
@@ -950,307 +732,244 @@ const Settlement: React.FC = () => {
     },
   ];
 
-
   // ======================================================
-  // SETTLEMENT MODAL - Clean & Professional
+  // SETTLEMENT MODAL
   // ======================================================
 
-  const renderSettlementModal =
-    () => {
-      if (!showSettleModal) {
-        return null;
-      }
+  const renderSettlementModal = () => {
+    if (!showSettleModal) return null;
 
+    const remainingBalance =
+      settlementDetail.settlementType === 'receive'
+        ? settlementDetail.pendingBalance - settlementDetail.settlementAmount
+        : settlementDetail.pendingBalance + settlementDetail.settlementAmount;
 
-      const remainingBalance =
-        settlementDetail
-          .settlementType ===
-          'receive'
-          ? settlementDetail
-            .pendingBalance -
-          settlementDetail
-            .settlementAmount
-          : settlementDetail
-            .pendingBalance +
-          settlementDetail
-            .settlementAmount;
-
-
-      return (
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) {
+            closeSettlementModal();
+          }
+        }}
+      >
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onMouseDown={(e) => {
-            if (
-              e.target === e.currentTarget
-            ) {
-              closeSettlementModal();
-            }
-          }}
+          className="relative w-full max-w-sm rounded-xl bg-white shadow-2xl dark:bg-slate-900"
+          onMouseDown={(e) => e.stopPropagation()}
         >
-          <div
-            className="relative w-full max-w-sm rounded-xl bg-white shadow-2xl dark:bg-slate-900"
-            onMouseDown={(e) =>
-              e.stopPropagation()
-            }
-          >
-
-            {/* HEADER */}
-            <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-5 py-3 dark:border-slate-700">
-
-              <div className="flex items-center gap-2">
-                <Wallet className="h-5 w-5 text-[#785600]" />
-                <h2 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
-                  Settlement
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={closeSettlementModal}
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-800"
-              >
-                <X className="h-5 w-5" />
-              </button>
-
+          {/* HEADER */}
+          <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-5 py-3 dark:border-slate-700">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-[#785600]" />
+              <h2 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
+                Settlement
+              </h2>
             </div>
+            <button
+              type="button"
+              onClick={closeSettlementModal}
+              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-800"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
 
-
-            {/* BODY */}
-            <div className="p-5">
-
-              {/* CLIENT INFORMATION - Clean */}
-              <div className="mb-4 space-y-2 border-b border-[#d3c4af]/20 pb-4 dark:border-slate-700">
-
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-[#785600]" />
-                  <span className="text-sm font-semibold text-[#1a1c1b] dark:text-white">
-                    {settlementDetail.clientName}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-[#785600]" />
+          {/* BODY */}
+          <div className="p-5">
+            {/* CLIENT INFORMATION */}
+            <div className="mb-4 space-y-2 border-b border-[#d3c4af]/20 pb-4 dark:border-slate-700">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-[#785600]" />
+                <span className="text-sm font-semibold text-[#1a1c1b] dark:text-white">
+                  {settlementDetail.clientName}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-[#785600]" />
+                <span className="text-sm text-[#1a1c1b] dark:text-white">
+                  {settlementDetail.phoneNumber}
+                </span>
+              </div>
+              {settlementDetail.address && (
+                <div className="flex items-start gap-2">
+                  <MapPin className="mt-0.5 h-4 w-4 text-[#785600]" />
                   <span className="text-sm text-[#1a1c1b] dark:text-white">
-                    {settlementDetail.phoneNumber}
+                    {settlementDetail.address}
                   </span>
-                </div>
-
-                {settlementDetail.address && (
-                  <div className="flex items-start gap-2">
-                    <MapPin className="mt-0.5 h-4 w-4 text-[#785600]" />
-                    <span className="text-sm text-[#1a1c1b] dark:text-white">
-                      {settlementDetail.address}
-                    </span>
-                  </div>
-                )}
-
-                <div className="mt-2 grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400">
-                      Due Balance
-                    </p>
-                    <p className="text-sm font-bold text-[#1a1c1b] dark:text-white">
-                      {formatNumber(settlementDetail.pendingBalance)} g
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400">
-                      Total Bills
-                    </p>
-                    <p className="text-sm font-bold text-[#1a1c1b] dark:text-white">
-                      {settlementDetail.totalBills}
-                    </p>
-                  </div>
-                </div>
-
-              </div>
-
-
-              {/* RECEIVE / GIVE - Clean */}
-              <div className="mb-4 grid grid-cols-2 gap-3">
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSettlementDetail(
-                      (prev) => ({
-                        ...prev,
-                        settlementType: 'receive',
-                      })
-                    );
-
-                    setTimeout(() => {
-                      inputRef.current?.focus();
-                      inputRef.current?.select();
-                    }, 50);
-                  }}
-                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'receive'
-                    ? 'border-[#785600] bg-[#785600] text-white'
-                    : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                    }`}
-                >
-                  <Plus className="h-4 w-4" />
-                  Receive
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSettlementDetail(
-                      (prev) => ({
-                        ...prev,
-                        settlementType: 'give',
-                      })
-                    );
-
-                    setTimeout(() => {
-                      inputRef.current?.focus();
-                      inputRef.current?.select();
-                    }, 50);
-                  }}
-                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'give'
-                    ? 'border-[#785600] bg-[#785600] text-white'
-                    : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                    }`}
-                >
-                  <Minus className="h-4 w-4" />
-                  Give
-                </button>
-
-              </div>
-
-
-              {/* AMOUNT INPUT */}
-              <div className="mb-3">
-                <GenericInputField
-                  ref={inputRef}
-                  name="settlementAmount"
-                  type="text"
-                  inputMode="decimal"
-                  label="Amount (g)"
-                  value={localAmount}
-                  onChange={(e) => {
-                    const value = e.target.value;
-
-                    if (!/^\d*\.?\d{0,3}$/.test(value)) {
-                      return;
-                    }
-
-                    setLocalAmount(value);
-
-                    if (value === '') {
-                      setSettlementDetail((prev) => ({
-                        ...prev,
-                        settlementAmount: 0,
-                      }));
-                      return;
-                    }
-
-                    const numberValue = Number(value);
-
-                    if (!Number.isNaN(numberValue)) {
-                      setSettlementDetail((prev) => ({
-                        ...prev,
-                        settlementAmount: numberValue,
-                      }));
-                    }
-                  }}
-                  onFocus={(e) => {
-                    e.target.select();
-                  }}
-                  onBlur={() => {
-                    const amount = Number(localAmount);
-
-                    if (localAmount === '' || Number.isNaN(amount)) {
-                      setLocalAmount('');
-                      setSettlementDetail((prev) => ({
-                        ...prev,
-                        settlementAmount: 0,
-                      }));
-                      return;
-                    }
-
-                    let finalAmount = amount;
-
-                    if (settlementDetail.settlementType === 'receive') {
-                      finalAmount = Math.min(Math.max(amount, 0), settlementDetail.pendingBalance);
-                    } else {
-                      finalAmount = Math.max(amount, 0);
-                    }
-
-                    finalAmount = Number(finalAmount.toFixed(3));
-
-                    setSettlementDetail((prev) => ({
-                      ...prev,
-                      settlementAmount: finalAmount,
-                    }));
-
-                    setLocalAmount(
-                      finalAmount > 0
-                        ? parseFloat(finalAmount.toFixed(3)).toString()
-                        : ''
-                    );
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleProceedToConfirm();
-                    }
-                    if (e.key === 'Escape') {
-                      e.preventDefault();
-                      closeSettlementModal();
-                    }
-                  }}
-                  placeholder={`Max ${formatNumber(settlementDetail.pendingBalance)}g`}
-                  suffix="g"
-                />
-              </div>
-
-              {/* REMAINING BALANCE - Clean */}
-              {settlementDetail.settlementAmount > 0 && (
-                <div className="mb-4 rounded-lg border border-[#d3c4af]/20 bg-[#f9f9f7] px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
-                      Remaining Balance:
-                    </span>
-                    <span className="text-sm font-bold text-[#1a1c1b] dark:text-white">
-                      {formatNumber(remainingBalance)} g
-                    </span>
-                  </div>
                 </div>
               )}
-
-
-              {/* ACTION BUTTONS */}
-              <button
-                type="button"
-                onClick={handleProceedToConfirm}
-                disabled={
-                  submitSettlementMutation.isPending ||
-                  settlementDetail.settlementAmount <= 0
-                }
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#785600] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#5d4200] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <ArrowRight className="h-4 w-4" />
-                Proceed to Confirm
-              </button>
-
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400">
+                    Due Balance
+                  </p>
+                  <p className="text-sm font-bold text-[#1a1c1b] dark:text-white">
+                    {formatNumber(settlementDetail.pendingBalance)} g
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400">
+                    Total Bills
+                  </p>
+                  <p className="text-sm font-bold text-[#1a1c1b] dark:text-white">
+                    {settlementDetail.totalBills}
+                  </p>
+                </div>
+              </div>
             </div>
 
+            {/* RECEIVE / GIVE */}
+            <div className="mb-4 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSettlementDetail((prev) => ({
+                    ...prev,
+                    settlementType: 'receive',
+                  }));
+                  setTimeout(() => {
+                    inputRef.current?.focus();
+                    inputRef.current?.select();
+                  }, 50);
+                }}
+                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'receive'
+                  ? 'border-[#785600] bg-[#785600] text-white'
+                  : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                  }`}
+              >
+                <Plus className="h-4 w-4" />
+                Receive
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSettlementDetail((prev) => ({
+                    ...prev,
+                    settlementType: 'give',
+                  }));
+                  setTimeout(() => {
+                    inputRef.current?.focus();
+                    inputRef.current?.select();
+                  }, 50);
+                }}
+                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'give'
+                  ? 'border-[#785600] bg-[#785600] text-white'
+                  : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                  }`}
+              >
+                <Minus className="h-4 w-4" />
+                Give
+              </button>
+            </div>
+
+            {/* AMOUNT INPUT */}
+            <div className="mb-3">
+              <GenericInputField
+                ref={inputRef}
+                name="settlementAmount"
+                type="text"
+                inputMode="decimal"
+                label="Amount (g)"
+                value={localAmount}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (!/^\d*\.?\d{0,3}$/.test(value)) {
+                    return;
+                  }
+                  setLocalAmount(value);
+                  if (value === '') {
+                    setSettlementDetail((prev) => ({
+                      ...prev,
+                      settlementAmount: 0,
+                    }));
+                    return;
+                  }
+                  const numberValue = Number(value);
+                  if (!Number.isNaN(numberValue)) {
+                    setSettlementDetail((prev) => ({
+                      ...prev,
+                      settlementAmount: numberValue,
+                    }));
+                  }
+                }}
+                onBlur={() => {
+                  const amount = Number(localAmount);
+                  if (localAmount === '' || Number.isNaN(amount)) {
+                    setLocalAmount('');
+                    setSettlementDetail((prev) => ({
+                      ...prev,
+                      settlementAmount: 0,
+                    }));
+                    return;
+                  }
+                  let finalAmount = amount;
+                  if (settlementDetail.settlementType === 'receive') {
+                    finalAmount = Math.min(Math.max(amount, 0), settlementDetail.pendingBalance);
+                  } else {
+                    finalAmount = Math.max(amount, 0);
+                  }
+                  finalAmount = Number(finalAmount.toFixed(3));
+                  setSettlementDetail((prev) => ({
+                    ...prev,
+                    settlementAmount: finalAmount,
+                  }));
+                  setLocalAmount(
+                    finalAmount > 0
+                      ? parseFloat(finalAmount.toFixed(3)).toString()
+                      : ''
+                  );
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleProceedToConfirm();
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeSettlementModal();
+                  }
+                }}
+                placeholder={`Max ${formatNumber(settlementDetail.pendingBalance)}g`}
+                suffix="G"
+              />
+            </div>
+
+            {/* REMAINING BALANCE */}
+            {settlementDetail.settlementAmount > 0 && (
+              <div className="mb-4 rounded-lg border border-[#d3c4af]/20 bg-[#f9f9f7] px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
+                    Remaining Balance:
+                  </span>
+                  <span className="text-sm font-bold text-[#1a1c1b] dark:text-white">
+                    {formatNumber(remainingBalance)} g
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* ACTION BUTTONS */}
+            <button
+              type="button"
+              onClick={handleProceedToConfirm}
+              disabled={submitSettlementMutation.isPending || settlementDetail.settlementAmount <= 0}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#785600] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#5d4200] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ArrowRight className="h-4 w-4" />
+              Proceed to Confirm
+            </button>
           </div>
         </div>
-      );
-    };
-
+      </div>
+    );
+  };
 
   // ======================================================
-  // CONFIRMATION MODAL - Clean
+  // CONFIRMATION MODAL
   // ======================================================
 
   const renderConfirmModal = () => {
-    if (!showConfirmModal) {
-      return null;
-    }
+    if (!showConfirmModal) return null;
 
     const newBalance =
       settlementDetail.settlementType === 'receive'
@@ -1274,7 +993,6 @@ const Settlement: React.FC = () => {
           className="relative w-full max-w-sm rounded-xl bg-white shadow-2xl dark:bg-slate-900"
           onMouseDown={(e) => e.stopPropagation()}
         >
-          {/* CLOSE */}
           <button
             type="button"
             onClick={() => setShowConfirmModal(false)}
@@ -1284,7 +1002,6 @@ const Settlement: React.FC = () => {
           </button>
 
           <div className="p-6">
-            {/* Header */}
             <div className="mb-4 text-center">
               <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#785600]/10">
                 <CheckCircle className="h-6 w-6 text-[#785600]" />
@@ -1297,7 +1014,6 @@ const Settlement: React.FC = () => {
               </p>
             </div>
 
-            {/* Details */}
             <div className="mb-5 space-y-2 rounded-lg border border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-800/50">
               <div className="flex justify-between text-sm">
                 <span className="text-[#4f4535] dark:text-slate-400">Client:</span>
@@ -1319,9 +1035,7 @@ const Settlement: React.FC = () => {
               </div>
             </div>
 
-            {/* BUTTONS */}
-            <div className="flex ">
-
+            <div className="flex">
               <button
                 type="button"
                 onClick={handleSaveSettlement}
@@ -1329,9 +1043,7 @@ const Settlement: React.FC = () => {
                 className="flex-1 rounded-lg bg-[#785600] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5d4200] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitSettlementMutation.isPending ? (
-                  <>
-                    <div className="mx-auto h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  </>
+                  <div className="mx-auto h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 ) : (
                   'Confirm & Save'
                 )}
@@ -1343,29 +1055,23 @@ const Settlement: React.FC = () => {
     );
   };
 
-
   // ======================================================
   // MAIN RETURN
   // ======================================================
 
   return (
     <div className="bg-[#f9f9f7] dark:bg-slate-950">
-
       <div className="px-4 py-4 md:px-8 md:py-6">
-
         {/* PAGE HEADER */}
         <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-
           <PageHeader
             title="Settlement"
             subtitle="Manage client settlements and gold balances"
           />
-
         </div>
 
         {/* STATISTICS */}
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* TOTAL CLIENTS */}
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
@@ -1382,7 +1088,6 @@ const Settlement: React.FC = () => {
             </div>
           </div>
 
-          {/* PENDING */}
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
@@ -1399,7 +1104,6 @@ const Settlement: React.FC = () => {
             </div>
           </div>
 
-          {/* SETTLED */}
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
@@ -1416,7 +1120,6 @@ const Settlement: React.FC = () => {
             </div>
           </div>
 
-          {/* NET BALANCE */}
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
@@ -1424,9 +1127,7 @@ const Settlement: React.FC = () => {
                   Net Balance
                 </span>
                 <span className="text-lg font-bold text-black dark:text-white">
-                  {formatNumber(
-                    totalPositiveBalance - totalNegativeBalance
-                  )} G
+                  {formatNumber(totalPositiveBalance - totalNegativeBalance)} G
                 </span>
               </div>
               <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-amber-900/30 border border-[#785600]/20 dark:border-amber-700/30">
@@ -1439,90 +1140,56 @@ const Settlement: React.FC = () => {
         {/* FILTERS */}
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-1 items-center gap-2 sm:max-w-md">
-
             <div className="relative flex-1">
-
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
-
               <input
                 type="text"
                 placeholder="Search by client name or phone..."
                 value={searchTerm}
-                onChange={(e) =>
-                  setSearchTerm(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-1.5 pl-9 pr-3 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
-
             </div>
 
-
             <select
-              value={
-                balanceFilter
-              }
-              onChange={(e) =>
-                setBalanceFilter(
-                  e.target.value
-                )
-              }
+              value={balanceFilter}
+              onChange={(e) => setBalanceFilter(e.target.value)}
               className="rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             >
-              <option value="all">
-                All Balance
-              </option>
-
-              <option value="positive">
-                Receiving (+)
-              </option>
-
-              <option value="negative">
-                Giving (-)
-              </option>
-
-              <option value="zero">
-                Zero Balance
-              </option>
+              <option value="all">All Balance</option>
+              <option value="positive">Receiving (+)</option>
+              <option value="negative">Giving (-)</option>
+              <option value="zero">Zero Balance</option>
             </select>
-
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-
-            <input
-              type="date"
-              value={
-                dateRange.from
-              }
-              onChange={(e) =>
-                setDateRange({
-                  ...dateRange,
-                  from: e.target.value,
-                })
-              }
-              className="rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            <GenericWeeklyDatePicker
+              key={`from-${dateRange.from || 'empty'}`}
+              id="from-date-settlement"
+              placeholder="DD/MM/YYYY"
+              mode="from"
+              initialDates={[
+                ...(dateRange.from ? [new Date(dateRange.from)] : []),
+                ...(dateRange.to ? [new Date(dateRange.to)] : [])
+              ]}
+              onDateChange={handleFromDateChange}
+              className="w-32 sm:w-36 md:w-40"
             />
 
-
-
-
-            <input
-              type="date"
-              value={
-                dateRange.to
-              }
-              onChange={(e) =>
-                setDateRange({
-                  ...dateRange,
-                  to: e.target.value,
-                })
-              }
-              className="rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            <GenericWeeklyDatePicker
+              key={`to-${dateRange.to || 'empty'}`}
+              id="to-date-settlement"
+              placeholder="DD/MM/YYYY"
+              mode="to"
+              initialDates={[
+                ...(dateRange.from ? [new Date(dateRange.from)] : []),
+                ...(dateRange.to ? [new Date(dateRange.to)] : [])
+              ]}
+              onDateChange={handleToDateChange}
+              className="w-32 sm:w-36 md:w-40"
             />
 
-            {/* Print Report Button */}
             <GenericButton
               onClick={() => {
                 if (filteredSettlements.length === 0) {
@@ -1537,62 +1204,28 @@ const Settlement: React.FC = () => {
               <span>Print</span>
             </GenericButton>
           </div>
-
         </div>
-
 
         {/* TABLE */}
         <div className="-mx-3 sm:-mx-4 md:mx-0">
-
           <GenericTable<SettlementEntry>
-            data={
-              filteredSettlements
-            }
-
-            columns={
-              columns
-            }
-
-            onSave={(item) =>
-              console.log(
-                'Save:',
-                item
-              )
-            }
-
-            emptyMessage={
-              isSettlementsLoading
-                ? 'Loading settlement data...'
-                : 'No settlement entries found.'
-            }
-
-            isLoading={
-              isSettlementsLoading
-            }
-
-            renderActions={
-              renderActions
-            }
-
-            showSrNo={
-              true
-            }
-
+            data={filteredSettlements}
+            columns={columns}
+            onSave={(item) => console.log('Save:', item)}
+            emptyMessage={isSettlementsLoading ? 'Loading settlement data...' : 'No settlement entries found.'}
+            isLoading={isSettlementsLoading}
+            renderActions={renderActions}
+            showSrNo={true}
             srNoLabel="Sr No."
           />
-
         </div>
-
       </div>
-
 
       {/* MODALS */}
       {renderSettlementModal()}
       {renderConfirmModal()}
-
     </div>
   );
 };
-
 
 export default Settlement;
