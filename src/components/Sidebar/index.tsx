@@ -116,12 +116,12 @@ const Sidebar = ({
       icon: <MdPersonAdd size={22} />,
       roles: ['SUPERADMIN'],
     },
-    {
-      label: 'PDF Header Design',
-      path: '/pdfdesign',
-      icon: <MdPictureAsPdf  size={22} />,
-      roles: ['ADMIN'],
-    },
+    // {
+    //   label: 'PDF Header Design',
+    //   path: '/pdfdesign',
+    //   icon: <MdPictureAsPdf  size={22} />,
+    //   roles: ['ADMIN'],
+    // },
     {
       label: 'Admin Profile',
       path: '/adminprofile',
