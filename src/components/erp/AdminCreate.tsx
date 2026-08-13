@@ -476,7 +476,7 @@ const AdminCreate: React.FC = () => {
 
   return (
     <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
-      <div className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6 max-w-7xl mx-auto">
+      <div className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6 mx-auto">
         {/* Page Header with Right Side Add Admin Button */}
         <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <PageHeader title="Admin Management" />
