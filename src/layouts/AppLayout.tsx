@@ -4,14 +4,15 @@ import { Outlet, useNavigate } from '@tanstack/react-router';
 import React, { useEffect, useState } from 'react';
 import { Menu } from 'lucide-react';
 
-const AppLayout = () => {
+const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { isAuthenticated, isLoading } = useAuthContext();
-  
+  const { isAuthenticated, isLoading, user } = useAuthContext();
+  const [isReady, setIsReady] = useState(false);
+
   // Check if screen is mobile
   useEffect(() => {
     const checkScreenSize = () => {
@@ -28,10 +29,43 @@ const AppLayout = () => {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
+  // Load sidebar state from localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebar-collapsed');
+    if (savedState !== null) {
+      setSidebarCollapsed(savedState === 'true');
+    }
+  }, []);
+
+  // Wait for auth to be ready
+  useEffect(() => {
+    if (!isLoading) {
+      setIsReady(true);
+    }
+  }, [isLoading]);
+
+  // Redirect based on user role
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user) {
+      const currentPath = window.location.pathname;
+      
+      // SUPERADMIN should go to addadmin if they're on billing
+      if (user.role === 'SUPERADMIN' && currentPath === '/billing') {
+        navigate({ to: '/addadmin', replace: true });
+      }
+      
+      // ADMIN should go to billing if they're on addadmin
+      if (user.role === 'ADMIN' && currentPath === '/addadmin') {
+        navigate({ to: '/billing', replace: true });
+      }
+    }
+  }, [isLoading, isAuthenticated, user, navigate]);
+
+  // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate({
-        to: "/signin",
+        to: '/signin',
         replace: true,
       });
     }
@@ -43,13 +77,18 @@ const AppLayout = () => {
     return sidebarCollapsed ? 'ml-[72px]' : 'ml-[260px]';
   };
 
-  // Show loading or redirect if not authenticated
-  if (!isAuthenticated) {
+  // Show loading if still checking authentication
+  if (isLoading || !isReady) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#B8860B] border-t-transparent"></div>
       </div>
     );
+  }
+
+  // Redirect if not authenticated
+  if (!isAuthenticated) {
+    return null;
   }
 
   return (
@@ -79,14 +118,11 @@ const AppLayout = () => {
             >
               <Menu className="h-5 w-5" />
             </button>
-            {/* <h1 className="ml-2 font-headline text-xl font-black italic text-[#1a1a2e]">
-              Matoshree Gold
-            </h1> */}
           </div>
         )}
 
         <main className="min-h-full">
-          <Outlet />
+          {children ?? <Outlet />}
         </main>
       </div>
 

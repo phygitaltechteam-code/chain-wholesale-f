@@ -483,7 +483,7 @@ const OpeningStock: React.FC = () => {
         }
         return (
           <span className="font-mono text-[#1a1c1b] dark:text-white">
-            {formatGrams(item.grams || 0)}
+            {formatGrams(item.grams || 0)} G
           </span>
         );
       },
@@ -518,7 +518,7 @@ const OpeningStock: React.FC = () => {
         }
         return (
           <span className="font-mono text-[#1a1c1b] dark:text-white">
-            {item.purity || '-'}
+            {item.purity || '-'} %
           </span>
         );
       },

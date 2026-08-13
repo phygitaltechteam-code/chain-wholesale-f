@@ -9,6 +9,7 @@ import { useGetSizes, Size } from '@/lib/api/sizes';
 import { useTar, useCreateTar, useSaveTar, Tar, useGetTarHistory } from '@/lib/api/tar';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
+import { useGetHeader } from '@/lib/api/headerapi';
 
 interface TarEntry {
     id: string;
@@ -49,6 +50,7 @@ const getSizeName = (size: any): string => {
 };
 
 const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
+    const getpdfheaderdata = useGetHeader();
     const navigate = useNavigate();
     const [tarEntries, setTarEntries] = useState<TarEntry[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -143,19 +145,27 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     const getFilteredHistory = () => {
         let filtered = tarHistory;
 
-        if (dateRange.length === 2) {
-            const from = new Date(dateRange[0]);
-            const to = new Date(dateRange[1]);
-
-            from.setHours(0, 0, 0, 0);
-            to.setHours(23, 59, 59, 999);
-
-            filtered = tarHistory.filter((item: any) => {
-                if (!item?.createdAt) return false;
-                const itemDate = new Date(item.createdAt);
-                if (Number.isNaN(itemDate.getTime())) return false;
-                return itemDate >= from && itemDate <= to;
-            });
+        if (dateRange && dateRange.length > 0) {
+            if (dateRange[0]) {
+                const from = new Date(dateRange[0]);
+                from.setHours(0, 0, 0, 0);
+                filtered = filtered.filter((item: any) => {
+                    if (!item?.createdAt) return false;
+                    const itemDate = new Date(item.createdAt);
+                    if (Number.isNaN(itemDate.getTime())) return false;
+                    return itemDate >= from;
+                });
+            }
+            if (dateRange[1]) {
+                const to = new Date(dateRange[1]);
+                to.setHours(23, 59, 59, 999);
+                filtered = filtered.filter((item: any) => {
+                    if (!item?.createdAt) return false;
+                    const itemDate = new Date(item.createdAt);
+                    if (Number.isNaN(itemDate.getTime())) return false;
+                    return itemDate <= to;
+                });
+            }
         }
 
         return filtered;
@@ -240,6 +250,23 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             })
             .join('');
 
+        const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+        const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
+        const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+        const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+        const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+        const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
+        const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+        const invocationColor = headerInfo.invocationColor || '#a84b20';
+        const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
+        const descriptionColor = headerInfo.descriptionColor || '#8b451f';
+        const proprietorColor = headerInfo.proprietorColor || '#a84b20';
+        const phoneColor = headerInfo.phoneColor || '#a84b20';
+        const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
+        const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
+        const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
+        const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+
         // Set the content with PDF Header - Minimal padding
         printContainer.innerHTML = `
             <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
@@ -248,17 +275,17 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
           <!-- PDF Header -->
           <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
-              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री गणेश प्रसन्न ॥</span>
-              <span style="font-size:20px;font-weight:bold;color:#c43d5c;">मातोश्री चेन फॅक्टरी, मिरज</span>
-              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री साई प्रसन्न ॥</span>
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
+              <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
             </div>
-            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#8b451f;line-height:1.2;">
-              आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+            <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
+              ${description}
             </div>
-            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#a84b20;line-height:1.2;">
-              प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
+            <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
+              ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
             </div>
-            <div style="border-bottom:2px solid #c43d5c;margin:2px 0 4px 0;"></div>
+            <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
           </div>
 
                 <!-- Title -->
@@ -404,7 +431,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             header: 'Fine (G)',
             render: (item) => (
                 <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-                    {formatNumber(item.fine)}
+                    {formatNumber(item.fine)} G
                 </span>
             ),
         },
@@ -413,7 +440,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             header: 'Tar (G)',
             render: (item) => (
                 <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-                    {formatNumber(item.tar)}
+                    {formatNumber(item.tar)} G
                 </span>
             ),
         },
@@ -422,7 +449,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             header: 'Scrap (G)',
             render: (item) => (
                 <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-                    {formatNumber(item.scrap)}
+                    {formatNumber(item.scrap)} G
                 </span>
             ),
         },
@@ -431,7 +458,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             header: 'Loss (G)',
             render: (item) => (
                 <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-                    {formatNumber(item.loss)}
+                    {formatNumber(item.loss)} G
                 </span>
             ),
         },
@@ -827,7 +854,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             header: 'Fine (लगड)',
             render: (item) => (
                 <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumberDisplay(item.fine)}
+                    {formatNumberDisplay(item.fine)} G
                 </span>
             ),
         },
@@ -837,28 +864,33 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             render: (item, index) => {
                 if (!item.isSaved) {
                     return (
-                        <input
-                            type="text"
-                            inputMode="decimal"
-                            value={
-                                item.tarRaw !== undefined
-                                    ? item.tarRaw
-                                    : item.tar === 0
-                                        ? ''
-                                        : item.tar
-                            }
-                            onChange={(e) =>
-                                handleInlineChange(index, 'tar', e.target.value)
-                            }
-                            placeholder="0.000"
-                            className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                        />
+                        <div className="relative inline-block">
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                value={
+                                    item.tarRaw !== undefined
+                                        ? item.tarRaw
+                                        : item.tar === 0
+                                            ? ''
+                                            : item.tar
+                                }
+                                onChange={(e) =>
+                                    handleInlineChange(index, 'tar', e.target.value)
+                                }
+                                placeholder="0.000"
+                                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+                                G
+                            </span>
+                        </div>
                     );
                 }
 
                 return (
                     <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                        {formatNumberDisplay(item.tar)}
+                        {formatNumberDisplay(item.tar)} G
                     </span>
                 );
             },
@@ -869,22 +901,27 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             render: (item, index) => {
                 if (!item.isSaved) {
                     return (
-                        <input
-                            type="text"
-                            inputMode="decimal"
-                            value={
-                                item.scrapRaw !== undefined
-                                    ? item.scrapRaw
-                                    : item.scrap === 0
-                                        ? ''
-                                        : item.scrap
-                            }
-                            onChange={(e) =>
-                                handleInlineChange(index, 'scrap', e.target.value)
-                            }
-                            placeholder="0.000"
-                            className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                        />
+                        <div className="relative inline-block">
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                value={
+                                    item.scrapRaw !== undefined
+                                        ? item.scrapRaw
+                                        : item.scrap === 0
+                                            ? ''
+                                            : item.scrap
+                                }
+                                onChange={(e) =>
+                                    handleInlineChange(index, 'scrap', e.target.value)
+                                }
+                                placeholder="0.000"
+                                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+                                G
+                            </span>
+                        </div>
                     );
                 }
 
@@ -1031,15 +1068,14 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                                         id="from-date-tar"
                                         placeholder="DD/MM/YYYY"
                                         mode="from"
-                                        initialDates={dateRange.length === 2 ? dateRange : []}
+                                        initialDates={dateRange}
                                         onDateChange={(dates) => {
-                                            if (dates.length > 0) {
-                                                // existing logic
+                                            if (dates && dates.length > 0) {
+                                                const from = new Date(dates[0]);
+                                                from.setHours(0, 0, 0, 0);
+                                                setDateRange(prev => [from, prev[1] || from]);
                                             } else {
-                                                setDateRange({
-                                                    from: '',
-                                                    to: '',
-                                                });
+                                                setDateRange(prev => [undefined as any, prev[1]]);
                                             }
                                         }}
                                         className="w-full"
@@ -1052,15 +1088,14 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                                         id="to-date-tar"
                                         placeholder="DD/MM/YYYY"
                                         mode="to"
-                                        initialDates={dateRange.length === 2 ? dateRange : []}
+                                        initialDates={dateRange}
                                         onDateChange={(dates) => {
-                                            if (dates.length > 0) {
-                                                // existing logic
+                                            if (dates && dates.length > 0) {
+                                                const to = new Date(dates[0]);
+                                                to.setHours(23, 59, 59, 999);
+                                                setDateRange(prev => [prev[0] || to, to]);
                                             } else {
-                                                setDateRange({
-                                                    from: '',
-                                                    to: '',
-                                                });
+                                                setDateRange(prev => [prev[0], undefined as any]);
                                             }
                                         }}
                                         className="w-full"

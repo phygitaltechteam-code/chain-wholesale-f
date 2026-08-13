@@ -1,19 +1,10 @@
 // components/Sidebar.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import {
-  MdDashboard,
-  MdCategory,
-  MdStraighten,
-  MdDiamond,
   MdInventory2,
   MdPrecisionManufacturing,
-  MdProductionQuantityLimits,
-  MdBuild,
-  MdEngineering,
-  MdHandyman,
   MdAssessment,
-  MdSettings,
   MdLogout,
   MdMenu,
   MdClose,
@@ -21,14 +12,16 @@ import {
   MdChevronRight,
   MdExpandMore,
   MdGroups,
-  MdStore,
-  MdReceiptLong,
   MdAccountBalance,
   MdReceipt,
   MdBackup,
+  MdAdd,
+  MdPersonAdd,
+  MdDesignServices,
+  MdAccountCircle,
+  MdPictureAsPdf,
 } from 'react-icons/md';
 import { useAuthContext } from '@/context/AuthContext';
-import { useGetBackUp } from '@/lib/api/backup';
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
@@ -71,6 +64,107 @@ const Sidebar = ({
   const role = user?.role;
   const isMobileDevice = propIsMobile !== undefined ? propIsMobile : isMobile;
 
+  // ============================================================
+  // ALL MENU ITEMS
+  // ============================================================
+  const allMenuItems: MenuItem[] = [
+    {
+      label: 'Billing',
+      path: '/billing',
+      icon: <MdReceipt size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
+      label: 'Settlement',
+      path: '/setlment/settlement',
+      icon: <MdAccountBalance size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
+      label: 'Manufacturing',
+      path: '/manufacturingprocess/process',
+      icon: <MdPrecisionManufacturing size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
+      label: 'Stocks',
+      path: '/Stocks/stockpage',
+      icon: <MdInventory2 size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
+      label: 'Client',
+      path: '/client/client',
+      icon: <MdGroups size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
+      label: 'Manufacturing Report',
+      path: '/reports/manufacturingreport',
+      icon: <MdAssessment size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
+      label: 'Backup & Restore',
+      path: '/backup&restore',
+      icon: <MdBackup size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
+      label: 'Add Admin',
+      path: '/addadmin',
+      icon: <MdPersonAdd size={22} />,
+      roles: ['SUPERADMIN'],
+    },
+    {
+      label: 'PDF Header Design',
+      path: '/pdfdesign',
+      icon: <MdPictureAsPdf  size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
+      label: 'Admin Profile',
+      path: '/adminprofile',
+      icon: <MdAccountCircle size={22} />,
+      roles: ['ADMIN'],
+    },
+  ];
+
+  // Filter menu items based on user role - use useMemo for performance
+  const menuItems = useMemo(() => {
+    if (!role) return [];
+
+    const roleFiltered = allMenuItems.filter((item) => {
+      const hasRole = item.roles.includes(role);
+
+      return hasRole;
+    });
+    // Additional UI restriction
+    let finalFiltered = roleFiltered;
+    if (role === 'SUPERADMIN') {
+      finalFiltered = roleFiltered.filter(item => ['Add Admin', 'PDF Header Design', 'Admin Profile'].includes(item.label));
+    } else if (role === 'ADMIN') {
+      finalFiltered = roleFiltered.filter(item => item.label !== 'Add Admin');
+    }
+
+    return finalFiltered;
+  }, [role]);
+
+  // Auto-expand menu if subroute is active
+  useEffect(() => {
+    if (!menuItems.length) return;
+
+    menuItems.forEach((item) => {
+      if (item.subroutes) {
+        const isSubrouteActive = item.subroutes.some(
+          (subroute) => subroute.path && pathname.startsWith(subroute.path)
+        );
+        if (isSubrouteActive && !isCollapsed && !isMobileDevice) {
+          setExpandedMenus((prev) => new Set(prev).add(item.label));
+        }
+      }
+    });
+  }, [menuItems, pathname, isCollapsed, isMobileDevice]);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -116,20 +210,6 @@ const Sidebar = ({
     }
   }, [isCollapsed, onCollapseChange]);
 
-  // Auto expand menu if subroute is active
-  useEffect(() => {
-    allMenuItems.forEach((item) => {
-      if (item.subroutes) {
-        const isSubrouteActive = item.subroutes.some(
-          (subroute) => subroute.path && pathname.startsWith(subroute.path)
-        );
-        if (isSubrouteActive && !isCollapsed && !isMobileDevice) {
-          setExpandedMenus((prev) => new Set(prev).add(item.label));
-        }
-      }
-    });
-  }, [pathname, isCollapsed, isMobileDevice]);
-
   const toggleSubmenu = (label: string) => {
     if (isCollapsed) return;
     setExpandedMenus((prev) => {
@@ -143,78 +223,8 @@ const Sidebar = ({
     });
   };
 
-  // Menu items with Gold Chain Manufacturing ERP flow
-  const allMenuItems: MenuItem[] = [
-
-    // ========== BILLING ==========
-    //   {
-    //   label: 'Dashboard',
-    //   path: '/dashboard',
-    //   icon: <MdReceipt size={22} />,
-    //   roles: ['ADMIN'],
-    // },
-    // ========== BILLING ==========
-    {
-      label: 'Billing',
-      path: '/billing',
-      icon: <MdReceipt size={22} />,
-      roles: ['ADMIN'],
-    },
-
-    // ========== SETTLEMENT ==========
-    {
-      label: 'Settlement',
-      path: '/setlment/settlement',
-      icon: <MdAccountBalance size={22} />,
-      roles: ['ADMIN'],
-    },
-
-    // ========== MANUFACTURING ==========
-    {
-      label: 'Manufacturing',
-      path: '/manufacturingprocess/process',
-      icon: <MdPrecisionManufacturing size={22} />,
-      roles: ['ADMIN'],
-    },
-
-    // ========== STOCKS ==========
-    {
-      label: 'Stocks',
-      path: '/Stocks/stockpage',
-      icon: <MdInventory2 size={22} />,
-      roles: ['ADMIN'],
-    },
-
-    // ========== CLIENT ==========
-    {
-      label: 'Client',
-      path: '/client/client',
-      icon: <MdGroups size={22} />,
-      roles: ['ADMIN'],
-    },
-    // ========== BACKUP ==========
-    // ========== MANUFACTURING REPORT ==========
-    {
-      label: 'Manufacturing Report',
-      path: '/reports/manufacturingreport',
-      icon: <MdAssessment size={22} />,
-      roles: ['ADMIN'],
-    },
-    {
-      label: 'Backup & Restore',
-      path: '/backup&restore',
-      icon: <MdBackup size={22} />,
-      roles: ['ADMIN'],
-    },
-  ];
-
-  const menuItems = allMenuItems.filter((item) => {
-    if (!role) return false;
-    return item.roles.includes(role);
-  });
-
   const isActive = (itemPath: string) => {
-    if (itemPath === '/dashboard') {
+    if (itemPath === '/') {
       return pathname === itemPath;
     }
     if (itemPath !== '/') {
@@ -256,7 +266,6 @@ const Sidebar = ({
   const getRoleDisplay = () => {
     if (role === 'SUPERADMIN') return 'Super Admin';
     if (role === 'ADMIN') return 'Admin';
-    if (role === 'SHOP') return 'Shop Owner';
     return 'User';
   };
 
@@ -269,6 +278,16 @@ const Sidebar = ({
   const getPortalName = () => {
     return 'Sona Gold';
   };
+
+  // Debug logging
+  console.log('🔄 Sidebar render:', {
+    role,
+    isAuthenticated,
+    menuItemsCount: menuItems.length,
+    menuItems: menuItems.map(i => i.label),
+    isCollapsed,
+    isMobileDevice
+  });
 
   const MobileMenuButton = () => (
     <button
@@ -437,12 +456,19 @@ const Sidebar = ({
       )}
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-2">
-        {menuItems.map((item) => renderMenuItem(item))}
+        {menuItems.length > 0 ? (
+          menuItems.map((item) => renderMenuItem(item))
+        ) : (
+          <div className="text-center text-slate-500 text-sm py-4">
+            No menu items available
+          </div>
+        )}
       </nav>
 
       <div className="border-t border-white/10 px-3 py-4">
         <div
-          className={`flex items-center ${isCollapsed && !isMobileDevice ? 'justify-center' : 'gap-3'}`}
+          className={`flex items-center ${isCollapsed && !isMobileDevice ? 'justify-center' : 'gap-3'
+            }`}
         >
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#B8860B]/20 md:h-10 md:w-10">
             <span className="text-sm font-semibold text-[#B8860B] md:text-base">
