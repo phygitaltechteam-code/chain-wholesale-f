@@ -9,6 +9,7 @@ import { useGetStockReport } from "@/lib/api/reportapi";
 import GenericButton from "@/components/Forms/Buttons/GenericButton";
 import GenericDatePicker from "@/components/Forms/DatePicker/GenericDatePicker";
 import GenericWeeklyDatePicker from "@/components/Forms/DatePicker/GenericWeeklyDatePicker";
+import { useGetHeader } from "@/lib/api/headerapi";
 
 interface StockReportEntry {
   id: string;
@@ -77,15 +78,12 @@ export default function StockReport() {
     return { monday, sunday };
   };
 
-  const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const { monday, sunday } = getDefaultWeekRange();
-    return [monday, sunday];
-  });
-
-  const [fromDate, setFromDate] = useState<Date | null>();
-  const [toDate, setToDate] = useState<Date | null>();
+  const [fromDate, setFromDate] = useState<Date | null>(() => getDefaultWeekRange().monday);
+  const [toDate, setToDate] = useState<Date | null>(() => getDefaultWeekRange().sunday);
   const printRef = useRef<HTMLDivElement>(null);
   const { data: stockData, isLoading, isError, refetch } = useGetStockReport(d);
+
+  const getpdfheaderdata = useGetHeader();
 
   // State for transformed data
   const [reportData, setReportData] = useState<StockReportEntry[]>([]);
@@ -203,19 +201,23 @@ export default function StockReport() {
 
   // Handle From Date
   const handleFromDateChange = (selectedDates: Date[]) => {
-    if (selectedDates?.length > 0) {
+    if (selectedDates && selectedDates.length > 0) {
       const selected = new Date(selectedDates[0]);
       selected.setHours(0, 0, 0, 0);
       setFromDate(selected);
+    } else {
+      setFromDate(null);
     }
   };
 
   // Handle To Date
   const handleToDateChange = (selectedDates: Date[]) => {
-    if (selectedDates?.length > 0) {
+    if (selectedDates && selectedDates.length > 0) {
       const selected = new Date(selectedDates[0]);
       selected.setHours(23, 59, 59, 999);
       setToDate(selected);
+    } else {
+      setToDate(null);
     }
   };
 
@@ -296,7 +298,7 @@ export default function StockReport() {
       header: "Purity",
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {item.purity}
+          {item.purity} %
         </span>
       ),
     },
@@ -314,7 +316,7 @@ export default function StockReport() {
       header: "WT (G)",
       render: (item) => (
         <span className='text-black font-bold'>
-          {item.wt > 0 ? '+' : ''}{formatNumber(item.wt)}
+          {item.wt > 0 ? '+' : ''}{formatNumber(item.wt)} G
         </span>
       ),
     },
@@ -366,6 +368,23 @@ export default function StockReport() {
     // Calculate total
     const totalWt = filteredData.reduce((sum, item) => sum + item.wt, 0);
 
+    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
+    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const invocationColor = headerInfo.invocationColor || '#a84b20';
+    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
+    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
+    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
+    const phoneColor = headerInfo.phoneColor || '#a84b20';
+    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+
     // Set the content with PDF Header
     printContainer.innerHTML = `
       <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
@@ -374,17 +393,17 @@ export default function StockReport() {
           <!-- PDF Header - All in One Line -->
           <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
-              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री गणेश प्रसन्न ॥</span>
-              <span style="font-size:20px;font-weight:bold;color:#c43d5c;">मातोश्री चेन फॅक्टरी, मिरज</span>
-              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री साई प्रसन्न ॥</span>
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
+              <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
             </div>
-            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#8b451f;line-height:1.2;">
-              आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+            <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
+              ${description}
             </div>
-            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#a84b20;line-height:1.2;">
-              प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ९३०९३५५१३६
+            <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
+              ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
             </div>
-            <div style="border-bottom:2px solid #c43d5c;margin:2px 0 4px 0;"></div>
+            <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
           </div>
 
           <!-- Title and Date Range in one line -->
@@ -593,56 +612,23 @@ export default function StockReport() {
 
             <div className="flex w-full sm:w-auto items-center gap-2">
               <GenericWeeklyDatePicker
-                id="to-date-box"
-                placeholder="DD/MM/YYYY"
-
-                mode="to"
-                initialDates={dateRange}
-                onDateChange={(dates) => {
-                  if (dates.length > 0) {
-                    // existing logic
-                  } else {
-                    setDateRange({
-                      from: '',
-                      to: '',
-                    });
-                  }
-                }}
-                className="w-32 sm:w-36 md:w-40"
-              />
-
-              <GenericWeeklyDatePicker
                 id="from-date-box"
                 mode="from"
                 placeholder="DD/MM/YYYY"
-                initialDates={dateRange}
-                onDateChange={(dates) => {
-                  if (dates.length > 0) {
-                    setDateRange(dates);
-                    setFromDate(dates[0]);
-                    if (dates[1]) setToDate(dates[1]);
-                  } else {
-                    setDateRange({
-                      from: '',
-                      to: '',
-                    });
-                  }
-                }}
+                initialDates={fromDate ? [fromDate] : []}
+                onDateChange={handleFromDateChange}
+                className="w-32 sm:w-36 md:w-40"
+              />
+              <GenericWeeklyDatePicker
+                id="to-date-box"
+                mode="to"
+                placeholder="DD/MM/YYYY"
+                initialDates={toDate ? [toDate] : []}
+                onDateChange={handleToDateChange}
                 className="w-32 sm:w-36 md:w-40"
               />
             </div>
 
-            {/* To Date - Sunday/end date */}
-            <div className="w-full sm:w-40">
-              <GenericWeeklyDatePicker
-                id="manufacturing-to-date"
-                mode="to"
-                initialDates={[fromDate, toDate]}
-                onDateChange={handleToDateChange}
-                placeholder="DD/MM/YYYY"
-                className="w-full"
-              />
-            </div>
 
             {/* Print Button */}
             <button

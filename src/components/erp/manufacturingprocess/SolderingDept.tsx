@@ -8,6 +8,7 @@ import { useGetSoldering, useGetSolderingHistory, useSubmitSoldering } from '@/l
 import { useSubmitCutting, useSubmitMoveCutting } from '@/lib/api/cutting';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
+import { useGetHeader } from '@/lib/api/headerapi';
 
 // ======================================================
 // HELPER: Get Current Week Range
@@ -67,6 +68,7 @@ const getSizeName = (size: any): string => {
 };
 
 const SolderingDept: React.FC = () => {
+  const getpdfheaderdata = useGetHeader();
   const navigate = useNavigate();
   const [solderingEntries, setSolderingEntries] = useState<SolderingEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -258,16 +260,21 @@ const SolderingDept: React.FC = () => {
   const getFilteredHistory = () => {
     let filtered = solderingHistory;
 
-    if (fromDate && toDate) {
+    if (fromDate) {
       const from = new Date(fromDate);
-      const to = new Date(toDate);
-
-      to.setHours(23, 59, 59, 999);
-
-      filtered = solderingHistory.filter((item: any) => {
+      from.setHours(0, 0, 0, 0);
+      filtered = filtered.filter((item: any) => {
         const itemDate = new Date(item.createdAt);
+        return itemDate >= from;
+      });
+    }
 
-        return itemDate >= from && itemDate <= to;
+    if (toDate) {
+      const to = new Date(toDate);
+      to.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((item: any) => {
+        const itemDate = new Date(item.createdAt);
+        return itemDate <= to;
       });
     }
 
@@ -362,41 +369,41 @@ const SolderingDept: React.FC = () => {
       })
       .join('');
 
+    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
+    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const invocationColor = headerInfo.invocationColor || '#a84b20';
+    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
+    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
+    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
+    const phoneColor = headerInfo.phoneColor || '#a84b20';
+    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+
     // Set print content
     printContainer.innerHTML = `
      <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
-
         <div>
-
           <!-- Header Section -->
           <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-
             <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
-
-              <span style="font-size:11px;font-weight:bold;color:#a84b20;">
-                ॥ श्री गणेश प्रसन्न ॥
-              </span>
-
-              <span style="font-size:20px;font-weight:bold;color:#c43d5c;">
-                मातोश्री चेन फॅक्टरी, मिरज
-              </span>
-
-              <span style="font-size:11px;font-weight:bold;color:#a84b20;">
-                ॥ श्री साई प्रसन्न ॥
-              </span>
-
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
+              <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
             </div>
-
-            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#8b451f;line-height:1.2;">
-              आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+            <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
+              ${description}
             </div>
-
-            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#a84b20;line-height:1.2;">
-              प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
+            <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
+              ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
             </div>
-
-            <div style="border-bottom:2px solid #c43d5c;margin:2px 0 4px 0;"></div>
-
+            <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
           </div>
 
           <!-- Title -->
@@ -618,7 +625,7 @@ const SolderingDept: React.FC = () => {
 
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.chainWeight)}
+          {formatNumber(item.chainWeight)} G
         </span>
       ),
     },
@@ -629,7 +636,7 @@ const SolderingDept: React.FC = () => {
 
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.chainReceived)}
+          {formatNumber(item.chainReceived)} G
         </span>
       ),
     },
@@ -640,7 +647,7 @@ const SolderingDept: React.FC = () => {
 
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.powder)}
+          {formatNumber(item.powder)} G
         </span>
       ),
     },
@@ -651,7 +658,7 @@ const SolderingDept: React.FC = () => {
 
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.increase)}
+          {formatNumber(item.increase)} G
         </span>
       ),
     },
@@ -662,7 +669,7 @@ const SolderingDept: React.FC = () => {
 
       render: (item) => (
         <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.scrap)}
+          {formatNumber(item.scrap)} G
         </span>
       ),
     },
@@ -1083,7 +1090,7 @@ const SolderingDept: React.FC = () => {
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(
             item.chainGiven
-          )}
+          )} G
         </span>
       ),
     },
@@ -1095,25 +1102,30 @@ const SolderingDept: React.FC = () => {
       render: (item, index) => {
         if (item.isEditing) {
           return (
-            <input
-              type="text"
-              value={
-                item.chainReceivedRaw !== undefined
-                  ? item.chainReceivedRaw
-                  : item.chainReceived === 0
-                    ? ''
-                    : item.chainReceived
-              }
-              onChange={(e) =>
-                handleInlineChange(
-                  index,
-                  'chainReceived',
-                  e.target.value
-                )
-              }
-              placeholder="0.000"
-              className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
+            <div className="relative inline-block">
+              <input
+                type="text"
+                value={
+                  item.chainReceivedRaw !== undefined
+                    ? item.chainReceivedRaw
+                    : item.chainReceived === 0
+                      ? ''
+                      : item.chainReceived
+                }
+                onChange={(e) =>
+                  handleInlineChange(
+                    index,
+                    'chainReceived',
+                    e.target.value
+                  )
+                }
+                placeholder="0.000"
+                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+                G
+              </span>
+            </div>
           );
         }
 
@@ -1121,7 +1133,7 @@ const SolderingDept: React.FC = () => {
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
             {formatNumberDisplay(
               item.chainReceived
-            )}
+            )} G
           </span>
         );
       },
@@ -1134,31 +1146,36 @@ const SolderingDept: React.FC = () => {
       render: (item, index) => {
         if (item.isEditing) {
           return (
-            <input
-              type="text"
-              value={
-                item.powderRaw !== undefined
-                  ? item.powderRaw
-                  : item.powder === 0
-                    ? ''
-                    : item.powder
-              }
-              onChange={(e) =>
-                handleInlineChange(
-                  index,
-                  'powder',
-                  e.target.value
-                )
-              }
-              placeholder="0.000"
-              className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
+            <div className="relative inline-block">
+              <input
+                type="text"
+                value={
+                  item.powderRaw !== undefined
+                    ? item.powderRaw
+                    : item.powder === 0
+                      ? ''
+                      : item.powder
+                }
+                onChange={(e) =>
+                  handleInlineChange(
+                    index,
+                    'powder',
+                    e.target.value
+                  )
+                }
+                placeholder="0.000"
+                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+                G
+              </span>
+            </div >
           );
         }
 
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.powder)}
+            {formatNumberDisplay(item.powder)} G
           </span>
         );
       },
@@ -1170,7 +1187,7 @@ const SolderingDept: React.FC = () => {
 
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.increase)}
+          {formatNumberDisplay(item.increase)} G
         </span>
       ),
     },
@@ -1182,31 +1199,36 @@ const SolderingDept: React.FC = () => {
       render: (item, index) => {
         if (item.isEditing) {
           return (
-            <input
-              type="text"
-              value={
-                item.scrapRaw !== undefined
-                  ? item.scrapRaw
-                  : item.scrap === 0
-                    ? ''
-                    : item.scrap
-              }
-              onChange={(e) =>
-                handleInlineChange(
-                  index,
-                  'scrap',
-                  e.target.value
-                )
-              }
-              placeholder="0.000"
-              className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
+            <div className="relative inline-block">
+              <input
+                type="text"
+                value={
+                  item.scrapRaw !== undefined
+                    ? item.scrapRaw
+                    : item.scrap === 0
+                      ? ''
+                      : item.scrap
+                }
+                onChange={(e) =>
+                  handleInlineChange(
+                    index,
+                    'scrap',
+                    e.target.value
+                  )
+                }
+                placeholder="0.000"
+                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+                G
+              </span>
+            </div>
           );
         }
 
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.scrap)}
+            {formatNumberDisplay(item.scrap)} G
           </span>
         );
       },
@@ -1266,17 +1288,15 @@ const SolderingDept: React.FC = () => {
                     <GenericWeeklyDatePicker
                       id="from-date-box"
                       placeholder="DD/MM/YYYY"
-
                       mode="from"
-                      initialDates={dateRange}
+                      initialDates={fromDate ? [fromDate] : []}
                       onDateChange={(dates) => {
-                        if (dates.length > 0) {
-                          // existing logic
+                        if (dates && dates.length > 0) {
+                          const selected = new Date(dates[0]);
+                          selected.setHours(0, 0, 0, 0);
+                          setFromDate(selected);
                         } else {
-                          setDateRange({
-                            from: '',
-                            to: '',
-                          });
+                          setFromDate(null);
                         }
                       }}
                       className="w-32 sm:w-36 md:w-40"
@@ -1286,17 +1306,15 @@ const SolderingDept: React.FC = () => {
                   <GenericWeeklyDatePicker
                     id="to-date-box"
                     placeholder="DD/MM/YYYY"
-
                     mode="to"
-                    initialDates={dateRange}
+                    initialDates={toDate ? [toDate] : []}
                     onDateChange={(dates) => {
-                      if (dates.length > 0) {
-                        // existing logic
+                      if (dates && dates.length > 0) {
+                        const selected = new Date(dates[0]);
+                        selected.setHours(23, 59, 59, 999);
+                        setToDate(selected);
                       } else {
-                        setDateRange({
-                          from: '',
-                          to: '',
-                        });
+                        setToDate(null);
                       }
                     }}
                     className="w-32 sm:w-36 md:w-40"

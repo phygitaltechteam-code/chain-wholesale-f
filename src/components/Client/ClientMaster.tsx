@@ -249,7 +249,7 @@ const ClientMaster: React.FC = () => {
             header: 'Opening Balance (G)',
             render: (item) => (
                 <span className="text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumber(item.openingBalance)}
+                    {formatNumber(item.openingBalance)} G
                 </span>
             ),
         },

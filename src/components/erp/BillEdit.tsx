@@ -18,6 +18,7 @@ import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
 import { useGetQuantity, useGetBillByid, useBillUpdate } from '@/lib/api/bill';
 import { Route } from '@/routes/_app/billiupdate.$id';
 import GenericInputField from '../Forms/Input/GenericInputField';
+import { useGetHeader } from '@/lib/api/headerapi';
 import { ClientSearch } from '../reciept/ClientSearch';
 
 interface ReceiptItem {
@@ -103,6 +104,7 @@ const BillEdit: React.FC = () => {
   const { data: sizes = [] } = useGetSizes();
   const createClient = useCreateClient();
 
+  const getpdfheaderdata = useGetHeader();
   const getQuantity = useGetQuantity();
   const { data: billResponse, isLoading: isLoadingBill } = useGetBillByid(id);
   const updateBill = useBillUpdate();
@@ -625,6 +627,23 @@ const BillEdit: React.FC = () => {
       `;
     });
 
+    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
+    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const invocationColor = headerInfo.invocationColor || '#a84b20';
+    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
+    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
+    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
+    const phoneColor = headerInfo.phoneColor || '#a84b20';
+    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '18px';
+    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+
     printContainer.innerHTML = `
       <div style="
         width:210mm;
@@ -650,54 +669,54 @@ const BillEdit: React.FC = () => {
             <span style="
               font-size:10px;
               font-weight:bold;
-              color:#a84b20;
+              color:${invocationColor};
               white-space:nowrap;
             ">
-              ॥ श्री गणेश प्रसन्न ॥
+              ${leftInvocation}
             </span>
 
             <span style="
-              font-size:18px;
+              font-size:${factoryFontSize};
               font-weight:bold;
-              color:#c43d5c;
+              color:${factoryNameColor};
               line-height:1.1;
               white-space:nowrap;
             ">
-              मातोश्री चेन फॅक्टरी, मिरज
+              ${factoryName}
             </span>
 
             <span style="
               font-size:10px;
               font-weight:bold;
-              color:#a84b20;
+              color:${invocationColor};
               white-space:nowrap;
             ">
-              ॥ श्री साई प्रसन्न ॥
+              ${rightInvocation}
             </span>
           </div>
 
           <div style="
             margin:2px 0 0;
-            font-size:9px;
+            font-size:${descriptionFontSize};
             font-weight:bold;
-            color:#8b451f;
+            color:${descriptionColor};
             line-height:1.2;
           ">
-            आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+            ${description}
           </div>
 
           <div style="
             margin:2px 0 0;
-            font-size:9px;
+            font-size:${proprietorFontSize};
             font-weight:bold;
-            color:#a84b20;
+            color:${proprietorColor};
             line-height:1.2;
           ">
-            प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
+            ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
           </div>
 
           <div style="
-            border-bottom:2px solid #c43d5c;
+            border-bottom:2px solid ${factoryNameColor};
             margin:2px 0 3px;
           "></div>
         </div>

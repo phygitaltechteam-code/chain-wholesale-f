@@ -300,7 +300,7 @@ const StockMaster: React.FC = () => {
       render: (item, index) => {
         return (
           <span className="font-mono text-[#1a1c1b] dark:text-white">
-            {formatGrams(item.grams)}
+            {formatGrams(item.grams)} G
           </span>
         );
       },
@@ -311,7 +311,7 @@ const StockMaster: React.FC = () => {
       render: (item, index) => {
         return (
           <span className="font-mono text-[#1a1c1b] dark:text-white">
-            {item.purity || '99.99'}
+            {item.purity || '99.99'} %
           </span>
         );
       },

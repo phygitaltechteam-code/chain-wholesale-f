@@ -32,6 +32,7 @@ import {
 } from '@/lib/api/settlement';
 
 import { useGetClients } from '@/lib/api/client';
+import { useGetHeader } from '@/lib/api/headerapi';
 
 import GenericInputField from '../Forms/Input/GenericInputField';
 import GenericButton from '../Forms/Buttons/GenericButton';
@@ -56,6 +57,7 @@ interface SettlementEntry {
   totalBills?: number;
   amount: number;
   remark?: string;
+  createdAt?: string;
 }
 
 interface SettlementDetail {
@@ -95,6 +97,7 @@ const getCurrentWeekRange = () => {
 // COMPONENT
 // ======================================================
 const Settlement: React.FC = () => {
+  const getpdfheaderdata = useGetHeader();
   // ----------------------------------------------------
   // TABLE STATES
   // ----------------------------------------------------
@@ -181,9 +184,15 @@ const Settlement: React.FC = () => {
 
   const setDefaultDateRange = () => {
     const { monday, sunday } = getCurrentWeekRange();
+    const formatYMD = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
     setDateRange({
-      from: monday.toISOString().split('T')[0],
-      to: sunday.toISOString().split('T')[0],
+      from: formatYMD(monday),
+      to: formatYMD(sunday),
     });
   };
 
@@ -209,6 +218,7 @@ const Settlement: React.FC = () => {
           totalBills: Number(item.totalBills ?? item._count?.receipts ?? 0),
           amount: Number(item.openingBalance ?? 0),
           remark: Number(item.openingBalance ?? 0) > 0 ? 'Received' : 'Given',
+          createdAt: item.createdAt || item.updatedAt || item.client?.createdAt || '',
         })
       );
 
@@ -329,22 +339,39 @@ const Settlement: React.FC = () => {
       })
       .join('');
 
+    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
+    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const invocationColor = headerInfo.invocationColor || '#a84b20';
+    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
+    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
+    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
+    const phoneColor = headerInfo.phoneColor || '#a84b20';
+    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+
     printContainer.innerHTML = `
       <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
         <div>
           <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
-              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री गणेश प्रसन्न ॥</span>
-              <span style="font-size:20px;font-weight:bold;color:#c43d5c;">मातोश्री चेन फॅक्टरी, मिरज</span>
-              <span style="font-size:11px;font-weight:bold;color:#a84b20;">॥ श्री साई प्रसन्न ॥</span>
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
+              <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
             </div>
-            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#8b451f;line-height:1.2;">
-              आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.
+            <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
+              ${description}
             </div>
-            <div style="margin:1px 0 0 0;padding:0;font-size:9px;font-weight:bold;color:#a84b20;line-height:1.2;">
-              प्रो. नितीन खरात&nbsp;&nbsp; मो. ९३७०२४७०३५ / ७३८७२३५१८४
+            <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
+              ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
             </div>
-            <div style="border-bottom:2px solid #c43d5c;margin:2px 0 4px 0;"></div>
+            <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
@@ -641,7 +668,24 @@ const Settlement: React.FC = () => {
       (balanceFilter === 'negative' && entry.goldBalance < 0) ||
       (balanceFilter === 'zero' && entry.goldBalance === 0);
 
-    return matchesSearch && matchesBalance;
+    let matchesDate = true;
+    if (dateRange.from || dateRange.to) {
+      if (entry.createdAt) {
+        const entryDate = new Date(entry.createdAt);
+        if (!Number.isNaN(entryDate.getTime())) {
+          if (dateRange.from) {
+            const from = new Date(dateRange.from + 'T00:00:00');
+            if (entryDate < from) matchesDate = false;
+          }
+          if (dateRange.to) {
+            const to = new Date(dateRange.to + 'T23:59:59.999');
+            if (entryDate > to) matchesDate = false;
+          }
+        }
+      }
+    }
+
+    return matchesSearch && matchesBalance && matchesDate;
   });
 
   // ======================================================
@@ -717,7 +761,7 @@ const Settlement: React.FC = () => {
       header: 'Due Balance(G)',
       render: (item) => (
         <div className='text-black dark:text-white'>
-          {formatNumber(Math.abs(item.goldBalance))} g
+          {formatNumber(Math.abs(item.goldBalance))} G
         </div>
       ),
     },
@@ -726,7 +770,7 @@ const Settlement: React.FC = () => {
       header: 'Total Bills',
       render: (item) => (
         <span className="font-mono text-sm text-black dark:text-white">
-          {item.totalBills || 0}
+          {item.totalBills || 0} G
         </span>
       ),
     },
@@ -1165,44 +1209,50 @@ const Settlement: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-2">
             <GenericWeeklyDatePicker
-              key={`from-${dateRange.from || 'empty'}`}
               id="from-date-settlement"
               placeholder="DD/MM/YYYY"
               mode="from"
-              initialDates={[
-                ...(dateRange.from ? [new Date(dateRange.from)] : []),
-                ...(dateRange.to ? [new Date(dateRange.to)] : [])
-              ]}
+              initialDates={dateRange.from ? [new Date(dateRange.from + 'T00:00:00')] : []}
               onDateChange={(dates) => {
-                if (dates.length > 0) {
-                  // existing logic
+                if (dates && dates.length > 0) {
+                  const d = dates[0];
+                  const year = d.getFullYear();
+                  const month = String(d.getMonth() + 1).padStart(2, '0');
+                  const day = String(d.getDate()).padStart(2, '0');
+                  setDateRange(prev => ({
+                    ...prev,
+                    from: `${year}-${month}-${day}`,
+                  }));
                 } else {
-                  setDateRange({
+                  setDateRange(prev => ({
+                    ...prev,
                     from: '',
-                    to: '',
-                  });
+                  }));
                 }
               }}
               className="w-32 sm:w-36 md:w-40"
             />
 
             <GenericWeeklyDatePicker
-              key={`to-${dateRange.to || 'empty'}`}
               id="to-date-settlement"
               placeholder="DD/MM/YYYY"
               mode="to"
-              initialDates={[
-                ...(dateRange.from ? [new Date(dateRange.from)] : []),
-                ...(dateRange.to ? [new Date(dateRange.to)] : [])
-              ]}
+              initialDates={dateRange.to ? [new Date(dateRange.to + 'T00:00:00')] : []}
               onDateChange={(dates) => {
-                if (dates.length > 0) {
-                  // existing logic
+                if (dates && dates.length > 0) {
+                  const d = dates[0];
+                  const year = d.getFullYear();
+                  const month = String(d.getMonth() + 1).padStart(2, '0');
+                  const day = String(d.getDate()).padStart(2, '0');
+                  setDateRange(prev => ({
+                    ...prev,
+                    to: `${year}-${month}-${day}`,
+                  }));
                 } else {
-                  setDateRange({
-                    from: '',
+                  setDateRange(prev => ({
+                    ...prev,
                     to: '',
-                  });
+                  }));
                 }
               }}
               className="w-32 sm:w-36 md:w-40"

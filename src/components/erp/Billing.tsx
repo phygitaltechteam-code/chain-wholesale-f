@@ -6,6 +6,7 @@ import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import toast from 'react-hot-toast';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import { useDeleteBill, useGetBill } from '@/lib/api/bill';
+import { useGetHeader } from '@/lib/api/headerapi';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
 import {
   Scale,
@@ -84,6 +85,7 @@ interface BillGroup {
 }
 
 const Billing: React.FC = () => {
+  const getpdfheaderdata = useGetHeader();
   const navigate = useNavigate();
   const [billingGroups, setBillingGroups] = useState<BillGroup[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -248,19 +250,585 @@ const Billing: React.FC = () => {
     return value.toFixed(2);
   };
 
-  // Print Receipt
+  // Print Receipt (Matching ReceiptAdd receipt format)
   const handlePrintReceipt = (group: BillGroup) => {
-    // ... (keep existing print function)
-    toast.info('Print functionality preserved');
+    if (!group) return;
+
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    printContainer.style.cssText = `
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 210mm;
+      height: 140mm;
+      background: white;
+      padding: 0;
+      z-index: 9999;
+    `;
+    document.body.appendChild(printContainer);
+
+    const phoneNumber = group?.phoneNumber || 'N/A';
+    const dateStr = group.dateTime || new Date().toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+
+    const totalFineWt = group.totalFinWt || 0;
+    const totalGrossWt = group.items.reduce((sum, i) => sum + (i.grossWeight || 0), 0);
+    const totalSRP = group.totalSRP || 0;
+    const totalLabor = 0;
+    const totalAmount = totalSRP + totalLabor;
+    const receive = group.receive || 0;
+    const pending = group.pending || 0;
+
+    let itemsRows = '';
+    group.items.forEach((item, index) => {
+      const itemAmount = (item.srp || 0);
+      itemsRows += `
+        <tr>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:center;font-size:9px;color:#000;">${index + 1}</td>
+          <td style="border:1px solid #222;padding:3px 4px;font-size:9px;color:#000;">${item.item || '-'}</td>
+          <td style="border:1px solid #222;padding:3px 4px;font-size:9px;color:#000;">${item.size || '-'}</td>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberWithDecimals(item.purity)}</td>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-weight:bold;font-size:9px;color:#000;">${formatNumberWithDecimals(item.finWt)}</td>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberWithDecimals(item.grossWeight)}</td>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberWith2Decimals(item.srp)}</td>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">0.00</td>
+          <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-weight:bold;font-size:9px;color:#000;">₹${formatNumberWith2Decimals(itemAmount)}</td>
+        </tr>
+      `;
+    });
+
+    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
+    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const invocationColor = headerInfo.invocationColor || '#a84b20';
+    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
+    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
+    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
+    const phoneColor = headerInfo.phoneColor || '#a84b20';
+    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '18px';
+    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+
+    printContainer.innerHTML = `
+      <div style="
+        width:210mm;
+        height:135mm;
+        margin:0 auto;
+        background:#ffffff;
+        font-family:Arial,Helvetica,sans-serif;
+        padding:4mm 6mm;
+        box-sizing:border-box;
+        color:#111111;
+        overflow:hidden;
+      ">
+        <!-- HEADER -->
+        <div style="width:100%;text-align:center;">
+          <div style="
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            margin:0;
+            padding:0;
+          ">
+            <span style="
+              font-size:10px;
+              font-weight:bold;
+              color:${invocationColor};
+              white-space:nowrap;
+            ">
+              ${leftInvocation}
+            </span>
+
+            <span style="
+              font-size:${factoryFontSize};
+              font-weight:bold;
+              color:${factoryNameColor};
+              line-height:1.1;
+              white-space:nowrap;
+            ">
+              ${factoryName}
+            </span>
+
+            <span style="
+              font-size:10px;
+              font-weight:bold;
+              color:${invocationColor};
+              white-space:nowrap;
+            ">
+              ${rightInvocation}
+            </span>
+          </div>
+
+          <div style="
+            margin:2px 0 0;
+            font-size:${descriptionFontSize};
+            font-weight:bold;
+            color:${descriptionColor};
+            line-height:1.2;
+          ">
+            ${description}
+          </div>
+
+          <div style="
+            margin:2px 0 0;
+            font-size:${proprietorFontSize};
+            font-weight:bold;
+            color:${proprietorColor};
+            line-height:1.2;
+          ">
+            ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
+          </div>
+
+          <div style="
+            border-bottom:2px solid ${factoryNameColor};
+            margin:2px 0 3px;
+          "></div>
+        </div>
+
+        <!-- RECEIPT TITLE -->
+        <div style="
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          margin:0 0 3px;
+        ">
+          <div style="width:25%;"></div>
+
+          <h2 style="
+            width:50%;
+            margin:0;
+            text-align:center;
+            font-size:15px;
+            font-weight:bold;
+            letter-spacing:2px;
+            color:#111111;
+          ">
+            RECEIPT
+          </h2>
+        </div>
+
+        <!-- SIMPLE RECEIPT INFO -->
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          margin:0 0 4px;
+          padding:0 1px;
+          font-size:10px;
+          line-height:1.3;
+        ">
+          <div>
+            <span style="font-weight:bold;">Client:</span>
+            ${group.clientName}
+            <span style="margin-left:14px;font-weight:bold;">Phone:</span>
+            ${phoneNumber}
+          </div>
+
+          <div style="text-align:right;">
+            <span style="font-weight:bold;">Date:</span>
+            ${dateStr}
+          </div>
+        </div>
+
+        <!-- ITEM TABLE -->
+        <table style="
+          width:100%;
+          border-collapse:collapse;
+          font-size:10px;
+          margin:0 0 3px;
+        ">
+          <thead>
+            <tr style="
+              background:#785600;
+              color:#ffffff;
+            ">
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Sr</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:left;font-size:8px;">Item</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:left;font-size:8px;">Size</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Purity %</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Fine Wt (G)</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Gross Wt (G)</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">SRP (G)</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Labor (G)</th>
+              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Amount</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${itemsRows}
+          </tbody>
+        </table>
+
+        <!-- PAYMENT SUMMARY -->
+        <div style="
+          display:flex;
+          justify-content:flex-end;
+          margin-top:1px;
+        ">
+          <div style="
+            width:38%;
+            border:1px solid #d6c08a;
+            border-radius:5px;
+            background:#fffdf7;
+            overflow:hidden;
+          ">
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              padding:3px 7px;
+              border-bottom:1px dashed #dddddd;
+              font-size:10px;
+            ">
+              <span style="font-weight:bold;color:#666666;">Total Fine Wt</span>
+              <span style="font-family:monospace;font-weight:bold;">
+                ${formatNumberWithDecimals(totalFineWt)} G
+              </span>
+            </div>
+
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              padding:3px 7px;
+              border-bottom:1px dashed #dddddd;
+              font-size:10px;
+            ">
+              <span style="font-weight:bold;color:#666666;">Receive</span>
+              <span style="font-family:monospace;font-weight:bold;">
+                ${formatNumberWithDecimals(receive)} G
+              </span>
+            </div>
+
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              padding:3px 7px;
+              border-bottom:1px dashed #dddddd;
+              font-size:10px;
+            ">
+              <span style="font-weight:bold;color:#666666;">Pending</span>
+              <span style="font-family:monospace;font-weight:bold;">
+                ${formatNumberWithDecimals(pending)} G
+              </span>
+            </div>
+
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              padding:4px 7px;
+              background:#f4f0e5;
+              font-size:11px;
+            ">
+              <span style="font-weight:bold;">Total Amount</span>
+              <span style="font-family:monospace;font-weight:bold;">
+                ₹${formatNumberWith2Decimals(totalAmount)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:flex-end;
+          margin:4px 0 0;
+          padding:4px 0 0;
+          border-top:1px dashed #aaaaaa;
+          font-size:9px;
+          line-height:1;
+          color:#444444;
+        ">
+          <div style="
+            margin:0;
+            padding:0;
+          ">
+            Contact For Support: 9511640351
+          </div>
+
+          <div style="
+            width:120px;
+            margin:0;
+            padding:0;
+            text-align:center;
+          ">
+            <div style="
+              border-top:1px solid #555555;
+              padding-top:2px;
+              margin:0;
+            ">
+              Authorized Signature
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      @page {
+        size: A5 landscape;
+        margin: 0;
+      }
+
+      @media print {
+        html,
+        body {
+          width: 210mm !important;
+          height: 148mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+          background: #ffffff !important;
+        }
+
+        body * {
+          visibility: hidden;
+        }
+
+        #print-container,
+        #print-container * {
+          visibility: visible;
+        }
+
+        #print-container {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 210mm !important;
+          height: 148mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #ffffff !important;
+          overflow: hidden !important;
+          z-index: 999999 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        #print-container > div {
+          width: 210mm !important;
+          height: 148mm !important;
+          min-height: 148mm !important;
+          max-height: 148mm !important;
+          box-sizing: border-box !important;
+          overflow: hidden !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        #print-container table {
+          width: 100% !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+
+        #print-container tr {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+
+    setTimeout(() => {
+      window.print();
+
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
+    }, 300);
   };
 
-  // Print Table Report
+  // Print Table Report (Matching Tar / Cutting departmental reports)
   const handlePrintTable = () => {
     if (!filteredGroups || filteredGroups.length === 0) {
       toast.error('No records available to print');
       return;
     }
-    toast.info('Print table functionality preserved');
+
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    printContainer.style.cssText = `
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 210mm;
+      min-height: 297mm;
+      background: white;
+      padding: 0;
+      z-index: 9999;
+    `;
+    document.body.appendChild(printContainer);
+
+    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
+    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const invocationColor = headerInfo.invocationColor || '#a84b20';
+    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
+    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
+    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
+    const phoneColor = headerInfo.phoneColor || '#a84b20';
+    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+
+    const formatDateStr = (d: Date | null) => {
+      if (!d) return '-';
+      return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    };
+
+    const fromStr = fromDate.length > 0 ? formatDateStr(fromDate[0]) : '';
+    const toStr = toDate.length > 0 ? formatDateStr(toDate[0]) : '';
+
+    const rows = filteredGroups.map((group, index) => `
+      <tr>
+        <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:9px;color:#000;">${index + 1}</td>
+        <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:8px;color:#000;">${group.dateTime}</td>
+        <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:9px;font-weight:bold;color:#000;">${group.billNo}</td>
+        <td style="border:1px solid #000;padding:3px 2px;font-size:9px;color:#000;">${group.clientName}</td>
+        <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:8px;color:#000;">${group.phoneNumber}</td>
+        <td style="border:1px solid #000;padding:3px 2px;font-size:9px;color:#000;white-space:pre-line;">${group.displayItems}</td>
+        <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:9px;color:#000;white-space:pre-line;">${group.displaySizes}</td>
+        <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:9px;color:#000;white-space:pre-line;">${group.displayPurity}</td>
+        <td style="border:1px solid #000;padding:3px 2px;text-align:right;font-family:monospace;font-size:9px;color:#000;white-space:pre-line;">${group.displayFinWt}</td>
+        <td style="border:1px solid #000;padding:3px 2px;text-align:right;font-family:monospace;font-size:9px;color:#000;white-space:pre-line;">${group.displaySRP}</td>
+        <td style="border:1px solid #000;padding:3px 2px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberWithDecimals(group.receive)}</td>
+        <td style="border:1px solid #000;padding:3px 2px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberWithDecimals(group.pending)}</td>
+      </tr>
+    `).join('');
+
+    printContainer.innerHTML = `
+      <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+        <div>
+          <!-- Header Section -->
+          <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
+              <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
+            </div>
+            <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">${description}</div>
+            <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
+              ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
+            </div>
+            <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
+          </div>
+
+          <!-- Title and Date Range -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0 6px 0;padding:0;">
+            <div style="flex:1;"></div>
+            <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">Billing History Report</h2>
+            <div style="flex:1;text-align:right;font-size:10px;color:#000;font-weight:bold;">
+              Date: ${fromStr} to ${toStr}
+            </div>
+          </div>
+
+          <!-- Table -->
+          <table style="width:100%;border-collapse:collapse;margin-top:2px;">
+            <thead>
+              <tr style="background:#785600;color:white;font-size:10px;">
+                <th style="border:1px solid #785600;padding:4px 2px;text-align:center;">Sr</th>
+                <th style="border:1px solid #785600;padding:4px 2px;text-align:center;">Date & Time</th>
+                <th style="border:1px solid #785600;padding:4px 2px;text-align:center;">Bill No</th>
+                <th style="border:1px solid #785600;padding:4px 2px;text-align:left;">Client Name</th>
+                <th style="border:1px solid #785600;padding:4px 2px;text-align:center;">Phone</th>
+                <th style="border:1px solid #785600;padding:4px 2px;text-align:left;">Item</th>
+                <th style="border:1px solid #785600;padding:4px 2px;text-align:center;">Size</th>
+                <th style="border:1px solid #785600;padding:4px 2px;text-align:center;">Purity %</th>
+                <th style="border:1px solid #785600;padding:4px 2px;text-align:right;">Fine Wt</th>
+                <th style="border:1px solid #785600;padding:4px 2px;text-align:right;">SRP</th>
+                <th style="border:1px solid #785600;padding:4px 2px;text-align:right;">Receive</th>
+                <th style="border:1px solid #785600;padding:4px 2px;text-align:right;">Pending</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    // Add print styles matching AddTar / CuttingDept exactly
+    const style = document.createElement('style');
+    style.textContent = `
+      @page {
+        margin: 3mm;
+      }
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #print-container, #print-container * {
+          visibility: visible;
+        }
+        #print-container {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          background: white !important;
+          padding: 4px !important;
+          overflow: auto !important;
+          z-index: 9999 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container table {
+          width: 100% !important;
+        }
+        #print-container tr {
+          page-break-inside: avoid !important;
+        }
+        #print-container thead tr {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container thead tr th {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
+    }, 500);
   };
 
   const handleRowClick = (group: BillGroup) => {
@@ -413,7 +981,7 @@ const Billing: React.FC = () => {
         <div className="flex flex-col items-center whitespace-pre-line text-center">
           {item.displayFinWt.split('\n').map((line, idx) => (
             <span key={idx} className="text-sm font-mono font-bold text-black dark:text-amber-400 leading-relaxed">
-              {line}
+              {line} G
             </span>
           ))}
         </div>
@@ -426,7 +994,7 @@ const Billing: React.FC = () => {
         <div className="flex flex-col items-center whitespace-pre-line text-center">
           {item.displaySRP.split('\n').map((line, idx) => (
             <span key={idx} className="text-sm font-mono text-[#1a1c1b] dark:text-white leading-relaxed">
-              {line}
+              {line} G
             </span>
           ))}
         </div>
@@ -437,7 +1005,7 @@ const Billing: React.FC = () => {
       header: 'Receive (g)',
       render: (item) => (
         <span className="text-sm font-mono font-semibold text-black dark:text-green-400">
-          {formatNumberWithDecimals(item.receive)}
+          {formatNumberWithDecimals(item.receive)} G
         </span>
       ),
     },
@@ -446,7 +1014,7 @@ const Billing: React.FC = () => {
       header: 'Pending (g)',
       render: (item) => (
         <span className="text-sm font-mono font-semibold text-black dark:text-red-400">
-          {formatNumberWithDecimals(Math.abs(item.pending))}
+          {formatNumberWithDecimals(Math.abs(item.pending))} G
         </span>
       ),
     },
