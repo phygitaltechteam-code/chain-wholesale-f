@@ -97,3 +97,5 @@ export const updateBillApi = async ({id, data}: {id: string; data: any}) => {
   const response = await api.put(`/admin/billing/${id}`, data);
   return response.data;
 };
+
+

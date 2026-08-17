@@ -5,7 +5,7 @@ import GenericButton from '@/components/Forms/Buttons/GenericButton';
 
 export interface Column<T> {
   key: keyof T | string;
-  header: string;
+  header: React.ReactNode | string;
   render?: (item: T, index: number) => React.ReactNode;
   editable?: boolean;
   inputType?: 'text' | 'number' | 'select';
