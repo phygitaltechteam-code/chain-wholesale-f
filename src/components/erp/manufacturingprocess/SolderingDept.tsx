@@ -1,14 +1,26 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Save, Scissors, Hammer, History, ChevronRight, ChevronDown, Printer } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
+import {
+  Save,
+  Scissors,
+  Hammer,
+  History,
+  ChevronRight,
+  ChevronDown,
+  Printer,
+} from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useGetSoldering, useGetSolderingHistory, useSubmitSoldering } from '@/lib/api/soldering';
-import { useSubmitCutting, useSubmitMoveCutting } from '@/lib/api/cutting';
+import {
+  useGetSoldering,
+  useGetSolderingHistory,
+  useSubmitSoldering,
+} from '@/lib/api/soldering';
+import {useSubmitCutting, useSubmitMoveCutting} from '@/lib/api/cutting';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
+import {useGetHeader} from '@/lib/api/headerapi';
 
 // ======================================================
 // HELPER: Get Current Week Range
@@ -26,7 +38,7 @@ const getCurrentWeekRange = () => {
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
 
-  return { monday, sunday };
+  return {monday, sunday};
 };
 
 interface SolderingEntry {
@@ -70,12 +82,16 @@ const getSizeName = (size: any): string => {
 const SolderingDept: React.FC = () => {
   const getpdfheaderdata = useGetHeader();
   const navigate = useNavigate();
-  const [solderingEntries, setSolderingEntries] = useState<SolderingEntry[]>([]);
+  const [solderingEntries, setSolderingEntries] = useState<SolderingEntry[]>(
+    [],
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [hasEditedRow, setHasEditedRow] = useState(false);
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [actionType, setActionType] = useState<'joint' | 'cutting' | null>(null);
+  const [actionType, setActionType] = useState<'joint' | 'cutting' | null>(
+    null,
+  );
   const [showHistory, setShowHistory] = useState(false);
   const [fromDate, setFromDate] = useState<Date | null>(null);
   const [toDate, setToDate] = useState<Date | null>(null);
@@ -92,10 +108,10 @@ const SolderingDept: React.FC = () => {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return { monday, sunday };
+    return {monday, sunday};
   };
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const { monday, sunday } = getDefaultWeekRange();
+    const {monday, sunday} = getDefaultWeekRange();
     return [monday, sunday];
   });
   // Fetch data from API
@@ -127,11 +143,9 @@ const SolderingDept: React.FC = () => {
     if (solderingData.length > 0) {
       const entries: SolderingEntry[] = solderingData.map(
         (soldering: any, index: number) => {
-          const itemName =
-            soldering.item?.name || soldering.itemId || 'N/A';
+          const itemName = soldering.item?.name || soldering.itemId || 'N/A';
 
-          const sizeName =
-            soldering.size?.size || soldering.sizeId || 'N/A';
+          const sizeName = soldering.size?.size || soldering.sizeId || 'N/A';
 
           const chainGiven = soldering.chainWeight || 0;
           const powder = soldering.powder || 0;
@@ -176,19 +190,15 @@ const SolderingDept: React.FC = () => {
               ? soldering.chainReceived.toString()
               : '',
 
-            powderRaw: soldering.powder
-              ? soldering.powder.toString()
-              : '',
+            powderRaw: soldering.powder ? soldering.powder.toString() : '',
 
-            scrapRaw: soldering.scrap
-              ? soldering.scrap.toString()
-              : '',
+            scrapRaw: soldering.scrap ? soldering.scrap.toString() : '',
 
             itemId: soldering.itemId,
             sizeId: soldering.sizeId,
             isCompleted: soldering.isCompleted || false,
           };
-        }
+        },
       );
 
       setSolderingEntries(entries);
@@ -229,10 +239,7 @@ const SolderingDept: React.FC = () => {
       return '0';
     }
 
-    const num =
-      typeof value === 'string'
-        ? parseFloat(value)
-        : value;
+    const num = typeof value === 'string' ? parseFloat(value) : value;
 
     if (isNaN(num)) {
       return '0';
@@ -287,7 +294,7 @@ const SolderingDept: React.FC = () => {
 
     if (!filteredData || filteredData.length === 0) {
       toast.error(
-        'No history records available to print for the selected date range'
+        'No history records available to print for the selected date range',
       );
       return;
     }
@@ -312,12 +319,11 @@ const SolderingDept: React.FC = () => {
     // Build the table rows
     const rows = filteredData
       .map((item: any, index: number) => {
-        const { date, time } = formatDate(item?.createdAt);
+        const {date, time} = formatDate(item?.createdAt);
 
-        const {
-          date: proceedDate,
-          time: proceedTime,
-        } = formatDate(item?.updatedAt);
+        const {date: proceedDate, time: proceedTime} = formatDate(
+          item?.updatedAt,
+        );
 
         return `
                 <tr>
@@ -369,22 +375,41 @@ const SolderingDept: React.FC = () => {
       })
       .join('');
 
-    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const headerInfo =
+      getpdfheaderdata?.data?.data ||
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation =
+      headerInfo.leftInvocation ||
+      headerInfo.leftInovation ||
+      '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation =
+      headerInfo.rightInvocation ||
+      headerInfo.rightInovation ||
+      '॥ श्री साई प्रसन्न ॥';
     const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const description =
+      headerInfo.description ||
+      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
     const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const phoneNumbers =
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
     const invocationColor = headerInfo.invocationColor || '#a84b20';
     const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
     const descriptionColor = headerInfo.descriptionColor || '#8b451f';
     const proprietorColor = headerInfo.proprietorColor || '#a84b20';
     const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
-    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
-    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
-    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+    const factoryFontSize = headerInfo.factoryFontSize
+      ? `${headerInfo.factoryFontSize}px`
+      : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize
+      ? `${headerInfo.descriptionFontSize}px`
+      : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize
+      ? `${headerInfo.proprietorFontSize}px`
+      : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize
+      ? `${headerInfo.phoneFontSize}px`
+      : '9px';
 
     // Set print content
     printContainer.innerHTML = `
@@ -415,20 +440,19 @@ const SolderingDept: React.FC = () => {
               Soldering History Report
             </h2>
 
-            ${fromDate && toDate
-        ? `
+            ${
+              fromDate && toDate
+                ? `
                   <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
-                    From: ${new Date(fromDate).toLocaleDateString(
-          'en-IN'
-        )}
+                    From: ${new Date(fromDate).toLocaleDateString('en-IN')}
                     &nbsp; To:
                     ${new Date(toDate).toLocaleDateString('en-IN')}
                   </div>
                 `
-        : `
+                : `
                   <div style="flex:1;"></div>
                 `
-      }
+            }
 
           </div>
 
@@ -582,7 +606,7 @@ const SolderingDept: React.FC = () => {
       header: 'Date & Time',
 
       render: (item) => {
-        const { date, time } = formatDate(item.createdAt);
+        const {date, time} = formatDate(item.createdAt);
 
         return (
           <div className="flex flex-col items-center">
@@ -590,7 +614,7 @@ const SolderingDept: React.FC = () => {
               {date}
             </span>
 
-            <span className="text-sm text-gray-500 dark:text-gray-400">
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
               {time}
             </span>
           </div>
@@ -624,7 +648,7 @@ const SolderingDept: React.FC = () => {
       header: 'Chain Given (G)',
 
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumber(item.chainWeight)} G
         </span>
       ),
@@ -635,7 +659,7 @@ const SolderingDept: React.FC = () => {
       header: 'Chain Received (G)',
 
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumber(item.chainReceived)} G
         </span>
       ),
@@ -646,7 +670,7 @@ const SolderingDept: React.FC = () => {
       header: 'Powder (G)',
 
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumber(item.powder)} G
         </span>
       ),
@@ -657,7 +681,7 @@ const SolderingDept: React.FC = () => {
       header: 'Increase',
 
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumber(item.increase)} G
         </span>
       ),
@@ -668,7 +692,7 @@ const SolderingDept: React.FC = () => {
       header: 'Scrap (स्क्रॅप)',
 
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumber(item.scrap)} G
         </span>
       ),
@@ -679,7 +703,7 @@ const SolderingDept: React.FC = () => {
       header: 'Proceed Date & Time',
 
       render: (item) => {
-        const { date, time } = formatDate(item.updatedAt);
+        const {date, time} = formatDate(item.updatedAt);
 
         return (
           <div className="flex flex-col items-center">
@@ -687,7 +711,7 @@ const SolderingDept: React.FC = () => {
               {date}
             </span>
 
-            <span className="text-sm text-gray-500 dark:text-gray-400">
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
               {time}
             </span>
           </div>
@@ -701,7 +725,7 @@ const SolderingDept: React.FC = () => {
     (
       index: number,
       field: 'chainReceived' | 'powder' | 'scrap',
-      value: string
+      value: string,
     ) => {
       // Show Action column when user edits an input
       setHasEditedRow(true);
@@ -709,71 +733,50 @@ const SolderingDept: React.FC = () => {
       setSolderingEntries((prev) =>
         prev.map((entry, i) => {
           if (i === index) {
-            const updated = { ...entry };
+            const updated = {...entry};
 
             if (field === 'chainReceived') {
               updated.chainReceivedRaw = value;
 
-              if (
-                value === '' ||
-                value === '.' ||
-                value === '-'
-              ) {
+              if (value === '' || value === '.' || value === '-') {
                 updated.chainReceived = 0;
               } else {
                 const numValue = parseFloat(value);
 
-                updated.chainReceived = isNaN(numValue)
-                  ? 0
-                  : numValue;
+                updated.chainReceived = isNaN(numValue) ? 0 : numValue;
               }
             } else if (field === 'powder') {
               updated.powderRaw = value;
 
-              if (
-                value === '' ||
-                value === '.' ||
-                value === '-'
-              ) {
+              if (value === '' || value === '.' || value === '-') {
                 updated.powder = 0;
               } else {
                 const numValue = parseFloat(value);
 
-                updated.powder = isNaN(numValue)
-                  ? 0
-                  : numValue;
+                updated.powder = isNaN(numValue) ? 0 : numValue;
               }
             } else if (field === 'scrap') {
               updated.scrapRaw = value;
 
-              if (
-                value === '' ||
-                value === '.' ||
-                value === '-'
-              ) {
+              if (value === '' || value === '.' || value === '-') {
                 updated.scrap = 0;
               } else {
                 const numValue = parseFloat(value);
 
-                updated.scrap = isNaN(numValue)
-                  ? 0
-                  : numValue;
+                updated.scrap = isNaN(numValue) ? 0 : numValue;
               }
             }
 
-            updated.increase = Math.max(
-              0,
-              updated.powder - entry.chainGiven
-            );
+            updated.increase = Math.max(0, updated.powder - entry.chainGiven);
 
             return updated;
           }
 
           return entry;
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   // Open confirmation popup before saving
@@ -782,23 +785,17 @@ const SolderingDept: React.FC = () => {
       const entry = solderingEntries[index];
 
       if (!entry.chainReceived || entry.chainReceived < 0) {
-        toast.error(
-          'Please enter a valid chain received weight'
-        );
+        toast.error('Please enter a valid chain received weight');
         return;
       }
 
       if (!entry.powder || entry.powder < 0) {
-        toast.error(
-          'Please enter a valid powder weight'
-        );
+        toast.error('Please enter a valid powder weight');
         return;
       }
 
       if (!entry.scrap || entry.scrap < 0) {
-        toast.error(
-          'Please enter a valid scrap weight'
-        );
+        toast.error('Please enter a valid scrap weight');
         return;
       }
 
@@ -806,7 +803,7 @@ const SolderingDept: React.FC = () => {
       setActionType(action);
       setShowConfirmModal(true);
     },
-    [solderingEntries]
+    [solderingEntries],
   );
 
   // Confirm and save - Joint
@@ -837,13 +834,13 @@ const SolderingDept: React.FC = () => {
         prev.map((s, i) =>
           i === index
             ? {
-              ...s,
-              isEditing: false,
-              isSaved: true,
-              isCompleted: true,
-            }
-            : s
-        )
+                ...s,
+                isEditing: false,
+                isSaved: true,
+                isCompleted: true,
+              }
+            : s,
+        ),
       );
 
       setHasEditedRow(false);
@@ -862,27 +859,16 @@ const SolderingDept: React.FC = () => {
         },
       });
     } catch (error) {
-      console.error(
-        'Error saving soldering:',
-        error
-      );
+      console.error('Error saving soldering:', error);
 
-      toast.error(
-        'Failed to save soldering entry'
-      );
+      toast.error('Failed to save soldering entry');
 
       setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
       setActionType(null);
     }
-  }, [
-    saveIndex,
-    solderingEntries,
-    submitSoldering,
-    navigate,
-    refetch,
-  ]);
+  }, [saveIndex, solderingEntries, submitSoldering, navigate, refetch]);
 
   // Confirm and save - Cutting
   const confirmSaveCutting = useCallback(async () => {
@@ -926,13 +912,13 @@ const SolderingDept: React.FC = () => {
         prev.map((s, i) =>
           i === index
             ? {
-              ...s,
-              isEditing: false,
-              isSaved: true,
-              isCompleted: true,
-            }
-            : s
-        )
+                ...s,
+                isEditing: false,
+                isSaved: true,
+                isCompleted: true,
+              }
+            : s,
+        ),
       );
 
       setHasEditedRow(false);
@@ -951,14 +937,9 @@ const SolderingDept: React.FC = () => {
         },
       });
     } catch (error) {
-      console.error(
-        'Error saving soldering:',
-        error
-      );
+      console.error('Error saving soldering:', error);
 
-      toast.error(
-        'Failed to save soldering entry'
-      );
+      toast.error('Failed to save soldering entry');
 
       setIsLoading(false);
       setShowConfirmModal(false);
@@ -979,7 +960,7 @@ const SolderingDept: React.FC = () => {
     (item: SolderingEntry, index: number) => {
       if (!item.isEditing) {
         return (
-          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+          <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
             ✓ Completed
           </span>
         );
@@ -987,41 +968,31 @@ const SolderingDept: React.FC = () => {
 
       return (
         <div className="flex items-center justify-center gap-2">
-
           <button
-            onClick={() =>
-              handleSaveClick(index, 'joint')
-            }
+            onClick={() => handleSaveClick(index, 'joint')}
             disabled={isLoading}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-3 py-1.5 text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-3 py-1.5 text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             title="Go to Joint"
           >
             <Hammer className="h-4 w-4" />
 
-            <span className="text-xs">
-              Joint
-            </span>
+            <span className="text-xs">Joint</span>
           </button>
 
           <button
-            onClick={() =>
-              handleSaveClick(index, 'cutting')
-            }
+            onClick={() => handleSaveClick(index, 'cutting')}
             disabled={isLoading}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             title="Go to Cutting"
           >
             <Scissors className="h-4 w-4" />
 
-            <span className="text-xs">
-              Cutting
-            </span>
+            <span className="text-xs">Cutting</span>
           </button>
-
         </div>
       );
     },
-    [isLoading, handleSaveClick]
+    [isLoading, handleSaveClick],
   );
 
   // Define columns for GenericTable
@@ -1031,18 +1002,14 @@ const SolderingDept: React.FC = () => {
       header: 'Date & Time',
 
       render: (item) => {
-        const parts = item.dateTime
-          ? item.dateTime.split(' ')
-          : ['', ''];
+        const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
 
         const datePart = parts[0] || '';
 
-        const timePart =
-          parts.slice(1).join(' ') || '';
+        const timePart = parts.slice(1).join(' ') || '';
 
         return (
           <div className="flex flex-col items-center">
-
             <span className="text-sm text-[#1a1c1b] dark:text-white">
               {datePart}
             </span>
@@ -1050,7 +1017,6 @@ const SolderingDept: React.FC = () => {
             <span className="text-sm text-[#4f4535] dark:text-slate-400">
               {timePart}
             </span>
-
           </div>
         );
       },
@@ -1063,8 +1029,8 @@ const SolderingDept: React.FC = () => {
       render: (item) => (
         <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
           {typeof item?.item === 'object'
-            ? item?.item?.name ?? '-'
-            : item?.item ?? '-'}
+            ? (item?.item?.name ?? '-')
+            : (item?.item ?? '-')}
         </span>
       ),
     },
@@ -1076,8 +1042,8 @@ const SolderingDept: React.FC = () => {
       render: (item) => (
         <span className="text-sm text-[#1a1c1b] dark:text-white">
           {typeof item?.size === 'object'
-            ? item?.size?.size ?? '-'
-            : item?.size ?? '-'}
+            ? (item?.size?.size ?? '-')
+            : (item?.size ?? '-')}
         </span>
       ),
     },
@@ -1088,9 +1054,7 @@ const SolderingDept: React.FC = () => {
 
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(
-            item.chainGiven
-          )} G
+          {formatNumberDisplay(item.chainGiven)} G
         </span>
       ),
     },
@@ -1113,16 +1077,12 @@ const SolderingDept: React.FC = () => {
                       : item.chainReceived
                 }
                 onChange={(e) =>
-                  handleInlineChange(
-                    index,
-                    'chainReceived',
-                    e.target.value
-                  )
+                  handleInlineChange(index, 'chainReceived', e.target.value)
                 }
                 placeholder="0.000"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 G
               </span>
             </div>
@@ -1131,9 +1091,7 @@ const SolderingDept: React.FC = () => {
 
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(
-              item.chainReceived
-            )} G
+            {formatNumberDisplay(item.chainReceived)} G
           </span>
         );
       },
@@ -1157,19 +1115,15 @@ const SolderingDept: React.FC = () => {
                       : item.powder
                 }
                 onChange={(e) =>
-                  handleInlineChange(
-                    index,
-                    'powder',
-                    e.target.value
-                  )
+                  handleInlineChange(index, 'powder', e.target.value)
                 }
                 placeholder="0.000"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 G
               </span>
-            </div >
+            </div>
           );
         }
 
@@ -1210,16 +1164,12 @@ const SolderingDept: React.FC = () => {
                       : item.scrap
                 }
                 onChange={(e) =>
-                  handleInlineChange(
-                    index,
-                    'scrap',
-                    e.target.value
-                  )
+                  handleInlineChange(index, 'scrap', e.target.value)
                 }
                 placeholder="0.000"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 G
               </span>
             </div>
@@ -1235,9 +1185,7 @@ const SolderingDept: React.FC = () => {
     },
   ];
 
-  const isSubmitting =
-    submitSoldering.isPending ||
-    submitCutting.isPending;
+  const isSubmitting = submitSoldering.isPending || submitCutting.isPending;
 
   const toggleHistory = () => {
     if (showHistory) {
@@ -1248,7 +1196,7 @@ const SolderingDept: React.FC = () => {
     } else {
       setShowHistory(true);
       // Set default dates when showing history
-      const { monday, sunday } = getCurrentWeekRange();
+      const {monday, sunday} = getCurrentWeekRange();
       setFromDate(monday);
       setToDate(sunday);
       refetchHistory();
@@ -1262,28 +1210,21 @@ const SolderingDept: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
-
+    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
-
+      <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
         <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
-
-          <div className="flex items-center gap-2 min-w-0">
-
-            <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
-              {showHistory
-                ? 'Soldering History'
-                : 'Soldering Department'}
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white sm:text-base md:text-lg">
+              {showHistory ? 'Soldering History' : 'Soldering Department'}
             </h1>
-
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Date Filters */}
             {showHistory && (
               <>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex flex-wrap items-center gap-2">
                   <div>
                     <GenericWeeklyDatePicker
                       id="from-date-box"
@@ -1319,17 +1260,13 @@ const SolderingDept: React.FC = () => {
                     }}
                     className="w-32 sm:w-36 md:w-40"
                   />
-
                 </div>
               </>
             )}
 
             {/* Print History Button */}
             {showHistory && (
-              <GenericButton
-                type="button"
-                onClick={handlePrintHistory}
-              >
+              <GenericButton type="button" onClick={handlePrintHistory}>
                 <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Print</span>
               </GenericButton>
@@ -1339,10 +1276,11 @@ const SolderingDept: React.FC = () => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${showHistory
-                ? '!bg-amber-600 hover:!bg-amber-700'
-                : '!bg-blue-600 hover:!bg-blue-700'
-                }`}
+              className={`flex items-center gap-1.5 whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
+                showHistory
+                  ? '!bg-amber-600 hover:!bg-amber-700'
+                  : '!bg-blue-600 hover:!bg-blue-700'
+              }`}
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -1352,55 +1290,37 @@ const SolderingDept: React.FC = () => {
               <span>{showHistory ? 'Show Soldering' : 'History'}</span>
             </GenericButton>
           </div>
-
         </div>
-
       </div>
 
       {/* Conditional Rendering */}
       {!showHistory ? (
-
         /* Soldering Department Table */
         <div className="px-3 py-4 sm:px-4 md:px-6">
-
           <GenericTable<SolderingEntry>
             data={solderingEntries}
             columns={columns}
-            onSave={(item, index) =>
-              handleSaveClick(index, 'joint')
-            }
+            onSave={(item, index) => handleSaveClick(index, 'joint')}
             emptyMessage="No soldering entries found."
-            isLoading={
-              solderingLoading || isSubmitting
-            }
-
-            renderActions={
-              hasEditedRow
-                ? renderActions
-                : undefined
-            }
-
+            isLoading={solderingLoading || isSubmitting}
+            renderActions={hasEditedRow ? renderActions : undefined}
             showSrNo={true}
             srNoLabel="Sr No."
           />
-
         </div>
-
       ) : (
-
         /* History Table */
         <div className="px-3 py-4 sm:px-4 md:px-6">
-
           <GenericTable
             data={getFilteredHistory()}
             columns={historyColumns}
             emptyMessage={
               fromDate && toDate
                 ? `No history records found for the selected date range (${new Date(
-                  fromDate
-                ).toLocaleDateString()} to ${new Date(
-                  toDate
-                ).toLocaleDateString()})`
+                    fromDate,
+                  ).toLocaleDateString()} to ${new Date(
+                    toDate,
+                  ).toLocaleDateString()})`
                 : 'No history records found. Complete a soldering process to see history.'
             }
             isLoading={historyLoading}
@@ -1408,49 +1328,31 @@ const SolderingDept: React.FC = () => {
             srNoLabel="Sr No."
             className="shadow-sm"
           />
-
         </div>
       )}
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
-
             <div className="p-6">
-
-              <div className="flex items-center justify-center mb-4">
-
+              <div className="mb-4 flex items-center justify-center">
                 <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
-
                   <Save className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-
                 </div>
-
               </div>
 
-              <h3 className="text-center text-lg font-bold text-[#1a1c1b] dark:text-white mb-2">
+              <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
                 Confirm Save
               </h3>
 
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
-
-                Are you sure you want to save this
-                soldering entry and go to the{' '}
-
-                <strong>
-                  {actionType === 'joint'
-                    ? 'Joint'
-                    : 'Cutting'}
-                </strong>{' '}
-
+                Are you sure you want to save this soldering entry and go to the{' '}
+                <strong>{actionType === 'joint' ? 'Joint' : 'Cutting'}</strong>{' '}
                 department?
-
               </p>
 
               <div className="mt-6 flex justify-center gap-3">
-
                 <button
                   onClick={() => {
                     setShowConfirmModal(false);
@@ -1469,22 +1371,15 @@ const SolderingDept: React.FC = () => {
                       : confirmSaveCutting
                   }
                   disabled={isLoading}
-                  className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isLoading
-                    ? 'Saving...'
-                    : 'Confirm Save'}
+                  {isLoading ? 'Saving...' : 'Confirm Save'}
                 </button>
-
               </div>
-
             </div>
-
           </div>
-
         </div>
       )}
-
     </div>
   );
 };

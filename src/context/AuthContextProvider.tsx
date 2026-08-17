@@ -1,10 +1,10 @@
-import { ReactNode, useEffect, useState } from 'react';
-import { AuthContext } from './AuthContext';
-import { Token, User } from '@/types';
-import { QUERY_KEYS } from '@/lib/react-query/queryKeys';
-import { jwtDecode } from 'jwt-decode';
+import {ReactNode, useEffect, useState} from 'react';
+import {AuthContext} from './AuthContext';
+import {Token, User} from '@/types';
+import {QUERY_KEYS} from '@/lib/react-query/queryKeys';
+import {jwtDecode} from 'jwt-decode';
 
-const AuthContextProvider = ({ children }: { children: ReactNode }) => {
+const AuthContextProvider = ({children}: {children: ReactNode}) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [token, setToken] = useState<Token | null>(null);
@@ -76,7 +76,9 @@ const AuthContextProvider = ({ children }: { children: ReactNode }) => {
           setToken(localToken);
           setUser(demoUser);
           setRole(demoUser.role || 'ADMIN');
-          setIsSuperAdmin(demoUser.role === 'SuperAdmin' || demoUser.role === 'SUPERADMIN');
+          setIsSuperAdmin(
+            demoUser.role === 'SuperAdmin' || demoUser.role === 'SUPERADMIN',
+          );
           setIsAuthenticated(true);
           setIsLoading(false);
           console.log('✅ Demo auth initialized successfully');
@@ -105,11 +107,13 @@ const AuthContextProvider = ({ children }: { children: ReactNode }) => {
         setToken(localToken);
         setUser(decodedToken);
         setRole(decodedToken.role || null);
-        setIsSuperAdmin(decodedToken.role === 'SuperAdmin' || decodedToken.role === 'SUPERADMIN');
+        setIsSuperAdmin(
+          decodedToken.role === 'SuperAdmin' ||
+            decodedToken.role === 'SUPERADMIN',
+        );
         setIsAuthenticated(true);
         setIsLoading(false);
         console.log('✅ Auth initialized successfully');
-
       } catch (error) {
         console.error('Error in AuthContextProvider:', error);
         clearAuthState();

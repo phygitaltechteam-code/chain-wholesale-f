@@ -1,218 +1,238 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Save, X, ArrowLeft, ChevronDown, ChevronRight, Printer } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import React, {useState, useEffect} from 'react';
+import {
+  Plus,
+  Save,
+  X,
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  Printer,
+} from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import { Column, GenericTable } from '@/components/Forms/Table/GenericTable';
+import {Column, GenericTable} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useGetItems, Item } from '@/lib/api/items';
-import { useGetSizes, Size } from '@/lib/api/sizes';
-import { useTar, useCreateTar, useSaveTar, Tar, useGetTarHistory } from '@/lib/api/tar';
+import {useGetItems, Item} from '@/lib/api/items';
+import {useGetSizes, Size} from '@/lib/api/sizes';
+import {
+  useTar,
+  useCreateTar,
+  useSaveTar,
+  Tar,
+  useGetTarHistory,
+} from '@/lib/api/tar';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
+import {useGetHeader} from '@/lib/api/headerapi';
 
 interface TarEntry {
-    id: string;
-    srNo: number;
-    dateTime: string;
-    item: string;
-    size: string;
-    fine: number;
-    tar: number;
-    scrap: number;
-    loss: number;
-    purity: number;
-    isSaved: boolean;
-    tarRaw?: string;
-    scrapRaw?: string;
-    purityRaw?: string;
-    itemId?: string;
-    sizeId?: string;
+  id: string;
+  srNo: number;
+  dateTime: string;
+  item: string;
+  size: string;
+  fine: number;
+  tar: number;
+  scrap: number;
+  loss: number;
+  purity: number;
+  isSaved: boolean;
+  tarRaw?: string;
+  scrapRaw?: string;
+  purityRaw?: string;
+  itemId?: string;
+  sizeId?: string;
 }
 
 interface AddTarProps {
-    showBack?: boolean;
+  showBack?: boolean;
 }
 
 // Helper functions for safely extracting values
 const getItemName = (item: any): string => {
-    if (!item) return '-';
-    if (typeof item === 'string') return item;
-    if (item.name) return item.name;
-    return '-';
+  if (!item) return '-';
+  if (typeof item === 'string') return item;
+  if (item.name) return item.name;
+  return '-';
 };
 
 const getSizeName = (size: any): string => {
-    if (!size) return '-';
-    if (typeof size === 'string') return size;
-    if (size.size) return size.size;
-    return '-';
+  if (!size) return '-';
+  if (typeof size === 'string') return size;
+  if (size.size) return size.size;
+  return '-';
 };
 
-const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
-    const getpdfheaderdata = useGetHeader();
-    const navigate = useNavigate();
-    const [tarEntries, setTarEntries] = useState<TarEntry[]>([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [saveIndex, setSaveIndex] = useState<number | null>(null);
-    const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [isTarCompleted, setIsTarCompleted] = useState(false);
-    const [showHistory, setShowHistory] = useState(false);
+const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
+  const getpdfheaderdata = useGetHeader();
+  const navigate = useNavigate();
+  const [tarEntries, setTarEntries] = useState<TarEntry[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [saveIndex, setSaveIndex] = useState<number | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isTarCompleted, setIsTarCompleted] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
-    // Default date range: Monday to Sunday of current week
-    const [dateRange, setDateRange] = useState<Date[]>(() => {
-        const now = new Date();
-        const day = now.getDay(); // 0 = Sunday, 1 = Monday, ...
-        const diffToMonday = day === 0 ? -6 : 1 - day;
+  // Default date range: Monday to Sunday of current week
+  const [dateRange, setDateRange] = useState<Date[]>(() => {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sunday, 1 = Monday, ...
+    const diffToMonday = day === 0 ? -6 : 1 - day;
 
-        const monday = new Date(now);
-        monday.setDate(now.getDate() + diffToMonday);
-        monday.setHours(0, 0, 0, 0);
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
 
-        const sunday = new Date(monday);
-        sunday.setDate(monday.getDate() + 6);
-        sunday.setHours(23, 59, 59, 999);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
 
-        return [monday, sunday];
-    });
+    return [monday, sunday];
+  });
 
-    const [formData, setFormData] = useState({
-        itemId: '',
-        sizeId: '',
-        fine: '',
-    });
+  const [formData, setFormData] = useState({
+    itemId: '',
+    sizeId: '',
+    fine: '',
+  });
 
-    // Date and Time state for modal
-    const [selectedDate, setSelectedDate] = useState({
-        day: new Date().getDate(),
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
-        hour: new Date().getHours(),
-        minute: new Date().getMinutes(),
-    });
+  // Date and Time state for modal
+  const [selectedDate, setSelectedDate] = useState({
+    day: new Date().getDate(),
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+    hour: new Date().getHours(),
+    minute: new Date().getMinutes(),
+  });
 
-    // Fetch items and sizes from API
-    const { data: items = [], isLoading: itemsLoading } = useGetItems();
-    const { data: sizes = [], isLoading: sizesLoading } = useGetSizes();
+  // Fetch items and sizes from API
+  const {data: items = [], isLoading: itemsLoading} = useGetItems();
+  const {data: sizes = [], isLoading: sizesLoading} = useGetSizes();
 
-    // Fetch existing tar data
-    const { data: tarData = [], isLoading: tarLoading, refetch } = useTar();
-    const { data: tarHistory = [], isLoading: tarHistoryLoading, refetch: refetchHistory } = useGetTarHistory();
+  // Fetch existing tar data
+  const {data: tarData = [], isLoading: tarLoading, refetch} = useTar();
+  const {
+    data: tarHistory = [],
+    isLoading: tarHistoryLoading,
+    refetch: refetchHistory,
+  } = useGetTarHistory();
 
-    // Mutation hooks
-    const createTar = useCreateTar();
-    const saveTar = useSaveTar();
+  // Mutation hooks
+  const createTar = useCreateTar();
+  const saveTar = useSaveTar();
 
-    // Format date helper for history
-    const formatDate = (dateString: string) => {
-        if (!dateString) return { date: '-', time: '-' };
-        const date = new Date(dateString);
-        return {
-            date: date.toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-            }),
-            time: date.toLocaleTimeString('en-IN', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true,
-            }),
-        };
+  // Format date helper for history
+  const formatDate = (dateString: string) => {
+    if (!dateString) return {date: '-', time: '-'};
+    const date = new Date(dateString);
+    return {
+      date: date.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }),
+      time: date.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }),
     };
+  };
 
-    const toNumber = (value: unknown): number => {
-        if (value === null || value === undefined || value === '') return 0;
-        const num = Number(value);
-        return Number.isFinite(num) ? num : 0;
-    };
+  const toNumber = (value: unknown): number => {
+    if (value === null || value === undefined || value === '') return 0;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+  };
 
-    // Indian format, maximum 3 decimals and NO trailing zeros.
-    const formatNumber = (value: unknown): string => {
-        return new Intl.NumberFormat('en-IN', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 3,
-            useGrouping: true,
-        }).format(toNumber(value));
-    };
+  // Indian format, maximum 3 decimals and NO trailing zeros.
+  const formatNumber = (value: unknown): string => {
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 3,
+      useGrouping: true,
+    }).format(toNumber(value));
+  };
 
-    const formatNumberDisplay = (value: unknown): string => {
-        return formatNumber(value);
-    };
+  const formatNumberDisplay = (value: unknown): string => {
+    return formatNumber(value);
+  };
 
-    // Filter history by selected date range
-    const getFilteredHistory = () => {
-        let filtered = tarHistory;
+  // Filter history by selected date range
+  const getFilteredHistory = () => {
+    let filtered = tarHistory;
 
-        if (dateRange && dateRange.length > 0) {
-            if (dateRange[0]) {
-                const from = new Date(dateRange[0]);
-                from.setHours(0, 0, 0, 0);
-                filtered = filtered.filter((item: any) => {
-                    if (!item?.createdAt) return false;
-                    const itemDate = new Date(item.createdAt);
-                    if (Number.isNaN(itemDate.getTime())) return false;
-                    return itemDate >= from;
-                });
-            }
-            if (dateRange[1]) {
-                const to = new Date(dateRange[1]);
-                to.setHours(23, 59, 59, 999);
-                filtered = filtered.filter((item: any) => {
-                    if (!item?.createdAt) return false;
-                    const itemDate = new Date(item.createdAt);
-                    if (Number.isNaN(itemDate.getTime())) return false;
-                    return itemDate <= to;
-                });
-            }
-        }
+    if (dateRange && dateRange.length > 0) {
+      if (dateRange[0]) {
+        const from = new Date(dateRange[0]);
+        from.setHours(0, 0, 0, 0);
+        filtered = filtered.filter((item: any) => {
+          if (!item?.createdAt) return false;
+          const itemDate = new Date(item.createdAt);
+          if (Number.isNaN(itemDate.getTime())) return false;
+          return itemDate >= from;
+        });
+      }
+      if (dateRange[1]) {
+        const to = new Date(dateRange[1]);
+        to.setHours(23, 59, 59, 999);
+        filtered = filtered.filter((item: any) => {
+          if (!item?.createdAt) return false;
+          const itemDate = new Date(item.createdAt);
+          if (Number.isNaN(itemDate.getTime())) return false;
+          return itemDate <= to;
+        });
+      }
+    }
 
-        return filtered;
-    };
+    return filtered;
+  };
 
-    // Calculate history totals
-    const filteredHistory = getFilteredHistory();
+  // Calculate history totals
+  const filteredHistory = getFilteredHistory();
 
-    const historyTotals = filteredHistory.reduce(
-        (
-            acc: {
-                totalFine: number;
-                totalTar: number;
-                totalScrap: number;
-                totalLoss: number;
-                totalEntries: number;
-            },
-            item: any
-        ) => ({
-            totalFine: acc.totalFine + toNumber(item?.fine),
-            totalTar: acc.totalTar + toNumber(item?.tar),
-            totalScrap: acc.totalScrap + toNumber(item?.scrap),
-            totalLoss: acc.totalLoss + toNumber(item?.loss ?? item?.lossWeight),
-            totalEntries: acc.totalEntries + 1,
-        }),
-        {
-            totalFine: 0,
-            totalTar: 0,
-            totalScrap: 0,
-            totalLoss: 0,
-            totalEntries: 0,
-        }
-    );
+  const historyTotals = filteredHistory.reduce(
+    (
+      acc: {
+        totalFine: number;
+        totalTar: number;
+        totalScrap: number;
+        totalLoss: number;
+        totalEntries: number;
+      },
+      item: any,
+    ) => ({
+      totalFine: acc.totalFine + toNumber(item?.fine),
+      totalTar: acc.totalTar + toNumber(item?.tar),
+      totalScrap: acc.totalScrap + toNumber(item?.scrap),
+      totalLoss: acc.totalLoss + toNumber(item?.loss ?? item?.lossWeight),
+      totalEntries: acc.totalEntries + 1,
+    }),
+    {
+      totalFine: 0,
+      totalTar: 0,
+      totalScrap: 0,
+      totalLoss: 0,
+      totalEntries: 0,
+    },
+  );
 
-    // Print History Function - Minimal Padding
-    const handlePrintHistory = () => {
-        const filteredData = getFilteredHistory();
+  // Print History Function - Minimal Padding
+  const handlePrintHistory = () => {
+    const filteredData = getFilteredHistory();
 
-        if (!filteredData || filteredData.length === 0) {
-            toast.error('No history records available to print for the selected date range');
-            return;
-        }
+    if (!filteredData || filteredData.length === 0) {
+      toast.error(
+        'No history records available to print for the selected date range',
+      );
+      return;
+    }
 
-        // Create a hidden div for printing
-        const printContainer = document.createElement('div');
-        printContainer.id = 'print-container';
-        printContainer.style.cssText = `
+    // Create a hidden div for printing
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    printContainer.style.cssText = `
             position: fixed;
             left: -9999px;
             top: 0;
@@ -221,15 +241,17 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             padding: 4px;
             z-index: 9999;
         `;
-        document.body.appendChild(printContainer);
+    document.body.appendChild(printContainer);
 
-        // Build the table rows - Compact with minimum padding
-        const rows = filteredData
-            .map((item: any, index: number) => {
-                const { date, time } = formatDate(item?.createdAt);
-                const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
+    // Build the table rows - Compact with minimum padding
+    const rows = filteredData
+      .map((item: any, index: number) => {
+        const {date, time} = formatDate(item?.createdAt);
+        const {date: proceedDate, time: proceedTime} = formatDate(
+          item?.updatedAt,
+        );
 
-                return `
+        return `
                     <tr>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
@@ -247,28 +269,47 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                         </td>
                     </tr>
                 `;
-            })
-            .join('');
+      })
+      .join('');
 
-        const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-        const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
-        const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
-        const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-        const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
-        const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-        const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
-        const invocationColor = headerInfo.invocationColor || '#a84b20';
-        const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
-        const descriptionColor = headerInfo.descriptionColor || '#8b451f';
-        const proprietorColor = headerInfo.proprietorColor || '#a84b20';
-        const phoneColor = headerInfo.phoneColor || '#a84b20';
-        const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
-        const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
-        const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
-        const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+    const headerInfo =
+      getpdfheaderdata?.data?.data ||
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation =
+      headerInfo.leftInvocation ||
+      headerInfo.leftInovation ||
+      '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation =
+      headerInfo.rightInvocation ||
+      headerInfo.rightInovation ||
+      '॥ श्री साई प्रसन्न ॥';
+    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+    const description =
+      headerInfo.description ||
+      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
+    const phoneNumbers =
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const invocationColor = headerInfo.invocationColor || '#a84b20';
+    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
+    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
+    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
+    const phoneColor = headerInfo.phoneColor || '#a84b20';
+    const factoryFontSize = headerInfo.factoryFontSize
+      ? `${headerInfo.factoryFontSize}px`
+      : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize
+      ? `${headerInfo.descriptionFontSize}px`
+      : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize
+      ? `${headerInfo.proprietorFontSize}px`
+      : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize
+      ? `${headerInfo.phoneFontSize}px`
+      : '9px';
 
-        // Set the content with PDF Header - Minimal padding
-        printContainer.innerHTML = `
+    // Set the content with PDF Header - Minimal padding
+    printContainer.innerHTML = `
             <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
         <!-- Header Section -->
         <div>
@@ -295,13 +336,17 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
     Tar History Report
   </h2>
-  ${dateRange.length === 2 ? `
+  ${
+    dateRange.length === 2
+      ? `
     <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
       From: ${new Date(dateRange[0]).toLocaleDateString('en-IN')} &nbsp; To: ${new Date(dateRange[1]).toLocaleDateString('en-IN')}
     </div>
-  ` : `
+  `
+      : `
     <div style="flex:1;"></div>
-  `}
+  `
+  }
 </div>
 
                 <!-- Table -->
@@ -329,9 +374,9 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             </div>
         `;
 
-        // Add print styles
-        const style = document.createElement('style');
-        style.textContent = `
+    // Add print styles
+    const style = document.createElement('style');
+    style.textContent = `
             @page {
                 margin: 3mm;
             }
@@ -375,972 +420,1006 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                 }
             }
         `;
-        document.head.appendChild(style);
+    document.head.appendChild(style);
 
-        // Trigger print
-        setTimeout(() => {
-            window.print();
+    // Trigger print
+    setTimeout(() => {
+      window.print();
 
-            // Clean up after print
-            setTimeout(() => {
-                if (document.body.contains(printContainer)) {
-                    document.body.removeChild(printContainer);
-                }
-                if (document.head.contains(style)) {
-                    document.head.removeChild(style);
-                }
-            }, 1000);
-        }, 500);
-    };
-
-    // History table columns
-    const historyColumns: Column<any>[] = [
-        {
-            key: 'createdAt',
-            header: 'Date & Time',
-            render: (item) => {
-                const { date, time } = formatDate(item.createdAt);
-                return (
-                    <div className="flex flex-col items-center">
-                        <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{time}</span>
-                    </div>
-                );
-            },
-        },
-        {
-            key: 'item',
-            header: 'Item',
-            render: (item) => (
-                <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-                    {getItemName(item?.item)}
-                </span>
-            ),
-        },
-        {
-            key: 'size',
-            header: 'Size',
-            render: (item) => (
-                <span className="text-sm text-[#1a1c1b] dark:text-white">
-                    {getSizeName(item?.size)}
-                </span>
-            ),
-        },
-        {
-            key: 'fine',
-            header: 'Fine (G)',
-            render: (item) => (
-                <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-                    {formatNumber(item.fine)} G
-                </span>
-            ),
-        },
-        {
-            key: 'tar',
-            header: 'Tar (G)',
-            render: (item) => (
-                <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-                    {formatNumber(item.tar)} G
-                </span>
-            ),
-        },
-        {
-            key: 'scrap',
-            header: 'Scrap (G)',
-            render: (item) => (
-                <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-                    {formatNumber(item.scrap)} G
-                </span>
-            ),
-        },
-        {
-            key: 'loss',
-            header: 'Loss (G)',
-            render: (item) => (
-                <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-                    {formatNumber(item.loss)} G
-                </span>
-            ),
-        },
-        {
-            key: 'purity',
-            header: 'Purity %',
-            render: (item) => (
-                <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
-                    {formatNumber(item.purity)}%
-                </span>
-            ),
-        },
-        {
-            key: 'updatedAt',
-            header: 'Proceed Date & Time',
-            render: (item) => {
-                const { date, time } = formatDate(item.updatedAt);
-                return (
-                    <div className="flex flex-col items-center">
-                        <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{time}</span>
-                    </div>
-                );
-            },
+      // Clean up after print
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
         }
-    ];
-
-    // Initialize with existing tar data
-    useEffect(() => {
-        if (!tarLoading && items.length > 0 && sizes.length > 0) {
-            if (tarData.length > 0) {
-                const entries: TarEntry[] = tarData.map((tar, index: any) => {
-                    let sizeValue = tar.size;
-                    if (typeof tar.size === 'object' && tar.size !== null) {
-                        sizeValue = tar.size.size || tar.size.name || JSON.stringify(tar.size);
-                    }
-
-                    let itemValue = tar.item;
-                    if (typeof tar.item === 'object' && tar.item !== null) {
-                        itemValue = tar.item.name || tar.item.item || JSON.stringify(tar.item);
-                    }
-
-                    if (tar.isSaved) {
-                        setIsTarCompleted(true);
-                    }
-                    const formattedDateTime = tar.createdAt
-                        ? formatDateTime(new Date(tar.createdAt))
-                        : '-';
-
-                    return {
-                        id: tar.id,
-                        srNo: index + 1,
-                        dateTime: formattedDateTime,
-                        item: itemValue,
-                        size: sizeValue,
-                        fine: toNumber(tar.fine),
-                        tar: toNumber(tar.tar),
-                        scrap: toNumber(tar.scrap),
-                        loss: toNumber(tar.loss ?? tar.lossWeight),
-                        purity: toNumber(tar.purity),
-                        isSaved: tar.isSaved || false,
-                        tarRaw: toNumber(tar.tar) > 0 ? String(tar.tar) : '',
-                        scrapRaw: toNumber(tar.scrap) > 0 ? String(tar.scrap) : '',
-                        purityRaw: toNumber(tar.purity) > 0 ? String(tar.purity) : '',
-                        itemId: tar.itemId || '',
-                        sizeId: tar.sizeId || '',
-                    };
-                });
-                setTarEntries(entries);
-            } else {
-                setTarEntries([]);
-            }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
         }
-    }, [tarData, items, sizes, tarLoading]);
+      }, 1000);
+    }, 500);
+  };
 
-    // Check if Tar is completed when entries change
-    useEffect(() => {
-        const hasSaved = tarEntries.some(entry => entry.isSaved === true);
-        if (hasSaved) {
-            setIsTarCompleted(true);
-        }
-    }, [tarEntries]);
-
-    // Format date time helper
-    const formatDateTime = (date: Date) => {
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        let hours = date.getHours();
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12 || 12;
-        return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
-    };
-
-    const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        if (name === 'fine') {
-            const sanitized = value.replace(/[^0-9.]/g, '');
-            setFormData((prev) => ({ ...prev, [name]: sanitized }));
-        } else {
-            setFormData((prev) => ({ ...prev, [name]: value }));
-        }
-    };
-
-    const handleOpenModal = () => {
-        if (isTarCompleted) {
-            toast.error('Tar process is already completed. You cannot add more entries.');
-            return;
-        }
-        const now = new Date();
-        setSelectedDate({
-            day: now.getDate(),
-            month: now.getMonth() + 1,
-            year: now.getFullYear(),
-            hour: now.getHours(),
-            minute: now.getMinutes(),
-        });
-        setFormData({
-            itemId: '',
-            sizeId: '',
-            fine: '',
-        });
-        setIsModalOpen(true);
-    };
-
-    const handleSaveFromPopup = async () => {
-        if (!formData.itemId) {
-            toast.error('Please select an item');
-            return;
-        }
-
-        if (!formData.sizeId) {
-            toast.error('Please select a size');
-            return;
-        }
-
-        if (!formData.fine || parseFloat(formData.fine) <= 0) {
-            toast.error('Please enter a valid fine value');
-            return;
-        }
-
-        setIsLoading(true);
-
-        try {
-            const fineValue = parseFloat(formData.fine) || 0;
-            const selectedItem = items.find(i => i.id === formData.itemId);
-            const selectedSize = sizes.find(s => s.id === formData.sizeId);
-
-            const { day, month, year, hour, minute } = selectedDate;
-            const date = new Date(year, month - 1, day, hour, minute);
-            const dateTimeStr = formatDateTime(date);
-
-            const payload = {
-                itemId: formData.itemId,
-                sizeId: formData.sizeId,
-                fine: fineValue,
-                item: selectedItem?.name || '',
-                size: selectedSize?.size || '',
-                tar: 0,
-                scrap: 0,
-                loss: 0,
-                purity: 0,
-                isSaved: false,
-                dateTime: dateTimeStr,
-            };
-
-            const result = await createTar.mutateAsync(payload);
-
-            const newEntry: TarEntry = {
-                id: result?.data?.id || Date.now().toString(),
-                srNo: tarEntries.length + 1,
-                dateTime: dateTimeStr,
-                item: selectedItem?.name || '',
-                size: selectedSize?.size || '',
-                fine: fineValue,
-                tar: 0,
-                scrap: 0,
-                loss: 0,
-                purity: 0,
-                isSaved: false,
-                tarRaw: '',
-                scrapRaw: '',
-                purityRaw: '',
-                itemId: formData.itemId,
-                sizeId: formData.sizeId,
-            };
-
-            setTarEntries(prev => [...prev, newEntry]);
-            setIsModalOpen(false);
-            await refetch();
-        } catch (error: any) {
-            console.error('Error saving tar:', error);
-            const errorMessage = error?.response?.data?.message || error?.message || 'Failed to save tar entry';
-            toast.error(errorMessage);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleInlineChange = (index: number, field: 'tar' | 'scrap' | 'purity', value: string) => {
-        setTarEntries(prev => prev.map((entry, i) => {
-            if (i === index) {
-                const updated = { ...entry };
-
-                if (field === 'tar') {
-                    const sanitized = value.replace(/[^0-9.]/g, '');
-                    updated.tarRaw = sanitized;
-                    if (sanitized === '' || sanitized === '.' || sanitized === '-') {
-                        updated.tar = 0;
-                    } else {
-                        const numValue = parseFloat(sanitized);
-                        updated.tar = isNaN(numValue) ? 0 : numValue;
-                    }
-                    updated.loss = Math.max(
-                        0,
-                        toNumber(entry.fine) - toNumber(updated.tar)
-                    );
-                } else if (field === 'scrap') {
-                    const sanitized = value.replace(/[^0-9.]/g, '');
-                    updated.scrapRaw = sanitized;
-                    if (sanitized === '' || sanitized === '.' || sanitized === '-') {
-                        updated.scrap = 0;
-                    } else {
-                        const numValue = parseFloat(sanitized);
-                        updated.scrap = isNaN(numValue) ? 0 : numValue;
-                    }
-                } else if (field === 'purity') {
-                    const sanitized = value.replace(/[^0-9.]/g, '');
-                    updated.purityRaw = sanitized;
-                    if (sanitized === '' || sanitized === '.' || sanitized === '-') {
-                        updated.purity = 0;
-                    } else {
-                        const numValue = parseFloat(sanitized);
-                        updated.purity = isNaN(numValue) ? 0 : numValue;
-                    }
-                }
-
-                return updated;
-            }
-            return entry;
-        }));
-    };
-
-    const handleSaveClick = (index: number) => {
-        const entry = tarEntries[index];
-
-        if (!entry.tar || entry.tar < 0) {
-            toast.error('Please enter a valid tar weight');
-            return;
-        }
-
-        if (!entry.scrap || entry.scrap < 0) {
-            toast.error('Please enter a valid scrap weight');
-            return;
-        }
-
-        if (!entry.purity || entry.purity <= 0) {
-            toast.error('Please enter purity (टंच)');
-            return;
-        }
-
-        if (entry.loss < 0) {
-            toast.error('Loss cannot be negative. Tar must be less than or equal to Fine.');
-            return;
-        }
-
-        setSaveIndex(index);
-        setShowConfirmModal(true);
-    };
-
-    const confirmSave = async () => {
-        if (saveIndex === null) return;
-
-        const index = saveIndex;
-        const entry = tarEntries[index];
-
-        setIsLoading(true);
-
-        try {
-            await saveTar.mutateAsync({
-                id: entry.id,
-                data: {
-                    id: entry.id,
-                    itemId: entry.itemId || '',
-                    sizeId: entry.sizeId || '',
-                    fine: Number(entry.fine),
-                    item: entry.item || '',
-                    size: entry.size || '',
-                    tar: Number(entry.tar),
-                    scrap: Number(entry.scrap),
-                    purity: Number(entry.purity),
-                    loss: Number(entry.loss),
-                    isSaved: true,
-                }
-            });
-
-            setTarEntries(prev => prev.map((s, i) =>
-                i === index ? { ...s, isSaved: true } : s
-            ));
-
-            setIsTarCompleted(true);
-
-            setIsLoading(false);
-            setShowConfirmModal(false);
-            setSaveIndex(null);
-            await refetch();
-
-            navigate({
-                to: '/manufacturingprocess/process',
-                state: { selectedTab: 'box' }
-            });
-        } catch (error) {
-            console.error('Error saving tar:', error);
-            toast.error('Failed to save tar entry');
-            setIsLoading(false);
-            setShowConfirmModal(false);
-            setSaveIndex(null);
-        }
-    };
-
-    const resetForm = () => {
-        setFormData({
-            itemId: '',
-            sizeId: '',
-            fine: '',
-        });
-    };
-
-    const closeModal = () => {
-        setIsModalOpen(false);
-        resetForm();
-    };
-
-    // A row is edited only when the user has entered a value.
-    const hasEditableValues = (entry: TarEntry): boolean => {
-        return Boolean(
-            entry.tarRaw?.trim() ||
-            entry.scrapRaw?.trim() ||
-            entry.purityRaw?.trim()
+  // History table columns
+  const historyColumns: Column<any>[] = [
+    {
+      key: 'createdAt',
+      header: 'Date & Time',
+      render: (item) => {
+        const {date, time} = formatDate(item.createdAt);
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {date}
+            </span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
+              {time}
+            </span>
+          </div>
         );
-    };
+      },
+    },
+    {
+      key: 'item',
+      header: 'Item',
+      render: (item) => (
+        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
+          {getItemName(item?.item)}
+        </span>
+      ),
+    },
+    {
+      key: 'size',
+      header: 'Size',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {getSizeName(item?.size)}
+        </span>
+      ),
+    },
+    {
+      key: 'fine',
+      header: 'Fine (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.fine)} G
+        </span>
+      ),
+    },
+    {
+      key: 'tar',
+      header: 'Tar (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.tar)} G
+        </span>
+      ),
+    },
+    {
+      key: 'scrap',
+      header: 'Scrap (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.scrap)} G
+        </span>
+      ),
+    },
+    {
+      key: 'loss',
+      header: 'Loss (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.loss)} G
+        </span>
+      ),
+    },
+    {
+      key: 'purity',
+      header: 'Purity %',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.purity)}%
+        </span>
+      ),
+    },
+    {
+      key: 'updatedAt',
+      header: 'Proceed Date & Time',
+      render: (item) => {
+        const {date, time} = formatDate(item.updatedAt);
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {date}
+            </span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
+              {time}
+            </span>
+          </div>
+        );
+      },
+    },
+  ];
 
-    // The whole Action column is conditional.
-    // Therefore the "Action" header also disappears when no row is edited.
-    const showActionColumn = tarEntries.some(
-        entry => !entry.isSaved && hasEditableValues(entry)
-    );
+  // Initialize with existing tar data
+  useEffect(() => {
+    if (!tarLoading && items.length > 0 && sizes.length > 0) {
+      if (tarData.length > 0) {
+        const entries: TarEntry[] = tarData.map((tar, index: any) => {
+          let sizeValue = tar.size;
+          if (typeof tar.size === 'object' && tar.size !== null) {
+            sizeValue =
+              tar.size.size || tar.size.name || JSON.stringify(tar.size);
+          }
 
-    const isSubmitting = createTar.isPending || saveTar.isPending;
+          let itemValue = tar.item;
+          if (typeof tar.item === 'object' && tar.item !== null) {
+            itemValue =
+              tar.item.name || tar.item.item || JSON.stringify(tar.item);
+          }
 
-    const columns: Column<TarEntry>[] = [
-        {
-            key: 'dateTime',
-            header: 'Date & Time',
-            render: (item) => {
-                const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
-                const datePart = parts[0] || '';
-                const timePart = parts.slice(1).join(' ') || '';
+          if (tar.isSaved) {
+            setIsTarCompleted(true);
+          }
+          const formattedDateTime = tar.createdAt
+            ? formatDateTime(new Date(tar.createdAt))
+            : '-';
 
-                return (
-                    <div className="flex flex-col items-center">
-                        <span className="text-sm text-[#1a1c1b] dark:text-white">
-                            {datePart}
-                        </span>
-                        <span className="text-sm text-[#4f4535] dark:text-slate-400">
-                            {timePart}
-                        </span>
-                    </div>
-                );
-            },
-        },
-        {
-            key: 'item',
-            header: 'Item',
-            render: (item) => (
-                <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-                    {typeof item.item === 'string' ? item.item : JSON.stringify(item.item)}
-                </span>
-            ),
-        },
-        {
-            key: 'size',
-            header: 'Size',
-            render: (item) => (
-                <span className="text-sm text-[#1a1c1b] dark:text-white">
-                    {typeof item.size === 'string' ? item.size : JSON.stringify(item.size)}
-                </span>
-            ),
-        },
-        {
-            key: 'fine',
-            header: 'Fine (लगड)',
-            render: (item) => (
-                <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumberDisplay(item.fine)} G
-                </span>
-            ),
-        },
-        {
-            key: 'tar',
-            header: 'Tar (G)',
-            render: (item, index) => {
-                if (!item.isSaved) {
-                    return (
-                        <div className="relative inline-block">
-                            <input
-                                type="text"
-                                inputMode="decimal"
-                                value={
-                                    item.tarRaw !== undefined
-                                        ? item.tarRaw
-                                        : item.tar === 0
-                                            ? ''
-                                            : item.tar
-                                }
-                                onChange={(e) =>
-                                    handleInlineChange(index, 'tar', e.target.value)
-                                }
-                                placeholder="0.000"
-                                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                            />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
-                                G
-                            </span>
-                        </div>
-                    );
-                }
+          return {
+            id: tar.id,
+            srNo: index + 1,
+            dateTime: formattedDateTime,
+            item: itemValue,
+            size: sizeValue,
+            fine: toNumber(tar.fine),
+            tar: toNumber(tar.tar),
+            scrap: toNumber(tar.scrap),
+            loss: toNumber(tar.loss ?? tar.lossWeight),
+            purity: toNumber(tar.purity),
+            isSaved: tar.isSaved || false,
+            tarRaw: toNumber(tar.tar) > 0 ? String(tar.tar) : '',
+            scrapRaw: toNumber(tar.scrap) > 0 ? String(tar.scrap) : '',
+            purityRaw: toNumber(tar.purity) > 0 ? String(tar.purity) : '',
+            itemId: tar.itemId || '',
+            sizeId: tar.sizeId || '',
+          };
+        });
+        setTarEntries(entries);
+      } else {
+        setTarEntries([]);
+      }
+    }
+  }, [tarData, items, sizes, tarLoading]);
 
-                return (
-                    <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                        {formatNumberDisplay(item.tar)} G
-                    </span>
-                );
-            },
-        },
-        {
-            key: 'scrap',
-            header: 'Scrap (G)',
-            render: (item, index) => {
-                if (!item.isSaved) {
-                    return (
-                        <div className="relative inline-block">
-                            <input
-                                type="text"
-                                inputMode="decimal"
-                                value={
-                                    item.scrapRaw !== undefined
-                                        ? item.scrapRaw
-                                        : item.scrap === 0
-                                            ? ''
-                                            : item.scrap
-                                }
-                                onChange={(e) =>
-                                    handleInlineChange(index, 'scrap', e.target.value)
-                                }
-                                placeholder="0.000"
-                                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                            />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
-                                G
-                            </span>
-                        </div>
-                    );
-                }
+  // Check if Tar is completed when entries change
+  useEffect(() => {
+    const hasSaved = tarEntries.some((entry) => entry.isSaved === true);
+    if (hasSaved) {
+      setIsTarCompleted(true);
+    }
+  }, [tarEntries]);
 
-                return (
-                    <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                        {formatNumberDisplay(item.scrap)}
-                    </span>
-                );
-            },
-        },
-        {
-            key: 'loss',
-            header: 'Loss (G)',
-            render: (item) => (
-                <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumberDisplay(item.loss)}
-                </span>
-            ),
-        },
-        {
-            key: 'purity',
-            header: 'Purity % (टंच)',
-            render: (item, index) => {
-                if (!item.isSaved) {
-                    return (
-                        <div className="relative inline-block">
-                            <input
-                                type="text"
-                                inputMode="decimal"
-                                value={
-                                    item.purityRaw !== undefined
-                                        ? item.purityRaw
-                                        : item.purity === 0
-                                            ? ''
-                                            : item.purity
-                                }
-                                onChange={(e) =>
-                                    handleInlineChange(index, 'purity', e.target.value)
-                                }
-                                placeholder="98"
-                                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                            />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
-                                %
-                            </span>
-                        </div>
-                    );
-                }
+  // Format date time helper
+  const formatDateTime = (date: Date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
+  };
 
-                return (
-                    <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                        {formatNumberDisplay(item.purity)}
-                    </span>
-                );
-            },
-        },
+  const handleFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const {name, value} = e.target;
+    if (name === 'fine') {
+      const sanitized = value.replace(/[^0-9.]/g, '');
+      setFormData((prev) => ({...prev, [name]: sanitized}));
+    } else {
+      setFormData((prev) => ({...prev, [name]: value}));
+    }
+  };
 
-        ...(showActionColumn
-            ? [
-                {
-                    key: 'actions',
-                    header: 'Action',
-                    render: (item: TarEntry, index: number) => {
-                        if (item.isSaved || !hasEditableValues(item)) {
-                            return null;
-                        }
+  const handleOpenModal = () => {
+    if (isTarCompleted) {
+      toast.error(
+        'Tar process is already completed. You cannot add more entries.',
+      );
+      return;
+    }
+    const now = new Date();
+    setSelectedDate({
+      day: now.getDate(),
+      month: now.getMonth() + 1,
+      year: now.getFullYear(),
+      hour: now.getHours(),
+      minute: now.getMinutes(),
+    });
+    setFormData({
+      itemId: '',
+      sizeId: '',
+      fine: '',
+    });
+    setIsModalOpen(true);
+  };
 
-                        return (
-                            <button
-                                type="button"
-                                onClick={() => handleSaveClick(index)}
-                                disabled={isLoading || isSubmitting}
-                                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                                title="Save Entry"
-                            >
-                                <Save className="h-3 w-3" />
-                                <span>Box</span>
-                            </button>
-                        );
-                    },
-                } as Column<TarEntry>,
-            ]
-            : []),
-    ];
+  const handleSaveFromPopup = async () => {
+    if (!formData.itemId) {
+      toast.error('Please select an item');
+      return;
+    }
 
-    const toggleHistory = () => {
-        if (showHistory) {
-            setShowHistory(false);
-            refetch();
-        } else {
-            setShowHistory(true);
-            refetchHistory();
+    if (!formData.sizeId) {
+      toast.error('Please select a size');
+      return;
+    }
+
+    if (!formData.fine || parseFloat(formData.fine) <= 0) {
+      toast.error('Please enter a valid fine value');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const fineValue = parseFloat(formData.fine) || 0;
+      const selectedItem = items.find((i) => i.id === formData.itemId);
+      const selectedSize = sizes.find((s) => s.id === formData.sizeId);
+
+      const {day, month, year, hour, minute} = selectedDate;
+      const date = new Date(year, month - 1, day, hour, minute);
+      const dateTimeStr = formatDateTime(date);
+
+      const payload = {
+        itemId: formData.itemId,
+        sizeId: formData.sizeId,
+        fine: fineValue,
+        item: selectedItem?.name || '',
+        size: selectedSize?.size || '',
+        tar: 0,
+        scrap: 0,
+        loss: 0,
+        purity: 0,
+        isSaved: false,
+        dateTime: dateTimeStr,
+      };
+
+      const result = await createTar.mutateAsync(payload);
+
+      const newEntry: TarEntry = {
+        id: result?.data?.id || Date.now().toString(),
+        srNo: tarEntries.length + 1,
+        dateTime: dateTimeStr,
+        item: selectedItem?.name || '',
+        size: selectedSize?.size || '',
+        fine: fineValue,
+        tar: 0,
+        scrap: 0,
+        loss: 0,
+        purity: 0,
+        isSaved: false,
+        tarRaw: '',
+        scrapRaw: '',
+        purityRaw: '',
+        itemId: formData.itemId,
+        sizeId: formData.sizeId,
+      };
+
+      setTarEntries((prev) => [...prev, newEntry]);
+      setIsModalOpen(false);
+      await refetch();
+    } catch (error: any) {
+      console.error('Error saving tar:', error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to save tar entry';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInlineChange = (
+    index: number,
+    field: 'tar' | 'scrap' | 'purity',
+    value: string,
+  ) => {
+    setTarEntries((prev) =>
+      prev.map((entry, i) => {
+        if (i === index) {
+          const updated = {...entry};
+
+          if (field === 'tar') {
+            const sanitized = value.replace(/[^0-9.]/g, '');
+            updated.tarRaw = sanitized;
+            if (sanitized === '' || sanitized === '.' || sanitized === '-') {
+              updated.tar = 0;
+            } else {
+              const numValue = parseFloat(sanitized);
+              updated.tar = isNaN(numValue) ? 0 : numValue;
+            }
+            updated.loss = Math.max(
+              0,
+              toNumber(entry.fine) - toNumber(updated.tar),
+            );
+          } else if (field === 'scrap') {
+            const sanitized = value.replace(/[^0-9.]/g, '');
+            updated.scrapRaw = sanitized;
+            if (sanitized === '' || sanitized === '.' || sanitized === '-') {
+              updated.scrap = 0;
+            } else {
+              const numValue = parseFloat(sanitized);
+              updated.scrap = isNaN(numValue) ? 0 : numValue;
+            }
+          } else if (field === 'purity') {
+            const sanitized = value.replace(/[^0-9.]/g, '');
+            updated.purityRaw = sanitized;
+            if (sanitized === '' || sanitized === '.' || sanitized === '-') {
+              updated.purity = 0;
+            } else {
+              const numValue = parseFloat(sanitized);
+              updated.purity = isNaN(numValue) ? 0 : numValue;
+            }
+          }
+
+          return updated;
         }
-    };
-    const getCurrentWeekRange = () => {
-        const today = new Date();
-        const day = today.getDay();
-        const diffToMonday = day === 0 ? -6 : 1 - day;
+        return entry;
+      }),
+    );
+  };
 
-        const monday = new Date(today);
-        monday.setDate(today.getDate() + diffToMonday);
-        monday.setHours(0, 0, 0, 0);
+  const handleSaveClick = (index: number) => {
+    const entry = tarEntries[index];
 
-        const sunday = new Date(monday);
-        sunday.setDate(monday.getDate() + 6);
-        sunday.setHours(23, 59, 59, 999);
+    if (!entry.tar || entry.tar < 0) {
+      toast.error('Please enter a valid tar weight');
+      return;
+    }
 
-        return { monday, sunday };
-    };
+    if (!entry.scrap || entry.scrap < 0) {
+      toast.error('Please enter a valid scrap weight');
+      return;
+    }
 
-    return (
-        <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
-            {/* Header */}
-            <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
-                <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
-                    <div className="flex items-center gap-2 min-w-0">
-                        <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
-                            {showHistory ? 'Tar History' : 'Tar Management'}
-                        </h1>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {!showHistory && (
-                            <GenericButton
-                                type="button"
-                                onClick={handleOpenModal}
-                                disabled={isTarCompleted}
-                                className={`flex items-center !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${isTarCompleted
-                                    ? '!bg-gray-400 cursor-not-allowed opacity-60'
-                                    : '!bg-amber-600 hover:!bg-amber-700'
-                                    }`}
-                            >
-                                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                <span>
-                                    {isTarCompleted ? 'Completed' : 'Add Tar'}
-                                </span>
-                            </GenericButton>
-                        )}
+    if (!entry.purity || entry.purity <= 0) {
+      toast.error('Please enter purity (टंच)');
+      return;
+    }
 
-                        {showHistory && (
-                            <div className="flex flex-wrap items-center gap-2">
-                                {/* From Date - Defaults to Monday */}
-                                <div className="w-32 sm:w-36 md:w-40">
-                                    <GenericWeeklyDatePicker
-                                        id="from-date-tar"
-                                        placeholder="DD/MM/YYYY"
-                                        mode="from"
-                                        initialDates={dateRange}
-                                        onDateChange={(dates) => {
-                                            if (dates && dates.length > 0) {
-                                                const from = new Date(dates[0]);
-                                                from.setHours(0, 0, 0, 0);
-                                                setDateRange(prev => [from, prev[1] || from]);
-                                            } else {
-                                                setDateRange(prev => [undefined as any, prev[1]]);
-                                            }
-                                        }}
-                                        className="w-full"
-                                    />
-                                </div>
+    if (entry.loss < 0) {
+      toast.error(
+        'Loss cannot be negative. Tar must be less than or equal to Fine.',
+      );
+      return;
+    }
 
-                                {/* To Date - Defaults to Sunday */}
-                                <div className="w-32 sm:w-36 md:w-40">
-                                    <GenericWeeklyDatePicker
-                                        id="to-date-tar"
-                                        placeholder="DD/MM/YYYY"
-                                        mode="to"
-                                        initialDates={dateRange}
-                                        onDateChange={(dates) => {
-                                            if (dates && dates.length > 0) {
-                                                const to = new Date(dates[0]);
-                                                to.setHours(23, 59, 59, 999);
-                                                setDateRange(prev => [prev[0] || to, to]);
-                                            } else {
-                                                setDateRange(prev => [prev[0], undefined as any]);
-                                            }
-                                        }}
-                                        className="w-full"
-                                    />
-                                </div>
-                            </div>
-                        )}
+    setSaveIndex(index);
+    setShowConfirmModal(true);
+  };
 
-                        {/* Print History Button */}
-                        {showHistory && (
-                            <GenericButton
-                                type="button"
-                                onClick={handlePrintHistory}
-                                className="flex items-center gap-1.5 whitespace-nowrap !bg-green-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-green-700 sm:!px-4 sm:!py-2 sm:!text-sm"
-                            >
-                                <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                <span>Print</span>
-                            </GenericButton>
-                        )}
+  const confirmSave = async () => {
+    if (saveIndex === null) return;
 
-                        {/* History Toggle Button */}
-                        <GenericButton
-                            type="button"
-                            onClick={toggleHistory}
-                            className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${showHistory ? '!bg-amber-600 hover:!bg-amber-700' : '!bg-blue-600 hover:!bg-blue-700'
-                                }`}
-                        >
-                            {showHistory ? (
-                                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            ) : (
-                                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            )}
-                            <span>
-                                {showHistory ? 'Show Tar' : 'History'}
-                            </span>
-                        </GenericButton>
-                    </div>
+    const index = saveIndex;
+    const entry = tarEntries[index];
+
+    setIsLoading(true);
+
+    try {
+      await saveTar.mutateAsync({
+        id: entry.id,
+        data: {
+          id: entry.id,
+          itemId: entry.itemId || '',
+          sizeId: entry.sizeId || '',
+          fine: Number(entry.fine),
+          item: entry.item || '',
+          size: entry.size || '',
+          tar: Number(entry.tar),
+          scrap: Number(entry.scrap),
+          purity: Number(entry.purity),
+          loss: Number(entry.loss),
+          isSaved: true,
+        },
+      });
+
+      setTarEntries((prev) =>
+        prev.map((s, i) => (i === index ? {...s, isSaved: true} : s)),
+      );
+
+      setIsTarCompleted(true);
+
+      setIsLoading(false);
+      setShowConfirmModal(false);
+      setSaveIndex(null);
+      await refetch();
+
+      navigate({
+        to: '/manufacturingprocess/process',
+        state: {selectedTab: 'box'},
+      });
+    } catch (error) {
+      console.error('Error saving tar:', error);
+      toast.error('Failed to save tar entry');
+      setIsLoading(false);
+      setShowConfirmModal(false);
+      setSaveIndex(null);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      itemId: '',
+      sizeId: '',
+      fine: '',
+    });
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    resetForm();
+  };
+
+  // A row is edited only when the user has entered a value.
+  const hasEditableValues = (entry: TarEntry): boolean => {
+    return Boolean(
+      entry.tarRaw?.trim() || entry.scrapRaw?.trim() || entry.purityRaw?.trim(),
+    );
+  };
+
+  // The whole Action column is conditional.
+  // Therefore the "Action" header also disappears when no row is edited.
+  const showActionColumn = tarEntries.some(
+    (entry) => !entry.isSaved && hasEditableValues(entry),
+  );
+
+  const isSubmitting = createTar.isPending || saveTar.isPending;
+
+  const columns: Column<TarEntry>[] = [
+    {
+      key: 'dateTime',
+      header: 'Date & Time',
+      render: (item) => {
+        const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
+        const datePart = parts[0] || '';
+        const timePart = parts.slice(1).join(' ') || '';
+
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {datePart}
+            </span>
+            <span className="text-sm text-[#4f4535] dark:text-slate-400">
+              {timePart}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'item',
+      header: 'Item',
+      render: (item) => (
+        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
+          {typeof item.item === 'string'
+            ? item.item
+            : JSON.stringify(item.item)}
+        </span>
+      ),
+    },
+    {
+      key: 'size',
+      header: 'Size',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {typeof item.size === 'string'
+            ? item.size
+            : JSON.stringify(item.size)}
+        </span>
+      ),
+    },
+    {
+      key: 'fine',
+      header: 'Fine (लगड)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.fine)} G
+        </span>
+      ),
+    },
+    {
+      key: 'tar',
+      header: 'Tar (G)',
+      render: (item, index) => {
+        if (!item.isSaved) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={
+                  item.tarRaw !== undefined
+                    ? item.tarRaw
+                    : item.tar === 0
+                      ? ''
+                      : item.tar
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'tar', e.target.value)
+                }
+                placeholder="0.000"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                G
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.tar)} G
+          </span>
+        );
+      },
+    },
+    {
+      key: 'scrap',
+      header: 'Scrap (G)',
+      render: (item, index) => {
+        if (!item.isSaved) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={
+                  item.scrapRaw !== undefined
+                    ? item.scrapRaw
+                    : item.scrap === 0
+                      ? ''
+                      : item.scrap
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'scrap', e.target.value)
+                }
+                placeholder="0.000"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                G
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.scrap)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'loss',
+      header: 'Loss (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.loss)}
+        </span>
+      ),
+    },
+    {
+      key: 'purity',
+      header: 'Purity % (टंच)',
+      render: (item, index) => {
+        if (!item.isSaved) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={
+                  item.purityRaw !== undefined
+                    ? item.purityRaw
+                    : item.purity === 0
+                      ? ''
+                      : item.purity
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'purity', e.target.value)
+                }
+                placeholder="98"
+                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                %
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.purity)}
+          </span>
+        );
+      },
+    },
+
+    ...(showActionColumn
+      ? [
+          {
+            key: 'actions',
+            header: 'Action',
+            render: (item: TarEntry, index: number) => {
+              if (item.isSaved || !hasEditableValues(item)) {
+                return null;
+              }
+
+              return (
+                <button
+                  type="button"
+                  onClick={() => handleSaveClick(index)}
+                  disabled={isLoading || isSubmitting}
+                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Save Entry"
+                >
+                  <Save className="h-3 w-3" />
+                  <span>Box</span>
+                </button>
+              );
+            },
+          } as Column<TarEntry>,
+        ]
+      : []),
+  ];
+
+  const toggleHistory = () => {
+    if (showHistory) {
+      setShowHistory(false);
+      refetch();
+    } else {
+      setShowHistory(true);
+      refetchHistory();
+    }
+  };
+  const getCurrentWeekRange = () => {
+    const today = new Date();
+    const day = today.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return {monday, sunday};
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
+      {/* Header */}
+      <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
+        <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white sm:text-base md:text-lg">
+              {showHistory ? 'Tar History' : 'Tar Management'}
+            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            {!showHistory && (
+              <GenericButton
+                type="button"
+                onClick={handleOpenModal}
+                disabled={isTarCompleted}
+                className={`flex items-center whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
+                  isTarCompleted
+                    ? '!bg-gray-400 cursor-not-allowed opacity-60'
+                    : '!bg-amber-600 hover:!bg-amber-700'
+                }`}
+              >
+                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>{isTarCompleted ? 'Completed' : 'Add Tar'}</span>
+              </GenericButton>
+            )}
+
+            {showHistory && (
+              <div className="flex flex-wrap items-center gap-2">
+                {/* From Date - Defaults to Monday */}
+                <div className="w-32 sm:w-36 md:w-40">
+                  <GenericWeeklyDatePicker
+                    id="from-date-tar"
+                    placeholder="DD/MM/YYYY"
+                    mode="from"
+                    initialDates={dateRange}
+                    onDateChange={(dates) => {
+                      if (dates && dates.length > 0) {
+                        const from = new Date(dates[0]);
+                        from.setHours(0, 0, 0, 0);
+                        setDateRange((prev) => [from, prev[1] || from]);
+                      } else {
+                        setDateRange((prev) => [undefined as any, prev[1]]);
+                      }
+                    }}
+                    className="w-full"
+                  />
                 </div>
+
+                {/* To Date - Defaults to Sunday */}
+                <div className="w-32 sm:w-36 md:w-40">
+                  <GenericWeeklyDatePicker
+                    id="to-date-tar"
+                    placeholder="DD/MM/YYYY"
+                    mode="to"
+                    initialDates={dateRange}
+                    onDateChange={(dates) => {
+                      if (dates && dates.length > 0) {
+                        const to = new Date(dates[0]);
+                        to.setHours(23, 59, 59, 999);
+                        setDateRange((prev) => [prev[0] || to, to]);
+                      } else {
+                        setDateRange((prev) => [prev[0], undefined as any]);
+                      }
+                    }}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Print History Button */}
+            {showHistory && (
+              <GenericButton
+                type="button"
+                onClick={handlePrintHistory}
+                className="flex items-center gap-1.5 whitespace-nowrap !bg-green-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-green-700 sm:!px-4 sm:!py-2 sm:!text-sm"
+              >
+                <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>Print</span>
+              </GenericButton>
+            )}
+
+            {/* History Toggle Button */}
+            <GenericButton
+              type="button"
+              onClick={toggleHistory}
+              className={`flex items-center gap-1.5 whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
+                showHistory
+                  ? '!bg-amber-600 hover:!bg-amber-700'
+                  : '!bg-blue-600 hover:!bg-blue-700'
+              }`}
+            >
+              {showHistory ? (
+                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              )}
+              <span>{showHistory ? 'Show Tar' : 'History'}</span>
+            </GenericButton>
+          </div>
+        </div>
+      </div>
+
+      {!showHistory ? (
+        /* Tar Management Table */
+        <div className="px-3 py-4 sm:px-4 md:px-6">
+          <GenericTable<TarEntry>
+            data={tarEntries}
+            columns={columns}
+            emptyMessage="No tar entries found. Click 'Add Tar' to create one."
+            isLoading={
+              tarLoading || itemsLoading || sizesLoading || isSubmitting
+            }
+            showSrNo={true}
+            srNoLabel="Sr No."
+          />
+        </div>
+      ) : (
+        /* History Section */
+        <div className="px-3 py-4 sm:px-4 md:px-6">
+          {/* History Summary Cards */}
+          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                  Total Fine
+                </span>
+                <span className="text-lg font-bold text-black dark:text-amber-400">
+                  {formatNumberDisplay(historyTotals.totalFine)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                  Total Tar
+                </span>
+                <span className="text-lg font-bold text-black dark:text-blue-400">
+                  {formatNumberDisplay(historyTotals.totalTar)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                  Total Scrap
+                </span>
+                <span className="text-lg font-bold text-black dark:text-green-400">
+                  {formatNumberDisplay(historyTotals.totalScrap)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                  Total Loss
+                </span>
+                <span className="text-lg font-bold text-black dark:text-red-400">
+                  {formatNumberDisplay(historyTotals.totalLoss)} G
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* History Table */}
+          <GenericTable
+            data={getFilteredHistory()}
+            columns={historyColumns}
+            emptyMessage={
+              dateRange.length === 2
+                ? `No history records found for the selected date range (${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')})`
+                : 'No history records found. Complete a tar process to see history.'
+            }
+            isLoading={tarHistoryLoading}
+            showSrNo={true}
+            srNoLabel="Sr No."
+            className="shadow-sm"
+          />
+        </div>
+      )}
+
+      {/* Add Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-[#d3c4af]/10 p-4 dark:border-slate-700">
+              <h3 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
+                Add New
+              </h3>
+              <button
+                onClick={closeModal}
+                className="rounded-lg p-1 transition-colors hover:bg-[#f4f4f2] dark:hover:bg-slate-800"
+              >
+                <X className="h-5 w-5 text-[#4f4535] dark:text-slate-400" />
+              </button>
             </div>
 
-            {!showHistory ? (
-                /* Tar Management Table */
-                <div className="px-3 py-4 sm:px-4 md:px-6">
-                    <GenericTable<TarEntry>
-                        data={tarEntries}
-                        columns={columns}
-                        emptyMessage="No tar entries found. Click 'Add Tar' to create one."
-                        isLoading={tarLoading || itemsLoading || sizesLoading || isSubmitting}
-                        showSrNo={true}
-                        srNoLabel="Sr No."
-                    />
+            <div className="space-y-4 p-4">
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
+                  Item <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="itemId"
+                  value={formData.itemId}
+                  onChange={handleFormChange}
+                  className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
+                >
+                  <option value="">Select Item</option>
+                  {items.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name || JSON.stringify(item)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
+                  Size <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="sizeId"
+                  value={formData.sizeId}
+                  onChange={handleFormChange}
+                  className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
+                >
+                  <option value="">Select Size</option>
+                  {sizes.map((size) => (
+                    <option key={size.id} value={size.id}>
+                      {size.size || JSON.stringify(size)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
+                  Fine (लगड) <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="fine"
+                    value={formData.fine}
+                    onChange={handleFormChange}
+                    placeholder="e.g., 5.000"
+                    className="font-mono w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 pr-8 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
+                    autoFocus
+                  />
+                  <span className="text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                    G
+                  </span>
                 </div>
-            ) : (
-                /* History Section */
-                <div className="px-3 py-4 sm:px-4 md:px-6">
-                    {/* History Summary Cards */}
-                    <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                                    Total Fine
-                                </span>
-                                <span className="text-lg font-bold text-black dark:text-amber-400">
-                                    {formatNumberDisplay(historyTotals.totalFine)} G
-                                </span>
-                            </div>
-                        </div>
-                        <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                                    Total Tar
-                                </span>
-                                <span className="text-lg font-bold text-black dark:text-blue-400">
-                                    {formatNumberDisplay(historyTotals.totalTar)} G
-                                </span>
-                            </div>
-                        </div>
-                        <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                                    Total Scrap
-                                </span>
-                                <span className="text-lg font-bold text-black dark:text-green-400">
-                                    {formatNumberDisplay(historyTotals.totalScrap)} G
-                                </span>
-                            </div>
-                        </div>
-                        <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
-                                    Total Loss
-                                </span>
-                                <span className="text-lg font-bold text-black dark:text-red-400">
-                                    {formatNumberDisplay(historyTotals.totalLoss)} G
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+              </div>
+            </div>
 
-                    {/* History Table */}
-                    <GenericTable
-                        data={getFilteredHistory()}
-                        columns={historyColumns}
-                        emptyMessage={
-                            dateRange.length === 2
-                                ? `No history records found for the selected date range (${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')})`
-                                : "No history records found. Complete a tar process to see history."
-                        }
-                        isLoading={tarHistoryLoading}
-                        showSrNo={true}
-                        srNoLabel="Sr No."
-                        className="shadow-sm"
-                    />
-                </div>
-            )}
-
-            {/* Add Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
-                        <div className="flex items-center justify-between border-b border-[#d3c4af]/10 p-4 dark:border-slate-700">
-                            <h3 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
-                                Add New
-                            </h3>
-                            <button
-                                onClick={closeModal}
-                                className="rounded-lg p-1 transition-colors hover:bg-[#f4f4f2] dark:hover:bg-slate-800"
-                            >
-                                <X className="h-5 w-5 text-[#4f4535] dark:text-slate-400" />
-                            </button>
-                        </div>
-
-                        <div className="space-y-4 p-4">
-                            <div>
-                                <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
-                                    Item <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    name="itemId"
-                                    value={formData.itemId}
-                                    onChange={handleFormChange}
-                                    className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
-                                >
-                                    <option value="">Select Item</option>
-                                    {items.map((item) => (
-                                        <option key={item.id} value={item.id}>
-                                            {item.name || JSON.stringify(item)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
-                                    Size <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    name="sizeId"
-                                    value={formData.sizeId}
-                                    onChange={handleFormChange}
-                                    className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
-                                >
-                                    <option value="">Select Size</option>
-                                    {sizes.map((size) => (
-                                        <option key={size.id} value={size.id}>
-                                            {size.size || JSON.stringify(size)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
-                                    Fine (लगड) <span className="text-red-500">*</span>
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        name="fine"
-                                        value={formData.fine}
-                                        onChange={handleFormChange}
-                                        placeholder="e.g., 5.000"
-                                        className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 pr-8 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white font-mono"
-                                        autoFocus
-                                    />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
-                                        G
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3 border-t border-[#d3c4af]/10 p-4 dark:border-slate-700">
-                            <GenericButton
-                                onClick={handleSaveFromPopup}
-                                disabled={isLoading}
-                                className="!bg-amber-600 hover:!bg-amber-700 !text-white"
-                            >
-                                {isLoading ? 'Saving...' : 'Add'}
-                            </GenericButton>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Confirmation Modal */}
-            {showConfirmModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
-                        <div className="p-6">
-                            <div className="flex items-center justify-center mb-4">
-                                <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
-                                    <Save className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                                </div>
-                            </div>
-                            <h3 className="text-center text-lg font-bold text-[#1a1c1b] dark:text-white mb-2">
-                                Confirm Save
-                            </h3>
-                            <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
-                                Are you sure you want to save this tar entry? This will move to the <strong className="text-[#785600] dark:text-amber-400">Box Department</strong>.
-                            </p>
-                            <div className="mt-6 flex justify-center gap-3">
-                                <button
-                                    onClick={() => {
-                                        setShowConfirmModal(false);
-                                        setSaveIndex(null);
-                                    }}
-                                    className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
-                                >
-                                    Cancel
-                                </button>
-                                <GenericButton
-                                    onClick={confirmSave}
-                                    disabled={isLoading}
-                                    className="!bg-amber-600 hover:!bg-amber-700 !text-white"
-                                >
-                                    {isLoading ? 'Saving...' : 'Confirm & Continue'}
-                                </GenericButton>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <div className="flex justify-end gap-3 border-t border-[#d3c4af]/10 p-4 dark:border-slate-700">
+              <GenericButton
+                onClick={handleSaveFromPopup}
+                disabled={isLoading}
+                className="!bg-amber-600 !text-white hover:!bg-amber-700"
+              >
+                {isLoading ? 'Saving...' : 'Add'}
+              </GenericButton>
+            </div>
+          </div>
         </div>
-    );
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
+            <div className="p-6">
+              <div className="mb-4 flex items-center justify-center">
+                <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
+                  <Save className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+              </div>
+              <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
+                Confirm Save
+              </h3>
+              <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
+                Are you sure you want to save this tar entry? This will move to
+                the{' '}
+                <strong className="text-[#785600] dark:text-amber-400">
+                  Box Department
+                </strong>
+                .
+              </p>
+              <div className="mt-6 flex justify-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setSaveIndex(null);
+                  }}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <GenericButton
+                  onClick={confirmSave}
+                  disabled={isLoading}
+                  className="!bg-amber-600 !text-white hover:!bg-amber-700"
+                >
+                  {isLoading ? 'Saving...' : 'Confirm & Continue'}
+                </GenericButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default AddTar;

@@ -1,15 +1,14 @@
-import { Search, UserPlus, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import z from "zod";
+import {Search, UserPlus, X} from 'lucide-react';
+import {useEffect, useRef, useState} from 'react';
+import z from 'zod';
 
 // Client Schema for validation
 const ClientSchema = z.object({
-  fullName: z.string().min(1, "Name is required"),
-  phoneNumber: z.string().min(10, "Phone number must be at least 10 digits"),
-  address: z.string().min(1, "Address is required"),
-  openingBalance: z.number().min(0, "Opening balance cannot be negative"),
+  fullName: z.string().min(1, 'Name is required'),
+  phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits'),
+  address: z.string().min(1, 'Address is required'),
+  openingBalance: z.number().min(0, 'Opening balance cannot be negative'),
 });
-
 
 interface ClientSearchClient {
   id: string;
@@ -187,25 +186,23 @@ export const ClientSearch: React.FC<ClientSearchProps> = ({
                   </>
                 )}
 
-                {!isLoading &&
-                  searchQuery &&
-                  filteredClients.length === 0 && (
-                    <div className="p-4 text-center">
-                      <p className="text-sm text-[#4f4535] dark:text-slate-400">
-                        No Client found
-                      </p>
+                {!isLoading && searchQuery && filteredClients.length === 0 && (
+                  <div className="p-4 text-center">
+                    <p className="text-sm text-[#4f4535] dark:text-slate-400">
+                      No Client found
+                    </p>
 
-                      {onAddNewClient && (
-                        <button
-                          type="button"
-                          onClick={handleAddClient}
-                          className="mt-2 text-sm font-medium text-[#785600] hover:underline dark:text-amber-400"
-                        >
-                          + Add new Client
-                        </button>
-                      )}
-                    </div>
-                  )}
+                    {onAddNewClient && (
+                      <button
+                        type="button"
+                        onClick={handleAddClient}
+                        className="mt-2 text-sm font-medium text-[#785600] hover:underline dark:text-amber-400"
+                      >
+                        + Add new Client
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </>

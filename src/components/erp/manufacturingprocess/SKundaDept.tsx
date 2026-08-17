@@ -1,13 +1,28 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Square, Save, ChevronRight, ChevronDown, Printer, ArrowLeft, Scale, DollarSign, ArrowDownToLine, Clock } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
+import {
+  Square,
+  Save,
+  ChevronRight,
+  ChevronDown,
+  Printer,
+  ArrowLeft,
+  Scale,
+  DollarSign,
+  ArrowDownToLine,
+  Clock,
+} from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetKunda, useGetKundaHistory, useSubmitKunda } from '@/lib/api/cutting';
+import {
+  useGetKunda,
+  useGetKundaHistory,
+  useSubmitKunda,
+} from '@/lib/api/cutting';
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import { useGetHeader } from '@/lib/api/headerapi';
+import {useGetHeader} from '@/lib/api/headerapi';
 
 interface KundaEntry {
   id: string;
@@ -66,18 +81,27 @@ const SKundaDept: React.FC = () => {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return { monday, sunday };
+    return {monday, sunday};
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const { monday, sunday } = getDefaultWeekRange();
+    const {monday, sunday} = getDefaultWeekRange();
     return [monday, sunday];
   });
 
   const isInitialMount = useRef(true);
 
-  const { data: kundaData = [], isLoading: kundaLoading, refetch, error } = useGetKunda();
-  const { data: kundaHistory = [], isLoading: historyLoading, refetch: refetchHistory } = useGetKundaHistory();
+  const {
+    data: kundaData = [],
+    isLoading: kundaLoading,
+    refetch,
+    error,
+  } = useGetKunda();
+  const {
+    data: kundaHistory = [],
+    isLoading: historyLoading,
+    refetch: refetchHistory,
+  } = useGetKundaHistory();
   const submitKunda = useSubmitKunda();
 
   useEffect(() => {
@@ -94,46 +118,50 @@ const SKundaDept: React.FC = () => {
     }
 
     if (kundaData && kundaData.length > 0) {
-      const entries: KundaEntry[] = kundaData.map((kunda: any, index: number) => {
-        const itemName = kunda.item?.name || kunda.itemId || 'N/A';
-        const sizeName = kunda.size?.size || kunda.sizeId || 'N/A';
+      const entries: KundaEntry[] = kundaData.map(
+        (kunda: any, index: number) => {
+          const itemName = kunda.item?.name || kunda.itemId || 'N/A';
+          const sizeName = kunda.size?.size || kunda.sizeId || 'N/A';
 
-        const chainGiven = kunda.chainWeight || 0;
-        const chainReceived = kunda.chainReceived || 0;
-        const scrap = kunda.scrap || 0;
-        const loss = Math.max(0, chainGiven - (chainReceived + scrap));
+          const chainGiven = kunda.chainWeight || 0;
+          const chainReceived = kunda.chainReceived || 0;
+          const scrap = kunda.scrap || 0;
+          const loss = Math.max(0, chainGiven - (chainReceived + scrap));
 
-        const isSaved = kunda.isCompleted === true;
+          const isSaved = kunda.isCompleted === true;
 
-        return {
-          id: kunda.id,
-          srNo: index + 1,
-          dateTime: new Date(kunda.createdAt).toLocaleString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-          }),
-          item: itemName,
-          size: sizeName,
-          purity: kunda.purity || 0,
-          chainGiven: chainGiven,
-          chainReceived: chainReceived,
-          scrap: scrap,
-          loss: loss,
-          isEditing: !isSaved,
-          isSaved: isSaved,
-          chainReceivedRaw: kunda.chainReceived ? kunda.chainReceived.toString() : '',
-          scrapRaw: kunda.scrap ? kunda.scrap.toString() : '',
-          purityRaw: kunda.purity ? kunda.purity.toString() : '',
-          itemId: kunda.itemId,
-          sizeId: kunda.sizeId,
-          isCompleted: kunda.isCompleted || false,
-          isDirty: false,
-        };
-      });
+          return {
+            id: kunda.id,
+            srNo: index + 1,
+            dateTime: new Date(kunda.createdAt).toLocaleString('en-IN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            }),
+            item: itemName,
+            size: sizeName,
+            purity: kunda.purity || 0,
+            chainGiven: chainGiven,
+            chainReceived: chainReceived,
+            scrap: scrap,
+            loss: loss,
+            isEditing: !isSaved,
+            isSaved: isSaved,
+            chainReceivedRaw: kunda.chainReceived
+              ? kunda.chainReceived.toString()
+              : '',
+            scrapRaw: kunda.scrap ? kunda.scrap.toString() : '',
+            purityRaw: kunda.purity ? kunda.purity.toString() : '',
+            itemId: kunda.itemId,
+            sizeId: kunda.sizeId,
+            isCompleted: kunda.isCompleted || false,
+            isDirty: false,
+          };
+        },
+      );
       setKundaEntries(entries);
     } else {
       setKundaEntries([]);
@@ -141,7 +169,7 @@ const SKundaDept: React.FC = () => {
   }, [kundaData, kundaLoading, error]);
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return { date: '-', time: '-' };
+    if (!dateString) return {date: '-', time: '-'};
     const date = new Date(dateString);
     return {
       date: date.toLocaleDateString('en-IN', {
@@ -202,13 +230,21 @@ const SKundaDept: React.FC = () => {
 
   const filteredHistory = getFilteredHistory();
   const historyTotals = filteredHistory.reduce(
-    (acc: { totalGiven: number; totalReceived: number; totalScrap: number; totalLoss: number }, item: any) => ({
+    (
+      acc: {
+        totalGiven: number;
+        totalReceived: number;
+        totalScrap: number;
+        totalLoss: number;
+      },
+      item: any,
+    ) => ({
       totalGiven: acc.totalGiven + toNumber(item?.chainWeight),
       totalReceived: acc.totalReceived + toNumber(item?.chainReceived),
       totalScrap: acc.totalScrap + toNumber(item?.scrap),
       totalLoss: acc.totalLoss + toNumber(item?.loss),
     }),
-    { totalGiven: 0, totalReceived: 0, totalScrap: 0, totalLoss: 0 }
+    {totalGiven: 0, totalReceived: 0, totalScrap: 0, totalLoss: 0},
   );
 
   // ======================================================
@@ -219,7 +255,9 @@ const SKundaDept: React.FC = () => {
     const filteredData = getFilteredHistory();
 
     if (!filteredData || filteredData.length === 0) {
-      toast.error('No history records available to print for the selected date range');
+      toast.error(
+        'No history records available to print for the selected date range',
+      );
       return;
     }
 
@@ -240,8 +278,10 @@ const SKundaDept: React.FC = () => {
     // Build the table rows
     const rows = filteredData
       .map((item: any, index: number) => {
-        const { date, time } = formatDate(item?.createdAt);
-        const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
+        const {date, time} = formatDate(item?.createdAt);
+        const {date: proceedDate, time: proceedTime} = formatDate(
+          item?.updatedAt,
+        );
 
         return `
           <tr>
@@ -270,26 +310,45 @@ const SKundaDept: React.FC = () => {
       return date.toLocaleDateString('en-IN', {
         day: '2-digit',
         month: '2-digit',
-        year: 'numeric'
+        year: 'numeric',
       });
     };
 
-    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const headerInfo =
+      getpdfheaderdata?.data?.data ||
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation =
+      headerInfo.leftInvocation ||
+      headerInfo.leftInovation ||
+      '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation =
+      headerInfo.rightInvocation ||
+      headerInfo.rightInovation ||
+      '॥ श्री साई प्रसन्न ॥';
     const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const description =
+      headerInfo.description ||
+      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
     const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const phoneNumbers =
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
     const invocationColor = headerInfo.invocationColor || '#a84b20';
     const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
     const descriptionColor = headerInfo.descriptionColor || '#8b451f';
     const proprietorColor = headerInfo.proprietorColor || '#a84b20';
     const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
-    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
-    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
-    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+    const factoryFontSize = headerInfo.factoryFontSize
+      ? `${headerInfo.factoryFontSize}px`
+      : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize
+      ? `${headerInfo.descriptionFontSize}px`
+      : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize
+      ? `${headerInfo.proprietorFontSize}px`
+      : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize
+      ? `${headerInfo.phoneFontSize}px`
+      : '9px';
 
     // Set the content with PDF Header - Full A4
     printContainer.innerHTML = `
@@ -435,11 +494,15 @@ const SKundaDept: React.FC = () => {
   };
 
   const handleInlineChange = useCallback(
-    (index: number, field: 'chainReceived' | 'scrap' | 'purity', value: string) => {
+    (
+      index: number,
+      field: 'chainReceived' | 'scrap' | 'purity',
+      value: string,
+    ) => {
       setKundaEntries((prev) =>
         prev.map((entry, i) => {
           if (i === index) {
-            const updated = { ...entry };
+            const updated = {...entry};
 
             if (field === 'chainReceived') {
               updated.chainReceivedRaw = value;
@@ -467,39 +530,45 @@ const SKundaDept: React.FC = () => {
               }
             }
 
-            updated.loss = Math.max(0, updated.chainGiven - (updated.chainReceived + updated.scrap));
+            updated.loss = Math.max(
+              0,
+              updated.chainGiven - (updated.chainReceived + updated.scrap),
+            );
             // Show Action column only after the user actually changes an input field.
             updated.isDirty = true;
             return updated;
           }
           return entry;
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
-  const handleStopClick = useCallback((index: number) => {
-    const entry = kundaEntries[index];
+  const handleStopClick = useCallback(
+    (index: number) => {
+      const entry = kundaEntries[index];
 
-    if (!entry.chainReceived || entry.chainReceived < 0) {
-      toast.error('Please enter a valid chain received weight');
-      return;
-    }
+      if (!entry.chainReceived || entry.chainReceived < 0) {
+        toast.error('Please enter a valid chain received weight');
+        return;
+      }
 
-    if (!entry.scrap || entry.scrap < 0) {
-      toast.error('Please enter a valid scrap weight');
-      return;
-    }
+      if (!entry.scrap || entry.scrap < 0) {
+        toast.error('Please enter a valid scrap weight');
+        return;
+      }
 
-    if (!entry.purity || entry.purity <= 0 || entry.purity > 100) {
-      toast.error('Please enter a valid purity percentage');
-      return;
-    }
+      if (!entry.purity || entry.purity <= 0 || entry.purity > 100) {
+        toast.error('Please enter a valid purity percentage');
+        return;
+      }
 
-    setSaveIndex(index);
-    setShowConfirmModal(true);
-  }, [kundaEntries]);
+      setSaveIndex(index);
+      setShowConfirmModal(true);
+    },
+    [kundaEntries],
+  );
 
   const confirmStop = useCallback(async () => {
     if (saveIndex === null) return;
@@ -523,15 +592,26 @@ const SKundaDept: React.FC = () => {
 
       setKundaEntries((prev) =>
         prev.map((s, i) =>
-          i === index ? { ...s, isEditing: false, isSaved: true, isCompleted: true, isDirty: false } : s
-        )
+          i === index
+            ? {
+                ...s,
+                isEditing: false,
+                isSaved: true,
+                isCompleted: true,
+                isDirty: false,
+              }
+            : s,
+        ),
       );
 
       setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
       await refetch();
-      toast.success('S Kunda process stopped successfully!');
+      // toast.success('S Kunda process stopped successfully!');
+      navigate({
+        to: '/Stocks/stockpage',
+      });
     } catch (error) {
       console.error('Error stopping S Kunda process:', error);
       toast.error('Failed to stop S Kunda process');
@@ -544,7 +624,7 @@ const SKundaDept: React.FC = () => {
   // Action column is hidden initially.
   // It appears only after the user changes one of the input fields.
   const showActionColumn = kundaEntries.some(
-    (entry) => entry.isDirty === true && entry.isSaved !== true
+    (entry) => entry.isDirty === true && entry.isSaved !== true,
   );
 
   const columns: Column<KundaEntry>[] = [
@@ -558,8 +638,12 @@ const SKundaDept: React.FC = () => {
 
         return (
           <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">{datePart}</span>
-            <span className="text-sm text-[#4f4535] dark:text-slate-400">{timePart}</span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {datePart}
+            </span>
+            <span className="text-sm text-[#4f4535] dark:text-slate-400">
+              {timePart}
+            </span>
           </div>
         );
       },
@@ -591,12 +675,20 @@ const SKundaDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
-                value={item.purityRaw !== undefined ? item.purityRaw : (item.purity === 0 ? '' : item.purity)}
-                onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
+                value={
+                  item.purityRaw !== undefined
+                    ? item.purityRaw
+                    : item.purity === 0
+                      ? ''
+                      : item.purity
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'purity', e.target.value)
+                }
                 placeholder="e.g., 98"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 %
               </span>
             </div>
@@ -627,15 +719,23 @@ const SKundaDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
-                value={item.chainReceivedRaw !== undefined ? item.chainReceivedRaw : (item.chainReceived === 0 ? '' : item.chainReceived)}
-                onChange={(e) => handleInlineChange(index, 'chainReceived', e.target.value)}
+                value={
+                  item.chainReceivedRaw !== undefined
+                    ? item.chainReceivedRaw
+                    : item.chainReceived === 0
+                      ? ''
+                      : item.chainReceived
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'chainReceived', e.target.value)
+                }
                 placeholder="0.000"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 G
               </span>
-            </div>  
+            </div>
           );
         }
         return (
@@ -652,17 +752,25 @@ const SKundaDept: React.FC = () => {
         if (item.isEditing) {
           return (
             <div className="relative inline-block">
-            <input
-              type="text"
-              value={item.scrapRaw !== undefined ? item.scrapRaw : (item.scrap === 0 ? '' : item.scrap)}
-              onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
-              placeholder="0.000"
-              className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <input
+                type="text"
+                value={
+                  item.scrapRaw !== undefined
+                    ? item.scrapRaw
+                    : item.scrap === 0
+                      ? ''
+                      : item.scrap
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'scrap', e.target.value)
+                }
+                placeholder="0.000"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 G
               </span>
-            </div>  
+            </div>
           );
         }
         return (
@@ -684,30 +792,30 @@ const SKundaDept: React.FC = () => {
 
     ...(showActionColumn
       ? [
-        {
-          key: 'actions',
-          header: 'Action',
-          render: (item: KundaEntry, index: number) => {
-            // Only show the action button after the user has changed an input.
-            if (!item.isDirty || item.isSaved || !item.isEditing) return null;
+          {
+            key: 'actions',
+            header: 'Action',
+            render: (item: KundaEntry, index: number) => {
+              // Only show the action button after the user has changed an input.
+              if (!item.isDirty || item.isSaved || !item.isEditing) return null;
 
-            return (
-              <div className="flex items-center justify-center">
-                <button
-                  type="button"
-                  onClick={() => handleStopClick(index)}
-                  disabled={isLoading || submitKunda.isPending}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:bg-[#5d4200] hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Stop Process"
-                >
-                  <Square className="h-3.5 w-3.5 fill-current" />
-                  <span>Stop</span>
-                </button>
-              </div>
-            );
-          },
-        } as Column<KundaEntry>,
-      ]
+              return (
+                <div className="flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => handleStopClick(index)}
+                    disabled={isLoading || submitKunda.isPending}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#5d4200] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Stop Process"
+                  >
+                    <Square className="h-3.5 w-3.5 fill-current" />
+                    <span>Stop</span>
+                  </button>
+                </div>
+              );
+            },
+          } as Column<KundaEntry>,
+        ]
       : []),
   ];
 
@@ -716,11 +824,15 @@ const SKundaDept: React.FC = () => {
       key: 'createdAt',
       header: 'Date & Time',
       render: (item) => {
-        const { date, time } = formatDate(item.createdAt);
+        const {date, time} = formatDate(item.createdAt);
         return (
           <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">{time}</span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {date}
+            </span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
+              {time}
+            </span>
           </div>
         );
       },
@@ -747,7 +859,7 @@ const SKundaDept: React.FC = () => {
       key: 'purity',
       header: 'Purity (%)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.purity)}%
         </span>
       ),
@@ -756,7 +868,7 @@ const SKundaDept: React.FC = () => {
       key: 'chainGiven',
       header: 'Chain Given (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.chainWeight)} G
         </span>
       ),
@@ -765,7 +877,7 @@ const SKundaDept: React.FC = () => {
       key: 'chainReceived',
       header: 'Chain Received (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.chainReceived)} G
         </span>
       ),
@@ -774,7 +886,7 @@ const SKundaDept: React.FC = () => {
       key: 'scrap',
       header: 'Scrap (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.scrap)} G
         </span>
       ),
@@ -783,7 +895,7 @@ const SKundaDept: React.FC = () => {
       key: 'loss',
       header: 'Loss (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.loss)} G
         </span>
       ),
@@ -792,11 +904,15 @@ const SKundaDept: React.FC = () => {
       key: 'updatedAt',
       header: 'Proceed Date & Time',
       render: (item) => {
-        const { date, time } = formatDate(item.updatedAt);
+        const {date, time} = formatDate(item.updatedAt);
         return (
           <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">{time}</span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {date}
+            </span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
+              {time}
+            </span>
           </div>
         );
       },
@@ -816,16 +932,16 @@ const SKundaDept: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
+    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       <div>
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white sm:text-base md:text-lg">
               {showHistory ? 'S Kunda History' : 'S Kunda Department'}
             </h1>
           </div>
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="ml-auto flex items-center gap-2">
             {showHistory && (
               <>
                 <div className="flex flex-wrap items-center gap-2">
@@ -839,9 +955,9 @@ const SKundaDept: React.FC = () => {
                       if (dates && dates.length > 0) {
                         const from = new Date(dates[0]);
                         from.setHours(0, 0, 0, 0);
-                        setDateRange(prev => [from, prev[1] || from]);
+                        setDateRange((prev) => [from, prev[1] || from]);
                       } else {
-                        setDateRange(prev => [undefined as any, prev[1]]);
+                        setDateRange((prev) => [undefined as any, prev[1]]);
                       }
                     }}
                     className="w-32 sm:w-36 md:w-40"
@@ -857,9 +973,9 @@ const SKundaDept: React.FC = () => {
                       if (dates && dates.length > 0) {
                         const to = new Date(dates[0]);
                         to.setHours(23, 59, 59, 999);
-                        setDateRange(prev => [prev[0] || to, to]);
+                        setDateRange((prev) => [prev[0] || to, to]);
                       } else {
-                        setDateRange(prev => [prev[0], undefined as any]);
+                        setDateRange((prev) => [prev[0], undefined as any]);
                       }
                     }}
                     className="w-32 sm:w-36 md:w-40"
@@ -880,8 +996,11 @@ const SKundaDept: React.FC = () => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${showHistory ? '!bg-amber-600 hover:!bg-amber-700' : '!bg-blue-600 hover:!bg-blue-700'
-                }`}
+              className={`flex items-center gap-1.5 whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
+                showHistory
+                  ? '!bg-amber-600 hover:!bg-amber-700'
+                  : '!bg-blue-600 hover:!bg-blue-700'
+              }`}
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -907,64 +1026,60 @@ const SKundaDept: React.FC = () => {
         ) : (
           <div>
             {/* Summary Cards - History Totals */}
-            <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {/* Chain Given */}
-              <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+              <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
                 <div className="flex items-start justify-between">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                       Chain Given
                     </span>
                     <span className="text-lg font-bold text-black dark:text-amber-400">
                       {formatNumberDisplay(historyTotals.totalGiven)} G
                     </span>
                   </div>
-
                 </div>
               </div>
 
               {/* Chain Received */}
-              <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+              <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
                 <div className="flex items-start justify-between">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                       Chain Received
                     </span>
                     <span className="text-lg font-bold text-black dark:text-blue-400">
                       {formatNumberDisplay(historyTotals.totalReceived)} G
                     </span>
                   </div>
-
                 </div>
               </div>
 
               {/* Scrap */}
-              <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+              <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
                 <div className="flex items-start justify-between">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                       Scrap
                     </span>
                     <span className="text-lg font-bold text-black dark:text-green-400">
                       {formatNumberDisplay(historyTotals.totalScrap)} G
                     </span>
                   </div>
-
                 </div>
               </div>
 
               {/* Loss */}
-              <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+              <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
                 <div className="flex items-start justify-between">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                       Loss
                     </span>
                     <span className="text-lg font-bold text-black dark:text-red-400">
                       {formatNumberDisplay(historyTotals.totalLoss)} G
                     </span>
                   </div>
-
                 </div>
               </div>
             </div>
@@ -991,16 +1106,17 @@ const SKundaDept: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
-              <div className="flex items-center justify-center mb-4">
-                <div className="rounded-full bg-[#785600]/10 p-3 dark:bg-amber-900/30 border border-[#785600]/20 dark:border-amber-700/30">
-                  <Square className="h-6 w-6 text-[#785600] dark:text-amber-400 fill-current" />
+              <div className="mb-4 flex items-center justify-center">
+                <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-3 dark:border-amber-700/30 dark:bg-amber-900/30">
+                  <Square className="h-6 w-6 fill-current text-[#785600] dark:text-amber-400" />
                 </div>
               </div>
-              <h3 className="text-center text-lg font-bold text-[#1a1c1b] dark:text-white mb-2">
+              <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
                 Confirm Stop Process
               </h3>
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
-                Are you sure you want to stop the S Kunda process for this entry?
+                Are you sure you want to stop the S Kunda process for this
+                entry?
               </p>
               <div className="mt-6 flex justify-center gap-3">
                 <button
@@ -1015,7 +1131,7 @@ const SKundaDept: React.FC = () => {
                 <button
                   onClick={confirmStop}
                   disabled={isLoading}
-                  className="rounded-lg bg-[#785600] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-[#5d4200] hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-[#785600] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#5d4200] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isLoading ? 'Stopping...' : 'Confirm Stop'}
                 </button>

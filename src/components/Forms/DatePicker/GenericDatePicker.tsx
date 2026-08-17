@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import flatpickr from 'flatpickr';
-import { Calendar, X } from 'lucide-react';
+import {Calendar, X} from 'lucide-react';
 import 'flatpickr/dist/flatpickr.min.css';
 
 interface GenericDatePickerProps {
@@ -30,7 +30,9 @@ const GenericDatePicker: React.FC<GenericDatePickerProps> = ({
   const flatpickrInstanceRef = useRef<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
     if (initialDate) {
-      return typeof initialDate === 'string' ? new Date(initialDate) : initialDate;
+      return typeof initialDate === 'string'
+        ? new Date(initialDate)
+        : initialDate;
     }
     if (value) {
       return new Date(value);
@@ -113,18 +115,18 @@ const GenericDatePicker: React.FC<GenericDatePickerProps> = ({
     const date = initialDate || value;
     if (date) {
       const newDate = typeof date === 'string' ? new Date(date) : date;
-      
+
       // Only update if the date is different
       if (selectedDate && newDate.getTime() === selectedDate.getTime()) {
         return;
       }
 
       setSelectedDate(newDate);
-      
+
       if (inputRef.current) {
         inputRef.current.value = formatDateForDisplay(newDate);
       }
-      
+
       if (flatpickrInstanceRef.current) {
         flatpickrInstanceRef.current.setDate(newDate);
       }
@@ -138,7 +140,7 @@ const GenericDatePicker: React.FC<GenericDatePickerProps> = ({
       {label && (
         <label
           htmlFor={id}
-          className="mb-1 block text-[9px] sm:text-[10px] font-bold uppercase text-[#4f4535] dark:text-slate-400"
+          className="mb-1 block text-[9px] font-bold uppercase text-[#4f4535] dark:text-slate-400 sm:text-[10px]"
         >
           {label} {required && <span className="text-red-500">*</span>}
         </label>
@@ -147,23 +149,23 @@ const GenericDatePicker: React.FC<GenericDatePickerProps> = ({
         <input
           ref={inputRef}
           id={id}
-          className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-12 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+          className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-12 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           placeholder={placeholder}
           readOnly
         />
-        
+
         {/* Clear button - shows only when there's a value */}
         {hasValue && (
           <button
             type="button"
             onClick={handleClearDate}
-            className="absolute inset-0 left-auto right-8 flex items-center text-gray-400 hover:text-red-500 transition-colors"
+            className="text-gray-400 absolute inset-0 left-auto right-8 flex items-center transition-colors hover:text-red-500"
             title="Clear date"
           >
             <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
         )}
-        
+
         {/* Calendar icon */}
         <div className="pointer-events-none absolute inset-0 left-auto right-3 flex items-center">
           <Calendar className="h-4 w-4 text-[#817563]" />

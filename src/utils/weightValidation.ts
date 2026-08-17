@@ -19,10 +19,10 @@ export interface WeightValidationResult {
  */
 export function validateWeightGram(
   value: string | number,
-  fieldName = 'Weight'
+  fieldName = 'Weight',
 ): WeightValidationResult {
   if (value === undefined || value === null || String(value).trim() === '') {
-    return { isValid: false, error: `${fieldName} is required` };
+    return {isValid: false, error: `${fieldName} is required`};
   }
 
   const strVal = String(value).trim();
@@ -30,22 +30,22 @@ export function validateWeightGram(
   // Check numeric
   const num = Number(strVal);
   if (isNaN(num)) {
-    return { isValid: false, error: `${fieldName} must be a valid number` };
+    return {isValid: false, error: `${fieldName} must be a valid number`};
   }
 
   // Check negative
   if (num <= 0) {
-    return { isValid: false, error: `${fieldName} must be greater than 0.000 g` };
+    return {isValid: false, error: `${fieldName} must be greater than 0.000 g`};
   }
 
   // Check min value (0.001)
   if (num < 0.001) {
-    return { isValid: false, error: `${fieldName} minimum is 0.001 g` };
+    return {isValid: false, error: `${fieldName} minimum is 0.001 g`};
   }
 
   // Check max value (99999.999)
   if (num > 99999.999) {
-    return { isValid: false, error: `${fieldName} maximum is 99999.999 g` };
+    return {isValid: false, error: `${fieldName} maximum is 99999.999 g`};
   }
 
   // Check decimal precision using regex
@@ -56,7 +56,7 @@ export function validateWeightGram(
     };
   }
 
-  return { isValid: true, parsedValue: Number(num.toFixed(3)) };
+  return {isValid: true, parsedValue: Number(num.toFixed(3))};
 }
 
 /**
@@ -72,7 +72,9 @@ export function formatGram(val: number | string | undefined | null): string {
 /**
  * Formats weight with unit for display (e.g. "12.500 g")
  */
-export function formatGramWithUnit(val: number | string | undefined | null): string {
+export function formatGramWithUnit(
+  val: number | string | undefined | null,
+): string {
   return `${formatGram(val)} g`;
 }
 
@@ -90,7 +92,7 @@ export function calculateBoxBalance(weight: number, loss: number): number {
 export function calculateSolderingOutput(
   received: number,
   solder: number,
-  loss: number
+  loss: number,
 ): number {
   const out = Math.max(0, received + solder - loss);
   return Number(out.toFixed(3));

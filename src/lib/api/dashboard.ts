@@ -1,5 +1,5 @@
-import { api } from "@/utils/axios";
-import { useQuery } from "@tanstack/react-query";
+import {api} from '@/utils/axios';
+import {useQuery} from '@tanstack/react-query';
 
 export const useGetDashboard = () => {
   return useQuery({
@@ -9,7 +9,7 @@ export const useGetDashboard = () => {
 };
 export const getDashboardApi = async () => {
   try {
-    const response = await api.get("/admin/dashboard");
+    const response = await api.get('/admin/dashboard');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {

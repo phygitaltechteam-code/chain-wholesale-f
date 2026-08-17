@@ -33,35 +33,32 @@ const GenericButton: React.FC<GenericButtonProps> = ({
 
   // Variant styles
   const variantClasses = {
-    primary: 'bg-gradient-to-br from-[#785600] to-[#986d00] text-white hover:shadow-md',
-    secondary: 'bg-gradient-to-br from-gray-600 to-gray-800 text-white hover:shadow-md',
-    outline: 'border-2 border-[#785600] text-[#785600] bg-transparent hover:bg-[#785600]/10',
-    danger: 'bg-gradient-to-br from-red-600 to-red-800 text-white hover:shadow-md',
-    success: 'bg-gradient-to-br from-emerald-600 to-emerald-800 text-white hover:shadow-md',
+    primary:
+      'bg-gradient-to-br from-[#785600] to-[#986d00] text-white hover:shadow-md',
+    secondary:
+      'bg-gradient-to-br from-gray-600 to-gray-800 text-white hover:shadow-md',
+    outline:
+      'border-2 border-[#785600] text-[#785600] bg-transparent hover:bg-[#785600]/10',
+    danger:
+      'bg-gradient-to-br from-red-600 to-red-800 text-white hover:shadow-md',
+    success:
+      'bg-gradient-to-br from-emerald-600 to-emerald-800 text-white hover:shadow-md',
   };
 
   return (
     <button
       type={type}
       onClick={onClick}
-      className={`
-        inline-flex items-center justify-center gap-1.5
-        font-semibold
-        shadow-sm hover:shadow-md
-        transition-all duration-200 
-        hover:scale-[1.02] active:scale-[0.98] 
-        disabled:cursor-not-allowed disabled:opacity-50 
-        whitespace-nowrap rounded-lg
-        ${sizeClasses[size] || sizeClasses.md}
-        ${variantClasses[variant] || variantClasses.primary}
-        ${fullWidth ? 'w-full' : 'w-auto'}
-        ${className}
-      `}
+      className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg font-semibold shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${sizeClasses[size] || sizeClasses.md} ${variantClasses[variant] || variantClasses.primary} ${fullWidth ? 'w-full' : 'w-auto'} ${className} `}
       disabled={disabled}
     >
       {children}
       {label && <span className="hidden sm:inline">{label}</span>}
-      {label && <span className="sm:hidden">{label.length > 8 ? label.substring(0, 6) + '…' : label}</span>}
+      {label && (
+        <span className="sm:hidden">
+          {label.length > 8 ? label.substring(0, 6) + '…' : label}
+        </span>
+      )}
     </button>
   );
 };

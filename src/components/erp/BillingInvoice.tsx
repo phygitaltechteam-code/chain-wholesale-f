@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
-import { ReceiptCheck, Plus, Printer, X, ShieldAlert, Gem } from 'lucide-react';
-import { erpStore, InvoiceItem } from '@/store/erpStore';
-import { validateWeightGram, formatGramWithUnit } from '@/utils/weightValidation';
+import React, {useState} from 'react';
+import {ReceiptCheck, Plus, Printer, X, ShieldAlert, Gem} from 'lucide-react';
+import {erpStore, InvoiceItem} from '@/store/erpStore';
+import {validateWeightGram, formatGramWithUnit} from '@/utils/weightValidation';
 import toast from 'react-hot-toast';
 
 export const BillingInvoice: React.FC = () => {
   const [data, setData] = useState(erpStore.getData());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceItem | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceItem | null>(
+    null,
+  );
 
   const activeRates = data.rates[0] || {
     rate22k: 7250,
@@ -33,7 +35,7 @@ export const BillingInvoice: React.FC = () => {
   const refresh = () => setData(erpStore.getData());
 
   const handleWeightChange = (val: string) => {
-    setFormData({ ...formData, grossWeight: val });
+    setFormData({...formData, grossWeight: val});
     const res = validateWeightGram(val, 'Gross Weight');
     setWeightError(res.isValid ? null : res.error || 'Invalid weight');
   };
@@ -58,7 +60,9 @@ export const BillingInvoice: React.FC = () => {
       return;
     }
 
-    const selectedCust = data.customers.find((c) => c.name === formData.customerName);
+    const selectedCust = data.customers.find(
+      (c) => c.name === formData.customerName,
+    );
 
     const newInv = erpStore.addInvoice({
       date: formData.date,
@@ -90,31 +94,31 @@ export const BillingInvoice: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 p-4 md:p-8 text-slate-100 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-5">
+    <div className="min-h-screen space-y-6 bg-slate-950 p-4 text-slate-100 md:p-8">
+      <div className="flex flex-col gap-4 border-b border-slate-800 pb-5 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold font-serif text-amber-400 flex items-center gap-2">
+          <h1 className="font-serif flex items-center gap-2 text-2xl font-bold text-amber-400">
             <ReceiptCheck className="h-6 w-6" />
             Jeweller Billing & Tax Invoice
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Generate Customer Invoices • Gold Weight in 3 Decimals • Automatic Tax & Making Charges
+          <p className="mt-1 text-xs text-slate-400">
+            Generate Customer Invoices • Gold Weight in 3 Decimals • Automatic
+            Tax & Making Charges
           </p>
         </div>
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-amber-400 transition-all shadow-lg shadow-amber-500/20"
+          className="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-xs font-semibold text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400"
         >
-          <Plus className="h-4 w-4" />
-          + Create New Invoice
+          <Plus className="h-4 w-4" />+ Create New Invoice
         </button>
       </div>
 
       {/* Invoices List */}
       <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-xl">
         <table className="w-full text-left text-xs">
-          <thead className="border-b border-slate-800 bg-slate-950/80 text-amber-400/90 font-semibold uppercase tracking-wider">
+          <thead className="border-b border-slate-800 bg-slate-950/80 font-semibold uppercase tracking-wider text-amber-400/90">
             <tr>
               <th className="p-4">Invoice No</th>
               <th className="p-4">Date</th>
@@ -130,24 +134,40 @@ export const BillingInvoice: React.FC = () => {
           </thead>
           <tbody className="divide-y divide-slate-800/60 text-slate-300">
             {data.invoices.map((inv) => (
-              <tr key={inv.id} className="hover:bg-slate-800/40 transition-colors">
-                <td className="p-4 font-mono font-bold text-amber-400">{inv.invoiceNo}</td>
+              <tr
+                key={inv.id}
+                className="transition-colors hover:bg-slate-800/40"
+              >
+                <td className="font-mono p-4 font-bold text-amber-400">
+                  {inv.invoiceNo}
+                </td>
                 <td className="p-4 text-slate-400">{inv.date}</td>
-                <td className="p-4 font-semibold text-slate-100">{inv.customerName}</td>
+                <td className="p-4 font-semibold text-slate-100">
+                  {inv.customerName}
+                </td>
                 <td className="p-4 text-slate-300">{inv.item}</td>
-                <td className="p-4 font-mono font-bold text-amber-300">
+                <td className="font-mono p-4 font-bold text-amber-300">
                   {formatGramWithUnit(inv.grossWeight)}
                 </td>
-                <td className="p-4 font-mono">₹{inv.ratePerGram.toFixed(2)}/g</td>
-                <td className="p-4 font-mono text-slate-400">₹{inv.makingChargePerGram.toFixed(2)}/g</td>
-                <td className="p-4 font-mono text-purple-400">₹{inv.gstAmount.toFixed(2)}</td>
-                <td className="p-4 font-mono font-bold text-emerald-400 text-sm">
-                  ₹{inv.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                <td className="font-mono p-4">
+                  ₹{inv.ratePerGram.toFixed(2)}/g
+                </td>
+                <td className="font-mono p-4 text-slate-400">
+                  ₹{inv.makingChargePerGram.toFixed(2)}/g
+                </td>
+                <td className="font-mono p-4 text-purple-400">
+                  ₹{inv.gstAmount.toFixed(2)}
+                </td>
+                <td className="font-mono p-4 text-sm font-bold text-emerald-400">
+                  ₹
+                  {inv.totalAmount.toLocaleString('en-IN', {
+                    minimumFractionDigits: 2,
+                  })}
                 </td>
                 <td className="p-4 text-right">
                   <button
                     onClick={() => setSelectedInvoice(inv)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-amber-400 hover:bg-amber-500 hover:text-slate-950 transition-all"
+                    className="inline-flex items-center gap-1 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-amber-400 transition-all hover:bg-amber-500 hover:text-slate-950"
                   >
                     <Printer className="h-3.5 w-3.5" />
                     View PDF
@@ -162,13 +182,16 @@ export const BillingInvoice: React.FC = () => {
       {/* New Invoice Form Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-2xl border border-amber-500/30 bg-slate-900 p-6 shadow-2xl space-y-5">
+          <div className="w-full max-w-xl space-y-5 rounded-2xl border border-amber-500/30 bg-slate-900 p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-lg font-semibold text-amber-400 flex items-center gap-2">
+              <h3 className="flex items-center gap-2 text-lg font-semibold text-amber-400">
                 <ReceiptCheck className="h-5 w-5" />
                 Generate Jeweller Invoice
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-slate-400 hover:text-white"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -176,10 +199,14 @@ export const BillingInvoice: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-400 font-medium mb-1">Customer (Jeweller) *</label>
+                  <label className="mb-1 block font-medium text-slate-400">
+                    Customer (Jeweller) *
+                  </label>
                   <select
                     value={formData.customerName}
-                    onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({...formData, customerName: e.target.value})
+                    }
                     className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-slate-100 focus:border-amber-500 focus:outline-none"
                   >
                     {data.customers.map((c) => (
@@ -191,12 +218,16 @@ export const BillingInvoice: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 font-medium mb-1">Invoice Date *</label>
+                  <label className="mb-1 block font-medium text-slate-400">
+                    Invoice Date *
+                  </label>
                   <input
                     type="date"
                     required
                     value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({...formData, date: e.target.value})
+                    }
                     className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-slate-100 focus:border-amber-500 focus:outline-none"
                   />
                 </div>
@@ -204,10 +235,14 @@ export const BillingInvoice: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-slate-400 font-medium mb-1">Item Category</label>
+                  <label className="mb-1 block font-medium text-slate-400">
+                    Item Category
+                  </label>
                   <select
                     value={formData.item}
-                    onChange={(e) => setFormData({ ...formData, item: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({...formData, item: e.target.value})
+                    }
                     className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-slate-100 focus:border-amber-500 focus:outline-none"
                   >
                     {data.items.map((it) => (
@@ -219,10 +254,14 @@ export const BillingInvoice: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 font-medium mb-1">Size</label>
+                  <label className="mb-1 block font-medium text-slate-400">
+                    Size
+                  </label>
                   <select
                     value={formData.size}
-                    onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({...formData, size: e.target.value})
+                    }
                     className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-slate-100 focus:border-amber-500 focus:outline-none"
                   >
                     {data.sizes.map((sz) => (
@@ -234,10 +273,14 @@ export const BillingInvoice: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 font-medium mb-1">Purity</label>
+                  <label className="mb-1 block font-medium text-slate-400">
+                    Purity
+                  </label>
                   <select
                     value={formData.purity}
-                    onChange={(e) => setFormData({ ...formData, purity: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({...formData, purity: e.target.value})
+                    }
                     className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-slate-100 focus:border-amber-500 focus:outline-none"
                   >
                     {data.purities.map((p) => (
@@ -250,8 +293,9 @@ export const BillingInvoice: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-slate-400 font-medium mb-1">
-                  Gross Weight (Grams) <span className="text-amber-500">* [Strict 3 Decimals]</span>
+                <label className="mb-1 block font-medium text-slate-400">
+                  Gross Weight (Grams){' '}
+                  <span className="text-amber-500">* [Strict 3 Decimals]</span>
                 </label>
                 <input
                   type="text"
@@ -259,66 +303,98 @@ export const BillingInvoice: React.FC = () => {
                   placeholder="e.g. 45.250"
                   value={formData.grossWeight}
                   onChange={(e) => handleWeightChange(e.target.value)}
-                  className={`w-full rounded-lg border bg-slate-950 p-2.5 text-slate-100 font-mono focus:outline-none ${
-                    weightError ? 'border-rose-500' : 'border-slate-700 focus:border-amber-500'
+                  className={`font-mono w-full rounded-lg border bg-slate-950 p-2.5 text-slate-100 focus:outline-none ${
+                    weightError
+                      ? 'border-rose-500'
+                      : 'border-slate-700 focus:border-amber-500'
                   }`}
                 />
-                {weightError && <p className="text-rose-400 text-[10px] mt-1">{weightError}</p>}
+                {weightError && (
+                  <p className="mt-1 text-[10px] text-rose-400">
+                    {weightError}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-slate-400 font-medium mb-1">Rate (₹/g)</label>
+                  <label className="mb-1 block font-medium text-slate-400">
+                    Rate (₹/g)
+                  </label>
                   <input
                     type="number"
                     value={formData.ratePerGram}
-                    onChange={(e) => setFormData({ ...formData, ratePerGram: e.target.value })}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-slate-100 font-mono"
+                    onChange={(e) =>
+                      setFormData({...formData, ratePerGram: e.target.value})
+                    }
+                    className="font-mono w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-slate-100"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 font-medium mb-1">Making Chg (₹/g)</label>
+                  <label className="mb-1 block font-medium text-slate-400">
+                    Making Chg (₹/g)
+                  </label>
                   <input
                     type="number"
                     value={formData.makingChargePerGram}
-                    onChange={(e) => setFormData({ ...formData, makingChargePerGram: e.target.value })}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-slate-100 font-mono"
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        makingChargePerGram: e.target.value,
+                      })
+                    }
+                    className="font-mono w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-slate-100"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 font-medium mb-1">GST (%)</label>
+                  <label className="mb-1 block font-medium text-slate-400">
+                    GST (%)
+                  </label>
                   <input
                     type="number"
                     value={formData.gstPercent}
-                    onChange={(e) => setFormData({ ...formData, gstPercent: e.target.value })}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-slate-100 font-mono"
+                    onChange={(e) =>
+                      setFormData({...formData, gstPercent: e.target.value})
+                    }
+                    className="font-mono w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-slate-100"
                   />
                 </div>
               </div>
 
               {/* Calculated Summary */}
-              <div className="rounded-xl border border-amber-500/30 bg-slate-950 p-4 space-y-2 text-xs">
+              <div className="space-y-2 rounded-xl border border-amber-500/30 bg-slate-950 p-4 text-xs">
                 <div className="flex justify-between text-slate-400">
                   <span>Gold Amount:</span>
-                  <span className="font-mono text-slate-200">₹{goldAmount.toFixed(2)}</span>
+                  <span className="font-mono text-slate-200">
+                    ₹{goldAmount.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>Making Charges:</span>
-                  <span className="font-mono text-slate-200">₹{mcAmount.toFixed(2)}</span>
+                  <span className="font-mono text-slate-200">
+                    ₹{mcAmount.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>GST ({gstPctNum}%):</span>
-                  <span className="font-mono text-purple-400">₹{gstAmount.toFixed(2)}</span>
+                  <span className="font-mono text-purple-400">
+                    ₹{gstAmount.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between border-t border-slate-800 pt-2 text-sm font-bold text-emerald-400">
                   <span>Total Payable:</span>
-                  <span className="font-mono">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-mono">
+                    ₹
+                    {totalAmount.toLocaleString('en-IN', {
+                      minimumFractionDigits: 2,
+                    })}
+                  </span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 border-t border-slate-800 pt-4">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -328,7 +404,7 @@ export const BillingInvoice: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-amber-500 px-5 py-2 font-semibold text-slate-950 hover:bg-amber-400 shadow-md shadow-amber-500/20"
+                  className="rounded-lg bg-amber-500 px-5 py-2 font-semibold text-slate-950 shadow-md shadow-amber-500/20 hover:bg-amber-400"
                 >
                   Save & Generate Invoice
                 </button>
@@ -341,63 +417,79 @@ export const BillingInvoice: React.FC = () => {
       {/* Printable Invoice PDF Modal */}
       {selectedInvoice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-amber-500/30 bg-white text-slate-900 p-8 shadow-2xl space-y-6">
+          <div className="relative w-full max-w-2xl space-y-6 overflow-hidden rounded-2xl border border-amber-500/30 bg-white p-8 text-slate-900 shadow-2xl">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <div className="flex items-center gap-2">
                 <Gem className="h-7 w-7 text-amber-600" />
                 <div>
-                  <h2 className="text-xl font-bold font-serif text-slate-900">SONA GOLD ERP</h2>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-widest">
+                  <h2 className="font-serif text-xl font-bold text-slate-900">
+                    SONA GOLD ERP
+                  </h2>
+                  <p className="text-[10px] uppercase tracking-widest text-slate-500">
                     Gold Chain Manufacturing & Wholesale Tax Invoice
                   </p>
                 </div>
               </div>
 
               <div className="text-right">
-                <span className="text-lg font-bold font-mono text-amber-600 block">
+                <span className="font-mono block text-lg font-bold text-amber-600">
                   {selectedInvoice.invoiceNo}
                 </span>
-                <span className="text-xs text-slate-500">Date: {selectedInvoice.date}</span>
+                <span className="text-xs text-slate-500">
+                  Date: {selectedInvoice.date}
+                </span>
               </div>
             </div>
 
             {/* Bill To & Details */}
-            <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div className="grid grid-cols-2 gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs">
               <div>
-                <span className="text-slate-500 font-semibold uppercase block">Billed To (Jeweller):</span>
-                <span className="font-bold text-sm text-slate-800 block mt-1">
+                <span className="block font-semibold uppercase text-slate-500">
+                  Billed To (Jeweller):
+                </span>
+                <span className="mt-1 block text-sm font-bold text-slate-800">
                   {selectedInvoice.customerName}
                 </span>
-                <span className="text-slate-600 block">GSTIN: {selectedInvoice.customerGst}</span>
+                <span className="block text-slate-600">
+                  GSTIN: {selectedInvoice.customerGst}
+                </span>
               </div>
               <div className="text-right">
-                <span className="text-slate-500 font-semibold uppercase block">Payment Status:</span>
-                <span className="inline-block mt-1 font-bold text-xs px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                <span className="block font-semibold uppercase text-slate-500">
+                  Payment Status:
+                </span>
+                <span className="mt-1 inline-block rounded border border-emerald-300 bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
                   {selectedInvoice.paymentStatus}
                 </span>
               </div>
             </div>
 
             {/* Items Table */}
-            <table className="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
-              <thead className="bg-slate-100 text-slate-700 font-bold uppercase">
+            <table className="w-full overflow-hidden rounded-lg border border-slate-200 text-left text-xs">
+              <thead className="bg-slate-100 font-bold uppercase text-slate-700">
                 <tr>
-                  <th className="p-3 border-b">Item Description</th>
-                  <th className="p-3 border-b text-right">Gross Wt (g)</th>
-                  <th className="p-3 border-b text-right">Rate / g</th>
-                  <th className="p-3 border-b text-right">Making / g</th>
-                  <th className="p-3 border-b text-right">Total</th>
+                  <th className="border-b p-3">Item Description</th>
+                  <th className="border-b p-3 text-right">Gross Wt (g)</th>
+                  <th className="border-b p-3 text-right">Rate / g</th>
+                  <th className="border-b p-3 text-right">Making / g</th>
+                  <th className="border-b p-3 text-right">Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 font-mono">
+              <tbody className="font-mono divide-y divide-slate-200">
                 <tr>
-                  <td className="p-3 font-sans font-medium text-slate-800">{selectedInvoice.item}</td>
+                  <td className="font-sans p-3 font-medium text-slate-800">
+                    {selectedInvoice.item}
+                  </td>
                   <td className="p-3 text-right font-bold text-slate-900">
                     {formatGramWithUnit(selectedInvoice.grossWeight)}
                   </td>
-                  <td className="p-3 text-right">₹{selectedInvoice.ratePerGram.toFixed(2)}</td>
-                  <td className="p-3 text-right">₹{selectedInvoice.makingChargePerGram.toFixed(2)}</td>
+                  <td className="p-3 text-right">
+                    ₹{selectedInvoice.ratePerGram.toFixed(2)}
+                  </td>
+                  <td className="p-3 text-right">
+                    ₹{selectedInvoice.makingChargePerGram.toFixed(2)}
+                  </td>
                   <td className="p-3 text-right font-bold text-slate-900">
                     ₹{selectedInvoice.taxableAmount.toFixed(2)}
                   </td>
@@ -407,26 +499,33 @@ export const BillingInvoice: React.FC = () => {
 
             {/* Invoice Totals */}
             <div className="flex justify-end text-xs">
-              <div className="w-64 space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div className="w-64 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex justify-between text-slate-600">
                   <span>Taxable Amount:</span>
-                  <span className="font-mono">₹{selectedInvoice.taxableAmount.toFixed(2)}</span>
+                  <span className="font-mono">
+                    ₹{selectedInvoice.taxableAmount.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>GST ({selectedInvoice.gstPercent}%):</span>
-                  <span className="font-mono">₹{selectedInvoice.gstAmount.toFixed(2)}</span>
+                  <span className="font-mono">
+                    ₹{selectedInvoice.gstAmount.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between border-t border-slate-300 pt-2 text-sm font-bold text-amber-700">
                   <span>Invoice Total:</span>
                   <span className="font-mono">
-                    ₹{selectedInvoice.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    ₹
+                    {selectedInvoice.totalAmount.toLocaleString('en-IN', {
+                      minimumFractionDigits: 2,
+                    })}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Modal Actions */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+            <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
               <button
                 type="button"
                 onClick={() => setSelectedInvoice(null)}
@@ -437,7 +536,7 @@ export const BillingInvoice: React.FC = () => {
               <button
                 type="button"
                 onClick={handlePrint}
-                className="flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2 text-xs font-semibold text-white hover:bg-amber-700 shadow"
+                className="flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2 text-xs font-semibold text-white shadow hover:bg-amber-700"
               >
                 <Printer className="h-4 w-4" />
                 Print / Download Invoice

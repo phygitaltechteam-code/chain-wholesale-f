@@ -1,15 +1,15 @@
-import { useNavigate, useParams } from "@tanstack/react-router";
-import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Search, Printer, Calendar } from "lucide-react";
-import { GenericTable, Column } from "@/components/Forms/Table/GenericTable";
-import { useReactToPrint } from "react-to-print";
-import PDFHeader from "@/components/Forms/Common/PDFHeader";
-import { Route } from "@/routes/_app/stock/stockreport.$d";
-import { useGetStockReport } from "@/lib/api/reportapi";
-import GenericButton from "@/components/Forms/Buttons/GenericButton";
-import GenericDatePicker from "@/components/Forms/DatePicker/GenericDatePicker";
-import GenericWeeklyDatePicker from "@/components/Forms/DatePicker/GenericWeeklyDatePicker";
-import { useGetHeader } from "@/lib/api/headerapi";
+import {useNavigate, useParams} from '@tanstack/react-router';
+import {useState, useRef, useEffect} from 'react';
+import {ArrowLeft, Search, Printer, Calendar} from 'lucide-react';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import {useReactToPrint} from 'react-to-print';
+import PDFHeader from '@/components/Forms/Common/PDFHeader';
+import {Route} from '@/routes/_app/stock/stockreport.$d';
+import {useGetStockReport} from '@/lib/api/reportapi';
+import GenericButton from '@/components/Forms/Buttons/GenericButton';
+import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
+import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
+import {useGetHeader} from '@/lib/api/headerapi';
 
 interface StockReportEntry {
   id: string;
@@ -61,8 +61,8 @@ interface ApiResponse {
 
 export default function StockReport() {
   const navigate = useNavigate();
-  const { d } = Route.useParams();
-  const [searchTerm, setSearchTerm] = useState("");
+  const {d} = Route.useParams();
+  const [searchTerm, setSearchTerm] = useState('');
   const getDefaultWeekRange = () => {
     const now = new Date();
     const day = now.getDay();
@@ -75,13 +75,17 @@ export default function StockReport() {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return { monday, sunday };
+    return {monday, sunday};
   };
 
-  const [fromDate, setFromDate] = useState<Date | null>(() => getDefaultWeekRange().monday);
-  const [toDate, setToDate] = useState<Date | null>(() => getDefaultWeekRange().sunday);
+  const [fromDate, setFromDate] = useState<Date | null>(
+    () => getDefaultWeekRange().monday,
+  );
+  const [toDate, setToDate] = useState<Date | null>(
+    () => getDefaultWeekRange().sunday,
+  );
   const printRef = useRef<HTMLDivElement>(null);
-  const { data: stockData, isLoading, isError, refetch } = useGetStockReport(d);
+  const {data: stockData, isLoading, isError, refetch} = useGetStockReport(d);
 
   const getpdfheaderdata = useGetHeader();
 
@@ -95,34 +99,36 @@ export default function StockReport() {
       const responseData = stockData as ApiResponse;
 
       if (responseData?.history && Array.isArray(responseData.history)) {
-        const transformedData: StockReportEntry[] = responseData.history.map((item: ApiDataItem, index: number) => {
-          // Format date
-          const date = new Date(item.createdAt);
-          const formattedDate = date.toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          });
-          const formattedTime = date.toLocaleTimeString('en-IN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-          });
+        const transformedData: StockReportEntry[] = responseData.history.map(
+          (item: ApiDataItem, index: number) => {
+            // Format date
+            const date = new Date(item.createdAt);
+            const formattedDate = date.toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+            });
+            const formattedTime = date.toLocaleTimeString('en-IN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            });
 
-          // Use the actual remark from API
-          const remark = item.remark || 'N/A';
+            // Use the actual remark from API
+            const remark = item.remark || 'N/A';
 
-          return {
-            id: item.id,
-            srNo: index + 1,
-            dateTime: `${formattedDate} ${formattedTime}`,
-            item: item.item?.name || 'Unknown Item',
-            size: item.size?.size || 'N/A',
-            purity: item.purity ? item.purity.toString() : 'N/A',
-            remark: remark,
-            wt: item.weight || 0
-          };
-        });
+            return {
+              id: item.id,
+              srNo: index + 1,
+              dateTime: `${formattedDate} ${formattedTime}`,
+              item: item.item?.name || 'Unknown Item',
+              size: item.size?.size || 'N/A',
+              purity: item.purity ? item.purity.toString() : 'N/A',
+              remark: remark,
+              wt: item.weight || 0,
+            };
+          },
+        );
         setReportData(transformedData);
       }
       setLoading(false);
@@ -130,9 +136,10 @@ export default function StockReport() {
   }, [stockData]);
 
   // Filter data based on search term and date range
-  const filteredData = reportData.filter(entry => {
+  const filteredData = reportData.filter((entry) => {
     // Search filter
-    const matchesSearch = searchTerm === "" ||
+    const matchesSearch =
+      searchTerm === '' ||
       entry.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.purity.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -150,7 +157,7 @@ export default function StockReport() {
         const entryDate = new Date(
           Number(dateParts[2]),
           Number(dateParts[1]) - 1,
-          Number(dateParts[0])
+          Number(dateParts[0]),
         );
 
         entryDate.setHours(12, 0, 0, 0);
@@ -184,9 +191,9 @@ export default function StockReport() {
 
   // Format number with 3 decimals
   const formatNumber = (value: number) => {
-    if (value === 0 || !value) return "0";
+    if (value === 0 || !value) return '0';
     const str = value.toFixed(3);
-    return str.replace(/\.?0+$/, "");
+    return str.replace(/\.?0+$/, '');
   };
 
   // Format date for display
@@ -195,7 +202,7 @@ export default function StockReport() {
     return date.toLocaleDateString('en-IN', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -223,7 +230,7 @@ export default function StockReport() {
 
   // Reset to current Monday -> Sunday
   const handleResetDates = () => {
-    const { monday, sunday } = getCurrentWeekRange();
+    const {monday, sunday} = getCurrentWeekRange();
     setFromDate(monday);
     setToDate(sunday);
   };
@@ -233,23 +240,26 @@ export default function StockReport() {
     const remarkLower = remark?.toLowerCase() || '';
 
     if (remarkLower.includes('inward')) {
-      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
     } else if (remarkLower.includes('outward')) {
-      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-    } else if (remarkLower.includes('scale') || remarkLower.includes('manufactured')) {
-      return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+    } else if (
+      remarkLower.includes('scale') ||
+      remarkLower.includes('manufactured')
+    ) {
+      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
     } else if (remarkLower.includes('received')) {
-      return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
     } else if (remarkLower.includes('given')) {
-      return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
+      return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
     } else if (remarkLower.includes('sale')) {
-      return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400";
+      return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
     } else if (remarkLower.includes('settle')) {
-      return "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400";
+      return 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400';
     } else if (remarkLower.includes('advance')) {
-      return "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400";
+      return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400';
     } else {
-      return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400";
+      return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
     }
   };
 
@@ -276,8 +286,8 @@ export default function StockReport() {
       },
     },
     {
-      key: "item",
-      header: "Item",
+      key: 'item',
+      header: 'Item',
       render: (item) => (
         <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
           {item.item}
@@ -285,8 +295,8 @@ export default function StockReport() {
       ),
     },
     {
-      key: "size",
-      header: "Size",
+      key: 'size',
+      header: 'Size',
       render: (item) => (
         <span className="text-sm text-[#1a1c1b] dark:text-white">
           {item.size}
@@ -294,29 +304,32 @@ export default function StockReport() {
       ),
     },
     {
-      key: "purity",
-      header: "Purity",
+      key: 'purity',
+      header: 'Purity',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {item.purity} %
         </span>
       ),
     },
     {
-      key: "remark",
-      header: "Remark",
+      key: 'remark',
+      header: 'Remark',
       render: (item) => (
-        <span className={`text-xs font-medium px-2 py-1 rounded-full ${getRemarkColor(item.remark)}`}>
+        <span
+          className={`rounded-full px-2 py-1 text-xs font-medium ${getRemarkColor(item.remark)}`}
+        >
           {item.remark}
         </span>
       ),
     },
     {
-      key: "wt",
-      header: "WT (G)",
+      key: 'wt',
+      header: 'WT (G)',
       render: (item) => (
-        <span className='text-black font-bold'>
-          {item.wt > 0 ? '+' : ''}{formatNumber(item.wt)} G
+        <span className="font-bold text-black">
+          {item.wt > 0 ? '+' : ''}
+          {formatNumber(item.wt)} G
         </span>
       ),
     },
@@ -368,22 +381,41 @@ export default function StockReport() {
     // Calculate total
     const totalWt = filteredData.reduce((sum, item) => sum + item.wt, 0);
 
-    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const headerInfo =
+      getpdfheaderdata?.data?.data ||
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation =
+      headerInfo.leftInvocation ||
+      headerInfo.leftInovation ||
+      '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation =
+      headerInfo.rightInvocation ||
+      headerInfo.rightInovation ||
+      '॥ श्री साई प्रसन्न ॥';
     const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const description =
+      headerInfo.description ||
+      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
     const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const phoneNumbers =
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
     const invocationColor = headerInfo.invocationColor || '#a84b20';
     const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
     const descriptionColor = headerInfo.descriptionColor || '#8b451f';
     const proprietorColor = headerInfo.proprietorColor || '#a84b20';
     const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
-    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
-    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
-    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+    const factoryFontSize = headerInfo.factoryFontSize
+      ? `${headerInfo.factoryFontSize}px`
+      : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize
+      ? `${headerInfo.descriptionFontSize}px`
+      : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize
+      ? `${headerInfo.proprietorFontSize}px`
+      : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize
+      ? `${headerInfo.phoneFontSize}px`
+      : '9px';
 
     // Set the content with PDF Header
     printContainer.innerHTML = `
@@ -528,10 +560,12 @@ export default function StockReport() {
   // Show loading state
   if (isLoading || loading) {
     return (
-      <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] dark:bg-slate-950">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#785600] mx-auto"></div>
-          <p className="mt-4 text-[#785600] dark:text-amber-400">Loading stock report...</p>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-[#785600]"></div>
+          <p className="mt-4 text-[#785600] dark:text-amber-400">
+            Loading stock report...
+          </p>
         </div>
       </div>
     );
@@ -540,14 +574,18 @@ export default function StockReport() {
   // Show error state
   if (isError) {
     return (
-      <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] dark:bg-slate-950">
         <div className="text-center">
-          <div className="text-red-500 text-5xl mb-4">⚠️</div>
-          <h3 className="text-xl font-bold text-red-600 dark:text-red-400">Error Loading Report</h3>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Failed to fetch stock report data.</p>
+          <div className="mb-4 text-5xl text-red-500">⚠️</div>
+          <h3 className="text-xl font-bold text-red-600 dark:text-red-400">
+            Error Loading Report
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Failed to fetch stock report data.
+          </p>
           <button
             onClick={() => refetch()}
-            className="mt-4 px-4 py-2 bg-[#785600] text-white rounded-lg hover:bg-[#5d4200]"
+            className="mt-4 rounded-lg bg-[#785600] px-4 py-2 text-white hover:bg-[#5d4200]"
           >
             Retry
           </button>
@@ -560,14 +598,18 @@ export default function StockReport() {
   if (reportData.length === 0) {
     return (
       <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex h-64 items-center justify-center">
           <div className="text-center">
-            <div className="text-5xl mb-4">📦</div>
-            <h3 className="text-xl font-bold text-[#1a1c1b] dark:text-white">No Stock Records Found</h3>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">No stock records found for this item.</p>
+            <div className="mb-4 text-5xl">📦</div>
+            <h3 className="text-xl font-bold text-[#1a1c1b] dark:text-white">
+              No Stock Records Found
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              No stock records found for this item.
+            </p>
             <button
-              onClick={() => navigate({ to: "/Stocks/stockpage" })}
-              className="mt-4 px-4 py-2 bg-[#785600] text-white rounded-lg hover:bg-[#5d4200]"
+              onClick={() => navigate({to: '/Stocks/stockpage'})}
+              className="mt-4 rounded-lg bg-[#785600] px-4 py-2 text-white hover:bg-[#5d4200]"
             >
               Go Back
             </button>
@@ -580,24 +622,24 @@ export default function StockReport() {
   return (
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
-        <div className="flex flex-col sm:flex-row items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6 gap-3">
-          <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
+      <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
+        <div className="flex flex-col items-center justify-between gap-3 px-3 py-2 sm:flex-row sm:px-4 sm:py-3 md:px-6">
+          <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
             <button
-              onClick={() => navigate({ to: "/Stocks/stockpage" })}
+              onClick={() => navigate({to: '/Stocks/stockpage'})}
               className="inline-flex items-center justify-center rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
               title="Go Back"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <div className="h-5 w-px bg-[#d3c4af]/30 dark:bg-slate-600 flex-shrink-0" />
+            <div className="h-5 w-px flex-shrink-0 bg-[#d3c4af]/30 dark:bg-slate-600" />
             <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Stock Report
             </h2>
           </div>
 
           {/* Right side - Search, Date Pickers and Print Button */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
             {/* Search Bar */}
             <div className="relative w-full sm:w-48">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
@@ -606,11 +648,11 @@ export default function StockReport() {
                 placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
 
-            <div className="flex w-full sm:w-auto items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               <GenericWeeklyDatePicker
                 id="from-date-box"
                 mode="from"
@@ -629,11 +671,10 @@ export default function StockReport() {
               />
             </div>
 
-
             {/* Print Button */}
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white hover:bg-[#5d4200] transition-colors whitespace-nowrap"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5d4200]"
             >
               <Printer className="h-4 w-4" />
               <span className="hidden sm:inline">Print</span>
@@ -643,25 +684,25 @@ export default function StockReport() {
         </div>
       </div>
 
-      <div className="px-3 sm:px-4 md:px-6 py-4">
+      <div className="px-3 py-4 sm:px-4 md:px-6">
         {/* Summary Cards */}
-        <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Total Weight
               </span>
-              <span className='text-black font-bold text-lg'>
+              <span className="text-lg font-bold text-black">
                 {formatNumber(totalWt)} G
               </span>
             </div>
           </div>
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Total Entries
               </span>
-              <span className='text-black font-bold text-lg'>
+              <span className="text-lg font-bold text-black">
                 {totalEntries}
               </span>
             </div>
@@ -673,8 +714,12 @@ export default function StockReport() {
           <GenericTable
             data={filteredData}
             columns={columns}
-            onSave={(item) => console.log("Save:", item)}
-            emptyMessage={searchTerm || fromDate || toDate ? "No stock entries found matching your filters." : "No stock entries found."}
+            onSave={(item) => console.log('Save:', item)}
+            emptyMessage={
+              searchTerm || fromDate || toDate
+                ? 'No stock entries found matching your filters.'
+                : 'No stock entries found.'
+            }
             isLoading={isLoading || loading}
             showSrNo={true}
             srNoLabel="Sr No."

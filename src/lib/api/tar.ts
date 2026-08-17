@@ -1,6 +1,6 @@
-import { api } from "@/utils/axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 export interface Tar {
   id: string;
@@ -23,7 +23,7 @@ export interface Tar {
 // API Functions
 const getTarApi = async () => {
   try {
-    const response = await api.get("/admin/tar");
+    const response = await api.get('/admin/tar');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -53,7 +53,7 @@ const createTarApi = async (data: {
       scrap: Number(data.scrap || 0),
       loss: Number(data.loss || 0),
     };
-    const response = await api.post("/admin/tar", payload);
+    const response = await api.post('/admin/tar', payload);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -63,7 +63,7 @@ const createTarApi = async (data: {
   }
 };
 
-const saveTarApi = async ({ id, data }: { id: string; data: Partial<Tar> }) => {
+const saveTarApi = async ({id, data}: {id: string; data: Partial<Tar>}) => {
   try {
     // Include all required fields in the payload
     const payload = {
@@ -79,7 +79,7 @@ const saveTarApi = async ({ id, data }: { id: string; data: Partial<Tar> }) => {
       purity: data.purity || '',
       isSaved: data.isSaved || false,
     };
-    
+
     console.log('Saving payload:', payload);
     // Use PUT with ID in the URL path
     const response = await api.put(`/admin/tar/${id}`, payload);
@@ -105,12 +105,7 @@ const getTarByIdApi = async (id: string) => {
 };
 
 // Export individual functions
-export {
-  getTarApi,
-  getTarByIdApi,
-  createTarApi,
-  saveTarApi,
-};
+export {getTarApi, getTarByIdApi, createTarApi, saveTarApi};
 
 // React Query Hooks
 export const useTar = () => {
@@ -135,7 +130,7 @@ export const useCreateTar = () => {
     mutationFn: createTarApi,
     onSuccess: () => {
       toast.success('Tar entry created successfully');
-      queryClient.invalidateQueries({ queryKey: ['tar'] });
+      queryClient.invalidateQueries({queryKey: ['tar']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create tar entry');
@@ -150,14 +145,13 @@ export const useSaveTar = () => {
     mutationFn: saveTarApi,
     onSuccess: () => {
       toast.success('Tar entry saved successfully');
-      queryClient.invalidateQueries({ queryKey: ['tar'] });
+      queryClient.invalidateQueries({queryKey: ['tar']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to save tar entry');
     },
   });
 };
-
 
 export const useGetTarHistory = () => {
   return useQuery({
@@ -166,10 +160,9 @@ export const useGetTarHistory = () => {
   });
 };
 
-
 const getTarHistory = async () => {
   try {
-    const response = await api.get("/admin/tar/history");
+    const response = await api.get('/admin/tar/history');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {

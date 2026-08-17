@@ -1,19 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Search, Printer, Edit, Trash2, Plus, Calendar } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import React, {useState, useEffect, useRef} from 'react';
+import {X, Search, Printer, Edit, Trash2, Plus, Calendar} from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import toast from 'react-hot-toast';
 import GenericButton from '../Forms/Buttons/GenericButton';
-import { useDeleteBill, useGetBill } from '@/lib/api/bill';
-import { useGetHeader } from '@/lib/api/headerapi';
+import {useDeleteBill, useGetBill} from '@/lib/api/bill';
+import {useGetHeader} from '@/lib/api/headerapi';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
-import {
-  Scale,
-  DollarSign,
-  ArrowDownToLine,
-  Clock
-} from 'lucide-react';
+import {Scale, DollarSign, ArrowDownToLine, Clock} from 'lucide-react';
 
 interface ReceiptItem {
   id: string;
@@ -108,10 +103,10 @@ const Billing: React.FC = () => {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return { monday, sunday };
+    return {monday, sunday};
   };
 
-  const { monday: defaultMonday, sunday: defaultSunday } = getCurrentWeekRange();
+  const {monday: defaultMonday, sunday: defaultSunday} = getCurrentWeekRange();
 
   const [fromDate, setFromDate] = useState<Date[]>([defaultMonday]);
   const [toDate, setToDate] = useState<Date[]>([defaultSunday]);
@@ -124,14 +119,14 @@ const Billing: React.FC = () => {
   const fromDatePickerRef = useRef<any>(null);
   const toDatePickerRef = useRef<any>(null);
 
-  const { data: billData, isLoading: billLoading } = useGetBill();
+  const {data: billData, isLoading: billLoading} = useGetBill();
 
   useEffect(() => {
     setDefaultDateRange();
   }, []);
 
   const setDefaultDateRange = () => {
-    const { monday, sunday } = getCurrentWeekRange();
+    const {monday, sunday} = getCurrentWeekRange();
     setDateRange({
       from: monday.toISOString().split('T')[0],
       to: sunday.toISOString().split('T')[0],
@@ -148,59 +143,70 @@ const Billing: React.FC = () => {
     }
 
     if (billData && Array.isArray(billData)) {
-      const groups: BillGroup[] = billData.map((receipt: ReceiptData, index: number) => {
-        const dateObj = new Date(receipt.receiptDate || receipt.createdAt);
-        const formattedDate = dateObj.toLocaleString('en-IN', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        });
+      const groups: BillGroup[] = billData.map(
+        (receipt: ReceiptData, index: number) => {
+          const dateObj = new Date(receipt.receiptDate || receipt.createdAt);
+          const formattedDate = dateObj.toLocaleString('en-IN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+          });
 
-        // Map all items
-        const items = receipt.receiptItems?.map((item) => ({
-          item: item.item?.name || 'N/A',
-          size: item.size?.size || 'N/A',
-          purity: item.purity || 0,
-          finWt: item.fineWeight || 0,
-          srp: item.srp || 0,
-          grossWeight: item.grossWeight || 0,
-        })) || [];
+          // Map all items
+          const items =
+            receipt.receiptItems?.map((item) => ({
+              item: item.item?.name || 'N/A',
+              size: item.size?.size || 'N/A',
+              purity: item.purity || 0,
+              finWt: item.fineWeight || 0,
+              srp: item.srp || 0,
+              grossWeight: item.grossWeight || 0,
+            })) || [];
 
-        // Calculate totals
-        const totalFinWt = items.reduce((sum, i) => sum + i.finWt, 0);
-        const totalSRP = items.reduce((sum, i) => sum + i.srp, 0);
+          // Calculate totals
+          const totalFinWt = items.reduce((sum, i) => sum + i.finWt, 0);
+          const totalSRP = items.reduce((sum, i) => sum + i.srp, 0);
 
-        // Join items with line breaks for display
-        const displayItems = items.map(i => i.item).join('\n');
-        const displaySizes = items.map(i => i.size).join('\n');
-        const displayPurity = items.map(i => formatNumberWithDecimals(i.purity) + '%').join('\n');
-        const displayFinWt = items.map(i => formatNumberWithDecimals(i.finWt)).join('\n');
-        const displaySRP = items.map(i => formatNumberWithDecimals(i.srp)).join('\n');
+          // Join items with line breaks for display
+          const displayItems = items.map((i) => i.item).join('\n');
+          const displaySizes = items.map((i) => i.size).join('\n');
+          const displayPurity = items
+            .map((i) => formatNumberWithDecimals(i.purity) + '%')
+            .join('\n');
+          const displayFinWt = items
+            .map((i) => formatNumberWithDecimals(i.finWt))
+            .join('\n');
+          const displaySRP = items
+            .map((i) => formatNumberWithDecimals(i.srp))
+            .join('\n');
 
-        return {
-          id: receipt.id,
-          srNo: index + 1,
-          dateTime: formattedDate,
-          billNo: `BILL-${String(index + 1).padStart(4, '0')}`,
-          clientName: receipt.client?.fullName || 'N/A',
-          phoneNumber: receipt.client?.phoneNumber || 'N/A',
-          receive: receipt.customerWeight || 0,
-          pending: receipt.remainingWeight || 0,
-          type: receipt.type || (receipt.remainingWeight === 0 ? 'BILL' : 'DRAFT'),
-          createdAt: receipt.createdAt,
-          items: items,
-          displayItems: displayItems,
-          displaySizes: displaySizes,
-          displayPurity: displayPurity,
-          displayFinWt: displayFinWt,
-          displaySRP: displaySRP,
-          totalFinWt: totalFinWt,
-          totalSRP: totalSRP,
-        };
-      });
+          return {
+            id: receipt.id,
+            srNo: index + 1,
+            dateTime: formattedDate,
+            billNo: `BILL-${String(index + 1).padStart(4, '0')}`,
+            clientName: receipt.client?.fullName || 'N/A',
+            phoneNumber: receipt.client?.phoneNumber || 'N/A',
+            receive: receipt.customerWeight || 0,
+            pending: receipt.remainingWeight || 0,
+            type:
+              receipt.type ||
+              (receipt.remainingWeight === 0 ? 'BILL' : 'DRAFT'),
+            createdAt: receipt.createdAt,
+            items: items,
+            displayItems: displayItems,
+            displaySizes: displaySizes,
+            displayPurity: displayPurity,
+            displayFinWt: displayFinWt,
+            displaySRP: displaySRP,
+            totalFinWt: totalFinWt,
+            totalSRP: totalSRP,
+          };
+        },
+      );
 
       setBillingGroups(groups);
     } else {
@@ -210,12 +216,14 @@ const Billing: React.FC = () => {
   }, [billData, billLoading]);
 
   // Filter entries
-  const filteredGroups = billingGroups.filter(group => {
+  const filteredGroups = billingGroups.filter((group) => {
     const matchesSearch =
       group.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       group.phoneNumber.includes(searchTerm) ||
       group.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      group.items.some(item => item.item.toLowerCase().includes(searchTerm.toLowerCase()));
+      group.items.some((item) =>
+        item.item.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
 
     let matchesDate = true;
     if (fromDate.length > 0 && toDate.length > 0) {
@@ -231,12 +239,22 @@ const Billing: React.FC = () => {
   });
 
   // Calculate totals from filtered entries
-  const totalFinWt = filteredGroups.reduce((sum, group) =>
-    sum + group.totalFinWt, 0);
-  const totalSRP = filteredGroups.reduce((sum, group) =>
-    sum + group.totalSRP, 0);
-  const totalReceive = filteredGroups.reduce((sum, group) => sum + group.receive, 0);
-  const totalPending = filteredGroups.reduce((sum, group) => sum + group.pending, 0);
+  const totalFinWt = filteredGroups.reduce(
+    (sum, group) => sum + group.totalFinWt,
+    0,
+  );
+  const totalSRP = filteredGroups.reduce(
+    (sum, group) => sum + group.totalSRP,
+    0,
+  );
+  const totalReceive = filteredGroups.reduce(
+    (sum, group) => sum + group.receive,
+    0,
+  );
+  const totalPending = filteredGroups.reduce(
+    (sum, group) => sum + group.pending,
+    0,
+  );
   const totalEntries = filteredGroups.length;
 
   const formatNumberWithDecimals = (value: number) => {
@@ -269,14 +287,19 @@ const Billing: React.FC = () => {
     document.body.appendChild(printContainer);
 
     const phoneNumber = group?.phoneNumber || 'N/A';
-    const dateStr = group.dateTime || new Date().toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+    const dateStr =
+      group.dateTime ||
+      new Date().toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
 
     const totalFineWt = group.totalFinWt || 0;
-    const totalGrossWt = group.items.reduce((sum, i) => sum + (i.grossWeight || 0), 0);
+    const totalGrossWt = group.items.reduce(
+      (sum, i) => sum + (i.grossWeight || 0),
+      0,
+    );
     const totalSRP = group.totalSRP || 0;
     const totalLabor = 0;
     const totalAmount = totalSRP + totalLabor;
@@ -285,7 +308,7 @@ const Billing: React.FC = () => {
 
     let itemsRows = '';
     group.items.forEach((item, index) => {
-      const itemAmount = (item.srp || 0);
+      const itemAmount = item.srp || 0;
       itemsRows += `
         <tr>
           <td style="border:1px solid #222;padding:3px 4px;text-align:center;font-size:9px;color:#000;">${index + 1}</td>
@@ -301,22 +324,41 @@ const Billing: React.FC = () => {
       `;
     });
 
-    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const headerInfo =
+      getpdfheaderdata?.data?.data ||
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation =
+      headerInfo.leftInvocation ||
+      headerInfo.leftInovation ||
+      '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation =
+      headerInfo.rightInvocation ||
+      headerInfo.rightInovation ||
+      '॥ श्री साई प्रसन्न ॥';
     const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const description =
+      headerInfo.description ||
+      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
     const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const phoneNumbers =
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
     const invocationColor = headerInfo.invocationColor || '#a84b20';
     const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
     const descriptionColor = headerInfo.descriptionColor || '#8b451f';
     const proprietorColor = headerInfo.proprietorColor || '#a84b20';
     const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '18px';
-    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
-    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
-    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+    const factoryFontSize = headerInfo.factoryFontSize
+      ? `${headerInfo.factoryFontSize}px`
+      : '18px';
+    const descriptionFontSize = headerInfo.descriptionFontSize
+      ? `${headerInfo.descriptionFontSize}px`
+      : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize
+      ? `${headerInfo.proprietorFontSize}px`
+      : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize
+      ? `${headerInfo.phoneFontSize}px`
+      : '9px';
 
     printContainer.innerHTML = `
       <div style="
@@ -676,32 +718,57 @@ const Billing: React.FC = () => {
     `;
     document.body.appendChild(printContainer);
 
-    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const headerInfo =
+      getpdfheaderdata?.data?.data ||
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation =
+      headerInfo.leftInvocation ||
+      headerInfo.leftInovation ||
+      '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation =
+      headerInfo.rightInvocation ||
+      headerInfo.rightInovation ||
+      '॥ श्री साई प्रसन्न ॥';
     const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const description =
+      headerInfo.description ||
+      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
     const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const phoneNumbers =
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
     const invocationColor = headerInfo.invocationColor || '#a84b20';
     const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
     const descriptionColor = headerInfo.descriptionColor || '#8b451f';
     const proprietorColor = headerInfo.proprietorColor || '#a84b20';
     const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
-    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
-    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
-    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+    const factoryFontSize = headerInfo.factoryFontSize
+      ? `${headerInfo.factoryFontSize}px`
+      : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize
+      ? `${headerInfo.descriptionFontSize}px`
+      : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize
+      ? `${headerInfo.proprietorFontSize}px`
+      : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize
+      ? `${headerInfo.phoneFontSize}px`
+      : '9px';
 
     const formatDateStr = (d: Date | null) => {
       if (!d) return '-';
-      return d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return d.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
     };
 
     const fromStr = fromDate.length > 0 ? formatDateStr(fromDate[0]) : '';
     const toStr = toDate.length > 0 ? formatDateStr(toDate[0]) : '';
 
-    const rows = filteredGroups.map((group, index) => `
+    const rows = filteredGroups
+      .map(
+        (group, index) => `
       <tr>
         <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:9px;color:#000;">${index + 1}</td>
         <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:8px;color:#000;">${group.dateTime}</td>
@@ -716,7 +783,9 @@ const Billing: React.FC = () => {
         <td style="border:1px solid #000;padding:3px 2px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberWithDecimals(group.receive)}</td>
         <td style="border:1px solid #000;padding:3px 2px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberWithDecimals(group.pending)}</td>
       </tr>
-    `).join('');
+    `,
+      )
+      .join('');
 
     printContainer.innerHTML = `
       <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
@@ -832,11 +901,13 @@ const Billing: React.FC = () => {
   };
 
   const handleRowClick = (group: BillGroup) => {
-    navigate({ to: "/billiupdate/$id", params: { id: group.id } });
+    navigate({to: '/billiupdate/$id', params: {id: group.id}});
   };
 
   const handleDelete = (group: BillGroup) => {
-    if (!window.confirm(`Are you sure you want to delete bill ${group.billNo}?`)) {
+    if (
+      !window.confirm(`Are you sure you want to delete bill ${group.billNo}?`)
+    ) {
       return;
     }
 
@@ -866,8 +937,11 @@ const Billing: React.FC = () => {
   const renderActions = (item: BillGroup, index: number) => (
     <div className="flex items-center justify-center gap-1">
       <button
-        onClick={(e) => { e.stopPropagation(); handlePrintReceipt(item); }}
-        className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
+        onClick={(e) => {
+          e.stopPropagation();
+          handlePrintReceipt(item);
+        }}
+        className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
         title="Print Receipt"
       >
         <Printer className="h-4 w-4" />
@@ -878,7 +952,7 @@ const Billing: React.FC = () => {
           handleDelete(item);
         }}
         disabled={deleteClient.isPending}
-        className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
+        className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
         title="Delete"
       >
         <Trash2 className="h-4 w-4" />
@@ -941,7 +1015,10 @@ const Billing: React.FC = () => {
       render: (item) => (
         <div className="flex flex-col items-center whitespace-pre-line text-center">
           {item.displayItems.split('\n').map((line, idx) => (
-            <span key={idx} className="text-sm font-medium text-[#1a1c1b] dark:text-white leading-relaxed">
+            <span
+              key={idx}
+              className="text-sm font-medium leading-relaxed text-[#1a1c1b] dark:text-white"
+            >
               {line}
             </span>
           ))}
@@ -954,7 +1031,10 @@ const Billing: React.FC = () => {
       render: (item) => (
         <div className="flex flex-col items-center whitespace-pre-line text-center">
           {item.displaySizes.split('\n').map((line, idx) => (
-            <span key={idx} className="text-sm text-[#1a1c1b] dark:text-white leading-relaxed">
+            <span
+              key={idx}
+              className="text-sm leading-relaxed text-[#1a1c1b] dark:text-white"
+            >
               {line}
             </span>
           ))}
@@ -967,7 +1047,10 @@ const Billing: React.FC = () => {
       render: (item) => (
         <div className="flex flex-col items-center whitespace-pre-line text-center">
           {item.displayPurity.split('\n').map((line, idx) => (
-            <span key={idx} className="text-sm font-mono text-[#1a1c1b] dark:text-white leading-relaxed">
+            <span
+              key={idx}
+              className="font-mono text-sm leading-relaxed text-[#1a1c1b] dark:text-white"
+            >
               {line}
             </span>
           ))}
@@ -980,7 +1063,10 @@ const Billing: React.FC = () => {
       render: (item) => (
         <div className="flex flex-col items-center whitespace-pre-line text-center">
           {item.displayFinWt.split('\n').map((line, idx) => (
-            <span key={idx} className="text-sm font-mono font-bold text-black dark:text-amber-400 leading-relaxed">
+            <span
+              key={idx}
+              className="font-mono text-sm font-bold leading-relaxed text-black dark:text-amber-400"
+            >
               {line} G
             </span>
           ))}
@@ -993,7 +1079,10 @@ const Billing: React.FC = () => {
       render: (item) => (
         <div className="flex flex-col items-center whitespace-pre-line text-center">
           {item.displaySRP.split('\n').map((line, idx) => (
-            <span key={idx} className="text-sm font-mono text-[#1a1c1b] dark:text-white leading-relaxed">
+            <span
+              key={idx}
+              className="font-mono text-sm leading-relaxed text-[#1a1c1b] dark:text-white"
+            >
               {line} G
             </span>
           ))}
@@ -1004,7 +1093,7 @@ const Billing: React.FC = () => {
       key: 'receive',
       header: 'Receive (g)',
       render: (item) => (
-        <span className="text-sm font-mono font-semibold text-black dark:text-green-400">
+        <span className="font-mono text-sm font-semibold text-black dark:text-green-400">
           {formatNumberWithDecimals(item.receive)} G
         </span>
       ),
@@ -1013,7 +1102,7 @@ const Billing: React.FC = () => {
       key: 'pending',
       header: 'Pending (g)',
       render: (item) => (
-        <span className="text-sm font-mono font-semibold text-black dark:text-red-400">
+        <span className="font-mono text-sm font-semibold text-black dark:text-red-400">
           {formatNumberWithDecimals(Math.abs(item.pending))} G
         </span>
       ),
@@ -1022,8 +1111,10 @@ const Billing: React.FC = () => {
       key: 'type',
       header: 'Status',
       render: (item) => (
-        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium capitalize ${getTypeColor(item.type)}`}>
-          {item.type || "-"}
+        <span
+          className={`inline-flex rounded-full px-2 py-1 text-xs font-medium capitalize ${getTypeColor(item.type)}`}
+        >
+          {item.type || '-'}
         </span>
       ),
     },
@@ -1034,7 +1125,9 @@ const Billing: React.FC = () => {
       <div className="flex h-64 items-center justify-center">
         <div className="text-center">
           <div className="mx-auto mb-2 h-6 w-6 animate-spin rounded-full border-4 border-[#785600] border-t-transparent"></div>
-          <p className="text-[#4f4535] dark:text-slate-400">Loading billing entries...</p>
+          <p className="text-[#4f4535] dark:text-slate-400">
+            Loading billing entries...
+          </p>
         </div>
       </div>
     );
@@ -1047,11 +1140,11 @@ const Billing: React.FC = () => {
         <div className="mb-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <PageHeader title='Billing' />
+              <PageHeader title="Billing" />
             </div>
             <GenericButton
               type="button"
-              onClick={() => navigate({ to: '/receipt/addreciept' })}
+              onClick={() => navigate({to: '/receipt/addreciept'})}
             >
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span>Add Bill</span>
@@ -1060,66 +1153,66 @@ const Billing: React.FC = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total Fin Wt
                 </span>
                 <span className="text-lg font-bold text-black dark:text-white">
                   {formatNumberWithDecimals(totalFinWt)} G
                 </span>
               </div>
-              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-amber-900/30 border border-[#785600]/20 dark:border-amber-700/30">
+              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-amber-700/30 dark:bg-amber-900/30">
                 <Scale className="h-4 w-4 text-[#785600] dark:text-amber-400" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total SRP
                 </span>
                 <span className="text-lg font-bold text-black dark:text-white">
                   {formatNumberWithDecimals(totalSRP)} G
                 </span>
               </div>
-              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-blue-900/30 border border-[#785600]/20 dark:border-blue-700/30">
+              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-blue-700/30 dark:bg-blue-900/30">
                 <DollarSign className="h-4 w-4 text-[#785600] dark:text-blue-400" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total Receive
                 </span>
                 <span className="text-lg font-bold text-black dark:text-white">
                   {formatNumberWithDecimals(totalReceive)} G
                 </span>
               </div>
-              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-green-900/30 border border-[#785600]/20 dark:border-green-700/30">
+              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-green-700/30 dark:bg-green-900/30">
                 <ArrowDownToLine className="h-4 w-4 text-[#785600] dark:text-green-400" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total Pending
                 </span>
                 <span className="text-lg font-bold text-black dark:text-white">
                   {formatNumberWithDecimals(Math.abs(totalPending))} G
                 </span>
               </div>
-              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-red-900/30 border border-[#785600]/20 dark:border-red-700/30">
+              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-red-700/30 dark:bg-red-900/30">
                 <Clock className="h-4 w-4 text-[#785600] dark:text-red-400" />
               </div>
             </div>
@@ -1127,15 +1220,15 @@ const Billing: React.FC = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
-          <div className="relative flex-1 min-w-[140px] sm:min-w-[200px]">
+        <div className="mb-3 flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="relative min-w-[140px] flex-1 sm:min-w-[200px]">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
             <input
               type="text"
               placeholder="Search by client, phone, bill no, item..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
           </div>
 
@@ -1149,7 +1242,7 @@ const Billing: React.FC = () => {
                 const selected = new Date(dates[0]);
                 selected.setHours(0, 0, 0, 0);
                 setFromDate([selected]);
-                setDateRange(prev => ({
+                setDateRange((prev) => ({
                   ...prev,
                   from: selected.toISOString().split('T')[0],
                 }));
@@ -1168,7 +1261,7 @@ const Billing: React.FC = () => {
                 const selected = new Date(dates[0]);
                 selected.setHours(23, 59, 59, 999);
                 setToDate([selected]);
-                setDateRange(prev => ({
+                setDateRange((prev) => ({
                   ...prev,
                   to: selected.toISOString().split('T')[0],
                 }));

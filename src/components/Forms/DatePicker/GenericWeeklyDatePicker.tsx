@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import flatpickr from 'flatpickr';
-import { Calendar, X } from 'lucide-react';
+import {Calendar, X} from 'lucide-react';
 import 'flatpickr/dist/flatpickr.min.css';
 
 interface GenericWeeklyDatePickerProps {
@@ -35,7 +35,10 @@ const GenericWeeklyDatePicker: React.FC<GenericWeeklyDatePickerProps> = ({
       if (mode === 'from') {
         date = initialDates[0] || null;
       } else if (mode === 'to') {
-        date = initialDates.length > 1 ? (initialDates[1] || null) : (initialDates[0] || null);
+        date =
+          initialDates.length > 1
+            ? initialDates[1] || null
+            : initialDates[0] || null;
       }
       setSelectedDate(date);
     } else {
@@ -132,10 +135,9 @@ const GenericWeeklyDatePicker: React.FC<GenericWeeklyDatePickerProps> = ({
       {label && (
         <label
           htmlFor={id}
-          className="mb-1 block text-[9px] sm:text-[10px] font-bold uppercase text-[#4f4535] dark:text-slate-400"
+          className="mb-1 block text-[9px] font-bold uppercase text-[#4f4535] dark:text-slate-400 sm:text-[10px]"
         >
-          {label}{' '}
-          {required && <span className="text-red-500">*</span>}
+          {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
 
@@ -158,7 +160,7 @@ const GenericWeeklyDatePicker: React.FC<GenericWeeklyDatePickerProps> = ({
               e.stopPropagation();
             }}
             onClick={handleClearDate}
-            className="absolute inset-y-0 right-8 z-20 flex items-center justify-center px-1 text-gray-400 transition-colors hover:text-red-500 sm:right-9"
+            className="text-gray-400 absolute inset-y-0 right-8 z-20 flex items-center justify-center px-1 transition-colors hover:text-red-500 sm:right-9"
             title="Clear date"
           >
             <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

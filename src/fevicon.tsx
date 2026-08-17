@@ -1,5 +1,5 @@
 // components/Favicon.tsx
-import React, { useEffect } from 'react';
+import React, {useEffect} from 'react';
 
 interface FaviconProps {
   emoji?: string;
@@ -30,7 +30,7 @@ const Favicon: React.FC<FaviconProps> = ({
 
       // Update or create favicon link
       let link = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
-      
+
       if (!link) {
         link = document.createElement('link');
         link.rel = 'icon';

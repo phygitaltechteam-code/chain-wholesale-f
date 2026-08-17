@@ -1,12 +1,12 @@
-import CuttingDept  from '@/components/erp/manufacturingprocess/CuttingDept'
-import { createFileRoute } from '@tanstack/react-router'
+import CuttingDept from '@/components/erp/manufacturingprocess/CuttingDept';
+import {createFileRoute} from '@tanstack/react-router';
 
 export const Route = createFileRoute(
   '/_app/manufacturingprocess/cutting/cuttingdept',
 )({
   component: RouteComponent,
-})
+});
 
 function RouteComponent() {
-  return <CuttingDept />
+  return <CuttingDept />;
 }

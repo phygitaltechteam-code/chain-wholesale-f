@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, {forwardRef} from 'react';
 
 interface InputProps {
   name?: string;
@@ -65,7 +65,7 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
       max,
       decimalScale,
     },
-    ref
+    ref,
   ) => {
     const isReadOnly = readOnly || disabled;
     const isDecimalInput = decimalScale !== undefined;
@@ -111,10 +111,7 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
         if (parts.length > 2) return;
 
         const decimalPart = parts[1];
-        if (
-          decimalPart !== undefined &&
-          decimalPart.length > decimalScale!
-        ) {
+        if (decimalPart !== undefined && decimalPart.length > decimalScale!) {
           return;
         }
 
@@ -171,7 +168,7 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
           if (onChange) {
             const changeEvent = {
               ...e,
-              target: { ...e.target, value: rounded },
+              target: {...e.target, value: rounded},
             } as React.ChangeEvent<HTMLInputElement>;
 
             onChange(changeEvent);
@@ -223,14 +220,7 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
             {inputElement}
 
             <div
-              className={`
-                absolute right-2 top-1/2
-                -translate-y-1/2
-                select-none
-                text-[10px] text-[#4f4535]
-                dark:text-slate-400
-                ${suffixClassName}
-              `}
+              className={`absolute right-2 top-1/2 -translate-y-1/2 select-none text-[10px] text-[#4f4535] dark:text-slate-400 ${suffixClassName} `}
             >
               {suffix}
             </div>
@@ -240,7 +230,7 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 GenericInputField.displayName = 'GenericInputField';

@@ -1,7 +1,7 @@
 // lib/api/cutting.ts
-import { api } from "@/utils/axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 export interface Cutting {
   id: string;
@@ -19,7 +19,7 @@ export interface Cutting {
 // API Functions
 export const getCuttingApi = async () => {
   try {
-    const response = await api.get("/admin/cutting");
+    const response = await api.get('/admin/cutting');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -30,7 +30,7 @@ export const getCuttingApi = async () => {
 };
 export const getCuttingHistoryApi = async () => {
   try {
-    const response = await api.get("/admin/cutting/history");
+    const response = await api.get('/admin/cutting/history');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -40,7 +40,7 @@ export const getCuttingHistoryApi = async () => {
   }
 };
 
-export const submitCuttingApi = async ({ id, data }: { id: string; data: any }) => {
+export const submitCuttingApi = async ({id, data}: {id: string; data: any}) => {
   try {
     const response = await api.put(`/admin/cutting/${id}`, data);
     return response.data;
@@ -52,7 +52,13 @@ export const submitCuttingApi = async ({ id, data }: { id: string; data: any }) 
   }
 };
 
-export const submitMoveCuttingApi = async ({ id, data }: { id: string; data: any }) => {
+export const submitMoveCuttingApi = async ({
+  id,
+  data,
+}: {
+  id: string;
+  data: any;
+}) => {
   try {
     const response = await api.put(`/admin/soldering/cutting/${id}`, data);
     return response.data;
@@ -66,7 +72,7 @@ export const submitMoveCuttingApi = async ({ id, data }: { id: string; data: any
 
 export const getKundaApi = async () => {
   try {
-    const response = await api.get("/admin/kunda");
+    const response = await api.get('/admin/kunda');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -78,7 +84,7 @@ export const getKundaApi = async () => {
 
 export const getKundaHistoryApi = async () => {
   try {
-    const response = await api.get("/admin/kunda/history");
+    const response = await api.get('/admin/kunda/history');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -88,7 +94,7 @@ export const getKundaHistoryApi = async () => {
   }
 };
 
-export const submitKundaApi = async ({ id, data }: { id: string; data: any }) => {
+export const submitKundaApi = async ({id, data}: {id: string; data: any}) => {
   try {
     const response = await api.put(`/admin/kunda/${id}`, data);
     return response.data;
@@ -100,7 +106,13 @@ export const submitKundaApi = async ({ id, data }: { id: string; data: any }) =>
   }
 };
 
-export const submitMoveKundaApi = async ({ id, data }: { id: string; data: any }) => {
+export const submitMoveKundaApi = async ({
+  id,
+  data,
+}: {
+  id: string;
+  data: any;
+}) => {
   try {
     const response = await api.put(`/admin/cutting/kunda/${id}`, data);
     return response.data;
@@ -134,8 +146,8 @@ export const useSubmitCutting = () => {
     mutationFn: submitCuttingApi,
     onSuccess: () => {
       toast.success('Cutting submitted successfully');
-      queryClient.invalidateQueries({ queryKey: ['cutting'] });
-      queryClient.invalidateQueries({ queryKey: ['cutting-history'] });
+      queryClient.invalidateQueries({queryKey: ['cutting']});
+      queryClient.invalidateQueries({queryKey: ['cutting-history']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to submit cutting');
@@ -150,8 +162,8 @@ export const useSubmitMoveCutting = () => {
     mutationFn: submitMoveCuttingApi,
     onSuccess: () => {
       toast.success('Cutting submitted successfully');
-      queryClient.invalidateQueries({ queryKey: ['cutting'] });
-      queryClient.invalidateQueries({ queryKey: ['cutting-history'] });
+      queryClient.invalidateQueries({queryKey: ['cutting']});
+      queryClient.invalidateQueries({queryKey: ['cutting-history']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to submit cutting');
@@ -180,8 +192,8 @@ export const useSubmitKunda = () => {
     mutationFn: submitKundaApi,
     onSuccess: () => {
       toast.success('S Kunda process stopped successfully');
-      queryClient.invalidateQueries({ queryKey: ['kunda'] });
-      queryClient.invalidateQueries({ queryKey: ['kunda-history'] });
+      queryClient.invalidateQueries({queryKey: ['kunda']});
+      queryClient.invalidateQueries({queryKey: ['kunda-history']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to stop S Kunda process');
@@ -196,8 +208,8 @@ export const useSubmitMoveKunda = () => {
     mutationFn: submitMoveKundaApi,
     onSuccess: () => {
       toast.success('Moved to S Kunda successfully');
-      queryClient.invalidateQueries({ queryKey: ['cutting'] });
-      queryClient.invalidateQueries({ queryKey: ['kunda'] });
+      queryClient.invalidateQueries({queryKey: ['cutting']});
+      queryClient.invalidateQueries({queryKey: ['kunda']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to move to S Kunda');

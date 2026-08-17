@@ -1,12 +1,24 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Save, History, ChevronRight, ChevronDown, Printer, Calendar } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
+import {
+  Save,
+  History,
+  ChevronRight,
+  ChevronDown,
+  Printer,
+  Calendar,
+} from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useGetCutting, useGetCuttingHistory, useSubmitCutting, useSubmitMoveKunda } from '@/lib/api/cutting';
+import {
+  useGetCutting,
+  useGetCuttingHistory,
+  useSubmitCutting,
+  useSubmitMoveKunda,
+} from '@/lib/api/cutting';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
+import {useGetHeader} from '@/lib/api/headerapi';
 
 interface CuttingEntry {
   id: string;
@@ -74,19 +86,28 @@ const CuttingDept: React.FC = () => {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return { monday, sunday };
+    return {monday, sunday};
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const { monday, sunday } = getDefaultWeekRange();
+    const {monday, sunday} = getDefaultWeekRange();
     return [monday, sunday];
   });
 
   const isInitialMount = useRef(true);
 
   // Fetch data from API
-  const { data: cuttingData = [], isLoading: cuttingLoading, refetch, error } = useGetCutting();
-  const { data: cuttingHistory = [], isLoading: historyLoading, refetch: refetchHistory } = useGetCuttingHistory();
+  const {
+    data: cuttingData = [],
+    isLoading: cuttingLoading,
+    refetch,
+    error,
+  } = useGetCutting();
+  const {
+    data: cuttingHistory = [],
+    isLoading: historyLoading,
+    refetch: refetchHistory,
+  } = useGetCuttingHistory();
   const submitCutting = useSubmitCutting();
   const submitMoveKunda = useSubmitMoveKunda();
 
@@ -103,49 +124,56 @@ const CuttingDept: React.FC = () => {
     }
 
     if (cuttingData && cuttingData.length > 0) {
-      const entries: CuttingEntry[] = cuttingData.map((cutting: any, index: number) => {
-        const itemName = cutting.item?.name || cutting.itemId || 'N/A';
-        const sizeName = cutting.size?.size || cutting.sizeId || 'N/A';
+      const entries: CuttingEntry[] = cuttingData.map(
+        (cutting: any, index: number) => {
+          const itemName = cutting.item?.name || cutting.itemId || 'N/A';
+          const sizeName = cutting.size?.size || cutting.sizeId || 'N/A';
 
-        const chainGiven = cutting.chainWeight || 0;
-        const chainReceived = cutting.chainReceived || 0;
-        const loss = calculateLoss(chainGiven, chainReceived);
+          const chainGiven = cutting.chainWeight || 0;
+          const chainReceived = cutting.chainReceived || 0;
+          const loss = calculateLoss(chainGiven, chainReceived);
 
-        const isSaved = cutting.isCompleted === true &&
-          cutting.chainReceived !== null &&
-          cutting.chainReceived !== undefined &&
-          cutting.purity !== null &&
-          cutting.purity !== undefined;
+          const isSaved =
+            cutting.isCompleted === true &&
+            cutting.chainReceived !== null &&
+            cutting.chainReceived !== undefined &&
+            cutting.purity !== null &&
+            cutting.purity !== undefined;
 
-        return {
-          id: cutting.id,
-          srNo: index + 1,
-          dateTime: new Date(cutting.createdAt).toLocaleString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-          }),
-          item: itemName,
-          size: sizeName,
-          purity: cutting.purity || 0,
-          chainGiven: chainGiven,
-          chainReceived: chainReceived,
-          scrap: cutting.scrap || 0,
-          loss: loss,
-          isEditing: !isSaved,
-          isSaved: isSaved,
-          chainGivenRaw: cutting.chainWeight ? cutting.chainWeight.toString() : '',
-          chainReceivedRaw: cutting.chainReceived ? cutting.chainReceived.toString() : '',
-          scrapRaw: cutting.scrap ? cutting.scrap.toString() : '',
-          purityRaw: cutting.purity ? cutting.purity.toString() : '',
-          itemId: cutting.itemId,
-          sizeId: cutting.sizeId,
-          isCompleted: cutting.isCompleted || false,
-        };
-      });
+          return {
+            id: cutting.id,
+            srNo: index + 1,
+            dateTime: new Date(cutting.createdAt).toLocaleString('en-IN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            }),
+            item: itemName,
+            size: sizeName,
+            purity: cutting.purity || 0,
+            chainGiven: chainGiven,
+            chainReceived: chainReceived,
+            scrap: cutting.scrap || 0,
+            loss: loss,
+            isEditing: !isSaved,
+            isSaved: isSaved,
+            chainGivenRaw: cutting.chainWeight
+              ? cutting.chainWeight.toString()
+              : '',
+            chainReceivedRaw: cutting.chainReceived
+              ? cutting.chainReceived.toString()
+              : '',
+            scrapRaw: cutting.scrap ? cutting.scrap.toString() : '',
+            purityRaw: cutting.purity ? cutting.purity.toString() : '',
+            itemId: cutting.itemId,
+            sizeId: cutting.sizeId,
+            isCompleted: cutting.isCompleted || false,
+          };
+        },
+      );
       setCuttingEntries(entries);
     } else {
       setCuttingEntries([]);
@@ -154,7 +182,7 @@ const CuttingDept: React.FC = () => {
 
   // Format date helper for history
   const formatDate = (dateString: string) => {
-    if (!dateString) return { date: '-', time: '-' };
+    if (!dateString) return {date: '-', time: '-'};
     const date = new Date(dateString);
     return {
       date: date.toLocaleDateString('en-IN', {
@@ -218,13 +246,21 @@ const CuttingDept: React.FC = () => {
   // Calculate history totals
   const filteredHistory = getFilteredHistory();
   const historyTotals = filteredHistory.reduce(
-    (acc: { totalGiven: number; totalReceived: number; totalScrap: number; totalLoss: number }, item: any) => ({
+    (
+      acc: {
+        totalGiven: number;
+        totalReceived: number;
+        totalScrap: number;
+        totalLoss: number;
+      },
+      item: any,
+    ) => ({
       totalGiven: acc.totalGiven + toNumber(item?.chainWeight),
       totalReceived: acc.totalReceived + toNumber(item?.chainReceived),
       totalScrap: acc.totalScrap + toNumber(item?.scrap),
       totalLoss: acc.totalLoss + toNumber(item?.loss),
     }),
-    { totalGiven: 0, totalReceived: 0, totalScrap: 0, totalLoss: 0 }
+    {totalGiven: 0, totalReceived: 0, totalScrap: 0, totalLoss: 0},
   );
 
   // Print History Function with filtered data
@@ -232,7 +268,9 @@ const CuttingDept: React.FC = () => {
     const filteredData = getFilteredHistory();
 
     if (!filteredData || filteredData.length === 0) {
-      toast.error('No history records available to print for the selected date range');
+      toast.error(
+        'No history records available to print for the selected date range',
+      );
       return;
     }
 
@@ -253,8 +291,10 @@ const CuttingDept: React.FC = () => {
     // Build the table rows - Compact with minimum padding
     const rows = filteredData
       .map((item: any, index: number) => {
-        const { date, time } = formatDate(item?.createdAt);
-        const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
+        const {date, time} = formatDate(item?.createdAt);
+        const {date: proceedDate, time: proceedTime} = formatDate(
+          item?.updatedAt,
+        );
 
         return `
                 <tr>
@@ -277,22 +317,41 @@ const CuttingDept: React.FC = () => {
       })
       .join('');
 
-    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const headerInfo =
+      getpdfheaderdata?.data?.data ||
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation =
+      headerInfo.leftInvocation ||
+      headerInfo.leftInovation ||
+      '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation =
+      headerInfo.rightInvocation ||
+      headerInfo.rightInovation ||
+      '॥ श्री साई प्रसन्न ॥';
     const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const description =
+      headerInfo.description ||
+      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
     const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const phoneNumbers =
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
     const invocationColor = headerInfo.invocationColor || '#a84b20';
     const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
     const descriptionColor = headerInfo.descriptionColor || '#8b451f';
     const proprietorColor = headerInfo.proprietorColor || '#a84b20';
     const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
-    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
-    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
-    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+    const factoryFontSize = headerInfo.factoryFontSize
+      ? `${headerInfo.factoryFontSize}px`
+      : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize
+      ? `${headerInfo.descriptionFontSize}px`
+      : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize
+      ? `${headerInfo.proprietorFontSize}px`
+      : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize
+      ? `${headerInfo.phoneFontSize}px`
+      : '9px';
 
     // Set the content with PDF Header - Minimal padding
     printContainer.innerHTML = `
@@ -321,13 +380,17 @@ const CuttingDept: React.FC = () => {
   <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
     Cutting History Report
   </h2>
-  ${dateRange.length === 2 ? `
+  ${
+    dateRange.length === 2
+      ? `
     <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
       From: ${new Date(dateRange[0]).toLocaleDateString('en-IN')} &nbsp; To: ${new Date(dateRange[1]).toLocaleDateString('en-IN')}
     </div>
-  ` : `
+  `
+      : `
     <div style="flex:1;"></div>
-  `}
+  `
+  }
 </div>
 
             <!-- Table -->
@@ -424,11 +487,15 @@ const CuttingDept: React.FC = () => {
       key: 'createdAt',
       header: 'Date & Time',
       render: (item) => {
-        const { date, time } = formatDate(item.createdAt);
+        const {date, time} = formatDate(item.createdAt);
         return (
           <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">{time}</span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {date}
+            </span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
+              {time}
+            </span>
           </div>
         );
       },
@@ -455,7 +522,7 @@ const CuttingDept: React.FC = () => {
       key: 'chainWeight',
       header: 'Chain Given (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.chainWeight)} G
         </span>
       ),
@@ -464,7 +531,7 @@ const CuttingDept: React.FC = () => {
       key: 'chainReceived',
       header: 'Chain Received (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.chainReceived)} G
         </span>
       ),
@@ -473,7 +540,7 @@ const CuttingDept: React.FC = () => {
       key: 'scrap',
       header: 'Scrap (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.scrap)} G
         </span>
       ),
@@ -482,7 +549,7 @@ const CuttingDept: React.FC = () => {
       key: 'loss',
       header: 'Loss (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.loss)} G
         </span>
       ),
@@ -491,7 +558,7 @@ const CuttingDept: React.FC = () => {
       key: 'purity',
       header: 'Purity (%)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.purity)}%
         </span>
       ),
@@ -500,11 +567,15 @@ const CuttingDept: React.FC = () => {
       key: 'updatedAt',
       header: 'Proceed Date & Time',
       render: (item) => {
-        const { date, time } = formatDate(item.updatedAt);
+        const {date, time} = formatDate(item.updatedAt);
         return (
           <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">{time}</span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {date}
+            </span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
+              {time}
+            </span>
           </div>
         );
       },
@@ -512,92 +583,112 @@ const CuttingDept: React.FC = () => {
   ];
 
   // Handle inline field change
-  const handleInlineChange = useCallback((index: number, field: 'chainGiven' | 'chainReceived' | 'scrap' | 'purity', value: string) => {
-    // Show Action column as soon as the user edits any input
-    setHasEditedRow(true);
+  const handleInlineChange = useCallback(
+    (
+      index: number,
+      field: 'chainGiven' | 'chainReceived' | 'scrap' | 'purity',
+      value: string,
+    ) => {
+      // Show Action column as soon as the user edits any input
+      setHasEditedRow(true);
 
-    setCuttingEntries(prev => prev.map((entry, i) => {
-      if (i === index) {
-        const updated = { ...entry };
+      setCuttingEntries((prev) =>
+        prev.map((entry, i) => {
+          if (i === index) {
+            const updated = {...entry};
 
-        if (field === 'chainGiven') {
-          updated.chainGivenRaw = value;
-          if (value === '' || value === '.' || value === '-') {
-            updated.chainGiven = 0;
-          } else {
-            const numValue = parseFloat(value);
-            updated.chainGiven = isNaN(numValue) ? 0 : numValue;
-          }
-          // Recalculate loss when chainGiven changes
-          updated.loss = calculateLoss(updated.chainGiven, updated.chainReceived);
-        } else if (field === 'chainReceived') {
-          updated.chainReceivedRaw = value;
-          if (value === '' || value === '.' || value === '-') {
-            updated.chainReceived = 0;
-          } else {
-            const numValue = parseFloat(value);
-            updated.chainReceived = isNaN(numValue) ? 0 : numValue;
-          }
-          // Recalculate loss when chainReceived changes
-          updated.loss = calculateLoss(updated.chainGiven, updated.chainReceived);
-        } else if (field === 'scrap') {
-          updated.scrapRaw = value;
-          if (value === '' || value === '.' || value === '-') {
-            updated.scrap = 0;
-          } else {
-            const numValue = parseFloat(value);
-            updated.scrap = isNaN(numValue) ? 0 : numValue;
-          }
-        } else if (field === 'purity') {
-          updated.purityRaw = value;
-          if (value === '' || value === '.' || value === '-') {
-            updated.purity = 0;
-          } else {
-            const numValue = parseFloat(value);
-            updated.purity = isNaN(numValue) ? 0 : numValue;
-          }
-        }
+            if (field === 'chainGiven') {
+              updated.chainGivenRaw = value;
+              if (value === '' || value === '.' || value === '-') {
+                updated.chainGiven = 0;
+              } else {
+                const numValue = parseFloat(value);
+                updated.chainGiven = isNaN(numValue) ? 0 : numValue;
+              }
+              // Recalculate loss when chainGiven changes
+              updated.loss = calculateLoss(
+                updated.chainGiven,
+                updated.chainReceived,
+              );
+            } else if (field === 'chainReceived') {
+              updated.chainReceivedRaw = value;
+              if (value === '' || value === '.' || value === '-') {
+                updated.chainReceived = 0;
+              } else {
+                const numValue = parseFloat(value);
+                updated.chainReceived = isNaN(numValue) ? 0 : numValue;
+              }
+              // Recalculate loss when chainReceived changes
+              updated.loss = calculateLoss(
+                updated.chainGiven,
+                updated.chainReceived,
+              );
+            } else if (field === 'scrap') {
+              updated.scrapRaw = value;
+              if (value === '' || value === '.' || value === '-') {
+                updated.scrap = 0;
+              } else {
+                const numValue = parseFloat(value);
+                updated.scrap = isNaN(numValue) ? 0 : numValue;
+              }
+            } else if (field === 'purity') {
+              updated.purityRaw = value;
+              if (value === '' || value === '.' || value === '-') {
+                updated.purity = 0;
+              } else {
+                const numValue = parseFloat(value);
+                updated.purity = isNaN(numValue) ? 0 : numValue;
+              }
+            }
 
-        return updated;
-      }
-      return entry;
-    }));
-  }, []);
+            return updated;
+          }
+          return entry;
+        }),
+      );
+    },
+    [],
+  );
 
   // Open confirmation popup before saving
-  const handleSaveClick = useCallback((index: number, target: 'stock' | 'kunda') => {
-    const entry = cuttingEntries[index];
+  const handleSaveClick = useCallback(
+    (index: number, target: 'stock' | 'kunda') => {
+      const entry = cuttingEntries[index];
 
-    if (!entry.chainGiven || entry.chainGiven < 0) {
-      toast.error('Please enter a valid chain given weight');
-      return;
-    }
+      if (!entry.chainGiven || entry.chainGiven < 0) {
+        toast.error('Please enter a valid chain given weight');
+        return;
+      }
 
-    if (!entry.chainReceived || entry.chainReceived < 0) {
-      toast.error('Please enter a valid chain received weight');
-      return;
-    }
+      if (!entry.chainReceived || entry.chainReceived < 0) {
+        toast.error('Please enter a valid chain received weight');
+        return;
+      }
 
-    if (!entry.scrap || entry.scrap < 0) {
-      toast.error('Please enter a valid scrap weight');
-      return;
-    }
+      if (!entry.scrap || entry.scrap < 0) {
+        toast.error('Please enter a valid scrap weight');
+        return;
+      }
 
-    if (!entry.purity || entry.purity < 0 || entry.purity > 100) {
-      toast.error('Please enter a valid purity percentage (1-100)');
-      return;
-    }
+      if (!entry.purity || entry.purity < 0 || entry.purity > 100) {
+        toast.error('Please enter a valid purity percentage (1-100)');
+        return;
+      }
 
-    // Validate that chainReceived doesn't exceed chainGiven
-    if (entry.chainReceived > entry.chainGiven) {
-      toast.error(`Chain Received (${formatNumberDisplay(entry.chainReceived)}) cannot exceed Chain Given (${formatNumberDisplay(entry.chainGiven)})`);
-      return;
-    }
+      // Validate that chainReceived doesn't exceed chainGiven
+      if (entry.chainReceived > entry.chainGiven) {
+        toast.error(
+          `Chain Received (${formatNumberDisplay(entry.chainReceived)}) cannot exceed Chain Given (${formatNumberDisplay(entry.chainGiven)})`,
+        );
+        return;
+      }
 
-    setSaveIndex(index);
-    setActionType(target);
-    setShowConfirmModal(true);
-  }, [cuttingEntries]);
+      setSaveIndex(index);
+      setActionType(target);
+      setShowConfirmModal(true);
+    },
+    [cuttingEntries],
+  );
 
   // Confirm and save for Stock
   const confirmSaveStock = useCallback(async () => {
@@ -618,12 +709,16 @@ const CuttingDept: React.FC = () => {
           purity: entry.purity,
           loss: entry.loss,
           isCompleted: true,
-        }
+        },
       });
 
-      setCuttingEntries(prev => prev.map((s, i) =>
-        i === index ? { ...s, isEditing: false, isSaved: true, isCompleted: true } : s
-      ));
+      setCuttingEntries((prev) =>
+        prev.map((s, i) =>
+          i === index
+            ? {...s, isEditing: false, isSaved: true, isCompleted: true}
+            : s,
+        ),
+      );
 
       setIsLoading(false);
       setShowConfirmModal(false);
@@ -634,7 +729,7 @@ const CuttingDept: React.FC = () => {
 
       toast.success('Cutting entry saved to Stock successfully!');
       navigate({
-        to: '/Stocks/stockpage'
+        to: '/Stocks/stockpage',
       });
     } catch (error) {
       console.error('Error saving cutting to Stock:', error);
@@ -665,12 +760,16 @@ const CuttingDept: React.FC = () => {
           purity: entry.purity,
           loss: entry.loss,
           isCompleted: true,
-        }
+        },
       });
 
-      setCuttingEntries(prev => prev.map((s, i) =>
-        i === index ? { ...s, isEditing: false, isSaved: true, isCompleted: true } : s
-      ));
+      setCuttingEntries((prev) =>
+        prev.map((s, i) =>
+          i === index
+            ? {...s, isEditing: false, isSaved: true, isCompleted: true}
+            : s,
+        ),
+      );
 
       setIsLoading(false);
       setShowConfirmModal(false);
@@ -682,7 +781,7 @@ const CuttingDept: React.FC = () => {
       toast.success('Cutting entry moved to S Kunda successfully!');
       navigate({
         to: '/manufacturingprocess/process',
-        state: { selectedTab: 'kunda' }
+        state: {selectedTab: 'kunda'},
       });
     } catch (error) {
       console.error('Error moving cutting entry to S Kunda:', error);
@@ -701,7 +800,7 @@ const CuttingDept: React.FC = () => {
       entry.chainGivenRaw?.trim() ||
       entry.chainReceivedRaw?.trim() ||
       entry.scrapRaw?.trim() ||
-      entry.purityRaw?.trim()
+      entry.purityRaw?.trim(),
     );
   };
 
@@ -760,12 +859,20 @@ const CuttingDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
-                value={item.chainGivenRaw !== undefined ? item.chainGivenRaw : (item.chainGiven === 0 ? '' : item.chainGiven)}
-                onChange={(e) => handleInlineChange(index, 'chainGiven', e.target.value)}
+                value={
+                  item.chainGivenRaw !== undefined
+                    ? item.chainGivenRaw
+                    : item.chainGiven === 0
+                      ? ''
+                      : item.chainGiven
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'chainGiven', e.target.value)
+                }
                 placeholder="0.000"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 G
               </span>
             </div>
@@ -787,12 +894,20 @@ const CuttingDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
-                value={item.chainReceivedRaw !== undefined ? item.chainReceivedRaw : (item.chainReceived === 0 ? '' : item.chainReceived)}
-                onChange={(e) => handleInlineChange(index, 'chainReceived', e.target.value)}
+                value={
+                  item.chainReceivedRaw !== undefined
+                    ? item.chainReceivedRaw
+                    : item.chainReceived === 0
+                      ? ''
+                      : item.chainReceived
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'chainReceived', e.target.value)
+                }
                 placeholder="0.000"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 G
               </span>
             </div>
@@ -814,15 +929,23 @@ const CuttingDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
-                value={item.scrapRaw !== undefined ? item.scrapRaw : (item.scrap === 0 ? '' : item.scrap)}
-                onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
+                value={
+                  item.scrapRaw !== undefined
+                    ? item.scrapRaw
+                    : item.scrap === 0
+                      ? ''
+                      : item.scrap
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'scrap', e.target.value)
+                }
                 placeholder="0.000"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 G
               </span>
-            </div >
+            </div>
           );
         }
         return (
@@ -850,12 +973,20 @@ const CuttingDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
-                value={item.purityRaw !== undefined ? item.purityRaw : (item.purity === 0 ? '' : item.purity)}
-                onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
+                value={
+                  item.purityRaw !== undefined
+                    ? item.purityRaw
+                    : item.purity === 0
+                      ? ''
+                      : item.purity
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'purity', e.target.value)
+                }
                 placeholder="e.g., 98"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 %
               </span>
             </div>
@@ -869,47 +1000,54 @@ const CuttingDept: React.FC = () => {
       },
     },
 
-
     // Same condition as the other departments:
     // Action column stays hidden until a value is entered.
     ...(showActionColumn
       ? [
-        {
-          key: 'actions',
-          header: 'Action',
-          render: (item: CuttingEntry, index: number) => {
-            if (item.isSaved) {
-              return null;
-            }
+          {
+            key: 'actions',
+            header: 'Action',
+            render: (item: CuttingEntry, index: number) => {
+              if (item.isSaved) {
+                return null;
+              }
 
-            return (
-              <div className="flex items-center gap-1.5 justify-center">
-                <button
-                  type="button"
-                  onClick={() => handleSaveClick(index, 'stock')}
-                  disabled={isLoading || submitCutting.isPending || submitMoveKunda.isPending}
-                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Save to Stock"
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  <span>Stock</span>
-                </button>
+              return (
+                <div className="flex items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveClick(index, 'stock')}
+                    disabled={
+                      isLoading ||
+                      submitCutting.isPending ||
+                      submitMoveKunda.isPending
+                    }
+                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Save to Stock"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    <span>Stock</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleSaveClick(index, 'kunda')}
-                  disabled={isLoading || submitCutting.isPending || submitMoveKunda.isPending}
-                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Move to S Kunda"
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  <span>S Kunda</span>
-                </button>
-              </div>
-            );
-          },
-        } as Column<CuttingEntry>,
-      ]
+                  <button
+                    type="button"
+                    onClick={() => handleSaveClick(index, 'kunda')}
+                    disabled={
+                      isLoading ||
+                      submitCutting.isPending ||
+                      submitMoveKunda.isPending
+                    }
+                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Move to S Kunda"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    <span>S Kunda</span>
+                  </button>
+                </div>
+              );
+            },
+          } as Column<CuttingEntry>,
+        ]
       : []),
   ];
 
@@ -926,15 +1064,14 @@ const CuttingDept: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
+    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
+      <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
         <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white sm:text-base md:text-lg">
               {showHistory ? 'Cutting History' : 'Cutting Department'}
             </h1>
-
           </div>
           <div className="flex items-center gap-2">
             {/* Weekly Date Filter - Only show when viewing history */}
@@ -950,9 +1087,9 @@ const CuttingDept: React.FC = () => {
                     if (dates && dates.length > 0) {
                       const from = new Date(dates[0]);
                       from.setHours(0, 0, 0, 0);
-                      setDateRange(prev => [from, prev[1] || from]);
+                      setDateRange((prev) => [from, prev[1] || from]);
                     } else {
-                      setDateRange(prev => [undefined as any, prev[1]]);
+                      setDateRange((prev) => [undefined as any, prev[1]]);
                     }
                   }}
                   className="w-32 sm:w-36 md:w-40"
@@ -968,9 +1105,9 @@ const CuttingDept: React.FC = () => {
                     if (dates && dates.length > 0) {
                       const to = new Date(dates[0]);
                       to.setHours(23, 59, 59, 999);
-                      setDateRange(prev => [prev[0] || to, to]);
+                      setDateRange((prev) => [prev[0] || to, to]);
                     } else {
-                      setDateRange(prev => [prev[0], undefined as any]);
+                      setDateRange((prev) => [prev[0], undefined as any]);
                     }
                   }}
                   className="w-32 sm:w-36 md:w-40"
@@ -994,17 +1131,18 @@ const CuttingDept: React.FC = () => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${showHistory ? '!bg-amber-600 hover:!bg-amber-700' : '!bg-blue-600 hover:!bg-blue-700'
-                }`}
+              className={`flex items-center gap-1.5 whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
+                showHistory
+                  ? '!bg-amber-600 hover:!bg-amber-700'
+                  : '!bg-blue-600 hover:!bg-blue-700'
+              }`}
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               ) : (
                 <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               )}
-              <span>
-                {showHistory ? 'Show Cutting' : 'History'}
-              </span>
+              <span>{showHistory ? 'Show Cutting' : 'History'}</span>
             </GenericButton>
           </div>
         </div>
@@ -1025,11 +1163,11 @@ const CuttingDept: React.FC = () => {
       ) : (
         <div className="px-3 py-4 sm:px-4 md:px-6">
           {/* History Summary Cards - Updated with Loss */}
-          <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
               <div className="flex items-start justify-between">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                     Chain Given
                   </span>
                   <span className="text-lg font-bold text-black dark:text-amber-400">
@@ -1038,10 +1176,10 @@ const CuttingDept: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
               <div className="flex items-start justify-between">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                     Chain Received
                   </span>
                   <span className="text-lg font-bold text-black dark:text-blue-400">
@@ -1050,10 +1188,10 @@ const CuttingDept: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
               <div className="flex items-start justify-between">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                     Scrap
                   </span>
                   <span className="text-lg font-bold text-black dark:text-green-400">
@@ -1062,10 +1200,10 @@ const CuttingDept: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
               <div className="flex items-start justify-between">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                     Loss
                   </span>
                   <span className="text-lg font-bold text-black dark:text-red-400">
@@ -1082,7 +1220,7 @@ const CuttingDept: React.FC = () => {
             emptyMessage={
               dateRange.length === 2
                 ? `No history records found for the selected date range (${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')})`
-                : "No history records found. Complete a cutting process to see history."
+                : 'No history records found. Complete a cutting process to see history.'
             }
             isLoading={historyLoading}
             showSrNo={true}
@@ -1097,16 +1235,17 @@ const CuttingDept: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
-              <div className="flex items-center justify-center mb-4">
+              <div className="mb-4 flex items-center justify-center">
                 <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
                   <Save className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                 </div>
               </div>
-              <h3 className="text-center text-lg font-bold text-[#1a1c1b] dark:text-white mb-2">
+              <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
                 Confirm Action
               </h3>
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
-                Are you sure you want to save this cutting entry and send it to <strong>{actionType === 'stock' ? 'Stock' : 'S Kunda'}</strong>?
+                Are you sure you want to save this cutting entry and send it to{' '}
+                <strong>{actionType === 'stock' ? 'Stock' : 'S Kunda'}</strong>?
               </p>
               <div className="mt-6 flex justify-center gap-3">
                 <button
@@ -1120,9 +1259,11 @@ const CuttingDept: React.FC = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={actionType === 'stock' ? confirmSaveStock : confirmSaveKunda}
+                  onClick={
+                    actionType === 'stock' ? confirmSaveStock : confirmSaveKunda
+                  }
                   disabled={isLoading}
-                  className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isLoading ? 'Saving...' : 'Confirm Save'}
                 </button>

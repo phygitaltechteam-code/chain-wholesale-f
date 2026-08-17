@@ -1,15 +1,14 @@
-import { useNavigate } from "@tanstack/react-router";
-import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Search, Printer, Calendar } from "lucide-react";
-import { GenericTable, Column } from "@/components/Forms/Table/GenericTable";
-import { useReactToPrint } from "react-to-print";
-import PDFHeader from "@/components/Forms/Common/PDFHeader";
-import { useGetManufacturingData } from "@/lib/api/reportapi";
-import GenericButton from "../Forms/Buttons/GenericButton";
-import GenericDatePicker from "../Forms/DatePicker/GenericDatePicker";
-import GenericWeeklyDatePicker from "../Forms/DatePicker/GenericWeeklyDatePicker";
-import { useGetHeader } from "@/lib/api/headerapi";
-
+import {useNavigate} from '@tanstack/react-router';
+import {useState, useRef, useEffect} from 'react';
+import {ArrowLeft, Search, Printer, Calendar} from 'lucide-react';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import {useReactToPrint} from 'react-to-print';
+import PDFHeader from '@/components/Forms/Common/PDFHeader';
+import {useGetManufacturingData} from '@/lib/api/reportapi';
+import GenericButton from '../Forms/Buttons/GenericButton';
+import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
+import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
+import {useGetHeader} from '@/lib/api/headerapi';
 
 interface ManufacturingEntry {
   id: string;
@@ -70,7 +69,7 @@ interface ApiDataItem {
 
 export default function ManufacturingReport() {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const getDefaultWeekRange = () => {
     const now = new Date();
     const day = now.getDay();
@@ -83,13 +82,22 @@ export default function ManufacturingReport() {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return { monday, sunday };
+    return {monday, sunday};
   };
 
-  const [fromDate, setFromDate] = useState<Date | null>(() => getDefaultWeekRange().monday);
-  const [toDate, setToDate] = useState<Date | null>(() => getDefaultWeekRange().sunday);
+  const [fromDate, setFromDate] = useState<Date | null>(
+    () => getDefaultWeekRange().monday,
+  );
+  const [toDate, setToDate] = useState<Date | null>(
+    () => getDefaultWeekRange().sunday,
+  );
   const printRef = useRef<HTMLDivElement>(null);
-  const { data: manufacturingData, isLoading, isError, refetch } = useGetManufacturingData();
+  const {
+    data: manufacturingData,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetManufacturingData();
   const getpdfheaderdata = useGetHeader();
   // State for transformed data
   const [reportData, setReportData] = useState<ManufacturingEntry[]>([]);
@@ -97,7 +105,7 @@ export default function ManufacturingReport() {
     totalWeight: 0,
     totalScrap: 0,
     totalLoss: 0,
-    currentWeight: 0
+    currentWeight: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -113,37 +121,39 @@ export default function ManufacturingReport() {
             totalWeight: responseData.totals.totalWeight || 0,
             totalScrap: responseData.totals.totalScrap || 0,
             totalLoss: responseData.totals.totalLoss || 0,
-            currentWeight: responseData.totals.currentWeight || 0
+            currentWeight: responseData.totals.currentWeight || 0,
           });
         }
 
         // Transform history data
-        const transformedData: ManufacturingEntry[] = responseData.history.map((item: ApiDataItem, index: number) => {
-          const date = new Date(item.createdAt);
-          const formattedDate = date.toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          });
-          const formattedTime = date.toLocaleTimeString('en-IN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-          });
+        const transformedData: ManufacturingEntry[] = responseData.history.map(
+          (item: ApiDataItem, index: number) => {
+            const date = new Date(item.createdAt);
+            const formattedDate = date.toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+            });
+            const formattedTime = date.toLocaleTimeString('en-IN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            });
 
-          return {
-            id: item.id,
-            srNo: index + 1,
-            dateTime: `${formattedDate} ${formattedTime}`,
-            item: item.item?.name || 'Unknown Item',
-            size: item.size?.size || 'N/A',
-            purity: item.purity || 0,
-            weight: item.weight || 0,
-            scrap: item.scrap || 0,
-            loss: item.loss || 0,
-            currentWeight: item.currentWeight || 0
-          };
-        });
+            return {
+              id: item.id,
+              srNo: index + 1,
+              dateTime: `${formattedDate} ${formattedTime}`,
+              item: item.item?.name || 'Unknown Item',
+              size: item.size?.size || 'N/A',
+              purity: item.purity || 0,
+              weight: item.weight || 0,
+              scrap: item.scrap || 0,
+              loss: item.loss || 0,
+              currentWeight: item.currentWeight || 0,
+            };
+          },
+        );
         setReportData(transformedData);
       }
       setLoading(false);
@@ -151,9 +161,10 @@ export default function ManufacturingReport() {
   }, [manufacturingData]);
 
   // Filter data based on search term and date range
-  const filteredData = reportData.filter(entry => {
+  const filteredData = reportData.filter((entry) => {
     // Search filter
-    const matchesSearch = searchTerm === "" ||
+    const matchesSearch =
+      searchTerm === '' ||
       entry.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.purity.toString().includes(searchTerm) ||
@@ -170,7 +181,7 @@ export default function ManufacturingReport() {
         const entryDate = new Date(
           Number(dateParts[2]),
           Number(dateParts[1]) - 1,
-          Number(dateParts[0])
+          Number(dateParts[0]),
         );
         entryDate.setHours(12, 0, 0, 0);
 
@@ -198,23 +209,26 @@ export default function ManufacturingReport() {
   });
 
   // Calculate filtered totals
-  const filteredTotals = filteredData.reduce((acc, entry) => ({
-    totalWeight: acc.totalWeight + entry.weight,
-    totalScrap: acc.totalScrap + entry.scrap,
-    totalLoss: acc.totalLoss + entry.loss,
-    currentWeight: acc.currentWeight + entry.currentWeight
-  }), { totalWeight: 0, totalScrap: 0, totalLoss: 0, currentWeight: 0 });
+  const filteredTotals = filteredData.reduce(
+    (acc, entry) => ({
+      totalWeight: acc.totalWeight + entry.weight,
+      totalScrap: acc.totalScrap + entry.scrap,
+      totalLoss: acc.totalLoss + entry.loss,
+      currentWeight: acc.currentWeight + entry.currentWeight,
+    }),
+    {totalWeight: 0, totalScrap: 0, totalLoss: 0, currentWeight: 0},
+  );
 
   // Format number with 3 decimals
   const formatNumber = (value: number) => {
-    if (value === 0 || !value) return "0";
+    if (value === 0 || !value) return '0';
     const str = value.toFixed(3);
-    return str.replace(/\.?0+$/, "");
+    return str.replace(/\.?0+$/, '');
   };
 
   // Reset to current Monday -> Sunday
   const handleResetDates = () => {
-    const { monday, sunday } = getCurrentWeekRange();
+    const {monday, sunday} = getCurrentWeekRange();
     setFromDate(monday);
     setToDate(sunday);
   };
@@ -225,7 +239,7 @@ export default function ManufacturingReport() {
     return date.toLocaleDateString('en-IN', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -255,27 +269,43 @@ export default function ManufacturingReport() {
   const CustomTable = () => {
     if (filteredData.length === 0) {
       return (
-        <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
+        <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <div className="py-12 text-center text-[#4f4535] dark:text-slate-400">
-            {searchTerm || fromDate || toDate ? "No manufacturing entries found matching your filters." : "No manufacturing entries found."}
+            {searchTerm || fromDate || toDate
+              ? 'No manufacturing entries found matching your filters.'
+              : 'No manufacturing entries found.'}
           </div>
         </div>
       );
     }
 
     return (
-      <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-700">
+      <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div className="max-w-full overflow-x-auto">
-          <table className="w-full border-collapse min-w-[800px] md:min-w-0">
+          <table className="w-full min-w-[800px] border-collapse md:min-w-0">
             <thead>
               <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-xs uppercase tracking-[0.15em] text-white">
-                <th className="px-3 py-3 text-center font-semibold border border-[#785600]">Sr No.</th>
-                <th className="px-3 py-3 text-center font-semibold border border-[#785600]">Date & Time</th>
-                <th className="px-3 py-3 text-center font-semibold border border-[#785600]">Item (Size) (Purity)</th>
-                <th className="px-3 py-3 text-center font-semibold border border-[#785600]">Scrap</th>
-                <th className="px-3 py-3 text-center font-semibold border border-[#785600]">Loss</th>
-                <th className="px-3 py-3 text-center font-semibold border border-[#785600]">Wt. (G)</th>
-                <th className="px-3 py-3 text-center font-semibold border border-[#785600]">Current Wt. (G)</th>
+                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                  Sr No.
+                </th>
+                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                  Date & Time
+                </th>
+                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                  Item (Size) (Purity)
+                </th>
+                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                  Scrap
+                </th>
+                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                  Loss
+                </th>
+                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                  Wt. (G)
+                </th>
+                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                  Current Wt. (G)
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
@@ -292,18 +322,19 @@ export default function ManufacturingReport() {
                     <div>{item.dateTime.split(' ').slice(1).join(' ')}</div>
                   </td>
                   <td className="px-3 py-3 text-center text-sm font-medium text-black dark:text-white">
-                    {item.item} ({item.size}) {item.purity > 0 && `(${item.purity}%)`}
+                    {item.item} ({item.size}){' '}
+                    {item.purity > 0 && `(${item.purity}%)`}
                   </td>
-                  <td className="px-3 py-3 text-center text-sm font-mono text-black dark:text-blue-400">
+                  <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-blue-400">
                     {formatNumber(item.scrap)} G
                   </td>
-                  <td className="px-3 py-3 text-center text-sm font-mono text-black dark:text-red-400">
+                  <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-red-400">
                     {formatNumber(item.loss)} G
                   </td>
-                  <td className="px-3 py-3 text-center text-sm font-mono font-bold text-black dark:text-amber-400">
+                  <td className="font-mono px-3 py-3 text-center text-sm font-bold text-black dark:text-amber-400">
                     {formatNumber(item.weight)} G
                   </td>
-                  <td className="px-3 py-3 text-center text-sm font-mono font-bold text-black dark:text-green-400">
+                  <td className="font-mono px-3 py-3 text-center text-sm font-bold text-black dark:text-green-400">
                     {formatNumber(item.currentWeight)} G
                   </td>
                 </tr>
@@ -374,22 +405,41 @@ export default function ManufacturingReport() {
       })
       .join('');
 
-    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const headerInfo =
+      getpdfheaderdata?.data?.data ||
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation =
+      headerInfo.leftInvocation ||
+      headerInfo.leftInovation ||
+      '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation =
+      headerInfo.rightInvocation ||
+      headerInfo.rightInovation ||
+      '॥ श्री साई प्रसन्न ॥';
     const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const description =
+      headerInfo.description ||
+      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
     const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const phoneNumbers =
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
     const invocationColor = headerInfo.invocationColor || '#a84b20';
     const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
     const descriptionColor = headerInfo.descriptionColor || '#8b451f';
     const proprietorColor = headerInfo.proprietorColor || '#a84b20';
     const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
-    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
-    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
-    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+    const factoryFontSize = headerInfo.factoryFontSize
+      ? `${headerInfo.factoryFontSize}px`
+      : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize
+      ? `${headerInfo.descriptionFontSize}px`
+      : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize
+      ? `${headerInfo.proprietorFontSize}px`
+      : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize
+      ? `${headerInfo.phoneFontSize}px`
+      : '9px';
 
     // Set the content with PDF Header - Minimal padding
     printContainer.innerHTML = `
@@ -418,13 +468,17 @@ export default function ManufacturingReport() {
   <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
     Manufacturing Report
   </h2>
-  ${fromDate || toDate ? `
+  ${
+    fromDate || toDate
+      ? `
     <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
       From: ${formatDateForDisplay(fromDate) || 'Start'} &nbsp; To: ${formatDateForDisplay(toDate) || 'End'}
     </div>
-  ` : `
+  `
+      : `
     <div style="flex:1;"></div>
-  `}
+  `
+  }
 </div>
         
 
@@ -518,59 +572,95 @@ export default function ManufacturingReport() {
   // Print Preview Component
   const PrintPreview = () => (
     <div
-      className="bg-white p-6 max-w-full mx-auto font-sans"
+      className="font-sans mx-auto max-w-full bg-white p-6"
       ref={printRef}
       id="report-print"
-      style={{ width: '297mm', minHeight: '210mm' }}
+      style={{width: '297mm', minHeight: '210mm'}}
     >
       <PDFHeader />
-      <div className="border-b-2 border-[#c43d5c] my-3" />
+      <div className="my-3 border-b-2 border-[#c43d5c]" />
 
       <div className="mb-4 text-center">
-        <h2 className="text-lg font-bold text-gray-800">Manufacturing Report</h2>
-        <div className="flex justify-center items-center gap-4 flex-wrap">
-          <p className="text-xs text-gray-500">Generated: {new Date().toLocaleString()}</p>
+        <h2 className="text-gray-800 text-lg font-bold">
+          Manufacturing Report
+        </h2>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <p className="text-gray-500 text-xs">
+            Generated: {new Date().toLocaleString()}
+          </p>
           {(fromDate || toDate) && (
-            <p className="text-xs text-gray-500">
-              From: {formatDateForDisplay(fromDate) || 'Start'} &nbsp; To: {formatDateForDisplay(toDate) || 'End'}
+            <p className="text-gray-500 text-xs">
+              From: {formatDateForDisplay(fromDate) || 'Start'} &nbsp; To:{' '}
+              {formatDateForDisplay(toDate) || 'End'}
             </p>
           )}
         </div>
       </div>
 
-      <table className="w-full text-xs border-collapse">
+      <table className="w-full border-collapse text-xs">
         <thead>
           <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-white">
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Sr</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Date & Time</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Item (Size) (Purity)</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Scrap</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Loss</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Wt. (G)</th>
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">Current Wt. (G)</th>
+            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
+              Sr
+            </th>
+            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
+              Date & Time
+            </th>
+            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
+              Item (Size) (Purity)
+            </th>
+            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
+              Scrap
+            </th>
+            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
+              Loss
+            </th>
+            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
+              Wt. (G)
+            </th>
+            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
+              Current Wt. (G)
+            </th>
           </tr>
         </thead>
         <tbody>
           {filteredData.map((entry, index) => (
-            <tr key={entry.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-              <td className="border border-gray-300 px-2 py-1.5 text-center">{entry.srNo}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-center">{entry.dateTime}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-center">
-                {entry.item} ({entry.size}) {entry.purity > 0 && `(${entry.purity}%)`}
+            <tr
+              key={entry.id}
+              className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+            >
+              <td className="border-gray-300 border px-2 py-1.5 text-center">
+                {entry.srNo}
               </td>
-              <td className="border border-gray-300 px-2 py-1.5 text-center font-mono">{formatNumber(entry.scrap)}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-center font-mono">{formatNumber(entry.loss)}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-center font-mono">{formatNumber(entry.weight)}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-center font-mono">{formatNumber(entry.currentWeight)}</td>
+              <td className="border-gray-300 border px-2 py-1.5 text-center">
+                {entry.dateTime}
+              </td>
+              <td className="border-gray-300 border px-2 py-1.5 text-center">
+                {entry.item} ({entry.size}){' '}
+                {entry.purity > 0 && `(${entry.purity}%)`}
+              </td>
+              <td className="border-gray-300 font-mono border px-2 py-1.5 text-center">
+                {formatNumber(entry.scrap)}
+              </td>
+              <td className="border-gray-300 font-mono border px-2 py-1.5 text-center">
+                {formatNumber(entry.loss)}
+              </td>
+              <td className="border-gray-300 font-mono border px-2 py-1.5 text-center">
+                {formatNumber(entry.weight)}
+              </td>
+              <td className="border-gray-300 font-mono border px-2 py-1.5 text-center">
+                {formatNumber(entry.currentWeight)}
+              </td>
             </tr>
           ))}
         </tbody>
-
       </table>
 
-      <div className="mt-3 pt-2 border-t-2 border-[#785600] text-center">
-        <p className="text-xs text-gray-500">This is a system-generated report</p>
-        <div className="mt-0.5 flex justify-center gap-3 text-[10px] text-gray-400">
+      <div className="mt-3 border-t-2 border-[#785600] pt-2 text-center">
+        <p className="text-gray-500 text-xs">
+          This is a system-generated report
+        </p>
+        <div className="text-gray-400 mt-0.5 flex justify-center gap-3 text-[10px]">
           <span>Powered by Matoshree Gold</span>
           <span>|</span>
           <span>Generated: {new Date().toLocaleString()}</span>
@@ -582,10 +672,12 @@ export default function ManufacturingReport() {
   // Show loading state
   if (isLoading || loading) {
     return (
-      <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] dark:bg-slate-950">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#785600] mx-auto"></div>
-          <p className="mt-4 text-[#785600] dark:text-amber-400">Loading manufacturing report...</p>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-[#785600]"></div>
+          <p className="mt-4 text-[#785600] dark:text-amber-400">
+            Loading manufacturing report...
+          </p>
         </div>
       </div>
     );
@@ -594,14 +686,18 @@ export default function ManufacturingReport() {
   // Show error state
   if (isError) {
     return (
-      <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] dark:bg-slate-950">
         <div className="text-center">
-          <div className="text-red-500 text-5xl mb-4"></div>
-          <h3 className="text-xl font-bold text-red-600 dark:text-red-400">Error Loading Report</h3>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Failed to fetch manufacturing report data.</p>
+          <div className="mb-4 text-5xl text-red-500"></div>
+          <h3 className="text-xl font-bold text-red-600 dark:text-red-400">
+            Error Loading Report
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Failed to fetch manufacturing report data.
+          </p>
           <button
             onClick={() => refetch()}
-            className="mt-4 px-4 py-2 bg-[#785600] text-white rounded-lg hover:bg-[#5d4200]"
+            className="mt-4 rounded-lg bg-[#785600] px-4 py-2 text-white hover:bg-[#5d4200]"
           >
             Retry
           </button>
@@ -613,17 +709,17 @@ export default function ManufacturingReport() {
   return (
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
-        <div className="flex flex-col sm:flex-row items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6 gap-3">
-          <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
-            <div className="h-5 w-px bg-[#d3c4af]/30 dark:bg-slate-600 flex-shrink-0" />
+      <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
+        <div className="flex flex-col items-center justify-between gap-3 px-3 py-2 sm:flex-row sm:px-4 sm:py-3 md:px-6">
+          <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
+            <div className="h-5 w-px flex-shrink-0 bg-[#d3c4af]/30 dark:bg-slate-600" />
             <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Manufacturing Report
             </h2>
           </div>
 
           {/* Right side - Search, Date Pickers and Print Button */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
             {/* Search Bar */}
             <div className="relative w-full sm:w-48">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
@@ -632,7 +728,7 @@ export default function ManufacturingReport() {
                 placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -657,12 +753,10 @@ export default function ManufacturingReport() {
               />
             </div>
 
-
-
             {/* Print Button */}
             <button
               onClick={() => handlePrint()}
-              className="flex items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white hover:bg-[#5d4200] transition-colors whitespace-nowrap"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5d4200]"
             >
               <Printer className="h-4 w-4" />
               <span className="hidden sm:inline">Print</span>
@@ -672,12 +766,12 @@ export default function ManufacturingReport() {
         </div>
       </div>
 
-      <div className="px-3 sm:px-4 md:px-6 py-4">
+      <div className="px-3 py-4 sm:px-4 md:px-6">
         {/* Summary Cards - Using filtered totals */}
-        <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Total Weight
               </span>
               <span className="text-lg font-bold text-black dark:text-amber-400">
@@ -685,9 +779,9 @@ export default function ManufacturingReport() {
               </span>
             </div>
           </div>
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Total Scrap
               </span>
               <span className="text-lg font-bold text-black dark:text-blue-400">
@@ -695,9 +789,9 @@ export default function ManufacturingReport() {
               </span>
             </div>
           </div>
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Total Loss
               </span>
               <span className="text-lg font-bold text-black dark:text-red-400">
@@ -705,9 +799,9 @@ export default function ManufacturingReport() {
               </span>
             </div>
           </div>
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Current Weight
               </span>
               <span className="text-lg font-bold text-black dark:text-green-400">

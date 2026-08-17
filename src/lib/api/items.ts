@@ -1,12 +1,12 @@
 /* eslint-disable */
-import { api } from "@/utils/axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
-import { z } from "zod";
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import {z} from 'zod';
 
 // Zod Schema for validation
 export const ItemSchema = z.object({
-  name: z.string().min(3, "Item name must be at least 3 characters long"),
+  name: z.string().min(3, 'Item name must be at least 3 characters long'),
 });
 
 export type ItemFormData = z.infer<typeof ItemSchema>;
@@ -22,7 +22,7 @@ export interface Item {
 // API Functions - Following your project structure
 const createItemApi = async (data: ItemFormData) => {
   try {
-    const response = await api.post("/admin/item", data);
+    const response = await api.post('/admin/item', data);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -34,7 +34,7 @@ const createItemApi = async (data: ItemFormData) => {
 
 const getItemsApi = async () => {
   try {
-    const response = await api.get("/admin/item");
+    const response = await api.get('/admin/item');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -43,7 +43,6 @@ const getItemsApi = async () => {
     throw error;
   }
 };
-
 
 const getItemByIdApi = async (id: string) => {
   try {
@@ -57,7 +56,7 @@ const getItemByIdApi = async (id: string) => {
   }
 };
 
-const updateItemApi = async ({ id, data }: { id: string; data: ItemFormData }) => {
+const updateItemApi = async ({id, data}: {id: string; data: ItemFormData}) => {
   try {
     const response = await api.put(`/admin/item/${id}`, data);
     return response.data;
@@ -72,7 +71,7 @@ const updateItemApi = async ({ id, data }: { id: string; data: ItemFormData }) =
 const deleteItemApi = async (id: string) => {
   try {
     await api.delete(`/admin/item/${id}`);
-    return { success: true };
+    return {success: true};
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(error.message || `Failed to delete item with ID: ${id}`);
@@ -98,10 +97,6 @@ export const useGetItems = () => {
   });
 };
 
-
-
-
-
 export const useItemById = (id: string) => {
   return useQuery({
     queryKey: ['items', id],
@@ -117,7 +112,7 @@ export const useCreateItem = () => {
     mutationFn: createItemApi,
     onSuccess: () => {
       toast.success('Item added successfully');
-      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({queryKey: ['items']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to add item');
@@ -132,7 +127,7 @@ export const useUpdateItem = () => {
     mutationFn: updateItemApi,
     onSuccess: () => {
       toast.success('Item updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({queryKey: ['items']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update item');
@@ -146,27 +141,21 @@ export const useDeleteItem = () => {
   return useMutation({
     mutationFn: deleteItemApi,
     onSuccess: async (_, deletedId) => {
-      toast.success("Item deleted successfully");
+      toast.success('Item deleted successfully');
 
       // Remove deleted size immediately from React Query cache.
-      queryClient.setQueryData<Item[]>(
-        ["items"],
-        (oldItems = []) =>
-          oldItems.filter(
-            (item) => item.id !== deletedId
-          )
+      queryClient.setQueryData<Item[]>(['items'], (oldItems = []) =>
+        oldItems.filter((item) => item.id !== deletedId),
       );
 
       // Refresh latest data from the database.
       await queryClient.invalidateQueries({
-        queryKey: ["items"],
+        queryKey: ['items'],
       });
     },
 
     onError: (error: Error) => {
-      toast.error(
-        error.message || "Failed to delete item"
-      );
+      toast.error(error.message || 'Failed to delete item');
     },
   });
 };

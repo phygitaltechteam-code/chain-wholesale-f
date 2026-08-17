@@ -1,7 +1,28 @@
-import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, X, Eye, EyeOff, ShieldCheck, Key, User, Phone, Mail, MapPin } from 'lucide-react';
-import { useGetAdmins, useCreateAdmin, useUpdateAdmin, useDeleteAdmin, getAdminByIdApi, AdminPayload } from '@/lib/api/admin';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import React, {useState} from 'react';
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  X,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  Key,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+} from 'lucide-react';
+import {
+  useGetAdmins,
+  useCreateAdmin,
+  useUpdateAdmin,
+  useDeleteAdmin,
+  getAdminByIdApi,
+  AdminPayload,
+} from '@/lib/api/admin';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import PageHeader from '@/components/Forms/Common/PageHeader';
 import toast from 'react-hot-toast';
@@ -67,12 +88,12 @@ const AdminCreate: React.FC = () => {
     role: 'ADMIN',
   });
 
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // API Hooks
-  const { data: adminsData, isLoading } = useGetAdmins();
+  const {data: adminsData, isLoading} = useGetAdmins();
   const createAdmin = useCreateAdmin();
   const updateAdmin = useUpdateAdmin();
   const deleteAdmin = useDeleteAdmin();
@@ -89,22 +110,33 @@ const AdminCreate: React.FC = () => {
     return {
       id: item.id || `admin-${idx}`,
       userId: item.userId || userObj.id || item.id,
-      fullname: userObj.fullname || userObj.name || item.fullname || item.fullName || 'N/A',
+      fullname:
+        userObj.fullname ||
+        userObj.name ||
+        item.fullname ||
+        item.fullName ||
+        'N/A',
       email: userObj.email || item.contactPersonEmail || item.email || '',
-      username: userObj.username || userObj.phoneNumber || item.phoneNumber || 'N/A',
-      phoneNumber: userObj.phoneNumber || userObj.phone || item.phoneNumber || 'N/A',
-      secondaryPhoneNumber: userObj.secondaryPhoneNumber || item.contactPersonNumber || item.secondaryPhoneNumber || '',
+      username:
+        userObj.username || userObj.phoneNumber || item.phoneNumber || 'N/A',
+      phoneNumber:
+        userObj.phoneNumber || userObj.phone || item.phoneNumber || 'N/A',
+      secondaryPhoneNumber:
+        userObj.secondaryPhoneNumber ||
+        item.contactPersonNumber ||
+        item.secondaryPhoneNumber ||
+        '',
       address: item?.user?.address,
       accessType: (item.accessType || 'ONLINE').toUpperCase(),
       rawExpiryDate: item.expiryDate || item.expiryDateTime || '',
       expiryDate: item.expiryDate
         ? new Date(item.expiryDate).toLocaleString('en-IN', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
         : '',
       key: item.key || item.offlineKey || '',
       role: userObj.role || item.role || 'ADMIN',
@@ -149,7 +181,8 @@ const AdminCreate: React.FC = () => {
       secondaryPhoneNumber: '',
       address: '',
       accessType: 'ONLINE',
-      expiryDate: new Date().toISOString().slice(0, 16).replace('T', ' ') + ':00',
+      expiryDate:
+        new Date().toISOString().slice(0, 16).replace('T', ' ') + ':00',
       key: '12345',
       role: 'ADMIN',
     });
@@ -164,7 +197,8 @@ const AdminCreate: React.FC = () => {
     const raw = admin.rawItem || {};
     const userObj = raw.user || {};
 
-    const emailVal = userObj.email || raw.email || raw.contactPersonEmail || admin.email || '';
+    const emailVal =
+      userObj.email || raw.email || raw.contactPersonEmail || admin.email || '';
     const secPhoneVal =
       userObj.secondaryPhoneNumber ||
       userObj.secondazyPhoneNumber ||
@@ -206,7 +240,11 @@ const AdminCreate: React.FC = () => {
           setFormData((prev) => ({
             ...prev,
             fullname: u.fullname || u.name || prev.fullname,
-            email: u.email || fullData.email || fullData.contactPersonEmail || prev.email,
+            email:
+              u.email ||
+              fullData.email ||
+              fullData.contactPersonEmail ||
+              prev.email,
             username: u.username || u.phoneNumber || prev.username,
             phoneNumber: u.phoneNumber || u.phone || prev.phoneNumber,
             secondaryPhoneNumber:
@@ -216,10 +254,20 @@ const AdminCreate: React.FC = () => {
               fullData.secondazyPhoneNumber ||
               fullData.contactPersonNumber ||
               prev.secondaryPhoneNumber,
-            address: fullData.address || fullData.city || u.address || u.city || prev.address,
-            accessType: (fullData.accessType || u.accessType || prev.accessType).toUpperCase(),
+            address:
+              fullData.address ||
+              fullData.city ||
+              u.address ||
+              u.city ||
+              prev.address,
+            accessType: (
+              fullData.accessType ||
+              u.accessType ||
+              prev.accessType
+            ).toUpperCase(),
             expiryDate: fullData.expiryDate
-              ? formatForDatetimeLocal(fullData.expiryDate).replace('T', ' ') + ':00'
+              ? formatForDatetimeLocal(fullData.expiryDate).replace('T', ' ') +
+                ':00'
               : prev.expiryDate,
             key: fullData.key || prev.key,
             role: u.role || prev.role,
@@ -231,19 +279,24 @@ const AdminCreate: React.FC = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const {name, value} = e.target;
     setFormData((prev) => {
-      const updated = { ...prev, [name]: value };
+      const updated = {...prev, [name]: value};
       // Auto-set username to phoneNumber if username is empty or matches previous phoneNumber
-      if (name === 'phoneNumber' && (!prev.username || prev.username === prev.phoneNumber)) {
+      if (
+        name === 'phoneNumber' &&
+        (!prev.username || prev.username === prev.phoneNumber)
+      ) {
         updated.username = value;
       }
       return updated;
     });
 
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({...prev, [name]: ''}));
     }
   };
 
@@ -252,21 +305,26 @@ const AdminCreate: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       accessType: value,
-      key: value === 'ONLINE' ? '12345' : prev.key === '12345' ? generateKey() : prev.key,
+      key:
+        value === 'ONLINE'
+          ? '12345'
+          : prev.key === '12345'
+            ? generateKey()
+            : prev.key,
     }));
     if (errors.accessType) {
-      setErrors((prev) => ({ ...prev, accessType: '' }));
+      setErrors((prev) => ({...prev, accessType: ''}));
     }
   };
 
   const handleGenerateKey = () => {
     const newKey = generateKey();
-    setFormData((prev) => ({ ...prev, key: newKey }));
+    setFormData((prev) => ({...prev, key: newKey}));
     toast.success('Offline access key generated!');
   };
 
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
+    const newErrors: {[key: string]: string} = {};
 
     if (!formData.fullname.trim()) {
       newErrors.fullname = 'Full Name is required';
@@ -281,8 +339,12 @@ const AdminCreate: React.FC = () => {
     } else if (!/^\d{10}$/.test(formData.phoneNumber.trim())) {
       newErrors.phoneNumber = 'Phone number must be 10 digits';
     }
-    if (formData.secondaryPhoneNumber.trim() && !/^\d{10}$/.test(formData.secondaryPhoneNumber.trim())) {
-      newErrors.secondaryPhoneNumber = 'Secondary phone number must be 10 digits';
+    if (
+      formData.secondaryPhoneNumber.trim() &&
+      !/^\d{10}$/.test(formData.secondaryPhoneNumber.trim())
+    ) {
+      newErrors.secondaryPhoneNumber =
+        'Secondary phone number must be 10 digits';
     }
     if (!formData.address.trim()) {
       newErrors.address = 'Address is required';
@@ -334,7 +396,8 @@ const AdminCreate: React.FC = () => {
       secondaryPhoneNumber: formData.secondaryPhoneNumber.trim() || undefined,
       address: formData.address.trim(),
       accessType: formData.accessType.toUpperCase(),
-      expiryDate: formData.accessType === 'ONLINE' ? formattedExpiry : undefined,
+      expiryDate:
+        formData.accessType === 'ONLINE' ? formattedExpiry : undefined,
       key: formData.accessType === 'OFFLINE' ? formData.key : '12345',
       role: formData.role || 'ADMIN',
     };
@@ -345,7 +408,7 @@ const AdminCreate: React.FC = () => {
 
     try {
       if (editingAdmin) {
-        await updateAdmin.mutateAsync({ id: editingAdmin.id, data: payload });
+        await updateAdmin.mutateAsync({id: editingAdmin.id, data: payload});
       } else {
         await createAdmin.mutateAsync(payload);
       }
@@ -356,7 +419,11 @@ const AdminCreate: React.FC = () => {
   };
 
   const handleDelete = async (admin: AdminItem) => {
-    if (!window.confirm(`Are you sure you want to delete admin "${admin.fullname}"?`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete admin "${admin.fullname}"?`,
+      )
+    ) {
       return;
     }
     try {
@@ -376,7 +443,7 @@ const AdminCreate: React.FC = () => {
           <span className="text-sm font-semibold text-[#1a1c1b] dark:text-white">
             {item.fullname}
           </span>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="text-gray-500 dark:text-gray-400 text-xs">
             {item.email}
           </span>
         </div>
@@ -387,11 +454,11 @@ const AdminCreate: React.FC = () => {
       header: 'Username / Phone',
       render: (item) => (
         <div className="flex flex-col">
-          <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
             {item.phoneNumber}
           </span>
           {item.secondaryPhoneNumber && (
-            <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
+            <span className="font-mono text-gray-500 dark:text-gray-400 text-xs">
               Sec: {item.secondaryPhoneNumber}
             </span>
           )}
@@ -402,7 +469,7 @@ const AdminCreate: React.FC = () => {
       key: 'address',
       header: 'Address',
       render: (item) => (
-        <span className="text-sm text-[#1a1c1b] dark:text-white truncate max-w-[180px] block">
+        <span className="block max-w-[180px] truncate text-sm text-[#1a1c1b] dark:text-white">
           {item.address}
         </span>
       ),
@@ -414,12 +481,17 @@ const AdminCreate: React.FC = () => {
         const typeUpper = (item.accessType || 'ONLINE').toUpperCase();
         return (
           <span
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${typeUpper === 'OFFLINE'
-              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400'
-              : 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-400'
-              }`}
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wider ${
+              typeUpper === 'OFFLINE'
+                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400'
+                : 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-400'
+            }`}
           >
-            {typeUpper === 'OFFLINE' ? <Key className="w-3 h-3" /> : <ShieldCheck className="w-3 h-3" />}
+            {typeUpper === 'OFFLINE' ? (
+              <Key className="h-3 w-3" />
+            ) : (
+              <ShieldCheck className="h-3 w-3" />
+            )}
             {typeUpper}
           </span>
         );
@@ -432,13 +504,13 @@ const AdminCreate: React.FC = () => {
         const typeUpper = (item.accessType || 'ONLINE').toUpperCase();
         if (typeUpper === 'OFFLINE') {
           return (
-            <span className="text-xs font-mono bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200 px-2 py-1 rounded border border-gray-200 dark:border-slate-700">
+            <span className="font-mono bg-gray-100 text-gray-800 dark:text-gray-200 border-gray-200 rounded border px-2 py-1 text-xs dark:border-slate-700 dark:bg-slate-800">
               {item.key || '12345'}
             </span>
           );
         }
         return (
-          <span className="text-xs font-mono text-[#1a1c1b] dark:text-white">
+          <span className="font-mono text-xs text-[#1a1c1b] dark:text-white">
             {item.expiryDate ? item.expiryDate : 'Unlimited'}
           </span>
         );
@@ -454,7 +526,7 @@ const AdminCreate: React.FC = () => {
           e.stopPropagation();
           handleOpenEditModal(item);
         }}
-        className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
+        className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
         title="Edit Admin"
       >
         <Edit className="h-4 w-4" />
@@ -466,7 +538,7 @@ const AdminCreate: React.FC = () => {
           handleDelete(item);
         }}
         disabled={deleteAdmin.isPending}
-        className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
+        className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
         title="Delete Admin"
       >
         <Trash2 className="h-4 w-4" />
@@ -475,12 +547,16 @@ const AdminCreate: React.FC = () => {
   );
 
   return (
-    <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
-      <div className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6 mx-auto">
+    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
+      <div className="mx-auto px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
         {/* Page Header with Right Side Add Admin Button */}
-        <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
           <PageHeader title="Admin Management" />
-          <GenericButton type="button" onClick={handleOpenCreateModal} className="w-full sm:w-auto">
+          <GenericButton
+            type="button"
+            onClick={handleOpenCreateModal}
+            className="w-full sm:w-auto"
+          >
             <Plus className="h-4 w-4" />
             <span>Add Admin</span>
           </GenericButton>
@@ -488,14 +564,14 @@ const AdminCreate: React.FC = () => {
 
         {/* Search & Filter Bar */}
         <div className="mb-4 flex items-center gap-3">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
+          <div className="relative min-w-[200px] max-w-md flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
             <input
               type="text"
               placeholder="Search by name, email, phone, address..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
           </div>
         </div>
@@ -514,9 +590,9 @@ const AdminCreate: React.FC = () => {
 
       {/* Modal for Add / Edit Admin */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-[#d3c4af]/20 dark:border-slate-700 shadow-xl max-w-2xl w-full p-6 my-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-slate-800 mb-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4">
+          <div className="my-8 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-[#d3c4af]/20 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+            <div className="border-gray-100 mb-5 flex items-center justify-between border-b pb-4 dark:border-slate-800">
               <div>
                 <h2 className="text-xl font-bold text-[#1a1c1b] dark:text-white">
                   {editingAdmin ? 'Edit Admin Account' : 'Create New Admin'}
@@ -530,15 +606,15 @@ const AdminCreate: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg p-1 transition-colors dark:hover:bg-slate-800 dark:hover:text-white"
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Row 1: Full Name & Email */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
                     Full Name (fullname) <span className="text-red-500">*</span>
@@ -549,10 +625,17 @@ const AdminCreate: React.FC = () => {
                     value={formData.fullname}
                     onChange={handleInputChange}
                     placeholder="Enter full name"
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700 ${errors.fullname ? 'border-red-500 focus:ring-red-500/20' : ''
-                      }`}
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.fullname
+                        ? 'border-red-500 focus:ring-red-500/20'
+                        : ''
+                    }`}
                   />
-                  {errors.fullname && <p className="mt-1 text-xs text-red-500">{errors.fullname}</p>}
+                  {errors.fullname && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.fullname}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -565,18 +648,22 @@ const AdminCreate: React.FC = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="admin@example.com"
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700 ${errors.email ? 'border-red-500 focus:ring-red-500/20' : ''
-                      }`}
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.email ? 'border-red-500 focus:ring-red-500/20' : ''
+                    }`}
                   />
-                  {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
+                  {errors.email && (
+                    <p className="mt-1 text-xs text-red-500">{errors.email}</p>
+                  )}
                 </div>
               </div>
 
               {/* Row 2: Phone Number & Secondary Phone */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    Phone Number (phoneNumber) <span className="text-red-500">*</span>
+                    Phone Number (phoneNumber){' '}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -585,10 +672,17 @@ const AdminCreate: React.FC = () => {
                     onChange={handleInputChange}
                     placeholder="Enter 10-digit phone number"
                     maxLength={10}
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700 ${errors.phoneNumber ? 'border-red-500 focus:ring-red-500/20' : ''
-                      }`}
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.phoneNumber
+                        ? 'border-red-500 focus:ring-red-500/20'
+                        : ''
+                    }`}
                   />
-                  {errors.phoneNumber && <p className="mt-1 text-xs text-red-500">{errors.phoneNumber}</p>}
+                  {errors.phoneNumber && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.phoneNumber}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -602,17 +696,22 @@ const AdminCreate: React.FC = () => {
                     onChange={handleInputChange}
                     placeholder="Enter secondary phone number"
                     maxLength={10}
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700 ${errors.secondaryPhoneNumber ? 'border-red-500 focus:ring-red-500/20' : ''
-                      }`}
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.secondaryPhoneNumber
+                        ? 'border-red-500 focus:ring-red-500/20'
+                        : ''
+                    }`}
                   />
                   {errors.secondaryPhoneNumber && (
-                    <p className="mt-1 text-xs text-red-500">{errors.secondaryPhoneNumber}</p>
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.secondaryPhoneNumber}
+                    </p>
                   )}
                 </div>
               </div>
 
               {/* Row 3: Username & Address */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
                     Username
@@ -623,7 +722,7 @@ const AdminCreate: React.FC = () => {
                     value={formData.username}
                     onChange={handleInputChange}
                     placeholder="Username (defaults to phone)"
-                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   />
                 </div>
 
@@ -637,24 +736,32 @@ const AdminCreate: React.FC = () => {
                     value={formData.address}
                     onChange={handleInputChange}
                     placeholder="e.g. Baner, Pune"
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700 ${errors.address ? 'border-red-500 focus:ring-red-500/20' : ''
-                      }`}
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.address
+                        ? 'border-red-500 focus:ring-red-500/20'
+                        : ''
+                    }`}
                   />
-                  {errors.address && <p className="mt-1 text-xs text-red-500">{errors.address}</p>}
+                  {errors.address && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.address}
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Row 4: Access Type & Expiry/Key */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    Access Type (accessType) <span className="text-red-500">*</span>
+                    Access Type (accessType){' '}
+                    <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="accessType"
                     value={formData.accessType}
                     onChange={handleAccessTypeChange}
-                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   >
                     <option value="ONLINE">ONLINE</option>
                     <option value="OFFLINE">OFFLINE</option>
@@ -676,7 +783,7 @@ const AdminCreate: React.FC = () => {
                           expiryDate: e.target.value.replace('T', ' ') + ':00',
                         }))
                       }
-                      className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                      className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                     />
                   </div>
                 ) : (
@@ -691,26 +798,33 @@ const AdminCreate: React.FC = () => {
                         value={formData.key}
                         onChange={handleInputChange}
                         placeholder="Offline key"
-                        className="flex-1 rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-xs font-mono text-[#1a1c1b] dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                        className="font-mono flex-1 rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-xs text-[#1a1c1b] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                       />
                       <button
                         type="button"
                         onClick={handleGenerateKey}
-                        className="px-3 py-2 bg-[#785600] text-white rounded-lg hover:bg-[#5d4200] transition-colors text-xs font-medium"
+                        className="rounded-lg bg-[#785600] px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-[#5d4200]"
                       >
                         Generate
                       </button>
                     </div>
-                    {errors.key && <p className="mt-1 text-xs text-red-500">{errors.key}</p>}
+                    {errors.key && (
+                      <p className="mt-1 text-xs text-red-500">{errors.key}</p>
+                    )}
                   </div>
                 )}
               </div>
 
               {/* Row 5: Password & Confirm Password */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    Password {editingAdmin ? '(Leave blank to keep unchanged)' : <span className="text-red-500">*</span>}
+                    Password{' '}
+                    {editingAdmin ? (
+                      '(Leave blank to keep unchanged)'
+                    ) : (
+                      <span className="text-red-500">*</span>
+                    )}
                   </label>
                   <div className="relative">
                     <input
@@ -719,18 +833,27 @@ const AdminCreate: React.FC = () => {
                       value={formData.password}
                       onChange={handleInputChange}
                       placeholder={editingAdmin ? '••••••••' : 'Pass@123'}
-                      className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700 ${errors.password ? 'border-red-500' : ''
-                        }`}
+                      className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                        errors.password ? 'border-red-500' : ''
+                      }`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#817563] hover:text-[#785600]"
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
-                  {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
+                  {errors.password && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.password}
+                    </p>
+                  )}
                 </div>
 
                 {!editingAdmin && (
@@ -745,26 +868,35 @@ const AdminCreate: React.FC = () => {
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
                         placeholder="Confirm password"
-                        className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700 ${errors.confirmPassword ? 'border-red-500' : ''
-                          }`}
+                        className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                          errors.confirmPassword ? 'border-red-500' : ''
+                        }`}
                       />
                       <button
                         type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#817563] hover:text-[#785600]"
                       >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
                     {errors.confirmPassword && (
-                      <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>
+                      <p className="mt-1 text-xs text-red-500">
+                        {errors.confirmPassword}
+                      </p>
                     )}
                   </div>
                 )}
               </div>
 
               {/* Form Action Buttons */}
-              <div className="flex gap-3 pt-4 border-t justify-end border-gray-100 dark:border-slate-800">
+              <div className="border-gray-100 flex justify-end gap-3 border-t pt-4 dark:border-slate-800">
                 <GenericButton
                   type="button"
                   onClick={() => setIsModalOpen(false)}

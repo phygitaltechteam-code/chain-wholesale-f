@@ -39,16 +39,16 @@ const createInitialEntry = (): ManufacturingEntry => ({
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: true
+    hour12: true,
   }),
   item: 'Bracelet',
   size: '16',
   purity: '22K',
-  fine: 5.000,
-  tar: 4.500,
-  scrap: 0.050,
-  lossWeight: 0.500,
-  tarWeight: 4.500,
+  fine: 5.0,
+  tar: 4.5,
+  scrap: 0.05,
+  lossWeight: 0.5,
+  tarWeight: 4.5,
   chainWeight: 0,
   chainGiven: 0,
   chainReceived: 0,
@@ -69,12 +69,12 @@ export const manufacturingStore = {
   },
 
   addEntry: (entry: ManufacturingEntry): void => {
-    entries = [...entries, { ...entry, id: `entry-${Date.now()}` }];
+    entries = [...entries, {...entry, id: `entry-${Date.now()}`}];
   },
 
   updateEntry: (id: string, data: Partial<ManufacturingEntry>): void => {
-    entries = entries.map(entry =>
-      entry.id === id ? { ...entry, ...data } : entry
+    entries = entries.map((entry) =>
+      entry.id === id ? {...entry, ...data} : entry,
     );
     console.log('📦 Store updated:', entries);
   },
@@ -89,5 +89,5 @@ export const manufacturingStore = {
 
   reset: (): void => {
     entries = [createInitialEntry()];
-  }
+  },
 };

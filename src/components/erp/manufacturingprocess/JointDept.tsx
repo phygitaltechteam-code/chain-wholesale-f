@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Save, History, ChevronRight, ChevronDown, Printer } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
+import {Save, History, ChevronRight, ChevronDown, Printer} from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useGetJoint, useGetJointHistory, useSubmitJoint } from '@/lib/api/joint';
+import {useGetJoint, useGetJointHistory, useSubmitJoint} from '@/lib/api/joint';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
+import {useGetHeader} from '@/lib/api/headerapi';
 
 interface JointEntry {
   id: string;
@@ -69,19 +69,27 @@ const JointDept: React.FC = () => {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return { monday, sunday };
+    return {monday, sunday};
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const { monday, sunday } = getDefaultWeekRange();
+    const {monday, sunday} = getDefaultWeekRange();
     return [monday, sunday];
   });
 
   const isInitialMount = useRef(true);
 
   // Fetch data from API
-  const { data: jointData = [], isLoading: jointLoading, refetch } = useGetJoint();
-  const { data: jointHistory = [], isLoading: historyLoading, refetch: refetchHistory } = useGetJointHistory();
+  const {
+    data: jointData = [],
+    isLoading: jointLoading,
+    refetch,
+  } = useGetJoint();
+  const {
+    data: jointHistory = [],
+    isLoading: historyLoading,
+    refetch: refetchHistory,
+  } = useGetJointHistory();
   const submitJoint = useSubmitJoint();
 
   // Load data from API
@@ -95,51 +103,56 @@ const JointDept: React.FC = () => {
     }
 
     if (jointData.length > 0) {
-      const entries: JointEntry[] = jointData.map((joint: any, index: number) => {
-        const itemName = joint.item?.name || joint.itemId || 'N/A';
-        const sizeName = joint.size?.size || joint.sizeId || 'N/A';
+      const entries: JointEntry[] = jointData.map(
+        (joint: any, index: number) => {
+          const itemName = joint.item?.name || joint.itemId || 'N/A';
+          const sizeName = joint.size?.size || joint.sizeId || 'N/A';
 
-        const isSaved = joint.isCompleted === true &&
-          joint.powderReceived !== null &&
-          joint.powderReceived !== undefined &&
-          joint.srp !== null &&
-          joint.srp !== undefined &&
-          joint.purity !== null &&
-          joint.purity !== undefined &&
-          joint.scrap !== null &&
-          joint.scrap !== undefined;
+          const isSaved =
+            joint.isCompleted === true &&
+            joint.powderReceived !== null &&
+            joint.powderReceived !== undefined &&
+            joint.srp !== null &&
+            joint.srp !== undefined &&
+            joint.purity !== null &&
+            joint.purity !== undefined &&
+            joint.scrap !== null &&
+            joint.scrap !== undefined;
 
-        return {
-          id: joint.id,
-          srNo: index + 1,
-          dateTime: new Date(joint.createdAt).toLocaleString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-          }),
-          item: itemName,
-          size: sizeName,
-          purity: joint.purity || 0,
-          chainWeight: joint.chainWeight || 0,
-          chainReceived: joint.chainReceived || 0,
-          powder: joint.powder || 0,
-          powderReceived: joint.powderReceived || 0,
-          srp: joint.srp || 0,
-          scrap: joint.scrap || 0,
-          isEditing: !isSaved,
-          isSaved: isSaved,
-          powderReceivedRaw: joint.powderReceived ? joint.powderReceived.toString() : '',
-          srpRaw: joint.srp ? joint.srp.toString() : '',
-          purityRaw: joint.purity ? joint.purity.toString() : '',
-          scrapRaw: joint.scrap ? joint.scrap.toString() : '',
-          itemId: joint.itemId,
-          sizeId: joint.sizeId,
-          isCompleted: joint.isCompleted || false,
-        };
-      });
+          return {
+            id: joint.id,
+            srNo: index + 1,
+            dateTime: new Date(joint.createdAt).toLocaleString('en-IN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            }),
+            item: itemName,
+            size: sizeName,
+            purity: joint.purity || 0,
+            chainWeight: joint.chainWeight || 0,
+            chainReceived: joint.chainReceived || 0,
+            powder: joint.powder || 0,
+            powderReceived: joint.powderReceived || 0,
+            srp: joint.srp || 0,
+            scrap: joint.scrap || 0,
+            isEditing: !isSaved,
+            isSaved: isSaved,
+            powderReceivedRaw: joint.powderReceived
+              ? joint.powderReceived.toString()
+              : '',
+            srpRaw: joint.srp ? joint.srp.toString() : '',
+            purityRaw: joint.purity ? joint.purity.toString() : '',
+            scrapRaw: joint.scrap ? joint.scrap.toString() : '',
+            itemId: joint.itemId,
+            sizeId: joint.sizeId,
+            isCompleted: joint.isCompleted || false,
+          };
+        },
+      );
       setJointEntries(entries);
     } else {
       setJointEntries([]);
@@ -148,7 +161,7 @@ const JointDept: React.FC = () => {
 
   // Format date helper for history
   const formatDate = (dateString: string) => {
-    if (!dateString) return { date: '-', time: '-' };
+    if (!dateString) return {date: '-', time: '-'};
     const date = new Date(dateString);
     return {
       date: date.toLocaleDateString('en-IN', {
@@ -212,14 +225,30 @@ const JointDept: React.FC = () => {
   // Calculate history totals
   const filteredHistory = getFilteredHistory();
   const historyTotals = filteredHistory.reduce(
-    (acc: { totalGiven: number; totalReceived: number; totalPowder: number; totalPowderReceived: number; totalScrap: number }, item: any) => ({
+    (
+      acc: {
+        totalGiven: number;
+        totalReceived: number;
+        totalPowder: number;
+        totalPowderReceived: number;
+        totalScrap: number;
+      },
+      item: any,
+    ) => ({
       totalGiven: acc.totalGiven + toNumber(item?.chainWeight),
       totalReceived: acc.totalReceived + toNumber(item?.chainReceived),
       totalPowder: acc.totalPowder + toNumber(item?.powder),
-      totalPowderReceived: acc.totalPowderReceived + toNumber(item?.powderReceived),
+      totalPowderReceived:
+        acc.totalPowderReceived + toNumber(item?.powderReceived),
       totalScrap: acc.totalScrap + toNumber(item?.scrap),
     }),
-    { totalGiven: 0, totalReceived: 0, totalPowder: 0, totalPowderReceived: 0, totalScrap: 0 }
+    {
+      totalGiven: 0,
+      totalReceived: 0,
+      totalPowder: 0,
+      totalPowderReceived: 0,
+      totalScrap: 0,
+    },
   );
 
   // Print History Function
@@ -227,7 +256,9 @@ const JointDept: React.FC = () => {
     const filteredData = getFilteredHistory();
 
     if (!filteredData || filteredData.length === 0) {
-      toast.error('No history records available to print for the selected date range');
+      toast.error(
+        'No history records available to print for the selected date range',
+      );
       return;
     }
 
@@ -248,8 +279,10 @@ const JointDept: React.FC = () => {
     // Build the table rows - Compact with minimum padding
     const rows = filteredData
       .map((item: any, index: number) => {
-        const { date, time } = formatDate(item?.createdAt);
-        const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
+        const {date, time} = formatDate(item?.createdAt);
+        const {date: proceedDate, time: proceedTime} = formatDate(
+          item?.updatedAt,
+        );
 
         return `
                 <tr>
@@ -275,29 +308,66 @@ const JointDept: React.FC = () => {
       .join('');
 
     // Calculate totals
-    const totalChainWeight = filteredData.reduce((sum: number, item: any) => sum + (item?.chainWeight || 0), 0);
-    const totalChainReceived = filteredData.reduce((sum: number, item: any) => sum + (item?.chainReceived || 0), 0);
-    const totalPowder = filteredData.reduce((sum: number, item: any) => sum + (item?.powder || 0), 0);
-    const totalPowderReceived = filteredData.reduce((sum: number, item: any) => sum + (item?.powderReceived || 0), 0);
-    const totalSRP = filteredData.reduce((sum: number, item: any) => sum + (item?.srp || 0), 0);
-    const totalScrap = filteredData.reduce((sum: number, item: any) => sum + (item?.scrap || 0), 0);
+    const totalChainWeight = filteredData.reduce(
+      (sum: number, item: any) => sum + (item?.chainWeight || 0),
+      0,
+    );
+    const totalChainReceived = filteredData.reduce(
+      (sum: number, item: any) => sum + (item?.chainReceived || 0),
+      0,
+    );
+    const totalPowder = filteredData.reduce(
+      (sum: number, item: any) => sum + (item?.powder || 0),
+      0,
+    );
+    const totalPowderReceived = filteredData.reduce(
+      (sum: number, item: any) => sum + (item?.powderReceived || 0),
+      0,
+    );
+    const totalSRP = filteredData.reduce(
+      (sum: number, item: any) => sum + (item?.srp || 0),
+      0,
+    );
+    const totalScrap = filteredData.reduce(
+      (sum: number, item: any) => sum + (item?.scrap || 0),
+      0,
+    );
 
-    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const headerInfo =
+      getpdfheaderdata?.data?.data ||
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation =
+      headerInfo.leftInvocation ||
+      headerInfo.leftInovation ||
+      '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation =
+      headerInfo.rightInvocation ||
+      headerInfo.rightInovation ||
+      '॥ श्री साई प्रसन्न ॥';
     const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const description =
+      headerInfo.description ||
+      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
     const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const phoneNumbers =
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
     const invocationColor = headerInfo.invocationColor || '#a84b20';
     const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
     const descriptionColor = headerInfo.descriptionColor || '#8b451f';
     const proprietorColor = headerInfo.proprietorColor || '#a84b20';
     const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
-    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
-    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
-    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+    const factoryFontSize = headerInfo.factoryFontSize
+      ? `${headerInfo.factoryFontSize}px`
+      : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize
+      ? `${headerInfo.descriptionFontSize}px`
+      : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize
+      ? `${headerInfo.proprietorFontSize}px`
+      : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize
+      ? `${headerInfo.phoneFontSize}px`
+      : '9px';
 
     // Set the content with PDF Header - Minimal padding
     printContainer.innerHTML = `
@@ -325,13 +395,17 @@ const JointDept: React.FC = () => {
   <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
     Joint History Report
   </h2>
-  ${dateRange.length === 2 ? `
+  ${
+    dateRange.length === 2
+      ? `
     <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
       From: ${new Date(dateRange[0]).toLocaleDateString('en-IN')} &nbsp; To: ${new Date(dateRange[1]).toLocaleDateString('en-IN')}
     </div>
-  ` : `
+  `
+      : `
     <div style="flex:1;"></div>
-  `}
+  `
+  }
 </div>
 
             <!-- Table -->
@@ -430,11 +504,15 @@ const JointDept: React.FC = () => {
       key: 'createdAt',
       header: 'Date & Time',
       render: (item) => {
-        const { date, time } = formatDate(item.createdAt);
+        const {date, time} = formatDate(item.createdAt);
         return (
           <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">{time}</span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {date}
+            </span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
+              {time}
+            </span>
           </div>
         );
       },
@@ -461,7 +539,7 @@ const JointDept: React.FC = () => {
       key: 'chainWeight',
       header: 'Chain Given (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.chainWeight)} G
         </span>
       ),
@@ -470,7 +548,7 @@ const JointDept: React.FC = () => {
       key: 'chainReceived',
       header: 'Chain Received (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.chainReceived)} G
         </span>
       ),
@@ -479,7 +557,7 @@ const JointDept: React.FC = () => {
       key: 'powder',
       header: 'Powder Given (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.powder)} G
         </span>
       ),
@@ -488,7 +566,7 @@ const JointDept: React.FC = () => {
       key: 'powderReceived',
       header: 'Powder Received (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.powderReceived)} G
         </span>
       ),
@@ -497,7 +575,7 @@ const JointDept: React.FC = () => {
       key: 'purity',
       header: 'Purity (%)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.purity)} %
         </span>
       ),
@@ -506,7 +584,7 @@ const JointDept: React.FC = () => {
       key: 'scrap',
       header: 'Scrap (G)',
       render: (item) => (
-        <span className="text-sm font-mono text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.scrap)} G
         </span>
       ),
@@ -515,11 +593,15 @@ const JointDept: React.FC = () => {
       key: 'updatedAt',
       header: 'Proceed Date & Time',
       render: (item) => {
-        const { date, time } = formatDate(item.updatedAt);
+        const {date, time} = formatDate(item.updatedAt);
         return (
           <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">{time}</span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {date}
+            </span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
+              {time}
+            </span>
           </div>
         );
       },
@@ -527,78 +609,90 @@ const JointDept: React.FC = () => {
   ];
 
   // Handle inline field change
-  const handleInlineChange = useCallback((index: number, field: 'powderReceived' | 'srp' | 'purity' | 'scrap', value: string) => {
-    setJointEntries(prev => prev.map((entry, i) => {
-      if (i === index) {
-        const updated = { ...entry };
+  const handleInlineChange = useCallback(
+    (
+      index: number,
+      field: 'powderReceived' | 'srp' | 'purity' | 'scrap',
+      value: string,
+    ) => {
+      setJointEntries((prev) =>
+        prev.map((entry, i) => {
+          if (i === index) {
+            const updated = {...entry};
 
-        if (field === 'powderReceived') {
-          updated.powderReceivedRaw = value;
-          if (value === '' || value === '.' || value === '-') {
-            updated.powderReceived = 0;
-          } else {
-            const numValue = parseFloat(value);
-            updated.powderReceived = isNaN(numValue) ? 0 : numValue;
-          }
-        } else if (field === 'srp') {
-          updated.srpRaw = value;
-          if (value === '' || value === '.' || value === '-') {
-            updated.srp = 0;
-          } else {
-            const numValue = parseFloat(value);
-            updated.srp = isNaN(numValue) ? 0 : numValue;
-          }
-        } else if (field === 'purity') {
-          updated.purityRaw = value;
-          if (value === '' || value === '.' || value === '-') {
-            updated.purity = 0;
-          } else {
-            const numValue = parseFloat(value);
-            updated.purity = isNaN(numValue) ? 0 : numValue;
-          }
-        } else if (field === 'scrap') {
-          updated.scrapRaw = value;
-          if (value === '' || value === '.' || value === '-') {
-            updated.scrap = 0;
-          } else {
-            const numValue = parseFloat(value);
-            updated.scrap = isNaN(numValue) ? 0 : numValue;
-          }
-        }
+            if (field === 'powderReceived') {
+              updated.powderReceivedRaw = value;
+              if (value === '' || value === '.' || value === '-') {
+                updated.powderReceived = 0;
+              } else {
+                const numValue = parseFloat(value);
+                updated.powderReceived = isNaN(numValue) ? 0 : numValue;
+              }
+            } else if (field === 'srp') {
+              updated.srpRaw = value;
+              if (value === '' || value === '.' || value === '-') {
+                updated.srp = 0;
+              } else {
+                const numValue = parseFloat(value);
+                updated.srp = isNaN(numValue) ? 0 : numValue;
+              }
+            } else if (field === 'purity') {
+              updated.purityRaw = value;
+              if (value === '' || value === '.' || value === '-') {
+                updated.purity = 0;
+              } else {
+                const numValue = parseFloat(value);
+                updated.purity = isNaN(numValue) ? 0 : numValue;
+              }
+            } else if (field === 'scrap') {
+              updated.scrapRaw = value;
+              if (value === '' || value === '.' || value === '-') {
+                updated.scrap = 0;
+              } else {
+                const numValue = parseFloat(value);
+                updated.scrap = isNaN(numValue) ? 0 : numValue;
+              }
+            }
 
-        return updated;
-      }
-      return entry;
-    }));
-  }, []);
+            return updated;
+          }
+          return entry;
+        }),
+      );
+    },
+    [],
+  );
 
   // Open confirmation popup before saving
-  const handleSaveClick = useCallback((index: number) => {
-    const entry = jointEntries[index];
+  const handleSaveClick = useCallback(
+    (index: number) => {
+      const entry = jointEntries[index];
 
-    if (!entry.powderReceived || entry.powderReceived < 0) {
-      toast.error('Please enter a valid powder received weight');
-      return;
-    }
+      if (!entry.powderReceived || entry.powderReceived < 0) {
+        toast.error('Please enter a valid powder received weight');
+        return;
+      }
 
-    if (!entry.srp || entry.srp < 0) {
-      toast.error('Please enter a valid SRP (Majuri)');
-      return;
-    }
+      if (!entry.srp || entry.srp < 0) {
+        toast.error('Please enter a valid SRP (Majuri)');
+        return;
+      }
 
-    if (!entry.purity || entry.purity < 0) {
-      toast.error('Please enter a valid purity percentage');
-      return;
-    }
+      if (!entry.purity || entry.purity < 0) {
+        toast.error('Please enter a valid purity percentage');
+        return;
+      }
 
-    if (!entry.scrap || entry.scrap < 0) {
-      toast.error('Please enter a valid scrap weight');
-      return;
-    }
+      if (!entry.scrap || entry.scrap < 0) {
+        toast.error('Please enter a valid scrap weight');
+        return;
+      }
 
-    setSaveIndex(index);
-    setShowConfirmModal(true);
-  }, [jointEntries]);
+      setSaveIndex(index);
+      setShowConfirmModal(true);
+    },
+    [jointEntries],
+  );
 
   // Confirm and save
   const confirmSave = useCallback(async () => {
@@ -618,12 +712,16 @@ const JointDept: React.FC = () => {
           purity: entry.purity,
           scrap: entry.scrap,
           isCompleted: true,
-        }
+        },
       });
 
-      setJointEntries(prev => prev.map((s, i) =>
-        i === index ? { ...s, isEditing: false, isSaved: true, isCompleted: true } : s
-      ));
+      setJointEntries((prev) =>
+        prev.map((s, i) =>
+          i === index
+            ? {...s, isEditing: false, isSaved: true, isCompleted: true}
+            : s,
+        ),
+      );
 
       setIsLoading(false);
       setShowConfirmModal(false);
@@ -632,7 +730,7 @@ const JointDept: React.FC = () => {
 
       navigate({
         to: '/manufacturingprocess/process',
-        state: { selectedTab: 'cutting' }
+        state: {selectedTab: 'cutting'},
       });
     } catch (error) {
       console.error('Error saving joint:', error);
@@ -650,12 +748,12 @@ const JointDept: React.FC = () => {
       entry.powderReceivedRaw?.trim() ||
       entry.srpRaw?.trim() ||
       entry.purityRaw?.trim() ||
-      entry.scrapRaw?.trim()
+      entry.scrapRaw?.trim(),
     );
   };
 
   const showActionColumn = jointEntries.some(
-    (entry) => !entry.isSaved && hasEditableValues(entry)
+    (entry) => !entry.isSaved && hasEditableValues(entry),
   );
 
   // Define columns for GenericTable
@@ -738,12 +836,20 @@ const JointDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
-                value={item.powderReceivedRaw !== undefined ? item.powderReceivedRaw : (item.powderReceived === 0 ? '' : item.powderReceived)}
-                onChange={(e) => handleInlineChange(index, 'powderReceived', e.target.value)}
+                value={
+                  item.powderReceivedRaw !== undefined
+                    ? item.powderReceivedRaw
+                    : item.powderReceived === 0
+                      ? ''
+                      : item.powderReceived
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'powderReceived', e.target.value)
+                }
                 placeholder="0.000"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 G
               </span>
             </div>
@@ -765,12 +871,20 @@ const JointDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
-                value={item.purityRaw !== undefined ? item.purityRaw : (item.purity === 0 ? '' : item.purity)}
-                onChange={(e) => handleInlineChange(index, 'purity', e.target.value)}
+                value={
+                  item.purityRaw !== undefined
+                    ? item.purityRaw
+                    : item.purity === 0
+                      ? ''
+                      : item.purity
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'purity', e.target.value)
+                }
                 placeholder="e.g., 98"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 %
               </span>
             </div>
@@ -792,12 +906,20 @@ const JointDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
-                value={item.srpRaw !== undefined ? item.srpRaw : (item.srp === 0 ? '' : item.srp)}
-                onChange={(e) => handleInlineChange(index, 'srp', e.target.value)}
+                value={
+                  item.srpRaw !== undefined
+                    ? item.srpRaw
+                    : item.srp === 0
+                      ? ''
+                      : item.srp
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'srp', e.target.value)
+                }
                 placeholder="0.000"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 G
               </span>
             </div>
@@ -819,15 +941,23 @@ const JointDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
-                value={item.scrapRaw !== undefined ? item.scrapRaw : (item.scrap === 0 ? '' : item.scrap)}
-                onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
+                value={
+                  item.scrapRaw !== undefined
+                    ? item.scrapRaw
+                    : item.scrap === 0
+                      ? ''
+                      : item.scrap
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'scrap', e.target.value)
+                }
                 placeholder="0.000"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center font-mono text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-slate-500">
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 G
               </span>
-            </div >
+            </div>
           );
         }
         return (
@@ -838,35 +968,34 @@ const JointDept: React.FC = () => {
       },
     },
 
-
     // Action column appears only after the user enters a value.
     ...(showActionColumn
       ? [
-        {
-          key: 'actions',
-          header: 'Action',
-          render: (item: JointEntry, index: number) => {
-            if (item.isSaved || !hasEditableValues(item)) {
-              return null;
-            }
+          {
+            key: 'actions',
+            header: 'Action',
+            render: (item: JointEntry, index: number) => {
+              if (item.isSaved || !hasEditableValues(item)) {
+                return null;
+              }
 
-            return (
-              <div className="flex items-center justify-center">
-                <button
-                  type="button"
-                  onClick={() => handleSaveClick(index)}
-                  disabled={isLoading || isSubmitting}
-                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Save Entry"
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  <span>cutting</span>
-                </button>
-              </div>
-            );
-          },
-        } as Column<JointEntry>,
-      ]
+              return (
+                <div className="flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveClick(index)}
+                    disabled={isLoading || isSubmitting}
+                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Save Entry"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    <span>cutting</span>
+                  </button>
+                </div>
+              );
+            },
+          } as Column<JointEntry>,
+        ]
       : []),
   ];
 
@@ -883,15 +1012,14 @@ const JointDept: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
+    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
+      <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
         <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-sm sm:text-base md:text-lg font-bold text-[#1a1c1b] dark:text-white truncate">
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white sm:text-base md:text-lg">
               {showHistory ? 'Joint History' : 'Joint Department'}
             </h1>
-
           </div>
           <div className="flex items-center gap-2">
             {/* Weekly Date Filter - Only show when viewing history */}
@@ -908,9 +1036,9 @@ const JointDept: React.FC = () => {
                       if (dates && dates.length > 0) {
                         const from = new Date(dates[0]);
                         from.setHours(0, 0, 0, 0);
-                        setDateRange(prev => [from, prev[1] || from]);
+                        setDateRange((prev) => [from, prev[1] || from]);
                       } else {
-                        setDateRange(prev => [undefined as any, prev[1]]);
+                        setDateRange((prev) => [undefined as any, prev[1]]);
                       }
                     }}
                     className="w-32 sm:w-36 md:w-40"
@@ -926,16 +1054,14 @@ const JointDept: React.FC = () => {
                       if (dates && dates.length > 0) {
                         const to = new Date(dates[0]);
                         to.setHours(23, 59, 59, 999);
-                        setDateRange(prev => [prev[0] || to, to]);
+                        setDateRange((prev) => [prev[0] || to, to]);
                       } else {
-                        setDateRange(prev => [prev[0], undefined as any]);
+                        setDateRange((prev) => [prev[0], undefined as any]);
                       }
                     }}
                     className="w-32 sm:w-36 md:w-40"
                   />
                 </div>
-
-
               </div>
             )}
 
@@ -955,17 +1081,18 @@ const JointDept: React.FC = () => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 !px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !text-white whitespace-nowrap ${showHistory ? '!bg-amber-600 hover:!bg-amber-700' : '!bg-blue-600 hover:!bg-blue-700'
-                }`}
+              className={`flex items-center gap-1.5 whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
+                showHistory
+                  ? '!bg-amber-600 hover:!bg-amber-700'
+                  : '!bg-blue-600 hover:!bg-blue-700'
+              }`}
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               ) : (
                 <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               )}
-              <span>
-                {showHistory ? 'Show Joint' : 'History'}
-              </span>
+              <span>{showHistory ? 'Show Joint' : 'History'}</span>
             </GenericButton>
           </div>
         </div>
@@ -988,10 +1115,10 @@ const JointDept: React.FC = () => {
         /* History Table */
         <div className="px-3 py-4 sm:px-4 md:px-6">
           {/* History Summary Cards */}
-          <div className="mb-4 grid grid-cols-2 sm:grid-cols-5 gap-3">
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Chain Given
                 </span>
                 <span className="text-lg font-bold text-black dark:text-amber-400">
@@ -999,9 +1126,9 @@ const JointDept: React.FC = () => {
                 </span>
               </div>
             </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Chain Received
                 </span>
                 <span className="text-lg font-bold text-black dark:text-blue-400">
@@ -1009,9 +1136,9 @@ const JointDept: React.FC = () => {
                 </span>
               </div>
             </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Powder
                 </span>
                 <span className="text-lg font-bold text-black dark:text-purple-400">
@@ -1019,9 +1146,9 @@ const JointDept: React.FC = () => {
                 </span>
               </div>
             </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Powder Received
                 </span>
                 <span className="text-lg font-bold text-black dark:text-indigo-400">
@@ -1029,9 +1156,9 @@ const JointDept: React.FC = () => {
                 </span>
               </div>
             </div>
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700">
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   SCRP
                 </span>
                 <span className="text-lg font-bold text-black dark:text-green-400">
@@ -1047,7 +1174,7 @@ const JointDept: React.FC = () => {
             emptyMessage={
               dateRange.length === 2
                 ? `No history records found for the selected date range (${new Date(dateRange[0]).toLocaleDateString('en-IN')} to ${new Date(dateRange[1]).toLocaleDateString('en-IN')})`
-                : "No history records found. Complete a joint process to see history."
+                : 'No history records found. Complete a joint process to see history.'
             }
             isLoading={historyLoading}
             showSrNo={true}
@@ -1062,12 +1189,12 @@ const JointDept: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
-              <div className="flex items-center justify-center mb-4">
+              <div className="mb-4 flex items-center justify-center">
                 <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
                   <Save className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                 </div>
               </div>
-              <h3 className="text-center text-lg font-bold text-[#1a1c1b] dark:text-white mb-2">
+              <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
                 Confirm Save
               </h3>
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
@@ -1086,7 +1213,7 @@ const JointDept: React.FC = () => {
                 <button
                   onClick={confirmSave}
                   disabled={isLoading}
-                  className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isLoading ? 'Saving...' : 'Confirm Save'}
                 </button>

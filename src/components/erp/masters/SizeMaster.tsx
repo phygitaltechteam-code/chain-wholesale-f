@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Plus, X, ArrowLeft, Search, Edit, Trash2 } from 'lucide-react';
+import React, {useState} from 'react';
+import {Plus, X, ArrowLeft, Search, Edit, Trash2} from 'lucide-react';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useNavigate } from '@tanstack/react-router';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
-import { z } from 'zod';
+import {useNavigate} from '@tanstack/react-router';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import {z} from 'zod';
 import {
   Size,
   SizeSchema,
@@ -21,27 +21,27 @@ const SizeMaster: React.FC = () => {
   const [formData, setFormData] = useState({
     size: '',
   });
-  const [formErrors, setFormErrors] = useState<{ size?: string }>({});
+  const [formErrors, setFormErrors] = useState<{size?: string}>({});
   const [searchTerm, setSearchTerm] = useState('');
 
   // React Query hooks
-  const { data: sizes = [], isLoading, refetch } = useGetSizes();
+  const {data: sizes = [], isLoading, refetch} = useGetSizes();
   const createSize = useCreateSize();
   const updateSize = useUpdateSize();
   const deleteSize = useDeleteSize();
 
   // Filter data based on search term
   const filteredData = searchTerm
-    ? sizes.filter(item =>
-      item.size.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    ? sizes.filter((item) =>
+        item.size.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
     : sizes;
 
   // Handle form input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const {name, value} = e.target;
 
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({...prev, [name]: value}));
     if (formErrors.size) {
       setFormErrors({});
     }
@@ -50,12 +50,12 @@ const SizeMaster: React.FC = () => {
   // Validate form data
   const validateForm = (): boolean => {
     try {
-      SizeSchema.parse({ size: formData.size.trim() });
+      SizeSchema.parse({size: formData.size.trim()});
       setFormErrors({});
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors: { size?: string } = {};
+        const errors: {size?: string} = {};
         error.errors.forEach((err) => {
           if (err.path[0] === 'size') {
             errors.size = err.message;
@@ -72,7 +72,7 @@ const SizeMaster: React.FC = () => {
   const handleAddSize = async () => {
     if (!validateForm()) return;
     try {
-      await createSize.mutateAsync({ size: formData.size.trim() });
+      await createSize.mutateAsync({size: formData.size.trim()});
       resetForm();
       setIsModalOpen(false);
       refetch();
@@ -89,7 +89,7 @@ const SizeMaster: React.FC = () => {
     try {
       await updateSize.mutateAsync({
         id: editingSize.id,
-        data: { size: formData.size.trim() },
+        data: {size: formData.size.trim()},
       });
       resetForm();
       setIsModalOpen(false);
@@ -103,9 +103,7 @@ const SizeMaster: React.FC = () => {
   // Handle delete size
   const handleDeleteSize = async (item: Size) => {
     if (
-      !window.confirm(
-        `Are you sure you want to delete size "${item.size}"?`
-      )
+      !window.confirm(`Are you sure you want to delete size "${item.size}"?`)
     ) {
       return;
     }
@@ -131,14 +129,14 @@ const SizeMaster: React.FC = () => {
   // Handle edit button click
   const handleEditClick = (item: Size) => {
     setEditingSize(item);
-    setFormData({ size: item.size });
+    setFormData({size: item.size});
     setFormErrors({});
     setIsModalOpen(true);
   };
 
   // Reset form
   const resetForm = () => {
-    setFormData({ size: '' });
+    setFormData({size: ''});
     setFormErrors({});
     setEditingSize(null);
   };
@@ -154,7 +152,7 @@ const SizeMaster: React.FC = () => {
       {/* Edit Button - Same style as delete but with edit icon */}
       <button
         onClick={() => handleEditClick(item)}
-        className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
+        className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
         title="Edit Size"
       >
         <Edit className="h-4 w-4" />
@@ -164,7 +162,7 @@ const SizeMaster: React.FC = () => {
       <button
         onClick={() => handleDeleteSize(item)}
         disabled={deleteSize.isPending}
-        className="rounded-lg p-1.5 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 transition-colors"
+        className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
         title="Delete Size"
       >
         <Trash2 className="h-4 w-4" />
@@ -179,7 +177,7 @@ const SizeMaster: React.FC = () => {
       header: 'Size',
       className: 'font-medium',
       render: (item) => (
-        <span className="text-xs sm:text-sm font-medium text-[#1a1c1b] dark:text-white">
+        <span className="text-xs font-medium text-[#1a1c1b] dark:text-white sm:text-sm">
           {item.size}
         </span>
       ),
@@ -187,33 +185,32 @@ const SizeMaster: React.FC = () => {
   ];
 
   // Delete must not disable the Add/Edit form.
-  const isFormSubmitting =
-    createSize.isPending || updateSize.isPending;
+  const isFormSubmitting = createSize.isPending || updateSize.isPending;
 
   const isDeleting = deleteSize.isPending;
 
   return (
     <div className="bg-[#f9f9f7] dark:bg-slate-950">
       {/* Header - Back Button, Title, Search, and Add Button on Same Line */}
-      <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
-        <div className="flex flex-col sm:flex-row items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6 gap-3">
+      <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
+        <div className="flex flex-col items-center justify-between gap-3 px-3 py-2 sm:flex-row sm:px-4 sm:py-3 md:px-6">
           {/* Left side - Back button and Title */}
-          <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
+          <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
             <button
-              onClick={() => navigate({ to: '/Stocks/stockpage' })}
-              className="flex items-center gap-1 text-[#785600] hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300 transition-colors flex-shrink-0"
+              onClick={() => navigate({to: '/Stocks/stockpage'})}
+              className="flex flex-shrink-0 items-center gap-1 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="text-xs sm:text-sm font-medium">Back</span>
+              <span className="text-xs font-medium sm:text-sm">Back</span>
             </button>
-            <div className="h-5 w-px bg-[#d3c4af]/30 dark:bg-slate-600 flex-shrink-0" />
+            <div className="h-5 w-px flex-shrink-0 bg-[#d3c4af]/30 dark:bg-slate-600" />
             <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Size Master
             </h2>
           </div>
 
           {/* Right side - Search and Add Size Button */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
             {/* Search Bar */}
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
@@ -222,15 +219,12 @@ const SizeMaster: React.FC = () => {
                 placeholder="Search by size..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
 
             {/* Add Size Button */}
-            <GenericButton
-              type="button"
-              onClick={() => setIsModalOpen(true)}
-            >
+            <GenericButton type="button" onClick={() => setIsModalOpen(true)}>
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span className="xs:hidden">Add Size</span>
             </GenericButton>
@@ -238,7 +232,7 @@ const SizeMaster: React.FC = () => {
         </div>
       </div>
 
-      <div className="px-3 sm:px-4 md:px-6 pb-4">
+      <div className="px-3 pb-4 sm:px-4 md:px-6">
         {/* Sizes Table - Full width */}
         <div className="-mx-3 sm:-mx-4 md:mx-0">
           <GenericTable
@@ -258,10 +252,10 @@ const SizeMaster: React.FC = () => {
       {/* Add/Edit Modal - Responsive */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4">
-          <div className="w-full max-w-[95%] sm:max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
+          <div className="w-full max-w-[95%] rounded-xl bg-white shadow-xl dark:bg-slate-900 sm:max-w-md">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[#d3c4af]/10 p-3 sm:p-4 dark:border-slate-700">
-              <h3 className="text-base sm:text-lg font-bold text-[#1a1c1b] dark:text-white">
+            <div className="flex items-center justify-between border-b border-[#d3c4af]/10 p-3 dark:border-slate-700 sm:p-4">
+              <h3 className="text-base font-bold text-[#1a1c1b] dark:text-white sm:text-lg">
                 {editingSize ? 'Edit Size' : 'Add New Size'}
               </h3>
               <button
@@ -273,9 +267,9 @@ const SizeMaster: React.FC = () => {
             </div>
 
             {/* Modal Body */}
-            <div className="space-y-3 sm:space-y-4 p-3 sm:p-4">
+            <div className="space-y-3 p-3 sm:space-y-4 sm:p-4">
               <div>
-                <label className="mb-1 block text-[9px] sm:text-[10px] font-bold uppercase text-[#4f4535] dark:text-slate-400">
+                <label className="mb-1 block text-[9px] font-bold uppercase text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
                   Size <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -284,26 +278,29 @@ const SizeMaster: React.FC = () => {
                   value={formData.size}
                   onChange={handleInputChange}
                   placeholder="Enter size (e.g., 16, Small, Large, XL)"
-                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white ${formErrors.size ? 'ring-2 ring-red-500' : ''
-                    }`}
+                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
+                    formErrors.size ? 'ring-2 ring-red-500' : ''
+                  }`}
                   autoFocus
                 />
                 {formErrors.size && (
-                  <p className="mt-1 text-[10px] sm:text-xs text-red-500">{formErrors.size}</p>
+                  <p className="mt-1 text-[10px] text-red-500 sm:text-xs">
+                    {formErrors.size}
+                  </p>
                 )}
-                <p className="mt-1 text-[8px] sm:text-[10px] text-[#4f4535]/60 dark:text-slate-500">
+                <p className="mt-1 text-[8px] text-[#4f4535]/60 dark:text-slate-500 sm:text-[10px]">
                   Enter any size (numbers, text, or alphanumeric)
                 </p>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 border-t border-[#d3c4af]/10 p-3 sm:p-4 dark:border-slate-700">
+            <div className="flex flex-col-reverse justify-end gap-2 border-t border-[#d3c4af]/10 p-3 dark:border-slate-700 sm:flex-row sm:gap-3 sm:p-4">
               <GenericButton
                 type="button"
                 onClick={editingSize ? handleEditSize : handleAddSize}
                 disabled={isFormSubmitting}
-                className="!px-3 !py-1.5 !text-xs sm:!px-4 sm:!py-2 sm:!text-sm !bg-amber-600 hover:!bg-amber-700 !text-white"
+                className="!bg-amber-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-amber-700 sm:!px-4 sm:!py-2 sm:!text-sm"
               >
                 {isFormSubmitting
                   ? 'Saving...'

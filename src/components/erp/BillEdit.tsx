@@ -1,25 +1,36 @@
 // components/erp/BillEdit.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
-  X, Save, Edit, Trash2,
-  Plus, Minus, ArrowLeft, Loader2,
-  FileText, CheckCircle, AlertCircle, Search, UserPlus, Printer
+  X,
+  Save,
+  Edit,
+  Trash2,
+  Plus,
+  Minus,
+  ArrowLeft,
+  Loader2,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  Search,
+  UserPlus,
+  Printer,
 } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useGetClients, useCreateClient } from '@/lib/api/client';
-import { useGetItems } from '@/lib/api/items';
-import { useGetSizes } from '@/lib/api/sizes';
+import {useGetClients, useCreateClient} from '@/lib/api/client';
+import {useGetItems} from '@/lib/api/items';
+import {useGetSizes} from '@/lib/api/sizes';
 import toast from 'react-hot-toast';
-import { z } from 'zod';
+import {z} from 'zod';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
-import { useGetQuantity, useGetBillByid, useBillUpdate } from '@/lib/api/bill';
-import { Route } from '@/routes/_app/billiupdate.$id';
+import {useGetQuantity, useGetBillByid, useBillUpdate} from '@/lib/api/bill';
+import {Route} from '@/routes/_app/billiupdate.$id';
 import GenericInputField from '../Forms/Input/GenericInputField';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { ClientSearch } from '../reciept/ClientSearch';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {ClientSearch} from '../reciept/ClientSearch';
 
 interface ReceiptItem {
   id: string;
@@ -54,14 +65,14 @@ interface ReceiptFormData {
 }
 
 const ClientSchema = z.object({
-  fullName: z.string().min(1, "Name is required"),
-  phoneNumber: z.string().min(10, "Phone number must be at least 10 digits"),
-  address: z.string().min(1, "Address is required"),
-  openingBalance: z.number().min(0, "Opening balance cannot be negative"),
+  fullName: z.string().min(1, 'Name is required'),
+  phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits'),
+  address: z.string().min(1, 'Address is required'),
+  openingBalance: z.number().min(0, 'Opening balance cannot be negative'),
 });
 
 const BillEdit: React.FC = () => {
-  const { id } = Route.useParams();
+  const {id} = Route.useParams();
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date[]>([]);
   const [showStockErrorModal, setShowStockErrorModal] = useState(false);
@@ -78,8 +89,8 @@ const BillEdit: React.FC = () => {
       karat: '22K',
       rate: 0,
       weight: 0,
-      totalAmount: 0
-    }
+      totalAmount: 0,
+    },
   });
   const [showClientModal, setShowClientModal] = useState(false);
   const [clientFormData, setClientFormData] = useState({
@@ -97,16 +108,20 @@ const BillEdit: React.FC = () => {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastFetchRef = useRef<{ item: string; size: string; purity: number } | null>(null);
+  const lastFetchRef = useRef<{
+    item: string;
+    size: string;
+    purity: number;
+  } | null>(null);
 
-  const { data: clients = [], refetch: refetchClients } = useGetClients();
-  const { data: items = [] } = useGetItems();
-  const { data: sizes = [] } = useGetSizes();
+  const {data: clients = [], refetch: refetchClients} = useGetClients();
+  const {data: items = []} = useGetItems();
+  const {data: sizes = []} = useGetSizes();
   const createClient = useCreateClient();
 
   const getpdfheaderdata = useGetHeader();
   const getQuantity = useGetQuantity();
-  const { data: billResponse, isLoading: isLoadingBill } = useGetBillByid(id);
+  const {data: billResponse, isLoading: isLoadingBill} = useGetBillByid(id);
   const updateBill = useBillUpdate();
 
   // Add empty row function
@@ -127,9 +142,9 @@ const BillEdit: React.FC = () => {
       itemId: '',
       sizeId: '',
     };
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      items: [...prev.items, newItem]
+      items: [...prev.items, newItem],
     }));
   };
 
@@ -167,8 +182,13 @@ const BillEdit: React.FC = () => {
 
     // Map the data to form fields
     const mappedData = {
-      clientId: billData.clientID || billData.clientId || billData.client?.id || '',
-      clientName: billData.client?.fullName || billData.clientName || billData.client?.fullname || '',
+      clientId:
+        billData.clientID || billData.clientId || billData.client?.id || '',
+      clientName:
+        billData.client?.fullName ||
+        billData.clientName ||
+        billData.client?.fullname ||
+        '',
       date: billData.receiptDate
         ? new Date(billData.receiptDate).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0],
@@ -206,14 +226,14 @@ const BillEdit: React.FC = () => {
     }
 
     // Set all form data at once to prevent multiple updates
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       clientId: mappedData.clientId,
       clientName: mappedData.clientName,
       date: mappedData.date,
       customerWeight: mappedData.customerWeight,
       totalFine: mappedData.totalFine,
-      items: itemsList.length > 0 ? itemsList : prev.items
+      items: itemsList.length > 0 ? itemsList : prev.items,
     }));
 
     setIsDataLoaded(true);
@@ -275,14 +295,19 @@ const BillEdit: React.FC = () => {
     updatedItems.forEach((item, idx) => {
       item.srNo = idx + 1;
     });
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      items: updatedItems
+      items: updatedItems,
     }));
     toast.success('Item removed');
   };
   // ─── Update the fetchQuantity function in BillEdit ────────────────────────
-  const fetchQuantity = async (index: number, item: string, size: string, purity: number) => {
+  const fetchQuantity = async (
+    index: number,
+    item: string,
+    size: string,
+    purity: number,
+  ) => {
     if (!item || !size || !purity || purity <= 0) {
       return;
     }
@@ -295,46 +320,55 @@ const BillEdit: React.FC = () => {
       return;
     }
 
-    const currentFetch = { item, size, purity };
-    if (lastFetchRef.current &&
+    const currentFetch = {item, size, purity};
+    if (
+      lastFetchRef.current &&
       lastFetchRef.current.item === currentFetch.item &&
       lastFetchRef.current.size === currentFetch.size &&
-      lastFetchRef.current.purity === currentFetch.purity) {
+      lastFetchRef.current.purity === currentFetch.purity
+    ) {
       return;
     }
     lastFetchRef.current = currentFetch;
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       items: prev.items.map((entry, i) =>
-        i === index ? { ...entry, isLoadingQty: true } : entry
-      )
+        i === index ? {...entry, isLoadingQty: true} : entry,
+      ),
     }));
 
     try {
-     
       const response = await getQuantity.mutateAsync({
-        customerId: formData.clientId, 
+        customerId: formData.clientId,
         itemId: selectedItem.id,
         sizeId: selectedSize.id,
-        purity: purity
+        purity: purity,
       });
 
       let weight = 0;
       let srpValue = 0;
 
       // Extract weight
-      if (response?.data?.weight !== undefined && response.data.weight !== null) {
+      if (
+        response?.data?.weight !== undefined &&
+        response.data.weight !== null
+      ) {
         weight = Number(response.data.weight);
       } else if (response?.weight !== undefined && response.weight !== null) {
         weight = Number(response.weight);
-      } else if (response?.data?.quantity !== undefined && response.data.quantity !== null) {
+      } else if (
+        response?.data?.quantity !== undefined &&
+        response.data.quantity !== null
+      ) {
         weight = Number(response.data.quantity);
-      } else if (response?.quantity !== undefined && response.quantity !== null) {
+      } else if (
+        response?.quantity !== undefined &&
+        response.quantity !== null
+      ) {
         weight = Number(response.quantity);
       }
 
-    
       if (response?.data?.srp !== undefined && response.data.srp !== null) {
         srpValue = Number(response.data.srp);
       } else if (response?.srp !== undefined && response.srp !== null) {
@@ -342,39 +376,45 @@ const BillEdit: React.FC = () => {
       }
 
       if (!isNaN(weight) && weight >= 0) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           items: prev.items.map((entry, i) =>
-            i === index ? {
-              ...entry,
-              availableQty: weight,
-              srp: srpValue > 0 ? srpValue : entry.srp,
-              isLoadingQty: false
-            } : entry
-          )
+            i === index
+              ? {
+                  ...entry,
+                  availableQty: weight,
+                  srp: srpValue > 0 ? srpValue : entry.srp,
+                  isLoadingQty: false,
+                }
+              : entry,
+          ),
         }));
       } else {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           items: prev.items.map((entry, i) =>
-            i === index ? { ...entry, isLoadingQty: false } : entry
-          )
+            i === index ? {...entry, isLoadingQty: false} : entry,
+          ),
         }));
       }
     } catch (error: any) {
       console.error('Error fetching quantity:', error);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         items: prev.items.map((entry, i) =>
-          i === index ? { ...entry, isLoadingQty: false } : entry
-        )
+          i === index ? {...entry, isLoadingQty: false} : entry,
+        ),
       }));
     }
   };
 
-  const calculateFineWeight = (purity: number, grossWt: number, srp: number) => {
+  const calculateFineWeight = (
+    purity: number,
+    grossWt: number,
+    srp: number,
+  ) => {
     const purityFactor = purity / 100;
-    return (grossWt * purityFactor) + srp;
+    return grossWt * purityFactor + srp;
   };
 
   // Update Total Fine calculation
@@ -383,7 +423,11 @@ const BillEdit: React.FC = () => {
     return Math.round(total * 1000) / 1000;
   };
 
-  const handleItemChange = (index: number, field: keyof ReceiptItem, value: any) => {
+  const handleItemChange = (
+    index: number,
+    field: keyof ReceiptItem,
+    value: any,
+  ) => {
     const updatedItems = [...formData.items];
     const item = updatedItems[index];
 
@@ -401,47 +445,54 @@ const BillEdit: React.FC = () => {
         const roundedValue = Math.round(numValue * 1000) / 1000;
         updatedItems[index] = {
           ...item,
-          [field]: roundedValue
+          [field]: roundedValue,
         };
       } else {
         updatedItems[index] = {
           ...item,
-          [field]: 0
+          [field]: 0,
         };
       }
     } else if (field === 'purity') {
       const numValue = parseFloat(value);
       updatedItems[index] = {
         ...item,
-        [field]: isNaN(numValue) ? 0 : Math.min(100, Math.max(0, numValue))
+        [field]: isNaN(numValue) ? 0 : Math.min(100, Math.max(0, numValue)),
       };
     } else {
       updatedItems[index] = {
         ...item,
-        [field]: value
+        [field]: value,
       };
     }
 
     // Recalculate fine weight for the changed item
     if (field === 'purity' || field === 'grossWt' || field === 'srp') {
-      const purity = field === 'purity' ? updatedItems[index].purity : updatedItems[index].purity;
-      const grossWt = field === 'grossWt' ? updatedItems[index].grossWt : updatedItems[index].grossWt;
-      const srp = field === 'srp' ? updatedItems[index].srp : updatedItems[index].srp;
+      const purity =
+        field === 'purity'
+          ? updatedItems[index].purity
+          : updatedItems[index].purity;
+      const grossWt =
+        field === 'grossWt'
+          ? updatedItems[index].grossWt
+          : updatedItems[index].grossWt;
+      const srp =
+        field === 'srp' ? updatedItems[index].srp : updatedItems[index].srp;
 
       updatedItems[index].fineWt = calculateFineWeight(
         Number(purity) || 0,
         Number(grossWt) || 0,
-        Number(srp) || 0
+        Number(srp) || 0,
       );
     }
 
     // Update total fine
     const newTotalFine = updateTotalFine(updatedItems);
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       items: updatedItems,
-      totalFine: newTotalFine
+      totalFine: newTotalFine,
     }));
 
     if (field === 'purity') {
@@ -451,7 +502,12 @@ const BillEdit: React.FC = () => {
           clearTimeout(debounceTimerRef.current);
         }
         debounceTimerRef.current = setTimeout(() => {
-          fetchQuantity(index, currentItem.item, currentItem.size, currentItem.purity);
+          fetchQuantity(
+            index,
+            currentItem.item,
+            currentItem.size,
+            currentItem.purity,
+          );
         }, 800);
       }
     }
@@ -491,45 +547,55 @@ const BillEdit: React.FC = () => {
         return false;
       }
       if (item.isLoadingQty) {
-        toast.loading(`Row ${i + 1}: Fetching available quantity...`, { duration: 2000 });
+        toast.loading(`Row ${i + 1}: Fetching available quantity...`, {
+          duration: 2000,
+        });
         return false;
       }
     }
     return true;
   };
 
-  const handleCustomerWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomerWeightChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const value = e.target.value;
     if (value === '') {
-      setFormData(prev => ({ ...prev, customerWeight: 0 }));
+      setFormData((prev) => ({...prev, customerWeight: 0}));
       return;
     }
     const numValue = parseFloat(value);
     if (!isNaN(numValue) && numValue >= 0) {
       const roundedValue = Math.round(numValue * 1000) / 1000;
-      setFormData(prev => ({ ...prev, customerWeight: roundedValue }));
+      setFormData((prev) => ({...prev, customerWeight: roundedValue}));
     }
   };
 
   const handleTotalFineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value === '') {
-      setFormData(prev => ({ ...prev, totalFine: 0 }));
+      setFormData((prev) => ({...prev, totalFine: 0}));
       return;
     }
     const numValue = parseFloat(value);
     if (!isNaN(numValue) && numValue >= 0) {
       const roundedValue = Math.round(numValue * 1000) / 1000;
-      setFormData(prev => ({ ...prev, totalFine: roundedValue }));
+      setFormData((prev) => ({...prev, totalFine: roundedValue}));
     }
   };
 
   const calculateTotalGrossWt = () => {
-    return formData.items.reduce((total, item) => total + (item.grossWt || 0), 0);
+    return formData.items.reduce(
+      (total, item) => total + (item.grossWt || 0),
+      0,
+    );
   };
 
   const calculateTotalFineWt = () => {
-    return formData.items.reduce((total, item) => total + (item.fineWt || 0), 0);
+    return formData.items.reduce(
+      (total, item) => total + (item.fineWt || 0),
+      0,
+    );
   };
 
   const calculateTotalSRP = () => {
@@ -537,7 +603,10 @@ const BillEdit: React.FC = () => {
   };
 
   const calculateTotalLabor = () => {
-    return formData.items.reduce((total, item) => total + (item.laborRate || 0), 0);
+    return formData.items.reduce(
+      (total, item) => total + (item.laborRate || 0),
+      0,
+    );
   };
 
   const calculateTotalBill = () => {
@@ -596,7 +665,7 @@ const BillEdit: React.FC = () => {
     const dateStr = receiptDate.toLocaleDateString('en-IN', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
     });
 
     // Calculate amounts
@@ -627,22 +696,41 @@ const BillEdit: React.FC = () => {
       `;
     });
 
-    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const headerInfo =
+      getpdfheaderdata?.data?.data ||
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation =
+      headerInfo.leftInvocation ||
+      headerInfo.leftInovation ||
+      '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation =
+      headerInfo.rightInvocation ||
+      headerInfo.rightInovation ||
+      '॥ श्री साई प्रसन्न ॥';
     const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const description =
+      headerInfo.description ||
+      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
     const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const phoneNumbers =
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
     const invocationColor = headerInfo.invocationColor || '#a84b20';
     const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
     const descriptionColor = headerInfo.descriptionColor || '#8b451f';
     const proprietorColor = headerInfo.proprietorColor || '#a84b20';
     const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '18px';
-    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
-    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
-    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+    const factoryFontSize = headerInfo.factoryFontSize
+      ? `${headerInfo.factoryFontSize}px`
+      : '18px';
+    const descriptionFontSize = headerInfo.descriptionFontSize
+      ? `${headerInfo.descriptionFontSize}px`
+      : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize
+      ? `${headerInfo.proprietorFontSize}px`
+      : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize
+      ? `${headerInfo.phoneFontSize}px`
+      : '9px';
 
     printContainer.innerHTML = `
       <div style="
@@ -1000,27 +1088,29 @@ const BillEdit: React.FC = () => {
       const billData = {
         clientId: formData.clientId,
         receiptDate: formData.date,
-        items: formData.items.map(item => ({
-          itemId: items.find((i: any) => i.name === item.item)?.id || item.itemId,
+        items: formData.items.map((item) => ({
+          itemId:
+            items.find((i: any) => i.name === item.item)?.id || item.itemId,
           itemName: item.item,
-          sizeId: sizes.find((s: any) => s.size === item.size)?.id || item.sizeId,
+          sizeId:
+            sizes.find((s: any) => s.size === item.size)?.id || item.sizeId,
           size: item.size,
           purity: item.purity,
           availableQty: item.availableQty,
           grossWeight: Number(item.grossWt.toFixed(3)),
           srp: item.srp,
           fineWeight: Number(item.fineWt.toFixed(3)),
-          laborRate: item.laborRate || 0
+          laborRate: item.laborRate || 0,
         })),
         customerWeight: Number(formData.customerWeight.toFixed(3)),
         remainingWeight: Number(remainingWeight.toFixed(3)),
         totalWeight: Number(totalGrossWt.toFixed(3)),
-        type: 'DRAFT'
+        type: 'DRAFT',
       };
 
-      await updateBill.mutateAsync({ id, data: billData });
+      await updateBill.mutateAsync({id, data: billData});
       // toast.success('Bill updated as draft successfully!');
-      navigate({ to: '/billing' });
+      navigate({to: '/billing'});
     } catch (error) {
       console.error('Error saving draft:', error);
       toast.error('Failed to save draft');
@@ -1049,25 +1139,27 @@ const BillEdit: React.FC = () => {
       const billData = {
         clientId: formData.clientId,
         receiptDate: formData.date,
-        items: formData.items.map(item => ({
-          itemId: items.find((i: any) => i.name === item.item)?.id || item.itemId,
+        items: formData.items.map((item) => ({
+          itemId:
+            items.find((i: any) => i.name === item.item)?.id || item.itemId,
           itemName: item.item,
-          sizeId: sizes.find((s: any) => s.size === item.size)?.id || item.sizeId,
+          sizeId:
+            sizes.find((s: any) => s.size === item.size)?.id || item.sizeId,
           size: item.size,
           purity: item.purity,
           availableQty: item.availableQty,
           grossWeight: Number(item.grossWt.toFixed(3)),
           srp: item.srp,
           fineWeight: Number(item.fineWt.toFixed(3)),
-          laborRate: item.laborRate || 0
+          laborRate: item.laborRate || 0,
         })),
         customerWeight: Number(formData.customerWeight.toFixed(3)),
         remainingWeight: Number(remainingWeight.toFixed(3)),
         totalWeight: Number(totalGrossWt.toFixed(3)),
-        type: 'BILL'
+        type: 'BILL',
       };
 
-      await updateBill.mutateAsync({ id, data: billData });
+      await updateBill.mutateAsync({id, data: billData});
       // toast.success('Bill updated successfully!');
 
       // Print the receipt after successful update
@@ -1077,9 +1169,8 @@ const BillEdit: React.FC = () => {
 
       // Navigate after print
       setTimeout(() => {
-        navigate({ to: '/billing' });
+        navigate({to: '/billing'});
       }, 2000);
-
     } catch (error: any) {
       console.error('Error updating receipt:', error);
 
@@ -1109,7 +1200,7 @@ const BillEdit: React.FC = () => {
       <div className="flex items-center justify-center gap-1">
         <button
           onClick={() => handleRemoveItem(actualIndex)}
-          className="rounded-lg p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-lg p-1.5 text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20"
           title="Remove row"
           disabled={formData.items.length <= 1}
         >
@@ -1117,7 +1208,7 @@ const BillEdit: React.FC = () => {
         </button>
         <button
           onClick={handleAddItem}
-          className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20 transition-colors"
+          className="rounded-lg p-1.5 text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
           title="Add row"
         >
           <Plus className="h-3.5 w-3.5" />
@@ -1135,12 +1226,16 @@ const BillEdit: React.FC = () => {
         return (
           <select
             value={item.item}
-            onChange={(e) => handleItemChange(actualIndex, 'item', e.target.value)}
-            className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-white px-1.5 py-1.5 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+            onChange={(e) =>
+              handleItemChange(actualIndex, 'item', e.target.value)
+            }
+            className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-white px-1.5 py-1.5 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
             <option value="">Select Item</option>
             {items.map((item: any) => (
-              <option key={item.id} value={item.name}>{item.name}</option>
+              <option key={item.id} value={item.name}>
+                {item.name}
+              </option>
             ))}
           </select>
         );
@@ -1154,12 +1249,16 @@ const BillEdit: React.FC = () => {
         return (
           <select
             value={item.size}
-            onChange={(e) => handleItemChange(actualIndex, 'size', e.target.value)}
-            className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-white px-1.5 py-1.5 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700"
+            onChange={(e) =>
+              handleItemChange(actualIndex, 'size', e.target.value)
+            }
+            className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-white px-1.5 py-1.5 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
             <option value="">Select Size</option>
             {sizes.map((size: any) => (
-              <option key={size.id} value={size.size}>{size.size}</option>
+              <option key={size.id} value={size.size}>
+                {size.size}
+              </option>
             ))}
           </select>
         );
@@ -1178,14 +1277,20 @@ const BillEdit: React.FC = () => {
               min="0"
               max="100"
               value={item.purity || ''}
-              onChange={(e) => handleItemChange(actualIndex, 'purity', parseFloat(e.target.value) || 0)}
+              onChange={(e) =>
+                handleItemChange(
+                  actualIndex,
+                  'purity',
+                  parseFloat(e.target.value) || 0,
+                )
+              }
               placeholder="0"
               suffix="%"
-              className="!w-full !min-w-0 text-right !px-1.5 !py-1.5 !pr-6 text-xs"
+              className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
               decimalScale={2}
             />
             {item.isLoadingQty && (
-              <Loader2 className="h-4 w-4 animate-spin text-[#785600] absolute right-8 top-1/2 -translate-y-1/2" />
+              <Loader2 className="absolute right-8 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#785600]" />
             )}
           </div>
         );
@@ -1203,10 +1308,12 @@ const BillEdit: React.FC = () => {
               min="0"
               value={item.availableQty || ''}
               placeholder="Auto"
-              className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-gray-50 px-1.5 py-1.5 pr-6 text-right text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white dark:border-slate-700 cursor-not-allowed"
+              className="bg-gray-50 w-full min-w-0 cursor-not-allowed rounded-md border border-[#d3c4af]/30 px-1.5 py-1.5 pr-6 text-right text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-700 dark:text-white"
               readOnly
             />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-500 dark:text-slate-400">G</span>
+            <span className="text-gray-500 absolute right-2 top-1/2 -translate-y-1/2 text-[10px] dark:text-slate-400">
+              G
+            </span>
           </div>
         );
       },
@@ -1240,7 +1347,7 @@ const BillEdit: React.FC = () => {
             }}
             placeholder="0.000"
             suffix="G"
-            className="!w-full !min-w-0 text-right !px-1.5 !py-1.5 !pr-6 text-xs"
+            className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
             decimalScale={3}
           />
         );
@@ -1257,10 +1364,16 @@ const BillEdit: React.FC = () => {
             step="0.01"
             min="0"
             value={item.srp || ''}
-            onChange={(e) => handleItemChange(actualIndex, 'srp', parseFloat(e.target.value) || 0)}
+            onChange={(e) =>
+              handleItemChange(
+                actualIndex,
+                'srp',
+                parseFloat(e.target.value) || 0,
+              )
+            }
             placeholder="0.00"
             suffix="G"
-            className="!w-full !min-w-0 text-right !px-1.5 !py-1.5 !pr-6 text-xs"
+            className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
             decimalScale={2}
           />
         );
@@ -1274,7 +1387,9 @@ const BillEdit: React.FC = () => {
           <span className="font-mono font-bold text-[#785600] dark:text-amber-400">
             {formatNumberThreeDecimals(item.fineWt)}
           </span>
-          <span className="text-[10px] text-gray-500 dark:text-slate-400">G</span>
+          <span className="text-gray-500 text-[10px] dark:text-slate-400">
+            G
+          </span>
         </div>
       ),
     },
@@ -1289,10 +1404,16 @@ const BillEdit: React.FC = () => {
             step="0.01"
             min="0"
             value={item.laborRate || ''}
-            onChange={(e) => handleItemChange(actualIndex, 'laborRate', parseFloat(e.target.value) || 0)}
+            onChange={(e) =>
+              handleItemChange(
+                actualIndex,
+                'laborRate',
+                parseFloat(e.target.value) || 0,
+              )
+            }
             placeholder="0.00"
             suffix="G"
-            className="!w-full !min-w-0 text-right !px-1.5 !py-1.5 !pr-6 text-xs"
+            className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
             decimalScale={2}
           />
         );
@@ -1302,24 +1423,26 @@ const BillEdit: React.FC = () => {
 
   if (isLoadingBill) {
     return (
-      <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] dark:bg-slate-950">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[#785600] mx-auto mb-4" />
-          <p className="text-[#4f4535] dark:text-slate-400">Loading bill data...</p>
+          <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-[#785600]" />
+          <p className="text-[#4f4535] dark:text-slate-400">
+            Loading bill data...
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#f9f9f7] dark:bg-slate-950 min-h-screen">
+    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       <div className="px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8">
         {/* Header */}
-        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate({ to: '/billing' })}
-              className="flex items-center gap-2 text-[#785600] hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300 transition-colors flex-shrink-0"
+              onClick={() => navigate({to: '/billing'})}
+              className="flex flex-shrink-0 items-center gap-2 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="text-sm font-medium">Back</span>
@@ -1332,8 +1455,8 @@ const BillEdit: React.FC = () => {
         </div>
 
         {/* Client & Date Section */}
-        <div className="mb-4 rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm dark:bg-slate-900 dark:border-slate-700">
-          <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
+        <div className="mb-4 rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-1">
             <div className="relative">
               <label className="mb-1.5 block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
                 Client <span className="text-red-500">*</span>
@@ -1343,7 +1466,7 @@ const BillEdit: React.FC = () => {
                 clients={clients as any[]}
                 selectedClient={
                   clients.find(
-                    (client: any) => client.id === formData.clientId
+                    (client: any) => client.id === formData.clientId,
                   ) || null
                 }
                 onSelectClient={(client: any) => {
@@ -1364,22 +1487,21 @@ const BillEdit: React.FC = () => {
                 onAddNewClient={() => setShowClientModal(true)}
               />
             </div>
-
           </div>
         </div>
 
         {/* Items Section */}
-        <div className="mb-4 rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm dark:bg-slate-900 dark:border-slate-700">
+        <div className="mb-4 rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-[#4f4535] dark:text-slate-300 uppercase tracking-wider">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-300">
               Items
             </h3>
-            <p className="text-xs text-[#4f4535]/60 dark:text-slate-400 mt-1">
+            <p className="mt-1 text-xs text-[#4f4535]/60 dark:text-slate-400">
               Use + button to add more items, - button to remove
             </p>
           </div>
 
-          <div className="w-full min-w-0 overflow-hidden [&_table]:w-full [&_table]:table-fixed [&_th]:px-1.5 [&_th]:py-2 [&_th]:text-[11px] [&_td]:px-1.5 [&_td]:py-1.5 [&_td]:text-xs">
+          <div className="w-full min-w-0 overflow-hidden [&_table]:w-full [&_table]:table-fixed [&_td]:px-1.5 [&_td]:py-1.5 [&_td]:text-xs [&_th]:px-1.5 [&_th]:py-2 [&_th]:text-[11px]">
             <GenericTable<ReceiptItem>
               data={formData.items}
               columns={columns}
@@ -1394,12 +1516,9 @@ const BillEdit: React.FC = () => {
 
         {/* Right Column - Weight Payment Details */}
         <div className="space-y-3">
-
           {/* Card 1: Advance & Issue */}
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-
               {/* Advance - Optional */}
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
@@ -1414,7 +1533,7 @@ const BillEdit: React.FC = () => {
                     value={formData.customerWeight || ''}
                     onChange={handleCustomerWeightChange}
                     placeholder="0.000"
-                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 pr-8 text-right text-sm font-mono text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 pr-8 text-right text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   />
 
                   <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#817563] dark:text-slate-400">
@@ -1437,7 +1556,7 @@ const BillEdit: React.FC = () => {
                     value={formData.totalFine || ''}
                     onChange={handleTotalFineChange}
                     placeholder="0.000"
-                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 pr-8 text-right text-sm font-mono text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 pr-8 text-right text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   />
 
                   <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#817563] dark:text-slate-400">
@@ -1445,12 +1564,10 @@ const BillEdit: React.FC = () => {
                   </span>
                 </div>
               </div>
-
             </div>
 
             {/* Due Balance + Remaining */}
             <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-
               {/* Due Balance - Read Only */}
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
@@ -1463,13 +1580,12 @@ const BillEdit: React.FC = () => {
                     value={formatNumberThreeDecimals(
                       getClientDueBalance(
                         clients.find(
-                          (client: any) =>
-                            client.id === formData.clientId
-                        )
-                      )
+                          (client: any) => client.id === formData.clientId,
+                        ),
+                      ),
                     )}
                     readOnly
-                    className="w-full cursor-default rounded-lg border border-[#d3c4af]/20 bg-gray-50 px-3 py-1.5 pr-8 text-right text-sm font-mono text-[#1a1c1b] outline-none dark:border-slate-700 dark:bg-slate-700 dark:text-white"
+                    className="bg-gray-50 font-mono w-full cursor-default rounded-lg border border-[#d3c4af]/20 px-3 py-1.5 pr-8 text-right text-sm text-[#1a1c1b] outline-none dark:border-slate-700 dark:bg-slate-700 dark:text-white"
                   />
 
                   <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#817563] dark:text-slate-400">
@@ -1488,10 +1604,10 @@ const BillEdit: React.FC = () => {
                   <input
                     type="text"
                     value={formatNumberThreeDecimals(
-                      calculateRemainingWeight()
+                      calculateRemainingWeight(),
                     )}
                     readOnly
-                    className="w-full cursor-default rounded-lg border border-[#d3c4af]/20 bg-gray-50 px-3 py-1.5 pr-8 text-right text-sm font-mono text-[#1a1c1b] outline-none dark:border-slate-700 dark:bg-slate-700 dark:text-white"
+                    className="bg-gray-50 font-mono w-full cursor-default rounded-lg border border-[#d3c4af]/20 px-3 py-1.5 pr-8 text-right text-sm text-[#1a1c1b] outline-none dark:border-slate-700 dark:bg-slate-700 dark:text-white"
                   />
 
                   <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#817563] dark:text-slate-400">
@@ -1499,21 +1615,18 @@ const BillEdit: React.FC = () => {
                   </span>
                 </div>
               </div>
-
             </div>
-
           </div>
-
         </div>
 
         {/* Action Buttons */}
-        <div className="sticky bottom-0 bg-[#f9f9f7] dark:bg-slate-950 p-4 border-t border-[#d3c4af]/20 dark:border-slate-700 z-50">
-          <div className="flex flex-col sm:flex-row justify-end gap-3">
+        <div className="sticky bottom-0 z-50 border-t border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-950">
+          <div className="flex flex-col justify-end gap-3 sm:flex-row">
             <GenericButton
               type="button"
               onClick={handleSaveAsDraft}
               disabled={updateBill.isPending}
-              className="!bg-gradient-to-br from-[#d97706] to-[#92400e] hover:!bg-gray-700 !text-white"
+              className="hover:!bg-gray-700 !bg-gradient-to-br from-[#d97706] to-[#92400e] !text-white"
             >
               <FileText className="h-5 w-5" />
               {updateBill.isPending ? 'Saving...' : 'Save as Draft'}
@@ -1569,7 +1682,7 @@ const BillEdit: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex flex-col-reverse gap-2 border-t border-[#d3c4af]/20 bg-[#f9f9f7] p-4 sm:flex-row sm:justify-end dark:border-slate-700 dark:bg-slate-950">
+            <div className="flex flex-col-reverse gap-2 border-t border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-950 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={() => setShowStockErrorModal(false)}
@@ -1602,9 +1715,11 @@ const BillEdit: React.FC = () => {
       {/* Add Client Modal */}
       {showClientModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-[#d3c4af]/10 p-4 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-10">
-              <h3 className="text-lg font-bold text-[#1a1c1b] dark:text-white">Add New Client</h3>
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white shadow-xl dark:bg-slate-900">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#d3c4af]/10 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+              <h3 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
+                Add New Client
+              </h3>
               <button
                 onClick={() => setShowClientModal(false)}
                 className="rounded-lg p-1 transition-colors hover:bg-[#f4f4f2] dark:hover:bg-slate-800"
@@ -1614,56 +1729,92 @@ const BillEdit: React.FC = () => {
             </div>
             <div className="space-y-4 p-4">
               <div>
-                <label className="block text-sm font-semibold text-[#4f4535] dark:text-slate-300 mb-1.5">
+                <label className="mb-1.5 block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
                   Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={clientFormData.fullName}
-                  onChange={(e) => setClientFormData({ ...clientFormData, fullName: e.target.value })}
+                  onChange={(e) =>
+                    setClientFormData({
+                      ...clientFormData,
+                      fullName: e.target.value,
+                    })
+                  }
                   placeholder="Enter client name"
                   className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-4 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white ${clientFormErrors.fullName ? 'ring-2 ring-red-500' : ''}`}
                 />
-                {clientFormErrors.fullName && <p className="mt-1 text-xs text-red-500">{clientFormErrors.fullName}</p>}
+                {clientFormErrors.fullName && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {clientFormErrors.fullName}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#4f4535] dark:text-slate-300 mb-1.5">
+                <label className="mb-1.5 block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
                   Phone <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={clientFormData.phoneNumber}
-                  onChange={(e) => setClientFormData({ ...clientFormData, phoneNumber: e.target.value })}
+                  onChange={(e) =>
+                    setClientFormData({
+                      ...clientFormData,
+                      phoneNumber: e.target.value,
+                    })
+                  }
                   placeholder="Enter phone number"
                   className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-4 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white ${clientFormErrors.phoneNumber ? 'ring-2 ring-red-500' : ''}`}
                 />
-                {clientFormErrors.phoneNumber && <p className="mt-1 text-xs text-red-500">{clientFormErrors.phoneNumber}</p>}
+                {clientFormErrors.phoneNumber && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {clientFormErrors.phoneNumber}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#4f4535] dark:text-slate-300 mb-1.5">
+                <label className="mb-1.5 block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
                   Address <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={clientFormData.address}
-                  onChange={(e) => setClientFormData({ ...clientFormData, address: e.target.value })}
+                  onChange={(e) =>
+                    setClientFormData({
+                      ...clientFormData,
+                      address: e.target.value,
+                    })
+                  }
                   placeholder="Enter address"
                   rows={2}
-                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-4 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white resize-none ${clientFormErrors.address ? 'ring-2 ring-red-500' : ''}`}
+                  className={`w-full resize-none rounded-lg border-0 bg-[#f4f4f2] px-4 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white ${clientFormErrors.address ? 'ring-2 ring-red-500' : ''}`}
                 />
-                {clientFormErrors.address && <p className="mt-1 text-xs text-red-500">{clientFormErrors.address}</p>}
+                {clientFormErrors.address && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {clientFormErrors.address}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#4f4535] dark:text-slate-300 mb-1.5">
+                <label className="mb-1.5 block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
                   Opening Balance (G)
                 </label>
                 <input
                   type="text"
                   value={clientFormData.openingBalance}
-                  onChange={(e) => setClientFormData({ ...clientFormData, openingBalance: e.target.value })}
+                  onChange={(e) =>
+                    setClientFormData({
+                      ...clientFormData,
+                      openingBalance: e.target.value,
+                    })
+                  }
                   placeholder="0.000"
-                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-4 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white font-mono ${clientFormErrors.openingBalance ? 'ring-2 ring-red-500' : ''}`}
+                  className={`font-mono w-full rounded-lg border-0 bg-[#f4f4f2] px-4 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white ${clientFormErrors.openingBalance ? 'ring-2 ring-red-500' : ''}`}
                 />
-                {clientFormErrors.openingBalance && <p className="mt-1 text-xs text-red-500">{clientFormErrors.openingBalance}</p>}
+                {clientFormErrors.openingBalance && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {clientFormErrors.openingBalance}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex justify-end gap-3 border-t border-[#d3c4af]/10 p-4 dark:border-slate-700">
@@ -1676,7 +1827,7 @@ const BillEdit: React.FC = () => {
               <GenericButton
                 type="button"
                 onClick={handleAddClientFromPopup}
-                className="!bg-[#785600] hover:!bg-[#5d4200] !text-white !px-4 !py-2 !text-sm"
+                className="!bg-[#785600] !px-4 !py-2 !text-sm !text-white hover:!bg-[#5d4200]"
               >
                 Add Client
               </GenericButton>

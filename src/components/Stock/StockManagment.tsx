@@ -1,24 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { Save, ArrowLeft } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import React, {useState, useEffect} from 'react';
+import {Save, ArrowLeft} from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import GenericDropdown from '@/components/Forms/DropDown/GenericDropDown';
-import { useGetItems } from '@/lib/api/items';
-import { useGetSizes } from '@/lib/api/sizes';
-import { useGetAllStock, useUpdateStock } from '@/lib/api/stockmanagement';
-import { z } from 'zod';
-import { useForm, FormProvider } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import {useGetItems} from '@/lib/api/items';
+import {useGetSizes} from '@/lib/api/sizes';
+import {useGetAllStock, useUpdateStock} from '@/lib/api/stockmanagement';
+import {z} from 'zod';
+import {useForm, FormProvider} from 'react-hook-form';
+import {zodResolver} from '@hookform/resolvers/zod';
 
 // Schema for validation
 const StockSchema = z.object({
-  itemId: z.string().min(1, "Please select an item"),
+  itemId: z.string().min(1, 'Please select an item'),
   sizeId: z.string().optional(),
   purity: z.string().optional(),
-  stockQty: z.number().min(0.001, "Please enter a valid quantity"),
-  stockType: z.string().min(1, "Please select stock type"),
+  stockQty: z.number().min(0.001, 'Please enter a valid quantity'),
+  stockType: z.string().min(1, 'Please select stock type'),
   note: z.string().optional(),
 });
 
@@ -29,9 +29,9 @@ const StockManagment: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch data from API
-  const { data: items = [] } = useGetItems();
-  const { data: sizes = [] } = useGetSizes();
-  const { data: stockData = [], refetch: refetchStock } = useGetAllStock();
+  const {data: items = []} = useGetItems();
+  const {data: sizes = []} = useGetSizes();
+  const {data: stockData = [], refetch: refetchStock} = useGetAllStock();
   const updateStock = useUpdateStock();
 
   // Form state
@@ -53,7 +53,14 @@ const StockManagment: React.FC = () => {
     },
   });
 
-  const { watch, setValue, handleSubmit, reset, control, formState: { errors } } = methods;
+  const {
+    watch,
+    setValue,
+    handleSubmit,
+    reset,
+    control,
+    formState: {errors},
+  } = methods;
 
   // Watch all form values
   const watchedItemId = watch('itemId');
@@ -64,8 +71,8 @@ const StockManagment: React.FC = () => {
 
   // Stock type options
   const stockTypeOptions = [
-    { label: 'Add Stock (INWARD)', value: 'INWARD' },
-    { label: 'Less Stock (OUTWARD)', value: 'OUTWARD' },
+    {label: 'Add Stock (INWARD)', value: 'INWARD'},
+    {label: 'Less Stock (OUTWARD)', value: 'OUTWARD'},
   ];
 
   // Get item options
@@ -82,18 +89,20 @@ const StockManagment: React.FC = () => {
         puritySet.add(String(stock.purity));
       }
     });
-    return Array.from(puritySet).map((p) => ({ label: p, value: p }));
+    return Array.from(puritySet).map((p) => ({label: p, value: p}));
   };
 
   // Get size options for selected item (excluding null sizes)
   const getSizeOptions = (itemId: string) => {
     if (!itemId) return [];
     const availableSizeIds = stockData
-      .filter((st: any) => st.itemId === itemId && st.sizeId !== null && st.sizeId)
+      .filter(
+        (st: any) => st.itemId === itemId && st.sizeId !== null && st.sizeId,
+      )
       .map((st: any) => st.sizeId);
     return sizes
       .filter((s: any) => availableSizeIds.includes(s.id))
-      .map((s: any) => ({ label: s.size, value: s.id }));
+      .map((s: any) => ({label: s.size, value: s.id}));
   };
 
   // Get stock for a specific item (any size/purity combination)
@@ -102,31 +111,44 @@ const StockManagment: React.FC = () => {
   };
 
   // Get current stock for a specific item, size, and purity
-  const getCurrentStockValue = (itemId: string, sizeId: string | null, purity: string): number => {
-    const stock = stockData.find((s: any) =>
-      s.itemId === itemId &&
-      (sizeId ? s.sizeId === sizeId : s.sizeId === null) &&
-      (purity ? String(s.purity) === purity : s.purity === null || s.purity === undefined)
+  const getCurrentStockValue = (
+    itemId: string,
+    sizeId: string | null,
+    purity: string,
+  ): number => {
+    const stock = stockData.find(
+      (s: any) =>
+        s.itemId === itemId &&
+        (sizeId ? s.sizeId === sizeId : s.sizeId === null) &&
+        (purity
+          ? String(s.purity) === purity
+          : s.purity === null || s.purity === undefined),
     );
     return stock?.weight || 0;
   };
 
   // Get stock ID for a specific item, size, and purity
-  const getStockIdValue = (itemId: string, sizeId: string | null, purity: string): string => {
-    const stock = stockData.find((s: any) =>
-      s.itemId === itemId &&
-      (sizeId ? s.sizeId === sizeId : s.sizeId === null) &&
-      (purity ? String(s.purity) === purity : s.purity === null || s.purity === undefined)
+  const getStockIdValue = (
+    itemId: string,
+    sizeId: string | null,
+    purity: string,
+  ): string => {
+    const stock = stockData.find(
+      (s: any) =>
+        s.itemId === itemId &&
+        (sizeId ? s.sizeId === sizeId : s.sizeId === null) &&
+        (purity
+          ? String(s.purity) === purity
+          : s.purity === null || s.purity === undefined),
     );
     return stock?.id || '';
   };
 
   // Get purity values for selected item and size
   const getPurityValues = (itemId: string, sizeId: string | null): string[] => {
-    const stocks = stockData.filter((s: any) =>
-      s.itemId === itemId &&
-      s.sizeId === sizeId &&
-      s.purity !== null
+    const stocks = stockData.filter(
+      (s: any) =>
+        s.itemId === itemId && s.sizeId === sizeId && s.purity !== null,
     );
     return stocks.map((s: any) => String(s.purity));
   };
@@ -145,8 +167,8 @@ const StockManagment: React.FC = () => {
 
       if (isGold) {
         // For Gold, find stock with null sizeId
-        const goldStock = stockData.find((s: any) =>
-          s.itemId === watchedItemId && s.sizeId === null
+        const goldStock = stockData.find(
+          (s: any) => s.itemId === watchedItemId && s.sizeId === null,
         );
         if (goldStock) {
           setStockId(goldStock.id);
@@ -204,11 +226,17 @@ const StockManagment: React.FC = () => {
   // Update current stock when size or purity changes (for non-gold with multiple stocks)
   useEffect(() => {
     if (watchedItemId && !isGoldSelected && watchedSizeId) {
-      const stock = getCurrentStockValue(watchedItemId, watchedSizeId, watchedPurity);
+      const stock = getCurrentStockValue(
+        watchedItemId,
+        watchedSizeId,
+        watchedPurity,
+      );
       if (stock > 0) {
         setCurrentStock(stock);
         setRemainingStock(stock);
-        setStockId(getStockIdValue(watchedItemId, watchedSizeId, watchedPurity));
+        setStockId(
+          getStockIdValue(watchedItemId, watchedSizeId, watchedPurity),
+        );
       }
     }
   }, [watchedSizeId, watchedPurity, watchedItemId, stockData, isGoldSelected]);
@@ -265,7 +293,9 @@ const StockManagment: React.FC = () => {
       newStock = currentStockValue + stockQty;
     } else {
       if (stockQty > currentStockValue) {
-        toast.error(`Insufficient stock! Current stock: ${currentStockValue} G`);
+        toast.error(
+          `Insufficient stock! Current stock: ${currentStockValue} G`,
+        );
         return;
       }
       newStock = currentStockValue - stockQty;
@@ -292,8 +322,10 @@ const StockManagment: React.FC = () => {
 
       console.log('Saving payload:', payload);
 
-      await updateStock.mutateAsync({ id: stockId, data: payload });
-      toast.success(`Stock ${data.stockType === 'INWARD' ? 'added' : 'reduced'} successfully!`);
+      await updateStock.mutateAsync({id: stockId, data: payload});
+      toast.success(
+        `Stock ${data.stockType === 'INWARD' ? 'added' : 'reduced'} successfully!`,
+      );
 
       await refetchStock();
       reset();
@@ -303,7 +335,7 @@ const StockManagment: React.FC = () => {
       setIsGoldSelected(false);
       setIsLoading(false);
 
-      navigate({ to: '/Stocks/stockpage' });
+      navigate({to: '/Stocks/stockpage'});
     } catch (error) {
       console.error('Error saving stock:', error);
       toast.error('Failed to save stock entry');
@@ -315,23 +347,23 @@ const StockManagment: React.FC = () => {
   const getFilteredPurityOptions = () => {
     if (!watchedItemId) return [];
     const purityValues = getPurityValues(watchedItemId, watchedSizeId || null);
-    return purityValues.map((p) => ({ label: p, value: p }));
+    return purityValues.map((p) => ({label: p, value: p}));
   };
 
   return (
-    <div className=" bg-[#f9f9f7] dark:bg-slate-950">
+    <div className="bg-[#f9f9f7] dark:bg-slate-950">
       <div className="px-4 py-4 md:px-8 md:py-6">
         {/* Header with Back and Title */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <button
-              onClick={() => navigate({ to: '/Stocks/stockpage' })}
-              className="flex items-center gap-1 text-[#785600] hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300 transition-colors flex-shrink-0"
+              onClick={() => navigate({to: '/Stocks/stockpage'})}
+              className="flex flex-shrink-0 items-center gap-1 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="text-xs sm:text-sm font-medium">Back</span>
+              <span className="text-xs font-medium sm:text-sm">Back</span>
             </button>
-            <div className="h-5 w-px bg-[#d3c4af]/30 dark:bg-slate-600 flex-shrink-0" />
+            <div className="h-5 w-px flex-shrink-0 bg-[#d3c4af]/30 dark:bg-slate-600" />
             <h1 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Inward / Outward Stock
             </h1>
@@ -339,9 +371,11 @@ const StockManagment: React.FC = () => {
         </div>
 
         {/* Form Section */}
-        <div className="rounded-xl border border-[#d3c4af]/10 bg-white p-6 shadow-sm dark:bg-slate-900 dark:border-slate-700  mx-auto">
+        <div className="mx-auto rounded-xl border border-[#d3c4af]/10 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <h3 className="mb-4 text-center text-sm font-semibold uppercase tracking-wide text-[#4f4535] dark:text-slate-400">
-            {watchedStockType === 'INWARD' ? 'Add Stock (INWARD)' : 'Less Stock (OUTWARD)'}
+            {watchedStockType === 'INWARD'
+              ? 'Add Stock (INWARD)'
+              : 'Less Stock (OUTWARD)'}
             {isGoldSelected && ' - Gold'}
           </h3>
 
@@ -409,10 +443,12 @@ const StockManagment: React.FC = () => {
                       setValue('stockQty', parseFloat(value) || 0);
                     }}
                     placeholder="0.000"
-                    className="mt-1 w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-left focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white dark:border-slate-700 font-mono"
+                    className="font-mono mt-1 w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-left text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   />
                   {errors.stockQty && (
-                    <p className="mt-1 text-xs text-red-500">{errors.stockQty.message}</p>
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.stockQty.message}
+                    </p>
                   )}
                 </div>
 
@@ -422,7 +458,7 @@ const StockManagment: React.FC = () => {
                     <label className="mb-1 block text-xs font-medium text-[#4f4535] dark:text-slate-400">
                       Current Stock
                     </label>
-                    <div className="mt-1 rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-[#785600] dark:bg-slate-800 dark:text-amber-400 text-left">
+                    <div className="bg-gray-100 mt-1 rounded-lg px-3 py-2 text-left text-sm font-semibold text-[#785600] dark:bg-slate-800 dark:text-amber-400">
                       {currentStock.toFixed(3)} G
                     </div>
                     {isGoldSelected && (
@@ -435,26 +471,29 @@ const StockManagment: React.FC = () => {
                     <label className="mb-1 block text-xs font-medium text-[#4f4535] dark:text-slate-400">
                       Total Stock
                     </label>
-                    <div className={`mt-1 rounded-lg px-3 py-2 text-sm font-semibold text-left ${remainingStock < 0
-                      ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                      : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                      }`}>
+                    <div
+                      className={`mt-1 rounded-lg px-3 py-2 text-left text-sm font-semibold ${
+                        remainingStock < 0
+                          ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                          : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                      }`}
+                    >
                       {remainingStock.toFixed(3)} G
                     </div>
                   </div>
                 </div>
 
                 {/* Note */}
-              <div className="md:col-span-2">
-  <GenericInputField
-    name="note"
-    label="Note"
-    type="text"
-    placeholder="Add a note (optional)"
-    onChange={(e) => setValue('note', e.target.value)}
-    value={watch('note') || ''}
-  />
-</div>
+                <div className="md:col-span-2">
+                  <GenericInputField
+                    name="note"
+                    label="Note"
+                    type="text"
+                    placeholder="Add a note (optional)"
+                    onChange={(e) => setValue('note', e.target.value)}
+                    value={watch('note') || ''}
+                  />
+                </div>
               </div>
 
               {/* Save Button */}
@@ -462,7 +501,7 @@ const StockManagment: React.FC = () => {
                 <GenericButton
                   type="submit"
                   disabled={isLoading}
-                  className="!bg-[#785600] hover:!bg-[#5d4200] !text-white !px-6 !py-2.5 !text-sm flex items-center gap-2"
+                  className="flex items-center gap-2 !bg-[#785600] !px-6 !py-2.5 !text-sm !text-white hover:!bg-[#5d4200]"
                 >
                   <Save className="h-4 w-4" />
                   {isLoading ? 'Saving...' : 'Save Stock'}

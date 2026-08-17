@@ -1,5 +1,5 @@
-import { api } from '@/utils/axios';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export interface ProfilePayload {
@@ -53,7 +53,7 @@ export const useUpdateProfile = () => {
     mutationFn: updateProfileApi,
     onSuccess: () => {
       toast.success('Profile updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      queryClient.invalidateQueries({queryKey: ['user-profile']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update profile');

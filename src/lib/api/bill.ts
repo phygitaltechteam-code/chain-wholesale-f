@@ -1,6 +1,6 @@
-import { api } from "@/utils/axios";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import toast from "react-hot-toast";
+import {api} from '@/utils/axios';
+import {useMutation, useQuery} from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 export const useGetQuantity = () => {
   return useMutation({
@@ -28,7 +28,12 @@ const saveBillApi = async (data: any) => {
   return response.data;
 };
 
-const getQuantityApi = async (payload: { itemId: string; sizeId: string; purity: number; customerId:string }) => {
+const getQuantityApi = async (payload: {
+  itemId: string;
+  sizeId: string;
+  purity: number;
+  customerId: string;
+}) => {
   const response = await api.put('/admin/billing/check', payload);
   return response.data;
 };
@@ -42,7 +47,7 @@ export const useGetBill = () => {
 
 export const getbillAll = async () => {
   try {
-    const response = await api.get("/admin/billing");
+    const response = await api.get('/admin/billing');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -66,17 +71,15 @@ const deleteBillApi = async (id: string) => {
   const response = await api.delete(`/admin/billing/${id}`);
   return response.data;
 };
-export const useDeleteBill= () => {
+export const useDeleteBill = () => {
   return useMutation({
     mutationFn: deleteBillApi,
-    onSuccess: () => {
-    },
+    onSuccess: () => {},
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Insufficient stock');
     },
   });
 };
-
 
 export const useBillUpdate = () => {
   return useMutation({
@@ -90,8 +93,7 @@ export const useBillUpdate = () => {
   });
 };
 
-
-export const updateBillApi = async ({ id, data }: { id: string; data: any }) => {
+export const updateBillApi = async ({id, data}: {id: string; data: any}) => {
   const response = await api.put(`/admin/billing/${id}`, data);
   return response.data;
 };

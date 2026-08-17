@@ -1,7 +1,7 @@
 // lib/api/joint.ts
-import { api } from "@/utils/axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 export interface Joint {
   id: string;
@@ -21,7 +21,7 @@ export interface Joint {
 // API Functions
 export const getJointApi = async () => {
   try {
-    const response = await api.get("/admin/joint");
+    const response = await api.get('/admin/joint');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -32,7 +32,7 @@ export const getJointApi = async () => {
 };
 export const getJointHistoryApi = async () => {
   try {
-    const response = await api.get("/admin/joint/history");
+    const response = await api.get('/admin/joint/history');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -42,7 +42,7 @@ export const getJointHistoryApi = async () => {
   }
 };
 
-export const submitJointApi = async ({ id, data }: { id: string; data: any }) => {
+export const submitJointApi = async ({id, data}: {id: string; data: any}) => {
   try {
     const response = await api.put(`/admin/joint/${id}`, data);
     return response.data;
@@ -75,7 +75,7 @@ export const useSubmitJoint = () => {
     mutationFn: submitJointApi,
     onSuccess: () => {
       toast.success('Joint submitted successfully');
-      queryClient.invalidateQueries({ queryKey: ['joint'] });
+      queryClient.invalidateQueries({queryKey: ['joint']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to submit joint');

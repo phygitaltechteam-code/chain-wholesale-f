@@ -1,6 +1,6 @@
 // components/PDF/PDFHeader.tsx
 import React from 'react';
-import { useGetHeader } from '@/lib/api/headerapi';
+import {useGetHeader} from '@/lib/api/headerapi';
 
 export interface PDFHeaderConfig {
   leftInvocation?: string | null;
@@ -46,31 +46,85 @@ const DEFAULT_HEADER_CONFIG = {
   phoneFontSize: 12,
 };
 
-const PDFHeader: React.FC<PDFHeaderProps> = ({ 
-  style, 
+const PDFHeader: React.FC<PDFHeaderProps> = ({
+  style,
   className = '',
-  config: propConfig
+  config: propConfig,
 }) => {
-  const { data: headerApiRes } = useGetHeader();
+  const {data: headerApiRes} = useGetHeader();
 
   // Extract inner data if response matches API structure { statusCode, status, data: { ... } }
-  const fetchedData = headerApiRes?.data || (headerApiRes?.factoryName ? headerApiRes : null);
+  const fetchedData =
+    headerApiRes?.data || (headerApiRes?.factoryName ? headerApiRes : null);
 
-  const leftInvocation = propConfig?.leftInvocation ?? propConfig?.leftInovation ?? fetchedData?.leftInvocation ?? fetchedData?.leftInovation ?? DEFAULT_HEADER_CONFIG.leftInvocation;
-  const rightInvocation = propConfig?.rightInvocation ?? propConfig?.rightInovation ?? fetchedData?.rightInvocation ?? fetchedData?.rightInovation ?? DEFAULT_HEADER_CONFIG.rightInvocation;
-  const factoryName = propConfig?.factoryName ?? fetchedData?.factoryName ?? DEFAULT_HEADER_CONFIG.factoryName;
-  const description = propConfig?.description ?? fetchedData?.description ?? DEFAULT_HEADER_CONFIG.description;
-  const proprietorName = propConfig?.proprietorName ?? fetchedData?.proprietorName ?? DEFAULT_HEADER_CONFIG.proprietorName;
-  const phoneNumbers = propConfig?.phoneNumbers ?? fetchedData?.phoneNumbers ?? DEFAULT_HEADER_CONFIG.phoneNumbers;
-  const invocationColor = propConfig?.invocationColor ?? fetchedData?.invocationColor ?? DEFAULT_HEADER_CONFIG.invocationColor;
-  const factoryNameColor = propConfig?.factoryNameColor ?? fetchedData?.factoryNameColor ?? DEFAULT_HEADER_CONFIG.factoryNameColor;
-  const descriptionColor = propConfig?.descriptionColor ?? fetchedData?.descriptionColor ?? DEFAULT_HEADER_CONFIG.descriptionColor;
-  const proprietorColor = propConfig?.proprietorColor ?? fetchedData?.proprietorColor ?? DEFAULT_HEADER_CONFIG.proprietorColor;
-  const phoneColor = propConfig?.phoneColor ?? fetchedData?.phoneColor ?? DEFAULT_HEADER_CONFIG.phoneColor;
-  const factoryFontSize = Number(propConfig?.factoryFontSize ?? fetchedData?.factoryFontSize ?? DEFAULT_HEADER_CONFIG.factoryFontSize);
-  const descriptionFontSize = Number(propConfig?.descriptionFontSize ?? fetchedData?.descriptionFontSize ?? DEFAULT_HEADER_CONFIG.descriptionFontSize);
-  const proprietorFontSize = Number(propConfig?.proprietorFontSize ?? fetchedData?.proprietorFontSize ?? DEFAULT_HEADER_CONFIG.proprietorFontSize);
-  const phoneFontSize = Number(propConfig?.phoneFontSize ?? fetchedData?.phoneFontSize ?? DEFAULT_HEADER_CONFIG.phoneFontSize);
+  const leftInvocation =
+    propConfig?.leftInvocation ??
+    propConfig?.leftInovation ??
+    fetchedData?.leftInvocation ??
+    fetchedData?.leftInovation ??
+    DEFAULT_HEADER_CONFIG.leftInvocation;
+  const rightInvocation =
+    propConfig?.rightInvocation ??
+    propConfig?.rightInovation ??
+    fetchedData?.rightInvocation ??
+    fetchedData?.rightInovation ??
+    DEFAULT_HEADER_CONFIG.rightInvocation;
+  const factoryName =
+    propConfig?.factoryName ??
+    fetchedData?.factoryName ??
+    DEFAULT_HEADER_CONFIG.factoryName;
+  const description =
+    propConfig?.description ??
+    fetchedData?.description ??
+    DEFAULT_HEADER_CONFIG.description;
+  const proprietorName =
+    propConfig?.proprietorName ??
+    fetchedData?.proprietorName ??
+    DEFAULT_HEADER_CONFIG.proprietorName;
+  const phoneNumbers =
+    propConfig?.phoneNumbers ??
+    fetchedData?.phoneNumbers ??
+    DEFAULT_HEADER_CONFIG.phoneNumbers;
+  const invocationColor =
+    propConfig?.invocationColor ??
+    fetchedData?.invocationColor ??
+    DEFAULT_HEADER_CONFIG.invocationColor;
+  const factoryNameColor =
+    propConfig?.factoryNameColor ??
+    fetchedData?.factoryNameColor ??
+    DEFAULT_HEADER_CONFIG.factoryNameColor;
+  const descriptionColor =
+    propConfig?.descriptionColor ??
+    fetchedData?.descriptionColor ??
+    DEFAULT_HEADER_CONFIG.descriptionColor;
+  const proprietorColor =
+    propConfig?.proprietorColor ??
+    fetchedData?.proprietorColor ??
+    DEFAULT_HEADER_CONFIG.proprietorColor;
+  const phoneColor =
+    propConfig?.phoneColor ??
+    fetchedData?.phoneColor ??
+    DEFAULT_HEADER_CONFIG.phoneColor;
+  const factoryFontSize = Number(
+    propConfig?.factoryFontSize ??
+      fetchedData?.factoryFontSize ??
+      DEFAULT_HEADER_CONFIG.factoryFontSize,
+  );
+  const descriptionFontSize = Number(
+    propConfig?.descriptionFontSize ??
+      fetchedData?.descriptionFontSize ??
+      DEFAULT_HEADER_CONFIG.descriptionFontSize,
+  );
+  const proprietorFontSize = Number(
+    propConfig?.proprietorFontSize ??
+      fetchedData?.proprietorFontSize ??
+      DEFAULT_HEADER_CONFIG.proprietorFontSize,
+  );
+  const phoneFontSize = Number(
+    propConfig?.phoneFontSize ??
+      fetchedData?.phoneFontSize ??
+      DEFAULT_HEADER_CONFIG.phoneFontSize,
+  );
 
   return (
     <div
@@ -94,33 +148,39 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({
           width: '100%',
         }}
       >
-        <span style={{
-          fontSize: '12px',
-          fontWeight: 'bold',
-          color: invocationColor,
-          whiteSpace: 'nowrap',
-          flex: '0 0 auto',
-        }}>
+        <span
+          style={{
+            fontSize: '12px',
+            fontWeight: 'bold',
+            color: invocationColor,
+            whiteSpace: 'nowrap',
+            flex: '0 0 auto',
+          }}
+        >
           {leftInvocation}
         </span>
-        <span style={{
-          fontSize: `${factoryFontSize}px`,
-          fontWeight: 'bold',
-          color: factoryNameColor,
-          whiteSpace: 'nowrap',
-          flex: '1 1 auto',
-          textAlign: 'center',
-          padding: '0 10px',
-        }}>
+        <span
+          style={{
+            fontSize: `${factoryFontSize}px`,
+            fontWeight: 'bold',
+            color: factoryNameColor,
+            whiteSpace: 'nowrap',
+            flex: '1 1 auto',
+            textAlign: 'center',
+            padding: '0 10px',
+          }}
+        >
           {factoryName}
         </span>
-        <span style={{
-          fontSize: '12px',
-          fontWeight: 'bold',
-          color: invocationColor,
-          whiteSpace: 'nowrap',
-          flex: '0 0 auto',
-        }}>
+        <span
+          style={{
+            fontSize: '12px',
+            fontWeight: 'bold',
+            color: invocationColor,
+            whiteSpace: 'nowrap',
+            flex: '0 0 auto',
+          }}
+        >
           {rightInvocation}
         </span>
       </div>
@@ -156,7 +216,7 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({
           }}
         >
           {proprietorName}&nbsp;&nbsp;
-          <span style={{ color: phoneColor, fontSize: `${phoneFontSize}px` }}>
+          <span style={{color: phoneColor, fontSize: `${phoneFontSize}px`}}>
             {phoneNumbers}
           </span>
         </div>

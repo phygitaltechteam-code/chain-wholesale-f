@@ -1,7 +1,7 @@
 // lib/api/client.ts
-import { api } from "@/utils/axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 export interface Client {
   id: string;
@@ -17,7 +17,7 @@ export interface Client {
 // API Functions
 export const getClientsApi = async () => {
   try {
-    const response = await api.get("/admin/client");
+    const response = await api.get('/admin/client');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -27,9 +27,11 @@ export const getClientsApi = async () => {
   }
 };
 
-export const createClientApi = async (data: Omit<Client, 'id' | 'adminId' | 'createdAt' | 'updatedAt'>) => {
+export const createClientApi = async (
+  data: Omit<Client, 'id' | 'adminId' | 'createdAt' | 'updatedAt'>,
+) => {
   try {
-    const response = await api.post("/admin/client", data);
+    const response = await api.post('/admin/client', data);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -39,13 +41,21 @@ export const createClientApi = async (data: Omit<Client, 'id' | 'adminId' | 'cre
   }
 };
 
-export const updateClientApi = async ({ id, data }: { id: string; data: Partial<Client> }) => {
+export const updateClientApi = async ({
+  id,
+  data,
+}: {
+  id: string;
+  data: Partial<Client>;
+}) => {
   try {
     const response = await api.put(`/admin/client/${id}`, data);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || `Failed to update client with ID: ${id}`);
+      throw new Error(
+        error.message || `Failed to update client with ID: ${id}`,
+      );
     }
     throw error;
   }
@@ -57,7 +67,9 @@ export const deleteClientApi = async (id: string) => {
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || `Failed to delete client with ID: ${id}`);
+      throw new Error(
+        error.message || `Failed to delete client with ID: ${id}`,
+      );
     }
     throw error;
   }
@@ -78,7 +90,7 @@ export const useCreateClient = () => {
     mutationFn: createClientApi,
     onSuccess: () => {
       toast.success('Client created successfully');
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({queryKey: ['clients']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create client');
@@ -93,7 +105,7 @@ export const useUpdateClient = () => {
     mutationFn: updateClientApi,
     onSuccess: () => {
       toast.success('Client updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({queryKey: ['clients']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update client');
@@ -111,12 +123,8 @@ export const useDeleteClient = () => {
       toast.success('Client deleted successfully');
 
       // Remove deleted client immediately from React Query cache
-      queryClient.setQueryData<Client[]>(
-        ['clients'],
-        (oldClients = []) =>
-          oldClients.filter(
-            (client) => client.id !== deletedClientId
-          )
+      queryClient.setQueryData<Client[]>(['clients'], (oldClients = []) =>
+        oldClients.filter((client) => client.id !== deletedClientId),
       );
 
       // Make sure latest data comes from database
@@ -126,9 +134,7 @@ export const useDeleteClient = () => {
     },
 
     onError: (error: Error) => {
-      toast.error(
-        error.message || 'Failed to delete client'
-      );
+      toast.error(error.message || 'Failed to delete client');
     },
   });
 };

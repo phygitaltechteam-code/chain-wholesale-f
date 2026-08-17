@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Search,
   Calendar,
@@ -20,19 +20,14 @@ import {
 } from 'lucide-react';
 
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import {
-  GenericTable,
-  Column,
-} from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 
 import toast from 'react-hot-toast';
 
-import {
-  useSubmitSettlement,
-} from '@/lib/api/settlement';
+import {useSubmitSettlement} from '@/lib/api/settlement';
 
-import { useGetClients } from '@/lib/api/client';
-import { useGetHeader } from '@/lib/api/headerapi';
+import {useGetClients} from '@/lib/api/client';
+import {useGetHeader} from '@/lib/api/headerapi';
 
 import GenericInputField from '../Forms/Input/GenericInputField';
 import GenericButton from '../Forms/Buttons/GenericButton';
@@ -90,7 +85,7 @@ const getCurrentWeekRange = () => {
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
 
-  return { monday, sunday };
+  return {monday, sunday};
 };
 
 // ======================================================
@@ -183,7 +178,7 @@ const Settlement: React.FC = () => {
   }, []);
 
   const setDefaultDateRange = () => {
-    const { monday, sunday } = getCurrentWeekRange();
+    const {monday, sunday} = getCurrentWeekRange();
     const formatYMD = (d: Date) => {
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -206,11 +201,21 @@ const Settlement: React.FC = () => {
         (item: any, index: number) => ({
           id: item.id || `settlement-${index}`,
           srNo: index + 1,
-          clientName: item.fullName || item.clientName || item.client?.name || 'Unknown Client',
+          clientName:
+            item.fullName ||
+            item.clientName ||
+            item.client?.name ||
+            'Unknown Client',
           phoneNumber: item.phoneNumber || item.client?.phone || 'N/A',
-          goldBalance: Number(item.openingBalance ?? item.balance ?? item.goldBalance ?? 0),
-          totalBill: Number(item.totalBills ?? item.totalBill ?? item.totalGiven ?? 0),
-          status: item.status || (Number(item.openingBalance ?? 0) === 0 ? 'settled' : 'pending'),
+          goldBalance: Number(
+            item.openingBalance ?? item.balance ?? item.goldBalance ?? 0,
+          ),
+          totalBill: Number(
+            item.totalBills ?? item.totalBill ?? item.totalGiven ?? 0,
+          ),
+          status:
+            item.status ||
+            (Number(item.openingBalance ?? 0) === 0 ? 'settled' : 'pending'),
           clientId: item.id || item.clientId || item.client?.id || '',
           openingBalance: Number(item.openingBalance ?? 0),
           due: item.due ?? null,
@@ -218,13 +223,16 @@ const Settlement: React.FC = () => {
           totalBills: Number(item.totalBills ?? item._count?.receipts ?? 0),
           amount: Number(item.openingBalance ?? 0),
           remark: Number(item.openingBalance ?? 0) > 0 ? 'Received' : 'Given',
-          createdAt: item.createdAt || item.updatedAt || item.client?.createdAt || '',
-        })
+          createdAt:
+            item.createdAt || item.updatedAt || item.client?.createdAt || '',
+        }),
       );
 
       setSettlements(apiData);
     } else if (settlementsData && !settlementsData?.status) {
-      toast.error(settlementsData?.message || 'Failed to fetch settlement data');
+      toast.error(
+        settlementsData?.message || 'Failed to fetch settlement data',
+      );
       setSettlements([]);
     }
   }, [settlementsData]);
@@ -321,7 +329,7 @@ const Settlement: React.FC = () => {
       return date.toLocaleDateString('en-IN', {
         day: '2-digit',
         month: '2-digit',
-        year: 'numeric'
+        year: 'numeric',
       });
     };
 
@@ -339,22 +347,41 @@ const Settlement: React.FC = () => {
       })
       .join('');
 
-    const headerInfo = getpdfheaderdata?.data?.data || (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation = headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation = headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+    const headerInfo =
+      getpdfheaderdata?.data?.data ||
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation =
+      headerInfo.leftInvocation ||
+      headerInfo.leftInovation ||
+      '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation =
+      headerInfo.rightInvocation ||
+      headerInfo.rightInovation ||
+      '॥ श्री साई प्रसन्न ॥';
     const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const description =
+      headerInfo.description ||
+      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
     const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const phoneNumbers =
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
     const invocationColor = headerInfo.invocationColor || '#a84b20';
     const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
     const descriptionColor = headerInfo.descriptionColor || '#8b451f';
     const proprietorColor = headerInfo.proprietorColor || '#a84b20';
     const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
-    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
-    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
-    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+    const factoryFontSize = headerInfo.factoryFontSize
+      ? `${headerInfo.factoryFontSize}px`
+      : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize
+      ? `${headerInfo.descriptionFontSize}px`
+      : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize
+      ? `${headerInfo.proprietorFontSize}px`
+      : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize
+      ? `${headerInfo.phoneFontSize}px`
+      : '9px';
 
     printContainer.innerHTML = `
       <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
@@ -586,8 +613,8 @@ const Settlement: React.FC = () => {
     ) {
       toast.error(
         `Settlement amount cannot exceed pending balance of ${formatNumber(
-          settlementDetail.pendingBalance
-        )}g`
+          settlementDetail.pendingBalance,
+        )}g`,
       );
       return;
     }
@@ -613,9 +640,8 @@ const Settlement: React.FC = () => {
         return;
       }
 
-      const signedAmount = settlementDetail.settlementType === 'receive'
-        ? amount
-        : -amount;
+      const signedAmount =
+        settlementDetail.settlementType === 'receive' ? amount : -amount;
 
       const settlementData = {
         clientId: settlementDetail.clientId,
@@ -644,7 +670,6 @@ const Settlement: React.FC = () => {
 
       await refetchSettlements();
       // toast.success('Settlement saved successfully');
-
     } catch (error) {
       console.error('Settlement error:', error);
       toast.error('Failed to save settlement');
@@ -693,17 +718,22 @@ const Settlement: React.FC = () => {
   // ======================================================
 
   const totalPositiveBalance = settlements.reduce(
-    (sum, item) => item.goldBalance > 0 ? sum + item.goldBalance : sum,
-    0
+    (sum, item) => (item.goldBalance > 0 ? sum + item.goldBalance : sum),
+    0,
   );
 
   const totalNegativeBalance = settlements.reduce(
-    (sum, item) => item.goldBalance < 0 ? sum + Math.abs(item.goldBalance) : sum,
-    0
+    (sum, item) =>
+      item.goldBalance < 0 ? sum + Math.abs(item.goldBalance) : sum,
+    0,
   );
 
-  const totalPending = settlements.filter((item) => item.status !== 'settled').length;
-  const totalSettled = settlements.filter((item) => item.status === 'settled').length;
+  const totalPending = settlements.filter(
+    (item) => item.status !== 'settled',
+  ).length;
+  const totalSettled = settlements.filter(
+    (item) => item.status === 'settled',
+  ).length;
 
   // ======================================================
   // ACTION BUTTON
@@ -714,10 +744,11 @@ const Settlement: React.FC = () => {
       type="button"
       onClick={() => handleSettle(item)}
       disabled={item.status === 'settled'}
-      className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${item.status === 'settled'
-        ? 'cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-600'
-        : 'bg-[#785600] text-white hover:bg-[#5d4200]'
-        }`}
+      className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+        item.status === 'settled'
+          ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'
+          : 'bg-[#785600] text-white hover:bg-[#5d4200]'
+      }`}
     >
       {item.status === 'settled' ? (
         <>
@@ -760,7 +791,7 @@ const Settlement: React.FC = () => {
       key: 'goldBalance',
       header: 'Due Balance(G)',
       render: (item) => (
-        <div className='text-black dark:text-white'>
+        <div className="text-black dark:text-white">
           {formatNumber(Math.abs(item.goldBalance))} G
         </div>
       ),
@@ -812,7 +843,7 @@ const Settlement: React.FC = () => {
             <button
               type="button"
               onClick={closeSettlementModal}
-              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-800"
+              className="text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-lg p-1.5 dark:hover:bg-slate-800"
             >
               <X className="h-5 w-5" />
             </button>
@@ -876,10 +907,11 @@ const Settlement: React.FC = () => {
                     inputRef.current?.select();
                   }, 50);
                 }}
-                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'receive'
-                  ? 'border-[#785600] bg-[#785600] text-white'
-                  : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                  }`}
+                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  settlementDetail.settlementType === 'receive'
+                    ? 'border-[#785600] bg-[#785600] text-white'
+                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
               >
                 <Plus className="h-4 w-4" />
                 Receive
@@ -896,10 +928,11 @@ const Settlement: React.FC = () => {
                     inputRef.current?.select();
                   }, 50);
                 }}
-                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'give'
-                  ? 'border-[#785600] bg-[#785600] text-white'
-                  : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                  }`}
+                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  settlementDetail.settlementType === 'give'
+                    ? 'border-[#785600] bg-[#785600] text-white'
+                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
               >
                 <Minus className="h-4 w-4" />
                 Give
@@ -948,7 +981,10 @@ const Settlement: React.FC = () => {
                   }
                   let finalAmount = amount;
                   if (settlementDetail.settlementType === 'receive') {
-                    finalAmount = Math.min(Math.max(amount, 0), settlementDetail.pendingBalance);
+                    finalAmount = Math.min(
+                      Math.max(amount, 0),
+                      settlementDetail.pendingBalance,
+                    );
                   } else {
                     finalAmount = Math.max(amount, 0);
                   }
@@ -960,7 +996,7 @@ const Settlement: React.FC = () => {
                   setLocalAmount(
                     finalAmount > 0
                       ? parseFloat(finalAmount.toFixed(3)).toString()
-                      : ''
+                      : '',
                   );
                 }}
                 onKeyDown={(e) => {
@@ -996,7 +1032,10 @@ const Settlement: React.FC = () => {
             <button
               type="button"
               onClick={handleProceedToConfirm}
-              disabled={submitSettlementMutation.isPending || settlementDetail.settlementAmount <= 0}
+              disabled={
+                submitSettlementMutation.isPending ||
+                settlementDetail.settlementAmount <= 0
+              }
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#785600] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#5d4200] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ArrowRight className="h-4 w-4" />
@@ -1020,9 +1059,10 @@ const Settlement: React.FC = () => {
         ? settlementDetail.pendingBalance - settlementDetail.settlementAmount
         : settlementDetail.pendingBalance + settlementDetail.settlementAmount;
 
-    const signedAmount = settlementDetail.settlementType === 'receive'
-      ? `+${formatNumber(settlementDetail.settlementAmount)}`
-      : `-${formatNumber(settlementDetail.settlementAmount)}`;
+    const signedAmount =
+      settlementDetail.settlementType === 'receive'
+        ? `+${formatNumber(settlementDetail.settlementAmount)}`
+        : `-${formatNumber(settlementDetail.settlementAmount)}`;
 
     return (
       <div
@@ -1040,7 +1080,7 @@ const Settlement: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowConfirmModal(false)}
-            className="absolute right-3 top-3 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-800"
+            className="text-gray-400 hover:bg-gray-100 hover:text-gray-600 absolute right-3 top-3 rounded-lg p-1.5 dark:hover:bg-slate-800"
           >
             <X className="h-5 w-5" />
           </button>
@@ -1060,19 +1100,25 @@ const Settlement: React.FC = () => {
 
             <div className="mb-5 space-y-2 rounded-lg border border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-800/50">
               <div className="flex justify-between text-sm">
-                <span className="text-[#4f4535] dark:text-slate-400">Client:</span>
+                <span className="text-[#4f4535] dark:text-slate-400">
+                  Client:
+                </span>
                 <span className="font-medium text-[#1a1c1b] dark:text-white">
                   {settlementDetail.clientName}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-[#4f4535] dark:text-slate-400">Amount:</span>
+                <span className="text-[#4f4535] dark:text-slate-400">
+                  Amount:
+                </span>
                 <span className="font-bold text-[#1a1c1b] dark:text-white">
                   {signedAmount} g
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-[#4f4535] dark:text-slate-400">New Balance:</span>
+                <span className="text-[#4f4535] dark:text-slate-400">
+                  New Balance:
+                </span>
                 <span className="font-bold text-[#1a1c1b] dark:text-white">
                   {formatNumber(newBalance)} g
                 </span>
@@ -1116,65 +1162,65 @@ const Settlement: React.FC = () => {
 
         {/* STATISTICS */}
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total Clients
                 </span>
                 <span className="text-lg font-bold text-black dark:text-white">
                   {settlements.length}
                 </span>
               </div>
-              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-blue-900/30 border border-[#785600]/20 dark:border-blue-700/30">
+              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-blue-700/30 dark:bg-blue-900/30">
                 <Users className="h-4 w-4 text-[#785600] dark:text-blue-400" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Pending Settlements
                 </span>
                 <span className="text-lg font-bold text-black dark:text-white">
                   {totalPending}
                 </span>
               </div>
-              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-yellow-900/30 border border-[#785600]/20 dark:border-yellow-700/30">
+              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-yellow-700/30 dark:bg-yellow-900/30">
                 <Clock className="h-4 w-4 text-[#785600] dark:text-yellow-400" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Settled
                 </span>
                 <span className="text-lg font-bold text-black dark:text-white">
                   {totalSettled}
                 </span>
               </div>
-              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-green-900/30 border border-[#785600]/20 dark:border-green-700/30">
+              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-green-700/30 dark:bg-green-900/30">
                 <CheckCircle className="h-4 w-4 text-[#785600] dark:text-green-400" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900 border border-[#d3c4af]/20 dark:border-slate-700 hover:shadow-md transition-shadow duration-200">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
               <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Net Balance
                 </span>
                 <span className="text-lg font-bold text-black dark:text-white">
                   {formatNumber(totalPositiveBalance - totalNegativeBalance)} G
                 </span>
               </div>
-              <div className="rounded-full bg-[#785600]/10 p-2 dark:bg-amber-900/30 border border-[#785600]/20 dark:border-amber-700/30">
+              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-amber-700/30 dark:bg-amber-900/30">
                 <Wallet className="h-4 w-4 text-[#785600] dark:text-amber-400" />
               </div>
             </div>
@@ -1212,19 +1258,21 @@ const Settlement: React.FC = () => {
               id="from-date-settlement"
               placeholder="DD/MM/YYYY"
               mode="from"
-              initialDates={dateRange.from ? [new Date(dateRange.from + 'T00:00:00')] : []}
+              initialDates={
+                dateRange.from ? [new Date(dateRange.from + 'T00:00:00')] : []
+              }
               onDateChange={(dates) => {
                 if (dates && dates.length > 0) {
                   const d = dates[0];
                   const year = d.getFullYear();
                   const month = String(d.getMonth() + 1).padStart(2, '0');
                   const day = String(d.getDate()).padStart(2, '0');
-                  setDateRange(prev => ({
+                  setDateRange((prev) => ({
                     ...prev,
                     from: `${year}-${month}-${day}`,
                   }));
                 } else {
-                  setDateRange(prev => ({
+                  setDateRange((prev) => ({
                     ...prev,
                     from: '',
                   }));
@@ -1237,19 +1285,21 @@ const Settlement: React.FC = () => {
               id="to-date-settlement"
               placeholder="DD/MM/YYYY"
               mode="to"
-              initialDates={dateRange.to ? [new Date(dateRange.to + 'T00:00:00')] : []}
+              initialDates={
+                dateRange.to ? [new Date(dateRange.to + 'T00:00:00')] : []
+              }
               onDateChange={(dates) => {
                 if (dates && dates.length > 0) {
                   const d = dates[0];
                   const year = d.getFullYear();
                   const month = String(d.getMonth() + 1).padStart(2, '0');
                   const day = String(d.getDate()).padStart(2, '0');
-                  setDateRange(prev => ({
+                  setDateRange((prev) => ({
                     ...prev,
                     to: `${year}-${month}-${day}`,
                   }));
                 } else {
-                  setDateRange(prev => ({
+                  setDateRange((prev) => ({
                     ...prev,
                     to: '',
                   }));
@@ -1266,7 +1316,7 @@ const Settlement: React.FC = () => {
                 }
                 handlePrintTable();
               }}
-              className="!bg-[#785600] hover:!bg-[#5d4200] !text-white"
+              className="!bg-[#785600] !text-white hover:!bg-[#5d4200]"
             >
               <Printer className="h-4 w-4" />
               <span>Print</span>
@@ -1280,7 +1330,11 @@ const Settlement: React.FC = () => {
             data={filteredSettlements}
             columns={columns}
             onSave={(item) => console.log('Save:', item)}
-            emptyMessage={isSettlementsLoading ? 'Loading settlement data...' : 'No settlement entries found.'}
+            emptyMessage={
+              isSettlementsLoading
+                ? 'Loading settlement data...'
+                : 'No settlement entries found.'
+            }
             isLoading={isSettlementsLoading}
             renderActions={renderActions}
             showSrNo={true}

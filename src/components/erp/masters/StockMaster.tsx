@@ -1,21 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Save, X, Edit, Trash2, Package, Ruler, Search, Eye } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import React, {useState, useEffect} from 'react';
+import {
+  Plus,
+  Save,
+  X,
+  Edit,
+  Trash2,
+  Package,
+  Ruler,
+  Search,
+  Eye,
+} from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
-import { useGetItems, Item } from '@/lib/api/items';
-import { useGetSizes, Size } from '@/lib/api/sizes';
-import { useCreateStock, useUpdateStock, useDeleteStock, useGetStock } from '@/lib/api/stock';
-import { z } from 'zod';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import {useGetItems, Item} from '@/lib/api/items';
+import {useGetSizes, Size} from '@/lib/api/sizes';
+import {
+  useCreateStock,
+  useUpdateStock,
+  useDeleteStock,
+  useGetStock,
+} from '@/lib/api/stock';
+import {z} from 'zod';
 
 // Zod Schema for validation
 const OpeningStockSchema = z.object({
-  itemId: z.string().min(1, "Please select an item"),
-  sizeId: z.string().min(1, "Please select a size"),
-  grams: z.number().min(0.001, "Please enter a valid weight in grams"),
-  purity: z.number().min(1, "Please enter purity percentage")
-    .max(100, "Purity cannot exceed 100%"),
+  itemId: z.string().min(1, 'Please select an item'),
+  sizeId: z.string().min(1, 'Please select a size'),
+  grams: z.number().min(0.001, 'Please enter a valid weight in grams'),
+  purity: z
+    .number()
+    .min(1, 'Please enter purity percentage')
+    .max(100, 'Purity cannot exceed 100%'),
 });
 
 type OpeningStockFormData = z.infer<typeof OpeningStockSchema>;
@@ -42,11 +59,15 @@ const StockMaster: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch items and sizes from API
-  const { data: items = [], isLoading: itemsLoading } = useGetItems();
-  const { data: sizes = [], isLoading: sizesLoading } = useGetSizes();
+  const {data: items = [], isLoading: itemsLoading} = useGetItems();
+  const {data: sizes = [], isLoading: sizesLoading} = useGetSizes();
 
   // Fetch existing stock data
-  const { data: stockData = [], isLoading: stockLoading, refetch } = useGetStock();
+  const {
+    data: stockData = [],
+    isLoading: stockLoading,
+    refetch,
+  } = useGetStock();
 
   // Mutation hooks
   const createStock = useCreateStock();
@@ -67,39 +88,51 @@ const StockMaster: React.FC = () => {
     let entries: OpeningStockEntry[] = [];
 
     if (stockData.length > 0) {
-      const stockEntries: OpeningStockEntry[] = stockData.map((stock, index) => {
-        const item = items.find(i => i.id === stock.itemId);
-        const size = sizes.find(s => s.id === stock.sizeId);
+      const stockEntries: OpeningStockEntry[] = stockData.map(
+        (stock, index) => {
+          const item = items.find((i) => i.id === stock.itemId);
+          const size = sizes.find((s) => s.id === stock.sizeId);
 
-        return {
-          id: stock.id,
-          srNo: index + 1,
-          item: item?.name || '',
-          size: size?.size || '',
-          purity: typeof stock.purity === 'string' ? parseFloat(stock.purity) : stock.purity || '99.99',
-          grams: stock.weight,
-          isEditing: false,
-          isSaved: true,
-          gramsRaw: stock.weight.toString(),
-          purityRaw: typeof stock.purity === 'string' ? stock.purity : stock.purity?.toString() || '',
-          itemId: stock.itemId,
-          sizeId: stock.sizeId,
-        };
-      });
+          return {
+            id: stock.id,
+            srNo: index + 1,
+            item: item?.name || '',
+            size: size?.size || '',
+            purity:
+              typeof stock.purity === 'string'
+                ? parseFloat(stock.purity)
+                : stock.purity || '99.99',
+            grams: stock.weight,
+            isEditing: false,
+            isSaved: true,
+            gramsRaw: stock.weight.toString(),
+            purityRaw:
+              typeof stock.purity === 'string'
+                ? stock.purity
+                : stock.purity?.toString() || '',
+            itemId: stock.itemId,
+            sizeId: stock.sizeId,
+          };
+        },
+      );
 
       // Separate gold items (assuming gold is identified by name containing 'gold' or itemId)
-      const goldItems = stockEntries.filter(entry =>
-        entry.item.toLowerCase().includes('gold') ||
-        entry.itemId?.toLowerCase().includes('gold')
+      const goldItems = stockEntries.filter(
+        (entry) =>
+          entry.item.toLowerCase().includes('gold') ||
+          entry.itemId?.toLowerCase().includes('gold'),
       );
-      const otherItems = stockEntries.filter(entry =>
-        !entry.item.toLowerCase().includes('gold') &&
-        !entry.itemId?.toLowerCase().includes('gold')
+      const otherItems = stockEntries.filter(
+        (entry) =>
+          !entry.item.toLowerCase().includes('gold') &&
+          !entry.itemId?.toLowerCase().includes('gold'),
       );
 
       // Sort gold items to top, then sort by item name
       const sortedGold = goldItems.sort((a, b) => a.item.localeCompare(b.item));
-      const sortedOther = otherItems.sort((a, b) => a.item.localeCompare(b.item));
+      const sortedOther = otherItems.sort((a, b) =>
+        a.item.localeCompare(b.item),
+      );
 
       // Combine with gold items first
       entries = [...sortedGold, ...sortedOther];
@@ -107,7 +140,7 @@ const StockMaster: React.FC = () => {
       // Recalculate srNo
       entries = entries.map((entry, index) => ({
         ...entry,
-        srNo: index + 1
+        srNo: index + 1,
       }));
     } else {
       entries = [];
@@ -115,20 +148,28 @@ const StockMaster: React.FC = () => {
 
     setOpeningEntries(entries);
     setIsInitialized(true);
-  }, [stockData, items, sizes, itemsLoading, sizesLoading, stockLoading, isInitialized]);
+  }, [
+    stockData,
+    items,
+    sizes,
+    itemsLoading,
+    sizesLoading,
+    stockLoading,
+    isInitialized,
+  ]);
 
   // Filter data based on search term - search across all fields
   const filteredData = searchTerm
-    ? openingEntries.filter(entry => {
-      const searchLower = searchTerm.toLowerCase().trim();
-      return (
-        entry.item.toLowerCase().includes(searchLower) ||
-        entry.size.toLowerCase().includes(searchLower) ||
-        entry.purity.toString().includes(searchLower) ||
-        entry.grams.toString().includes(searchLower) ||
-        `${entry.grams}`.includes(searchLower)
-      );
-    })
+    ? openingEntries.filter((entry) => {
+        const searchLower = searchTerm.toLowerCase().trim();
+        return (
+          entry.item.toLowerCase().includes(searchLower) ||
+          entry.size.toLowerCase().includes(searchLower) ||
+          entry.purity.toString().includes(searchLower) ||
+          entry.grams.toString().includes(searchLower) ||
+          `${entry.grams}`.includes(searchLower)
+        );
+      })
     : openingEntries;
 
   // Validate form data
@@ -138,7 +179,10 @@ const StockMaster: React.FC = () => {
         itemId: entry.itemId || '',
         sizeId: entry.sizeId || '',
         grams: entry.grams,
-        purity: typeof entry.purity === 'string' ? parseFloat(entry.purity) : entry.purity,
+        purity:
+          typeof entry.purity === 'string'
+            ? parseFloat(entry.purity)
+            : entry.purity,
       });
       return true;
     } catch (error) {
@@ -151,62 +195,71 @@ const StockMaster: React.FC = () => {
     }
   };
 
-
-
   // Handle inline field change
-  const handleInlineChange = (index: number, field: 'item' | 'size' | 'purity' | 'grams' | 'itemId' | 'sizeId', value: string) => {
-    setOpeningEntries(prev => prev.map((entry, i) => {
-      if (i === index) {
-        const updated = { ...entry };
+  const handleInlineChange = (
+    index: number,
+    field: 'item' | 'size' | 'purity' | 'grams' | 'itemId' | 'sizeId',
+    value: string,
+  ) => {
+    setOpeningEntries((prev) =>
+      prev.map((entry, i) => {
+        if (i === index) {
+          const updated = {...entry};
 
-        if (field === 'item') {
-          updated.item = value;
-          const foundItem = items.find(item => item.name === value);
-          updated.itemId = foundItem?.id || '';
-        } else if (field === 'size') {
-          updated.size = value;
-          const foundSize = sizes.find(size => size.size === value);
-          updated.sizeId = foundSize?.id || '';
-        } else if (field === 'itemId') {
-          updated.itemId = value;
-          const foundItem = items.find(item => item.id === value);
-          updated.item = foundItem?.name || '';
-        } else if (field === 'sizeId') {
-          updated.sizeId = value;
-          const foundSize = sizes.find(size => size.id === value);
-          updated.size = foundSize?.size || '';
-        } else if (field === 'purity') {
-          const sanitized = value.replace(/[^0-9.]/g, '');
-          const parts = sanitized.split('.');
-          const formatted = parts.length > 2
-            ? `${parts[0]}.${parts.slice(1).join('')}`
-            : sanitized;
-          updated.purity = parseFloat(formatted) || 0;
-          updated.purityRaw = formatted;
-        } else if (field === 'grams') {
-          const sanitized = value.replace(/[^0-9.]/g, '');
-          const parts = sanitized.split('.');
-          let formatted = parts.length > 2
-            ? `${parts[0]}.${parts.slice(1).join('')}`
-            : sanitized;
+          if (field === 'item') {
+            updated.item = value;
+            const foundItem = items.find((item) => item.name === value);
+            updated.itemId = foundItem?.id || '';
+          } else if (field === 'size') {
+            updated.size = value;
+            const foundSize = sizes.find((size) => size.size === value);
+            updated.sizeId = foundSize?.id || '';
+          } else if (field === 'itemId') {
+            updated.itemId = value;
+            const foundItem = items.find((item) => item.id === value);
+            updated.item = foundItem?.name || '';
+          } else if (field === 'sizeId') {
+            updated.sizeId = value;
+            const foundSize = sizes.find((size) => size.id === value);
+            updated.size = foundSize?.size || '';
+          } else if (field === 'purity') {
+            const sanitized = value.replace(/[^0-9.]/g, '');
+            const parts = sanitized.split('.');
+            const formatted =
+              parts.length > 2
+                ? `${parts[0]}.${parts.slice(1).join('')}`
+                : sanitized;
+            updated.purity = parseFloat(formatted) || 0;
+            updated.purityRaw = formatted;
+          } else if (field === 'grams') {
+            const sanitized = value.replace(/[^0-9.]/g, '');
+            const parts = sanitized.split('.');
+            let formatted =
+              parts.length > 2
+                ? `${parts[0]}.${parts.slice(1).join('')}`
+                : sanitized;
 
-          if (formatted.includes('.') && formatted.split('.')[1]?.length > 3) {
-            formatted = `${formatted.split('.')[0]}.${formatted.split('.')[1].slice(0, 3)}`;
+            if (
+              formatted.includes('.') &&
+              formatted.split('.')[1]?.length > 3
+            ) {
+              formatted = `${formatted.split('.')[0]}.${formatted.split('.')[1].slice(0, 3)}`;
+            }
+
+            updated.gramsRaw = formatted;
+            if (formatted === '' || formatted === '.' || formatted === '-') {
+              updated.grams = 0;
+            } else {
+              const numValue = parseFloat(formatted);
+              updated.grams = isNaN(numValue) ? 0 : numValue;
+            }
           }
 
-          updated.gramsRaw = formatted;
-          if (formatted === '' || formatted === '.' || formatted === '-') {
-            updated.grams = 0;
-          } else {
-            const numValue = parseFloat(formatted);
-            updated.grams = isNaN(numValue) ? 0 : numValue;
-          }
+          return updated;
         }
-
-        return updated;
-      }
-      return entry;
-    }));
+        return entry;
+      }),
+    );
   };
 
   // Helper function to format grams - remove trailing zeros
@@ -231,12 +284,15 @@ const StockMaster: React.FC = () => {
       itemId: entry.itemId,
       sizeId: entry.sizeId,
       weight: entry.grams,
-      purity: typeof entry.purity === 'string' ? parseFloat(entry.purity) : entry.purity,
+      purity:
+        typeof entry.purity === 'string'
+          ? parseFloat(entry.purity)
+          : entry.purity,
     };
 
     try {
       if (entry.isSaved) {
-        await updateStock.mutateAsync({ id: entry.id, data: stockDataPayload });
+        await updateStock.mutateAsync({id: entry.id, data: stockDataPayload});
         toast.success('Opening stock updated successfully!');
       } else {
         const result = await createStock.mutateAsync(stockDataPayload);
@@ -244,18 +300,20 @@ const StockMaster: React.FC = () => {
         toast.success('Opening stock saved successfully!');
       }
 
-      setOpeningEntries(prev => prev.map((s, i) => {
-        if (i === index) {
-          return {
-            ...s,
-            isEditing: false,
-            isSaved: true,
-            gramsRaw: formatGrams(entry.grams),
-            purityRaw: entry.purity.toString(),
-          };
-        }
-        return s;
-      }));
+      setOpeningEntries((prev) =>
+        prev.map((s, i) => {
+          if (i === index) {
+            return {
+              ...s,
+              isEditing: false,
+              isSaved: true,
+              gramsRaw: formatGrams(entry.grams),
+              purityRaw: entry.purity.toString(),
+            };
+          }
+          return s;
+        }),
+      );
 
       await refetch();
     } catch (error) {
@@ -264,10 +322,9 @@ const StockMaster: React.FC = () => {
     }
   };
 
-
   const handleRowClick = (entry: OpeningStockEntry) => {
     const id = entry.id;
-    navigate({ to: `/stock/stockreport/${entry.id}`});
+    navigate({to: `/stock/stockreport/${entry.id}`});
   };
 
   // Define columns for GenericTable - NO EDIT/DELETE icons
@@ -288,9 +345,7 @@ const StockMaster: React.FC = () => {
       header: 'Size',
       render: (item, index) => {
         return (
-          <span className="text-[#1a1c1b] dark:text-white">
-            {item.size}
-          </span>
+          <span className="text-[#1a1c1b] dark:text-white">{item.size}</span>
         );
       },
     },
@@ -318,22 +373,23 @@ const StockMaster: React.FC = () => {
     },
   ];
 
-  const isSubmitting = createStock.isPending || updateStock.isPending || deleteStock.isPending;
+  const isSubmitting =
+    createStock.isPending || updateStock.isPending || deleteStock.isPending;
 
   return (
     <div className="bg-[#f9f9f7] dark:bg-slate-950">
       {/* Header with Title, Search and Buttons */}
-      <div className="sticky top-0 z-10 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700">
-        <div className="flex flex-col lg:flex-row items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6 gap-3">
+      <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
+        <div className="flex flex-col items-center justify-between gap-3 px-3 py-2 sm:px-4 sm:py-3 md:px-6 lg:flex-row">
           {/* Left side - Title */}
-          <div className="flex items-center gap-2 min-w-0 w-full lg:w-auto">
-            <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl whitespace-nowrap">
+          <div className="flex w-full min-w-0 items-center gap-2 lg:w-auto">
+            <h2 className="whitespace-nowrap font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Stocks
             </h2>
           </div>
 
           {/* Right side - Search and Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+          <div className="flex w-full flex-col items-center gap-3 sm:flex-row lg:w-auto">
             {/* Search Bar - Responsive */}
             <div className="relative w-full sm:w-64 md:w-72 lg:w-80">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
@@ -342,7 +398,7 @@ const StockMaster: React.FC = () => {
                 placeholder="Search by item, size, weight or purity..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white/80 pl-9 pr-4 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] outline-none transition-all focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white dark:border-slate-700 dark:focus:border-[#785600]"
+                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white/80 py-2 pl-9 pr-4 text-sm text-[#1a1c1b] outline-none transition-all placeholder:text-[#817563] focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-[#785600]"
               />
               {searchTerm && (
                 <button
@@ -355,12 +411,12 @@ const StockMaster: React.FC = () => {
             </div>
 
             {/* Action Buttons - Themed Colors */}
-            <div className="flex flex-wrap items-center justify-center gap-2 w-full sm:w-auto">
+            <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto">
               {/* Inward / Outward - Green theme */}
               <GenericButton
                 type="button"
-                onClick={() => navigate({ to: '/Stocks/stockmanagement' })}
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 !bg-emerald-600 hover:!bg-emerald-700 !text-white"
+                onClick={() => navigate({to: '/Stocks/stockmanagement'})}
+                className="whitespace-nowrap !bg-emerald-600 px-2 py-1.5 text-xs !text-white hover:!bg-emerald-700 sm:px-3 sm:py-2 sm:text-sm"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Inward / Outward</span>
@@ -369,8 +425,8 @@ const StockMaster: React.FC = () => {
               {/* Opening Stock - Amber theme */}
               <GenericButton
                 type="button"
-                onClick={() => navigate({ to: '/stock/openingstock' })}
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 !bg-amber-600 hover:!bg-amber-700 !text-white"
+                onClick={() => navigate({to: '/stock/openingstock'})}
+                className="whitespace-nowrap !bg-amber-600 px-2 py-1.5 text-xs !text-white hover:!bg-amber-700 sm:px-3 sm:py-2 sm:text-sm"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Opening Stock</span>
@@ -379,8 +435,8 @@ const StockMaster: React.FC = () => {
               {/* Add Item - Blue theme */}
               <GenericButton
                 type="button"
-                onClick={() => navigate({ to: '/master/additems' })}
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 !bg-blue-600 hover:!bg-blue-700 !text-white"
+                onClick={() => navigate({to: '/master/additems'})}
+                className="whitespace-nowrap !bg-blue-600 px-2 py-1.5 text-xs !text-white hover:!bg-blue-700 sm:px-3 sm:py-2 sm:text-sm"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Add Item</span>
@@ -389,8 +445,8 @@ const StockMaster: React.FC = () => {
               {/* Add Size - Purple theme */}
               <GenericButton
                 type="button"
-                onClick={() => navigate({ to: '/master/size' })}
-                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 !bg-purple-600 hover:!bg-purple-700 !text-white"
+                onClick={() => navigate({to: '/master/size'})}
+                className="whitespace-nowrap !bg-purple-600 px-2 py-1.5 text-xs !text-white hover:!bg-purple-700 sm:px-3 sm:py-2 sm:text-sm"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Add Size</span>
@@ -400,10 +456,10 @@ const StockMaster: React.FC = () => {
         </div>
       </div>
 
-      <div className="px-3 sm:px-4 md:px-6 pb-4">
+      <div className="px-3 pb-4 sm:px-4 md:px-6">
         {/* Generic Table - No Actions column */}
-        <div className="-mx-3 sm:-mx-4 md:mx-0 overflow-x-auto">
-          <div className="min-w-full inline-block align-middle">
+        <div className="-mx-3 overflow-x-auto sm:-mx-4 md:mx-0">
+          <div className="inline-block min-w-full align-middle">
             <GenericTable
               data={filteredData}
               columns={columns}
@@ -411,7 +467,7 @@ const StockMaster: React.FC = () => {
               emptyMessage={
                 searchTerm
                   ? `No results found for "${searchTerm}"`
-                  : "No opening stock entries found."
+                  : 'No opening stock entries found.'
               }
               isLoading={isSubmitting}
               showSrNo={true}

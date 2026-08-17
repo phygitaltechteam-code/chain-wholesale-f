@@ -1,4 +1,3 @@
-
 // import { Link, useNavigate } from '@tanstack/react-router';
 // import React, { useState, useEffect } from 'react';
 // import { motion, AnimatePresence } from 'framer-motion';
@@ -386,22 +385,13 @@
 
 // export default SignIn;
 
-
-
-import { Link, useNavigate } from '@tanstack/react-router';
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import {
-  Lock,
-  ArrowRight,
-  User,
-  Eye,
-  EyeOff,
-  Gem,
-} from 'lucide-react';
-import { useLogin } from '@/lib/api/auth';
+import {Link, useNavigate} from '@tanstack/react-router';
+import React, {useState, useEffect} from 'react';
+import {motion} from 'framer-motion';
+import {Lock, ArrowRight, User, Eye, EyeOff, Gem} from 'lucide-react';
+import {useLogin} from '@/lib/api/auth';
 import toast from 'react-hot-toast';
-import { useAuthContext } from '@/context/AuthContext';
+import {useAuthContext} from '@/context/AuthContext';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 
 const SignIn: React.FC = () => {
@@ -412,8 +402,8 @@ const SignIn: React.FC = () => {
     password: '',
   });
 
-  const { mutateAsync: login, isPending, isSuccess } = useLogin();
-  const { user, isAuthenticated } = useAuthContext();
+  const {mutateAsync: login, isPending, isSuccess} = useLogin();
+  const {user, isAuthenticated} = useAuthContext();
 
   useEffect(() => {
     if (isSuccess || isAuthenticated) {
@@ -440,25 +430,24 @@ const SignIn: React.FC = () => {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCredentials((prev) => ({ ...prev, [name]: value }));
+    const {name, value} = e.target;
+    setCredentials((prev) => ({...prev, [name]: value}));
   };
 
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 p-4 overflow-hidden">
-
+    <div className="flex h-screen w-full flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100 p-4">
       {/* Main Card */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1 }}
-        className="w-full max-w-[400px] overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 shadow-2xl shadow-slate-200/50 backdrop-blur-xl flex-shrink-0"
+        initial={{opacity: 0, scale: 0.95}}
+        animate={{opacity: 1, scale: 1}}
+        transition={{delay: 0.1}}
+        className="w-full max-w-[400px] flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 shadow-2xl shadow-slate-200/50 backdrop-blur-xl"
       >
         <div className="p-6 sm:p-8">
           <motion.div
             key="login"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{opacity: 0, x: -20}}
+            animate={{opacity: 1, x: 0}}
             className="space-y-5"
           >
             <div className="mb-4 text-center">
@@ -473,9 +462,7 @@ const SignIn: React.FC = () => {
                 Welcome Back
               </h3>
 
-              <p className="text-sm text-slate-500">
-                Sign in to your account
-              </p>
+              <p className="text-sm text-slate-500">Sign in to your account</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
@@ -505,9 +492,9 @@ const SignIn: React.FC = () => {
                     className="focus:outline-none"
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-slate-400 hover:text-[#785600] transition-colors" />
+                      <EyeOff className="h-4 w-4 text-slate-400 transition-colors hover:text-[#785600]" />
                     ) : (
-                      <Eye className="h-4 w-4 text-slate-400 hover:text-[#785600] transition-colors" />
+                      <Eye className="h-4 w-4 text-slate-400 transition-colors hover:text-[#785600]" />
                     )}
                   </button>
                 }
@@ -527,11 +514,9 @@ const SignIn: React.FC = () => {
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </GenericButton>
             </form>
-
           </motion.div>
         </div>
       </motion.div>
-
     </div>
   );
 };

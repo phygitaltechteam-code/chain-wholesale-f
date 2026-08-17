@@ -1,16 +1,16 @@
 import Sidebar from '@/components/Sidebar';
-import { useAuthContext } from '@/context/AuthContext';
-import { Outlet, useNavigate } from '@tanstack/react-router';
-import React, { useEffect, useState } from 'react';
-import { Menu } from 'lucide-react';
+import {useAuthContext} from '@/context/AuthContext';
+import {Outlet, useNavigate} from '@tanstack/react-router';
+import React, {useEffect, useState} from 'react';
+import {Menu} from 'lucide-react';
 
-const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+const AppLayout: React.FC<{children?: React.ReactNode}> = ({children}) => {
   const navigate = useNavigate();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { isAuthenticated, isLoading, user } = useAuthContext();
+  const {isAuthenticated, isLoading, user} = useAuthContext();
   const [isReady, setIsReady] = useState(false);
 
   // Check if screen is mobile
@@ -48,15 +48,15 @@ const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
       const currentPath = window.location.pathname;
-      
+
       // SUPERADMIN should go to addadmin if they're on billing
       if (user.role === 'SUPERADMIN' && currentPath === '/billing') {
-        navigate({ to: '/addadmin', replace: true });
+        navigate({to: '/addadmin', replace: true});
       }
-      
+
       // ADMIN should go to billing if they're on addadmin
       if (user.role === 'ADMIN' && currentPath === '/addadmin') {
-        navigate({ to: '/billing', replace: true });
+        navigate({to: '/billing', replace: true});
       }
     }
   }, [isLoading, isAuthenticated, user, navigate]);
@@ -92,11 +92,13 @@ const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   }
 
   return (
-    <div className="h-screen bg-[#f9f9f7] dark:bg-slate-950 overflow-hidden">
+    <div className="h-screen overflow-hidden bg-[#f9f9f7] dark:bg-slate-950">
       {/* Sidebar - fixed position */}
-      <div className={`fixed left-0 top-0 h-full z-50 transition-transform duration-300 ${
-        isMobile && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'
-      }`}>
+      <div
+        className={`fixed left-0 top-0 z-50 h-full transition-transform duration-300 ${
+          isMobile && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'
+        }`}
+      >
         <Sidebar
           onCollapseChange={setSidebarCollapsed}
           isMobile={isMobile}
@@ -106,30 +108,28 @@ const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       </div>
 
       {/* Main content */}
-      <div 
+      <div
         className={`h-full overflow-y-auto transition-all duration-300 ${!isMobile ? getContentMargin() : 'ml-0'}`}
       >
         {/* Mobile Header with Hamburger Menu */}
         {isMobile && (
-          <div className="sticky top-0 z-40 bg-[#f9f9f7] dark:bg-slate-950 border-b border-[#d3c4af]/10 dark:border-slate-700 p-3 flex items-center">
+          <div className="sticky top-0 z-40 flex items-center border-b border-[#d3c4af]/10 bg-[#f9f9f7] p-3 dark:border-slate-700 dark:bg-slate-950">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg hover:bg-[#785600]/10 dark:hover:bg-[#986d00]/20 text-[#785600] dark:text-[#986d00]"
+              className="rounded-lg p-2 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
             >
               <Menu className="h-5 w-5" />
             </button>
           </div>
         )}
 
-        <main className="min-h-full">
-          {children ?? <Outlet />}
-        </main>
+        <main className="min-h-full">{children ?? <Outlet />}</main>
       </div>
 
       {/* Mobile overlay */}
       {isMobile && sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40"
+          className="fixed inset-0 z-40 bg-black/50"
           onClick={() => setSidebarOpen(false)}
         />
       )}

@@ -1,11 +1,11 @@
-import { api } from "@/utils/axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
-import { z } from "zod";
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import {z} from 'zod';
 
 // Zod Schema for validation
 export const SizeSchema = z.object({
-  size: z.string().min(1, "Size is required"),
+  size: z.string().min(1, 'Size is required'),
 });
 
 export type SizeFormData = z.infer<typeof SizeSchema>;
@@ -21,11 +21,11 @@ export interface Size {
 // API Functions
 const createSizeApi = async (data: SizeFormData) => {
   try {
-    const response = await api.post("/admin/size", data);
+    const response = await api.post('/admin/size', data);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || "Failed to add size");
+      throw new Error(error.message || 'Failed to add size');
     }
     throw error;
   }
@@ -33,31 +33,23 @@ const createSizeApi = async (data: SizeFormData) => {
 
 const getSizesApi = async () => {
   try {
-    const response = await api.get("/admin/size");
+    const response = await api.get('/admin/size');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(error.message || "Failed to fetch sizes");
+      throw new Error(error.message || 'Failed to fetch sizes');
     }
     throw error;
   }
 };
 
-const updateSizeApi = async ({
-  id,
-  data,
-}: {
-  id: string;
-  data: SizeFormData;
-}) => {
+const updateSizeApi = async ({id, data}: {id: string; data: SizeFormData}) => {
   try {
     const response = await api.put(`/admin/size/${id}`, data);
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(
-        error.message || `Failed to update size with ID: ${id}`
-      );
+      throw new Error(error.message || `Failed to update size with ID: ${id}`);
     }
     throw error;
   }
@@ -66,27 +58,20 @@ const updateSizeApi = async ({
 const deleteSizeApi = async (id: string) => {
   try {
     await api.delete(`/admin/size/${id}`);
-    return { success: true };
+    return {success: true};
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(
-        error.message || `Failed to delete size with ID: ${id}`
-      );
+      throw new Error(error.message || `Failed to delete size with ID: ${id}`);
     }
     throw error;
   }
 };
 
-export {
-  createSizeApi,
-  getSizesApi,
-  updateSizeApi,
-  deleteSizeApi,
-};
+export {createSizeApi, getSizesApi, updateSizeApi, deleteSizeApi};
 
 export const useGetSizes = () => {
   return useQuery({
-    queryKey: ["sizes"],
+    queryKey: ['sizes'],
     queryFn: getSizesApi,
   });
 };
@@ -98,17 +83,15 @@ export const useCreateSize = () => {
     mutationFn: createSizeApi,
 
     onSuccess: () => {
-      toast.success("Size added successfully");
+      toast.success('Size added successfully');
 
       queryClient.invalidateQueries({
-        queryKey: ["sizes"],
+        queryKey: ['sizes'],
       });
     },
 
     onError: (error: Error) => {
-      toast.error(
-        error.message || "Failed to add size"
-      );
+      toast.error(error.message || 'Failed to add size');
     },
   });
 };
@@ -120,17 +103,15 @@ export const useUpdateSize = () => {
     mutationFn: updateSizeApi,
 
     onSuccess: () => {
-      toast.success("Size updated successfully");
+      toast.success('Size updated successfully');
 
       queryClient.invalidateQueries({
-        queryKey: ["sizes"],
+        queryKey: ['sizes'],
       });
     },
 
     onError: (error: Error) => {
-      toast.error(
-        error.message || "Failed to update size"
-      );
+      toast.error(error.message || 'Failed to update size');
     },
   });
 };
@@ -142,27 +123,21 @@ export const useDeleteSize = () => {
     mutationFn: deleteSizeApi,
 
     onSuccess: async (_, deletedId) => {
-      toast.success("Size deleted successfully");
+      toast.success('Size deleted successfully');
 
       // Remove deleted size immediately from React Query cache.
-      queryClient.setQueryData<Size[]>(
-        ["sizes"],
-        (oldSizes = []) =>
-          oldSizes.filter(
-            (size) => size.id !== deletedId
-          )
+      queryClient.setQueryData<Size[]>(['sizes'], (oldSizes = []) =>
+        oldSizes.filter((size) => size.id !== deletedId),
       );
 
       // Refresh latest data from the database.
       await queryClient.invalidateQueries({
-        queryKey: ["sizes"],
+        queryKey: ['sizes'],
       });
     },
 
     onError: (error: Error) => {
-      toast.error(
-        error.message || "Failed to delete size"
-      );
+      toast.error(error.message || 'Failed to delete size');
     },
   });
 };
