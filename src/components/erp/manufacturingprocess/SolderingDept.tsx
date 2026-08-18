@@ -706,7 +706,15 @@ const SolderingDept: React.FC = () => {
         </span>
       ),
     },
-
+    {
+      key: 'process',
+      header: 'Status',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {item.process}
+        </span>
+      ),
+    },
     {
       key: 'updatedAt',
       header: 'Proceed Date & Time',

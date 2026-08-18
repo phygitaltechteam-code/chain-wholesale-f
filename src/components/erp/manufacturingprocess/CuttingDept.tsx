@@ -553,6 +553,7 @@ const CuttingDept: React.FC = () => {
         </span>
       ),
     },
+
     {
       key: 'loss',
       header: 'Loss (G)',
@@ -568,6 +569,15 @@ const CuttingDept: React.FC = () => {
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.purity)}%
+        </span>
+      ),
+    },
+    {
+      key: 'process',
+      header: 'Status',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {item.process}
         </span>
       ),
     },
