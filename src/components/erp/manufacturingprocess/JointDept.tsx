@@ -7,6 +7,7 @@ import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import {useGetJoint, useGetJointHistory, useSubmitJoint} from '@/lib/api/joint';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import {useGetHeader} from '@/lib/api/headerapi';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
 
 interface JointEntry {
   id: string;
@@ -91,6 +92,13 @@ const JointDept: React.FC = () => {
     refetch: refetchHistory,
   } = useGetJointHistory();
   const submitJoint = useSubmitJoint();
+
+  // Weighing Scale table focus hook
+  const {getScaleProps} = useTableScaleFocus<'powderReceived' | 'scrap'>(
+    (index, field, weight) => {
+      handleInlineChange(index, field, weight.toString());
+    },
+  );
 
   // Load data from API
   useEffect(() => {
@@ -843,6 +851,7 @@ const JointDept: React.FC = () => {
                       ? ''
                       : item.powderReceived
                 }
+                {...getScaleProps(index, 'powderReceived')}
                 onChange={(e) =>
                   handleInlineChange(index, 'powderReceived', e.target.value)
                 }
@@ -941,6 +950,7 @@ const JointDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
+                inputMode="decimal"
                 value={
                   item.scrapRaw !== undefined
                     ? item.scrapRaw
@@ -948,6 +958,7 @@ const JointDept: React.FC = () => {
                       ? ''
                       : item.scrap
                 }
+                {...getScaleProps(index, 'scrap')}
                 onChange={(e) =>
                   handleInlineChange(index, 'scrap', e.target.value)
                 }
@@ -1070,7 +1081,7 @@ const JointDept: React.FC = () => {
               <GenericButton
                 type="button"
                 onClick={handlePrintHistory}
-                className="flex items-center gap-1.5 whitespace-nowrap !bg-green-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-green-700 sm:!px-4 sm:!py-2 sm:!text-sm"
+                variant="primary"
               >
                 <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Print</span>
@@ -1081,11 +1092,7 @@ const JointDept: React.FC = () => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
-                showHistory
-                  ? '!bg-amber-600 hover:!bg-amber-700'
-                  : '!bg-blue-600 hover:!bg-blue-700'
-              }`}
+              variant="primary"
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

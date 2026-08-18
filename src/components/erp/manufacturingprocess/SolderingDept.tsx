@@ -21,6 +21,7 @@ import {useSubmitCutting, useSubmitMoveCutting} from '@/lib/api/cutting';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import {useGetHeader} from '@/lib/api/headerapi';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
 
 // ======================================================
 // HELPER: Get Current Week Range
@@ -95,6 +96,14 @@ const SolderingDept: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [fromDate, setFromDate] = useState<Date | null>(null);
   const [toDate, setToDate] = useState<Date | null>(null);
+
+  // Weighing Scale table focus hook
+  const {getScaleProps} = useTableScaleFocus<
+    'chainReceived' | 'powder' | 'scrap'
+  >((index, field, weight) => {
+    handleInlineChange(index, field, weight.toString());
+  });
+
   const isInitialMount = useRef(true);
   const getDefaultWeekRange = () => {
     const now = new Date();
@@ -697,7 +706,15 @@ const SolderingDept: React.FC = () => {
         </span>
       ),
     },
-
+    {
+      key: 'process',
+      header: 'Status',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {item.process}
+        </span>
+      ),
+    },
     {
       key: 'updatedAt',
       header: 'Proceed Date & Time',
@@ -1076,6 +1093,7 @@ const SolderingDept: React.FC = () => {
                       ? ''
                       : item.chainReceived
                 }
+                {...getScaleProps(index, 'chainReceived')}
                 onChange={(e) =>
                   handleInlineChange(index, 'chainReceived', e.target.value)
                 }
@@ -1114,6 +1132,7 @@ const SolderingDept: React.FC = () => {
                       ? ''
                       : item.powder
                 }
+                {...getScaleProps(index, 'powder')}
                 onChange={(e) =>
                   handleInlineChange(index, 'powder', e.target.value)
                 }
@@ -1163,6 +1182,7 @@ const SolderingDept: React.FC = () => {
                       ? ''
                       : item.scrap
                 }
+                {...getScaleProps(index, 'scrap')}
                 onChange={(e) =>
                   handleInlineChange(index, 'scrap', e.target.value)
                 }
@@ -1276,11 +1296,7 @@ const SolderingDept: React.FC = () => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
-                showHistory
-                  ? '!bg-amber-600 hover:!bg-amber-700'
-                  : '!bg-blue-600 hover:!bg-blue-700'
-              }`}
+              variant="primary"
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

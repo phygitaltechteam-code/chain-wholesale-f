@@ -536,7 +536,7 @@ export const BillingInvoice: React.FC = () => {
               <button
                 type="button"
                 onClick={handlePrint}
-                className="flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2 text-xs font-semibold text-white shadow hover:bg-amber-700"
+                className="flex items-center gap-2 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-5 py-2 text-xs font-semibold text-white shadow transition-all hover:from-[#6b4c00] hover:to-[#875f00] hover:shadow-md"
               >
                 <Printer className="h-4 w-4" />
                 Print / Download Invoice

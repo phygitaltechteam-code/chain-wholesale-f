@@ -19,6 +19,7 @@ import {
 } from '@/lib/api/cutting';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import {useGetHeader} from '@/lib/api/headerapi';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
 
 interface CuttingEntry {
   id: string;
@@ -72,6 +73,13 @@ const CuttingDept: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [actionType, setActionType] = useState<'stock' | 'kunda' | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+
+  // Weighing Scale table focus hook
+  const {getScaleProps} = useTableScaleFocus<'chainReceived' | 'scrap'>(
+    (index, field, weight) => {
+      handleInlineChange(index, field, weight.toString());
+    },
+  );
 
   // Helper function to get week start (Monday 00:00) and end (Sunday 23:59:59)
   const getDefaultWeekRange = () => {
@@ -545,6 +553,7 @@ const CuttingDept: React.FC = () => {
         </span>
       ),
     },
+
     {
       key: 'loss',
       header: 'Loss (G)',
@@ -560,6 +569,15 @@ const CuttingDept: React.FC = () => {
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.purity)}%
+        </span>
+      ),
+    },
+    {
+      key: 'process',
+      header: 'Status',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {item.process}
         </span>
       ),
     },
@@ -672,14 +690,6 @@ const CuttingDept: React.FC = () => {
 
       if (!entry.purity || entry.purity < 0 || entry.purity > 100) {
         toast.error('Please enter a valid purity percentage (1-100)');
-        return;
-      }
-
-      // Validate that chainReceived doesn't exceed chainGiven
-      if (entry.chainReceived > entry.chainGiven) {
-        toast.error(
-          `Chain Received (${formatNumberDisplay(entry.chainReceived)}) cannot exceed Chain Given (${formatNumberDisplay(entry.chainGiven)})`,
-        );
         return;
       }
 
@@ -853,37 +863,11 @@ const CuttingDept: React.FC = () => {
     {
       key: 'chainGiven',
       header: 'Chain Given (G)',
-      render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <div className="relative inline-block">
-              <input
-                type="text"
-                value={
-                  item.chainGivenRaw !== undefined
-                    ? item.chainGivenRaw
-                    : item.chainGiven === 0
-                      ? ''
-                      : item.chainGiven
-                }
-                onChange={(e) =>
-                  handleInlineChange(index, 'chainGiven', e.target.value)
-                }
-                placeholder="0.000"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-              />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
-              </span>
-            </div>
-          );
-        }
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.chainGiven)} G
-          </span>
-        );
-      },
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.chainGiven)} G
+        </span>
+      ),
     },
     {
       key: 'chainReceived',
@@ -901,6 +885,7 @@ const CuttingDept: React.FC = () => {
                       ? ''
                       : item.chainReceived
                 }
+                {...getScaleProps(index, 'chainReceived')}
                 onChange={(e) =>
                   handleInlineChange(index, 'chainReceived', e.target.value)
                 }
@@ -936,6 +921,7 @@ const CuttingDept: React.FC = () => {
                       ? ''
                       : item.scrap
                 }
+                {...getScaleProps(index, 'scrap')}
                 onChange={(e) =>
                   handleInlineChange(index, 'scrap', e.target.value)
                 }
@@ -1041,7 +1027,7 @@ const CuttingDept: React.FC = () => {
                     title="Move to S Kunda"
                   >
                     <Save className="h-3.5 w-3.5" />
-                    <span>S Kunda</span>
+                    <span>S / Kunda</span>
                   </button>
                 </div>
               );
@@ -1120,7 +1106,7 @@ const CuttingDept: React.FC = () => {
               <GenericButton
                 type="button"
                 onClick={handlePrintHistory}
-                className="flex items-center gap-1.5 whitespace-nowrap !bg-green-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-green-700 sm:!px-4 sm:!py-2 sm:!text-sm"
+                variant="primary"
               >
                 <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Print</span>
@@ -1131,11 +1117,7 @@ const CuttingDept: React.FC = () => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
-                showHistory
-                  ? '!bg-amber-600 hover:!bg-amber-700'
-                  : '!bg-blue-600 hover:!bg-blue-700'
-              }`}
+              variant="primary"
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

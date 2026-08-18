@@ -1,24 +1,29 @@
-import React, {useState} from 'react';
+import React, {useState, useMemo} from 'react';
+import axios from 'axios';
 import {
   Plus,
   Search,
   Edit,
-  Trash2,
   X,
   Eye,
   EyeOff,
   ShieldCheck,
   Key,
-  User,
-  Phone,
-  Mail,
   MapPin,
+  Sparkles,
+  Loader2,
+  AlertTriangle,
+  RotateCcw,
+  Copy,
+  Check,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from 'lucide-react';
 import {
   useGetAdmins,
   useCreateAdmin,
   useUpdateAdmin,
-  useDeleteAdmin,
   getAdminByIdApi,
   AdminPayload,
 } from '@/lib/api/admin';
@@ -31,19 +36,46 @@ export interface AdminItem {
   id: string;
   userId?: string;
   fullname: string;
+  shopName: string;
   email: string;
   username: string;
   phoneNumber: string;
   secondaryPhoneNumber?: string;
+  pincode?: string;
+  city?: string;
+  district?: string;
+  state?: string;
   address: string;
-  accessType: 'ONLINE' | 'OFFLINE' | string;
+  accessType: 'ONLINE' | 'OFFLINE' | 'TRAIL' | 'TRIAL' | string;
+  amount?: string | number;
+  renewalAmount?: string | number;
   expiryDate?: string;
   rawExpiryDate?: string;
+  effectiveExpiryDate?: string;
+  hasExtension?: boolean;
+  isExpired?: boolean;
   key?: string;
   role?: string;
+  extendKey?: string | null;
+  extendDays?: number | string | null;
+  isExtendUsedKey?: boolean | null;
+  startDate?: string;
   createdAt?: string;
   rawItem?: any;
 }
+
+// Calculate default expiry date: 7 days for TRAIL/TRIAL, 1 year for ONLINE/OFFLINE
+const calculateDefaultExpiry = (type: string): string => {
+  const d = new Date();
+  const upperType = (type || 'ONLINE').toUpperCase();
+  if (upperType === 'TRAIL' || upperType === 'TRIAL') {
+    d.setDate(d.getDate() + 7);
+  } else {
+    d.setFullYear(d.getFullYear() + 1);
+  }
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+};
 
 const formatForDatetimeLocal = (isoString?: string) => {
   if (!isoString) {
@@ -67,96 +99,386 @@ const formatForDatetimeLocal = (isoString?: string) => {
   }
 };
 
+const formatDate = (dateString?: string) => {
+  if (!dateString) return {date: '-', time: '-'};
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return {date: dateString, time: ''};
+    return {
+      date: d.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }),
+      time: d.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }),
+    };
+  } catch {
+    return {date: dateString || '-', time: ''};
+  }
+};
+
+// Calculate extended expiry preview
+const getExtendedExpiryPreview = (
+  expiryDateStr?: string,
+  extendDaysVal?: string | number | null,
+) => {
+  const days = Number(extendDaysVal);
+  if (!days || isNaN(days) || days <= 0) return null;
+
+  let baseDate: Date;
+  let isExtendingFromCurrent = false;
+
+  if (expiryDateStr) {
+    const parsed = new Date(expiryDateStr);
+    if (!isNaN(parsed.getTime())) {
+      baseDate = parsed;
+      isExtendingFromCurrent = true;
+    } else {
+      baseDate = new Date();
+    }
+  } else {
+    baseDate = new Date();
+  }
+
+  const extendedDate = new Date(baseDate.getTime() + days * 86400000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dateFormatted = `${pad(extendedDate.getDate())}/${pad(extendedDate.getMonth() + 1)}/${extendedDate.getFullYear()} ${pad(extendedDate.getHours())}:${pad(extendedDate.getMinutes())}`;
+
+  return {
+    extendedDate,
+    dateFormatted,
+    isExtendingFromCurrent,
+  };
+};
+
+// Update formatDisplayDateTime to handle ISO strings
+const formatDisplayDateTime = (dateStr?: string) => {
+  if (!dateStr) return 'N/A';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch {
+    return dateStr;
+  }
+};
+
 const AdminCreate: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCity, setSelectedCity] = useState('ALL');
+  const [selectedTab, setSelectedTab] = useState<
+    'ALL' | 'ONLINE' | 'OFFLINE' | 'TRAIL' | 'EXPIRED'
+  >('ALL');
+
+  // Sorting state for Create Date & Expiry Date
+  const [sortField, setSortField] = useState<'createdAt' | 'expiryDate' | null>(
+    null,
+  );
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<AdminItem | null>(null);
+  const [isPincodeLoading, setIsPincodeLoading] = useState(false);
 
-  // Form state according to exact API requirements
+  // Form state
   const [formData, setFormData] = useState({
     fullname: '',
+    shopName: '',
     email: '',
-    username: '',
-    password: '',
-    confirmPassword: '',
     phoneNumber: '',
     secondaryPhoneNumber: '',
+    username: '',
+    password: '',
+    pincode: '',
+    city: '',
+    district: '',
+    state: '',
     address: '',
     accessType: 'ONLINE',
-    expiryDate: new Date().toISOString().slice(0, 16).replace('T', ' ') + ':00',
+    amount: '',
+    renewalAmount: '',
+    expiryDate: calculateDefaultExpiry('ONLINE'),
     key: '12345',
     role: 'ADMIN',
+    extendDays: '',
+    extendKey: '',
   });
 
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // API Hooks
   const {data: adminsData, isLoading} = useGetAdmins();
   const createAdmin = useCreateAdmin();
   const updateAdmin = useUpdateAdmin();
-  const deleteAdmin = useDeleteAdmin();
 
-  // Safely extract items array from response object { statusCode, status, data: [...] }
+  // Safely extract items array from response object
   const rawList = Array.isArray(adminsData)
     ? adminsData
     : Array.isArray(adminsData?.data)
       ? adminsData.data
       : [];
 
-  const adminsList: AdminItem[] = rawList.map((item: any, idx: number) => {
-    const userObj = item.user || {};
-    return {
-      id: item.id || `admin-${idx}`,
-      userId: item.userId || userObj.id || item.id,
-      fullname:
-        userObj.fullname ||
-        userObj.name ||
-        item.fullname ||
-        item.fullName ||
-        'N/A',
-      email: userObj.email || item.contactPersonEmail || item.email || '',
-      username:
-        userObj.username || userObj.phoneNumber || item.phoneNumber || 'N/A',
-      phoneNumber:
-        userObj.phoneNumber || userObj.phone || item.phoneNumber || 'N/A',
-      secondaryPhoneNumber:
-        userObj.secondaryPhoneNumber ||
-        item.contactPersonNumber ||
-        item.secondaryPhoneNumber ||
-        '',
-      address: item?.user?.address,
-      accessType: (item.accessType || 'ONLINE').toUpperCase(),
-      rawExpiryDate: item.expiryDate || item.expiryDateTime || '',
-      expiryDate: item.expiryDate
-        ? new Date(item.expiryDate).toLocaleString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })
-        : '',
-      key: item.key || item.offlineKey || '',
-      role: userObj.role || item.role || 'ADMIN',
-      createdAt: item.createdAt || '',
-      rawItem: item,
-    };
-  });
+  const adminsList: AdminItem[] = useMemo(() => {
+    const now = Date.now();
+    return rawList.map((item: any, idx: number) => {
+      // Handle both nested and flat structures
+      const userObj = item.user || {};
 
-  // Filter admins by search term
-  const filteredAdmins = adminsList.filter((admin) => {
-    const query = searchTerm.toLowerCase();
-    return (
-      admin.fullname.toLowerCase().includes(query) ||
-      admin.email.toLowerCase().includes(query) ||
-      admin.username.toLowerCase().includes(query) ||
-      admin.phoneNumber.includes(query) ||
-      admin.address.toLowerCase().includes(query) ||
-      admin.accessType.toLowerCase().includes(query)
-    );
-  });
+      // Get expiry date - from item or user
+      const rawExp = item.expiryDate || userObj.expiryDate || '';
+      const extDays = Number(item.extendDays ?? userObj.extendDays) || 0;
+
+      // Calculate effective expiry date
+      let effectiveExpTime = rawExp ? new Date(rawExp).getTime() : NaN;
+      let effectiveExpDate = rawExp;
+      let hasExtension = false;
+
+      if (!isNaN(effectiveExpTime) && extDays > 0) {
+        hasExtension = true;
+        const extendedTime = effectiveExpTime + extDays * 86400000;
+        effectiveExpDate = new Date(extendedTime).toISOString();
+        effectiveExpTime = extendedTime;
+      }
+
+      // Calculate expiry status based on effective expiry date
+      const isExpired = !isNaN(effectiveExpTime) && effectiveExpTime < now;
+
+      // Get shop name
+      const shopNameVal = item.shopName || userObj.shopName || 'N/A';
+
+      // Get address
+      const addressVal = userObj.address || item.address || 'N/A';
+
+      return {
+        id: item.id || `admin-${idx}`,
+        userId: item.userId || userObj.id || item.id,
+        fullname: userObj.fullname || userObj.name || item.fullname || 'N/A',
+        shopName: shopNameVal,
+        email: userObj.email || item.email || '',
+        username:
+          userObj.username || userObj.phoneNumber || item.phoneNumber || 'N/A',
+        phoneNumber: userObj.phoneNumber || item.phoneNumber || 'N/A',
+        secondaryPhoneNumber:
+          userObj.secondaryPhoneNumber || item.secondaryPhoneNumber || '',
+        pincode: item.pincode || userObj.pincode || '',
+        city: item.city || userObj.city || '',
+        district: item.district || userObj.district || '',
+        state: item.state || userObj.state || '',
+        address: addressVal,
+        accessType: (
+          item.accessType ||
+          userObj.accessType ||
+          'ONLINE'
+        ).toUpperCase(),
+        amount: item.amount ?? userObj.amount ?? '',
+        renewalAmount:
+          item.renewalAmount ??
+          userObj.renewalAmount ??
+          '',
+        rawExpiryDate: rawExp,
+        expiryDate: rawExp ? formatDisplayDateTime(rawExp) : 'Unlimited',
+        effectiveExpiryDate: effectiveExpDate,
+        hasExtension: hasExtension,
+        isExpired: isExpired,
+        key: item.key || '',
+        role: userObj.role || item.role || 'ADMIN',
+        extendKey: item.extendKey || userObj.extendKey || '',
+        extendDays: item.extendDays !== undefined && item.extendDays !== null ? item.extendDays : userObj.extendDays,
+        isExtendUsedKey: item.isExtendUsedKey ?? userObj.isExtendUsedKey,
+        startDate: item.startDate || userObj.startDate || '',
+        createdAt: item.createdAt || userObj.createdAt || '',
+        rawItem: item,
+      };
+    });
+  }, [rawList]);
+  // Extract unique cities for City filter dropdown
+  const uniqueCities = useMemo(() => {
+    const citySet = new Set<string>();
+    adminsList.forEach((a) => {
+      if (a.city && a.city !== 'N/A' && a.city.trim() !== '') {
+        citySet.add(a.city.trim());
+      }
+    });
+    return Array.from(citySet).sort();
+  }, [adminsList]);
+
+  // Tab counts
+  const tabCounts = useMemo(() => {
+    let online = 0;
+    let offline = 0;
+    let trail = 0;
+    let expired = 0;
+
+    adminsList.forEach((a) => {
+      const type = (a.accessType || 'ONLINE').toUpperCase();
+      if (type === 'ONLINE') online++;
+      if (type === 'OFFLINE') offline++;
+      if (type === 'TRAIL' || type === 'TRIAL') trail++;
+      if (a.isExpired) expired++;
+    });
+
+    return {
+      all: adminsList.length,
+      online,
+      offline,
+      trail,
+      expired,
+    };
+  }, [adminsList]);
+
+  // Filter admins by Search, City, and Tab
+  const filteredAdmins = useMemo(() => {
+    return adminsList.filter((admin) => {
+      const query = searchTerm.toLowerCase().trim();
+
+      // Tab filter
+      if (selectedTab === 'EXPIRED') {
+        if (!admin.isExpired) return false;
+      } else if (selectedTab === 'ONLINE') {
+        if (admin.accessType !== 'ONLINE') return false;
+      } else if (selectedTab === 'OFFLINE') {
+        if (admin.accessType !== 'OFFLINE') return false;
+      } else if (selectedTab === 'TRAIL') {
+        const t = admin.accessType.toUpperCase();
+        if (t !== 'TRAIL' && t !== 'TRIAL') return false;
+      }
+
+      // City filter
+      if (selectedCity !== 'ALL') {
+        if (
+          !admin.city ||
+          admin.city.toLowerCase() !== selectedCity.toLowerCase()
+        ) {
+          return false;
+        }
+      }
+
+      // Search query filter
+      if (query) {
+        const matchesShop =
+          admin.shopName && admin.shopName.toLowerCase().includes(query);
+        const matchesName =
+          admin.fullname && admin.fullname.toLowerCase().includes(query);
+        const matchesPhone =
+          (admin.phoneNumber && admin.phoneNumber.includes(query)) ||
+          (admin.secondaryPhoneNumber &&
+            admin.secondaryPhoneNumber.includes(query));
+        const matchesEmail =
+          admin.email && admin.email.toLowerCase().includes(query);
+        const matchesUser =
+          admin.username && admin.username.toLowerCase().includes(query);
+        const matchesCity =
+          admin.city && admin.city.toLowerCase().includes(query);
+        const matchesAddress =
+          admin.address && admin.address.toLowerCase().includes(query);
+
+        return (
+          matchesShop ||
+          matchesName ||
+          matchesPhone ||
+          matchesEmail ||
+          matchesUser ||
+          matchesCity ||
+          matchesAddress
+        );
+      }
+
+      return true;
+    });
+  }, [adminsList, searchTerm, selectedCity, selectedTab]);
+
+  // Handle sorting for Create Date and Expiry Date
+  const handleSort = (field: 'createdAt' | 'expiryDate') => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+  };
+
+  const sortedAdmins = useMemo(() => {
+    if (!sortField) return filteredAdmins;
+    return [...filteredAdmins].sort((a, b) => {
+      let timeA = 0;
+      let timeB = 0;
+      if (sortField === 'createdAt') {
+        timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      } else if (sortField === 'expiryDate') {
+        const rawA = a.effectiveExpiryDate || a.rawExpiryDate || a.expiryDate;
+        const rawB = b.effectiveExpiryDate || b.rawExpiryDate || b.expiryDate;
+        timeA = rawA ? new Date(rawA).getTime() : 0;
+        timeB = rawB ? new Date(rawB).getTime() : 0;
+      }
+      if (isNaN(timeA)) timeA = 0;
+      if (isNaN(timeB)) timeB = 0;
+
+      return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+    });
+  }, [filteredAdmins, sortField, sortOrder]);
+
+  // Lookup pincode to fetch city, district, state from India Postal API
+  const handlePincodeLookup = async (pincodeVal: string) => {
+    const cleanPin = pincodeVal.trim();
+    if (cleanPin.length !== 6 || !/^\d{6}$/.test(cleanPin)) {
+      return;
+    }
+
+    setIsPincodeLoading(true);
+    try {
+      const response = await axios.get(
+        `https://api.postalpincode.in/pincode/${cleanPin}`,
+      );
+      const data = response.data;
+      if (
+        Array.isArray(data) &&
+        data.length > 0 &&
+        data[0].Status === 'Success' &&
+        Array.isArray(data[0].PostOffice) &&
+        data[0].PostOffice.length > 0
+      ) {
+        const po = data[0].PostOffice[0];
+        const district = po.District || '';
+        const state = po.State || '';
+        const blockVal =
+          po.Block && po.Block.trim().toUpperCase() !== 'NA'
+            ? po.Block.trim()
+            : '';
+        const city = blockVal || district || po.Name || '';
+
+        setFormData((prev) => ({
+          ...prev,
+          city: city,
+          district: district,
+          state: state,
+        }));
+
+        if (errors.pincode) {
+          setErrors((prev) => ({...prev, pincode: ''}));
+        }
+        toast.success(`Location detected: ${city}, ${state}`);
+      } else {
+        toast.error('Invalid Pincode or no records found');
+      }
+    } catch (err) {
+      console.warn('Pincode fetch error:', err);
+    } finally {
+      setIsPincodeLoading(false);
+    }
+  };
 
   // Generate random key for offline access
   const generateKey = () => {
@@ -169,24 +491,62 @@ const AdminCreate: React.FC = () => {
     return newKey;
   };
 
+  // Calculate new expiry preview when extendDays is added before/after expiration
+  const getExtendedExpiryPreview = (
+    currentExpiry?: string,
+    daysToAdd?: string | number,
+  ) => {
+    const days = Number(daysToAdd);
+    if (!days || isNaN(days) || days <= 0) return null;
+    let base = new Date();
+    let isExtendingFromCurrent = false;
+    if (currentExpiry) {
+      const parsed = new Date(currentExpiry.replace(' ', 'T'));
+      if (!isNaN(parsed.getTime()) && parsed.getTime() > Date.now()) {
+        base = parsed;
+        isExtendingFromCurrent = true;
+      }
+    }
+    const newDate = new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+    return {
+      dateFormatted: newDate.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }),
+      isExtendingFromCurrent,
+    };
+  };
+
   const handleOpenCreateModal = () => {
     setEditingAdmin(null);
     setFormData({
       fullname: '',
+      shopName: '',
       email: '',
-      username: '',
-      password: '',
-      confirmPassword: '',
       phoneNumber: '',
       secondaryPhoneNumber: '',
+      username: '',
+      password: '',
+      pincode: '',
+      city: '',
+      district: '',
+      state: '',
       address: '',
       accessType: 'ONLINE',
-      expiryDate:
-        new Date().toISOString().slice(0, 16).replace('T', ' ') + ':00',
+      amount: '',
+      renewalAmount: '',
+      expiryDate: calculateDefaultExpiry('ONLINE'),
       key: '12345',
       role: 'ADMIN',
+      extendDays: '',
+      extendKey: '',
     });
     setErrors({});
+    setShowPassword(false);
     setIsModalOpen(true);
   };
 
@@ -210,26 +570,42 @@ const AdminCreate: React.FC = () => {
     const addressVal =
       userObj.address ||
       raw.address ||
-      raw.city ||
-      userObj.city ||
       (admin.address !== 'N/A' ? admin.address : '');
     const rawExpiry = raw.expiryDate || admin.rawExpiryDate || admin.expiryDate;
 
     setFormData({
       fullname: admin.fullname !== 'N/A' ? admin.fullname : '',
+      shopName: admin.shopName !== 'N/A' ? admin.shopName : '',
       email: emailVal,
       username: admin.username !== 'N/A' ? admin.username : admin.phoneNumber,
       password: '',
-      confirmPassword: '',
       phoneNumber: admin.phoneNumber !== 'N/A' ? admin.phoneNumber : '',
       secondaryPhoneNumber: secPhoneVal,
+      pincode: admin.pincode || '',
+      city: admin.city && admin.city !== 'N/A' ? admin.city : '',
+      district: admin.district || '',
+      state: admin.state || '',
       address: addressVal,
       accessType: (admin.accessType || 'ONLINE').toUpperCase(),
+      amount:
+        admin.amount !== undefined && admin.amount !== null
+          ? String(admin.amount)
+          : '',
+      renewalAmount:
+        admin.renewalAmount !== undefined && admin.renewalAmount !== null
+          ? String(admin.renewalAmount)
+          : '',
       expiryDate: formatForDatetimeLocal(rawExpiry).replace('T', ' ') + ':00',
       key: admin.key || '12345',
       role: admin.role || 'ADMIN',
+      extendDays:
+        admin.extendDays !== undefined && admin.extendDays !== null
+          ? String(admin.extendDays)
+          : '',
+      extendKey: admin.extendKey || '',
     });
     setErrors({});
+    setShowPassword(false);
 
     try {
       const targetId = admin.id || admin.userId;
@@ -240,6 +616,12 @@ const AdminCreate: React.FC = () => {
           setFormData((prev) => ({
             ...prev,
             fullname: u.fullname || u.name || prev.fullname,
+            shopName:
+              fullData.shopName ||
+              u.shopName ||
+              fullData.storeName ||
+              u.storeName ||
+              prev.shopName,
             email:
               u.email ||
               fullData.email ||
@@ -254,23 +636,40 @@ const AdminCreate: React.FC = () => {
               fullData.secondazyPhoneNumber ||
               fullData.contactPersonNumber ||
               prev.secondaryPhoneNumber,
-            address:
-              fullData.address ||
-              fullData.city ||
-              u.address ||
-              u.city ||
-              prev.address,
+            pincode:
+              fullData.pincode ||
+              u.pincode ||
+              fullData.pinCode ||
+              u.pinCode ||
+              prev.pincode,
+            city: fullData.city || u.city || prev.city,
+            district: fullData.district || u.district || prev.district,
+            state: fullData.state || u.state || prev.state,
+            address: fullData.address || u.address || prev.address,
             accessType: (
               fullData.accessType ||
               u.accessType ||
               prev.accessType
             ).toUpperCase(),
+            amount:
+              fullData.amount !== undefined
+                ? String(fullData.amount)
+                : prev.amount,
+            renewalAmount:
+              fullData.renewalAmount !== undefined
+                ? String(fullData.renewalAmount)
+                : prev.renewalAmount,
             expiryDate: fullData.expiryDate
               ? formatForDatetimeLocal(fullData.expiryDate).replace('T', ' ') +
                 ':00'
               : prev.expiryDate,
             key: fullData.key || prev.key,
             role: u.role || prev.role,
+            extendDays:
+              fullData.extendDays !== undefined && fullData.extendDays !== null
+                ? String(fullData.extendDays)
+                : prev.extendDays,
+            extendKey: fullData.extendKey || prev.extendKey,
           }));
         }
       }
@@ -285,32 +684,75 @@ const AdminCreate: React.FC = () => {
     const {name, value} = e.target;
     setFormData((prev) => {
       const updated = {...prev, [name]: value};
-      // Auto-set username to phoneNumber if username is empty or matches previous phoneNumber
       if (
         name === 'phoneNumber' &&
         (!prev.username || prev.username === prev.phoneNumber)
       ) {
         updated.username = value;
       }
+
+      // Automatically calculate and update Expiry Date on Expiry Date field when extendDays changes
+      if (name === 'extendDays') {
+        const days = Number(value);
+        if (days && !isNaN(days) && days > 0) {
+          let base = new Date();
+          const existingExp =
+            editingAdmin?.rawExpiryDate ||
+            editingAdmin?.expiryDate ||
+            editingAdmin?.rawItem?.expiryDate ||
+            prev.expiryDate;
+          if (existingExp) {
+            const parsed = new Date(existingExp.replace(' ', 'T'));
+            if (!isNaN(parsed.getTime()) && parsed.getTime() > Date.now()) {
+              base = parsed;
+            }
+          }
+          const newDate = new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+          const pad = (n: number) => String(n).padStart(2, '0');
+          updated.expiryDate = `${newDate.getFullYear()}-${pad(newDate.getMonth() + 1)}-${pad(newDate.getDate())} ${pad(newDate.getHours())}:${pad(newDate.getMinutes())}:00`;
+        } else if (!value) {
+          if (editingAdmin) {
+            const rawExpiry =
+              editingAdmin.rawItem?.expiryDate ||
+              editingAdmin.rawExpiryDate ||
+              editingAdmin.expiryDate;
+            updated.expiryDate =
+              formatForDatetimeLocal(rawExpiry).replace('T', ' ') + ':00';
+          } else {
+            updated.expiryDate = calculateDefaultExpiry(prev.accessType);
+          }
+        }
+      }
+
       return updated;
     });
+
+    if (name === 'pincode') {
+      if (value.length === 6) {
+        handlePincodeLookup(value);
+      }
+    }
 
     if (errors[name]) {
       setErrors((prev) => ({...prev, [name]: ''}));
     }
   };
 
+  // Handle access type change and automatically calculate default expiry date
   const handleAccessTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
+    const defaultExp = calculateDefaultExpiry(value);
+
     setFormData((prev) => ({
       ...prev,
       accessType: value,
+      expiryDate: defaultExp,
       key:
-        value === 'ONLINE'
-          ? '12345'
-          : prev.key === '12345'
-            ? generateKey()
-            : prev.key,
+        value === 'OFFLINE'
+          ? prev.key && prev.key !== '12345'
+            ? prev.key
+            : generateKey()
+          : '12345',
     }));
     if (errors.accessType) {
       setErrors((prev) => ({...prev, accessType: ''}));
@@ -323,11 +765,24 @@ const AdminCreate: React.FC = () => {
     toast.success('Offline access key generated!');
   };
 
+  const handleCopyKey = (keyVal?: string) => {
+    const val = keyVal || formData.key;
+    if (!val) {
+      toast.error('No key to copy');
+      return;
+    }
+    navigator.clipboard.writeText(val);
+    toast.success('Offline key copied to clipboard!');
+  };
+
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
 
     if (!formData.fullname.trim()) {
-      newErrors.fullname = 'Full Name is required';
+      newErrors.fullname = 'First Name / Full Name is required';
+    }
+    if (!formData.shopName.trim()) {
+      newErrors.shopName = 'Shop Name is required';
     }
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
@@ -346,6 +801,9 @@ const AdminCreate: React.FC = () => {
       newErrors.secondaryPhoneNumber =
         'Secondary phone number must be 10 digits';
     }
+    if (formData.pincode.trim() && !/^\d{6}$/.test(formData.pincode.trim())) {
+      newErrors.pincode = 'Pincode must be 6 digits';
+    }
     if (!formData.address.trim()) {
       newErrors.address = 'Address is required';
     }
@@ -356,15 +814,8 @@ const AdminCreate: React.FC = () => {
       } else if (formData.password.length < 6) {
         newErrors.password = 'Password must be at least 6 characters';
       }
-      if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = 'Passwords do not match';
-      }
     } else if (formData.password && formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (formData.accessType === 'OFFLINE' && !formData.key) {
-      newErrors.key = 'Please generate an offline key';
     }
 
     setErrors(newErrors);
@@ -375,7 +826,7 @@ const AdminCreate: React.FC = () => {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error('Please fix all errors');
+      toast.error('Please fix all form validation errors');
       return;
     }
 
@@ -390,16 +841,36 @@ const AdminCreate: React.FC = () => {
 
     const payload: AdminPayload = {
       fullname: formData.fullname.trim(),
+      shopName: formData.shopName.trim(),
       email: formData.email.trim(),
       username: formData.username.trim() || formData.phoneNumber.trim(),
       phoneNumber: formData.phoneNumber.trim(),
       secondaryPhoneNumber: formData.secondaryPhoneNumber.trim() || undefined,
+      pincode: formData.pincode.trim() || undefined,
+      city: formData.city.trim() || undefined,
+      district: formData.district.trim() || undefined,
+      state: formData.state.trim() || undefined,
       address: formData.address.trim(),
       accessType: formData.accessType.toUpperCase(),
-      expiryDate:
-        formData.accessType === 'ONLINE' ? formattedExpiry : undefined,
+      amount: formData.amount
+        ? Number(formData.amount) || formData.amount
+        : undefined,
+      renewalAmount: formData.renewalAmount
+        ? Number(formData.renewalAmount) || formData.renewalAmount
+        : undefined,
+      expiryDate: formattedExpiry || undefined,
       key: formData.accessType === 'OFFLINE' ? formData.key : '12345',
       role: formData.role || 'ADMIN',
+      extendKey:
+        formData.extendKey && formData.extendKey.trim()
+          ? formData.extendKey.trim()
+          : null,
+      extendDays:
+        formData.extendDays !== '' &&
+        formData.extendDays !== null &&
+        formData.extendDays !== undefined
+          ? Number(formData.extendDays) || null
+          : null,
     };
 
     if (formData.password) {
@@ -418,139 +889,234 @@ const AdminCreate: React.FC = () => {
     }
   };
 
-  const handleDelete = async (admin: AdminItem) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete admin "${admin.fullname}"?`,
-      )
-    ) {
-      return;
-    }
-    try {
-      await deleteAdmin.mutateAsync(admin.id);
-    } catch (err: any) {
-      console.error('Delete Admin Error:', err);
-    }
-  };
-
-  // Table Columns Definition
+  // Table Columns Definition as requested
   const columns: Column<AdminItem>[] = [
     {
-      key: 'fullname',
-      header: 'Admin Details',
+      key: 'shopName',
+      header: 'Shop Name',
       render: (item) => (
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-[#1a1c1b] dark:text-white">
-            {item.fullname}
-          </span>
-          <span className="text-gray-500 dark:text-gray-400 text-xs">
-            {item.email}
+            {item.shopName && item.shopName !== 'N/A'
+              ? item.shopName
+              : item.fullname}
           </span>
         </div>
       ),
     },
     {
-      key: 'username',
-      header: 'Username / Phone',
+      key: 'city',
+      header: 'City',
+      render: (item) => (
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
+            {item.city && item.city !== 'N/A' ? item.city : '-'}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'phoneNumber',
+      header: 'Phone No.',
       render: (item) => (
         <div className="flex flex-col">
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
             {item.phoneNumber}
           </span>
-          {item.secondaryPhoneNumber && (
-            <span className="font-mono text-gray-500 dark:text-gray-400 text-xs">
-              Sec: {item.secondaryPhoneNumber}
-            </span>
-          )}
         </div>
       ),
     },
     {
-      key: 'address',
-      header: 'Address',
-      render: (item) => (
-        <span className="block max-w-[180px] truncate text-sm text-[#1a1c1b] dark:text-white">
-          {item.address}
-        </span>
-      ),
-    },
-    {
       key: 'accessType',
-      header: 'Access Type',
+      header: 'Type',
       render: (item) => {
         const typeUpper = (item.accessType || 'ONLINE').toUpperCase();
-        return (
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wider ${
-              typeUpper === 'OFFLINE'
-                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400'
-                : 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-400'
-            }`}
-          >
-            {typeUpper === 'OFFLINE' ? (
+        if (typeUpper === 'TRAIL' || typeUpper === 'TRIAL') {
+          return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-purple-800 dark:bg-purple-950/50 dark:text-purple-300">
+              <Sparkles className="h-3 w-3" />
+              TRAIL
+            </span>
+          );
+        }
+        if (typeUpper === 'OFFLINE') {
+          return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-amber-800 dark:bg-amber-950/40 dark:text-amber-400">
               <Key className="h-3 w-3" />
-            ) : (
-              <ShieldCheck className="h-3 w-3" />
-            )}
-            {typeUpper}
+              OFFLINE
+            </span>
+          );
+        }
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
+            <ShieldCheck className="h-3 w-3" />
+            ONLINE
           </span>
+        );
+      },
+    },
+    {
+      key: 'createdAt',
+      header: (
+        <button
+          type="button"
+          onClick={() => handleSort('createdAt')}
+          className="group inline-flex items-center justify-center gap-1.5 font-semibold text-white transition-colors hover:text-amber-200"
+          title={`Sort by Create Date (${
+            sortField === 'createdAt'
+              ? sortOrder === 'asc'
+                ? 'Oldest to Newest'
+                : 'Newest to Oldest'
+              : 'Click to sort'
+          })`}
+        >
+          <span>Create Date Time</span>
+          {sortField === 'createdAt' ? (
+            sortOrder === 'asc' ? (
+              <ArrowUp className="h-3.5 w-3.5 text-amber-300" />
+            ) : (
+              <ArrowDown className="h-3.5 w-3.5 text-amber-300" />
+            )
+          ) : (
+            <ArrowUpDown className="h-3.5 w-3.5 text-white/50 group-hover:text-white" />
+          )}
+        </button>
+      ),
+      render: (item) => {
+        const {date, time} = formatDate(item?.createdAt);
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {date}
+            </span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
+              {time}
+            </span>
+          </div>
         );
       },
     },
     {
       key: 'expiryDate',
-      header: 'Expiry / Key',
+      header: (
+        <button
+          type="button"
+          onClick={() => handleSort('expiryDate')}
+          className="group inline-flex items-center justify-center gap-1.5 font-semibold text-white transition-colors hover:text-amber-200"
+          title={`Sort by Expiry Date (${
+            sortField === 'expiryDate'
+              ? sortOrder === 'asc'
+                ? 'Oldest to Newest'
+                : 'Newest to Oldest'
+              : 'Click to sort'
+          })`}
+        >
+          <span>Expiry Date Time</span>
+          {sortField === 'expiryDate' ? (
+            sortOrder === 'asc' ? (
+              <ArrowUp className="h-3.5 w-3.5 text-amber-300" />
+            ) : (
+              <ArrowDown className="h-3.5 w-3.5 text-amber-300" />
+            )
+          ) : (
+            <ArrowUpDown className="h-3.5 w-3.5 text-white/50 group-hover:text-white" />
+          )}
+        </button>
+      ),
       render: (item) => {
-        const typeUpper = (item.accessType || 'ONLINE').toUpperCase();
-        if (typeUpper === 'OFFLINE') {
+        const rawDate = item.rawExpiryDate || item.expiryDate;
+        if (!rawDate) {
           return (
-            <span className="font-mono bg-gray-100 text-gray-800 dark:text-gray-200 border-gray-200 rounded border px-2 py-1 text-xs dark:border-slate-700 dark:bg-slate-800">
-              {item.key || '12345'}
-            </span>
+            <div className="flex flex-col items-center">
+              <span className="text-sm text-[#1a1c1b] dark:text-white">
+                Unlimited
+              </span>
+            </div>
           );
         }
+
+        const extDays = Number(item.extendDays) || 0;
+        const originalTime = new Date(rawDate).getTime();
+        const isOriginalExpired =
+          !isNaN(originalTime) && originalTime < Date.now();
+
+        if (extDays > 0 && item.effectiveExpiryDate) {
+          const {date: extDate, time: extTime} = formatDate(
+            item.effectiveExpiryDate,
+          );
+          const {date: origDate} = formatDate(rawDate);
+
+          return (
+            <div className="flex flex-col items-center gap-0.5">
+              <span
+                className='text-black'
+              >
+                {extDate}
+              </span>
+              {extTime && extTime !== '-' && (
+                <span className="text-gray-500 dark:text-gray-400 text-xs">
+                  {extTime}
+                </span>
+              )}
+            </div>
+          );
+        }
+
+        const {date, time} = formatDate(rawDate);
         return (
-          <span className="font-mono text-xs text-[#1a1c1b] dark:text-white">
-            {item.expiryDate ? item.expiryDate : 'Unlimited'}
-          </span>
+          <div className="flex flex-col items-center">
+            <span
+              className={`text-sm ${
+                item.isExpired
+                  ? 'font-semibold text-red-600 dark:text-red-400'
+                  : 'text-[#1a1c1b] dark:text-white'
+              }`}
+            >
+              {date}
+            </span>
+            {time && time !== '-' && (
+              <span className="text-gray-500 dark:text-gray-400 text-sm">
+                {time}
+              </span>
+            )}
+          </div>
         );
       },
     },
+    {
+      key: 'renewalAmount',
+      header: 'Renewal Charges',
+      render: (item) => (
+        <span className="text-sm font-semibold text-[#785600] dark:text-amber-400">
+          {item.renewalAmount !== undefined &&
+          item.renewalAmount !== null &&
+          item.renewalAmount !== ''
+            ? `₹${Number(item.renewalAmount).toLocaleString('en-IN')}`
+            : '-'}
+        </span>
+      ),
+    },
   ];
 
+  // Action column with EDIT ONLY (Delete action removed as requested)
   const renderActions = (item: AdminItem) => (
-    <div className="flex items-center justify-center gap-1">
+    <div className="flex items-center justify-center">
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleOpenEditModal(item);
-        }}
-        className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
+        onClick={() => handleOpenEditModal(item)}
+        className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-amber-400 dark:hover:bg-slate-800"
         title="Edit Admin"
       >
         <Edit className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleDelete(item);
-        }}
-        disabled={deleteAdmin.isPending}
-        className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-        title="Delete Admin"
-      >
-        <Trash2 className="h-4 w-4" />
       </button>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-      <div className="mx-auto px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
-        {/* Page Header with Right Side Add Admin Button */}
-        <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+      <div className="mx-auto space-y-4 px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
+        {/* Page Header */}
+        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
           <PageHeader title="Admin Management" />
           <GenericButton
             type="button"
@@ -562,36 +1128,184 @@ const AdminCreate: React.FC = () => {
           </GenericButton>
         </div>
 
-        {/* Search & Filter Bar */}
-        <div className="mb-4 flex items-center gap-3">
-          <div className="relative min-w-[200px] max-w-md flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+        {/* Unified Single Line Filter Toolbar: Search -> City -> Tabs */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d3c4af]/30 bg-white p-2.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          {/* 1. First: Search Bar */}
+          <div className="relative min-w-[200px] max-w-xs flex-1">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#817563]" />
             <input
               type="text"
-              placeholder="Search by name, email, phone, address..."
+              placeholder="Search shop, name, phone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="w-full rounded-lg border border-[#d3c4af]/30 bg-[#fbf9f6] py-1.5 pl-8 pr-3 text-xs text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
+          </div>
+
+          {/* 3. Third: Status / Type Filter Tabs */}
+          <div className="flex items-center gap-1 overflow-x-auto py-0.5">
+            <label className="text-gray-500 whitespace-nowrap text-xs font-medium dark:text-slate-400">
+              City:
+            </label>
+            <select
+              value={selectedCity}
+              onChange={(e) => setSelectedCity(e.target.value)}
+              className="rounded-lg border border-[#d3c4af]/30 bg-[#fbf9f6] px-2.5 py-1.5 text-xs font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            >
+              <option value="ALL">All Cities ({adminsList.length})</option>
+              {uniqueCities.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </select>
+
+            {(searchTerm ||
+              selectedCity !== 'ALL' ||
+              selectedTab !== 'ALL') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedCity('ALL');
+                  setSelectedTab('ALL');
+                }}
+                className="border-gray-200 text-gray-600 hover:bg-gray-50 dark:text-gray-300 flex items-center gap-1 whitespace-nowrap rounded-lg border bg-white px-2.5 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800"
+                title="Reset filters"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>Reset</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setSelectedTab('ALL')}
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'ALL'
+                  ? 'bg-[#785600] text-white shadow-sm'
+                  : 'bg-gray-100/70 text-gray-600 hover:bg-gray-200/70 dark:text-gray-300 dark:bg-slate-800 dark:hover:bg-slate-700'
+              }`}
+            >
+              All
+              <span
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'ALL'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-gray-200 text-gray-700 dark:text-gray-200 dark:bg-slate-700'
+                }`}
+              >
+                {tabCounts.all}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedTab('ONLINE')}
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'ONLINE'
+                  ? 'bg-emerald-700 text-white shadow-sm'
+                  : 'bg-gray-100/70 text-gray-600 dark:text-gray-300 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-700'
+              }`}
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Online
+              <span
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'ONLINE'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400'
+                }`}
+              >
+                {tabCounts.online}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedTab('OFFLINE')}
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'OFFLINE'
+                  ? 'bg-amber-700 text-white shadow-sm'
+                  : 'bg-gray-100/70 text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:bg-slate-800 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Key className="h-3.5 w-3.5" />
+              Offline
+              <span
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'OFFLINE'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400'
+                }`}
+              >
+                {tabCounts.offline}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedTab('TRAIL')}
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'TRAIL'
+                  ? 'bg-purple-700 text-white shadow-sm'
+                  : 'bg-gray-100/70 text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:bg-slate-800 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Trail
+              <span
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'TRAIL'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300'
+                }`}
+              >
+                {tabCounts.trail}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedTab('EXPIRED')}
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'EXPIRED'
+                  ? 'bg-red-700 text-white shadow-sm'
+                  : 'bg-gray-100/70 text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-slate-700'
+              }`}
+            >
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Expired
+              <span
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'EXPIRED'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-400'
+                }`}
+              >
+                {tabCounts.expired}
+              </span>
+            </button>
           </div>
         </div>
 
         {/* Admins Table */}
         <GenericTable<AdminItem>
-          data={filteredAdmins}
+          data={sortedAdmins}
           columns={columns}
-          emptyMessage="No admin accounts found."
+          emptyMessage="No admin accounts match your filter criteria."
           isLoading={isLoading}
           renderActions={renderActions}
           showSrNo={true}
           srNoLabel="Sr No."
+          onSave={() => {}}
         />
       </div>
 
-      {/* Modal for Add / Edit Admin */}
+      {/* Modal for Create / Edit Admin */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4">
-          <div className="my-8 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-[#d3c4af]/20 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+          <div className="my-8 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-[#d3c4af]/20 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+            {/* Modal Header */}
             <div className="border-gray-100 mb-5 flex items-center justify-between border-b pb-4 dark:border-slate-800">
               <div>
                 <h2 className="text-xl font-bold text-[#1a1c1b] dark:text-white">
@@ -599,8 +1313,8 @@ const AdminCreate: React.FC = () => {
                 </h2>
                 <p className="text-xs text-[#4f4535] dark:text-slate-400">
                   {editingAdmin
-                    ? 'Update admin details and access parameters'
-                    : 'Fill in admin details to register a new admin'}
+                    ? 'Update admin details, shop information, and access parameters'
+                    : 'Fill in all fields to register a new shop admin'}
                 </p>
               </div>
               <button
@@ -613,18 +1327,19 @@ const AdminCreate: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Row 1: Full Name & Email */}
+              {/* Row 1: First Name / Full Name & Shop Name */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    Full Name (fullname) <span className="text-red-500">*</span>
+                    First Name / Full Name{' '}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="fullname"
                     value={formData.fullname}
                     onChange={handleInputChange}
-                    placeholder="Enter full name"
+                    placeholder="e.g. Rahul Sharma"
                     className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
                       errors.fullname
                         ? 'border-red-500 focus:ring-red-500/20'
@@ -638,6 +1353,32 @@ const AdminCreate: React.FC = () => {
                   )}
                 </div>
 
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                    Shop Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="shopName"
+                    value={formData.shopName}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Royal Jewellers"
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.shopName
+                        ? 'border-red-500 focus:ring-red-500/20'
+                        : ''
+                    }`}
+                  />
+                  {errors.shopName && (
+                    <p className="mt-1 text-xs text-red-500">
+                      {errors.shopName}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Row 2: Email & Phone Number */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
                     Email <span className="text-red-500">*</span>
@@ -656,21 +1397,17 @@ const AdminCreate: React.FC = () => {
                     <p className="mt-1 text-xs text-red-500">{errors.email}</p>
                   )}
                 </div>
-              </div>
 
-              {/* Row 2: Phone Number & Secondary Phone */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    Phone Number (phoneNumber){' '}
-                    <span className="text-red-500">*</span>
+                    Phone No. <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="phoneNumber"
                     value={formData.phoneNumber}
                     onChange={handleInputChange}
-                    placeholder="Enter 10-digit phone number"
+                    placeholder="10-digit phone number"
                     maxLength={10}
                     className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
                       errors.phoneNumber
@@ -684,17 +1421,20 @@ const AdminCreate: React.FC = () => {
                     </p>
                   )}
                 </div>
+              </div>
 
+              {/* Row 3: 2nd Phone Number & Username */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    Secondary Phone (secondaryPhoneNumber)
+                    Secondary Phone
                   </label>
                   <input
                     type="text"
                     name="secondaryPhoneNumber"
                     value={formData.secondaryPhoneNumber}
                     onChange={handleInputChange}
-                    placeholder="Enter secondary phone number"
+                    placeholder="Alternate phone number (optional)"
                     maxLength={10}
                     className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
                       errors.secondaryPhoneNumber
@@ -708,10 +1448,7 @@ const AdminCreate: React.FC = () => {
                     </p>
                   )}
                 </div>
-              </div>
 
-              {/* Row 3: Username & Address */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
                     Username
@@ -721,21 +1458,101 @@ const AdminCreate: React.FC = () => {
                     name="username"
                     value={formData.username}
                     onChange={handleInputChange}
-                    placeholder="Username (defaults to phone)"
+                    placeholder="Username (defaults to phone number)"
                     className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   />
                 </div>
+              </div>
+
+              {/* Row 4: Pincode, City, District, State */}
+              <div className="space-y-3 rounded-lg border border-[#d3c4af]/30 bg-[#fbf9f6] p-3.5 dark:border-slate-800 dark:bg-slate-800/40">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#785600] dark:text-amber-400">
+                  <MapPin className="h-4 w-4" />
+                  Address & Location Details
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                      Pincode
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="pincode"
+                        value={formData.pincode}
+                        onChange={handleInputChange}
+                        placeholder="6-digit pincode"
+                        maxLength={6}
+                        className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-8 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                          errors.pincode ? 'border-red-500' : ''
+                        }`}
+                      />
+                      {isPincodeLoading && (
+                        <Loader2 className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#785600]" />
+                      )}
+                    </div>
+                    {errors.pincode && (
+                      <p className="mt-1 text-[11px] text-red-500">
+                        {errors.pincode}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      placeholder="Auto-filled via pincode"
+                      className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                      District
+                    </label>
+                    <input
+                      type="text"
+                      name="district"
+                      value={formData.district}
+                      onChange={handleInputChange}
+                      placeholder="District"
+                      className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                      State
+                    </label>
+                    <input
+                      type="text"
+                      name="state"
+                      value={formData.state}
+                      onChange={handleInputChange}
+                      placeholder="State"
+                      className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    />
+                  </div>
+                </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    Address <span className="text-red-500">*</span>
+                  <label className="mb-1 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                    Address Line / Street{' '}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    placeholder="e.g. Baner, Pune"
+                    placeholder="e.g. Shop No. 12, MG Road Market"
                     className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
                       errors.address
                         ? 'border-red-500 focus:ring-red-500/20'
@@ -750,152 +1567,210 @@ const AdminCreate: React.FC = () => {
                 </div>
               </div>
 
-              {/* Row 4: Access Type & Expiry/Key */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {/* Row 5: Type, Price, Renewal Charges, Expiry Date */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    Access Type (accessType){' '}
-                    <span className="text-red-500">*</span>
+                    Type <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="accessType"
                     value={formData.accessType}
                     onChange={handleAccessTypeChange}
-                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   >
-                    <option value="ONLINE">ONLINE</option>
-                    <option value="OFFLINE">OFFLINE</option>
+                    <option value="ONLINE">ONLINE (1 Year)</option>
+                    <option value="OFFLINE">OFFLINE (1 Year)</option>
+                    <option value="TRAIL">TRAIL (7 Days)</option>
                   </select>
                 </div>
 
-                {formData.accessType === 'ONLINE' ? (
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                      Expiry Date & Time (expiryDate)
-                    </label>
-                    <input
-                      type="datetime-local"
-                      name="expiryDate"
-                      value={formData.expiryDate.slice(0, 16).replace(' ', 'T')}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          expiryDate: e.target.value.replace('T', ' ') + ':00',
-                        }))
-                      }
-                      className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                      Offline Key (key) <span className="text-red-500">*</span>
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        name="key"
-                        value={formData.key}
-                        onChange={handleInputChange}
-                        placeholder="Offline key"
-                        className="font-mono flex-1 rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-xs text-[#1a1c1b] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleGenerateKey}
-                        className="rounded-lg bg-[#785600] px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-[#5d4200]"
-                      >
-                        Generate
-                      </button>
-                    </div>
-                    {errors.key && (
-                      <p className="mt-1 text-xs text-red-500">{errors.key}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Row 5: Password & Confirm Password */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    Password{' '}
-                    {editingAdmin ? (
-                      '(Leave blank to keep unchanged)'
-                    ) : (
-                      <span className="text-red-500">*</span>
-                    )}
+                    Price (₹)
                   </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      placeholder={editingAdmin ? '••••••••' : 'Pass@123'}
-                      className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
-                        errors.password ? 'border-red-500' : ''
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#817563] hover:text-[#785600]"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="mt-1 text-xs text-red-500">
-                      {errors.password}
-                    </p>
-                  )}
+                  <input
+                    type="number"
+                    name="amount"
+                    value={formData.amount}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 5000"
+                    min={0}
+                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
                 </div>
 
-                {!editingAdmin && (
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                      Confirm Password <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                        placeholder="Confirm password"
-                        className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
-                          errors.confirmPassword ? 'border-red-500' : ''
-                        }`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowConfirmPassword(!showConfirmPassword)
-                        }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#817563] hover:text-[#785600]"
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                    Renewal Charges (₹)
+                  </label>
+                  <input
+                    type="number"
+                    name="renewalAmount"
+                    value={formData.renewalAmount}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 2000"
+                    min={0}
+                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                    Expiry Date & Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="expiryDate"
+                    value={formData.expiryDate.slice(0, 16).replace(' ', 'T')}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        expiryDate: e.target.value.replace('T', ' ') + ':00',
+                      }))
+                    }
+                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Offline / Extension Key & Days - Only shown when Access Type is OFFLINE */}
+              {formData.accessType === 'OFFLINE' && (
+                <div className="space-y-3 rounded-lg border border-[#d3c4af]/30 bg-[#fbfbf9] p-3.5 dark:border-slate-700 dark:bg-slate-800/60">
+                  <div className="flex items-center justify-between border-b border-[#d3c4af]/20 pb-2 dark:border-slate-700">
+                    <div className="flex items-center gap-1.5">
+                      <Key className="h-4 w-4 text-[#785600] dark:text-amber-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#785600] dark:text-amber-400">
+                        Offline Key & Days Extension
+                      </span>
                     </div>
-                    {errors.confirmPassword && (
-                      <p className="mt-1 text-xs text-red-500">
-                        {errors.confirmPassword}
-                      </p>
-                    )}
+                    <span className="text-gray-400 text-[10px]">
+                      Offline Only
+                    </span>
                   </div>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {/* Extend Days Field */}
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                        Extension Days
+                      </label>
+                      <input
+                        type="number"
+                        name="extendDays"
+                        value={formData.extendDays}
+                        onChange={handleInputChange}
+                        placeholder="Enter days (e.g. 30)"
+                        min={0}
+                        className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      />
+                    </div>
+
+                    {/* Extend Key Field */}
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                        Offline / Extension Key
+                      </label>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          name="extendKey"
+                          value={formData.extendKey}
+                          onChange={handleInputChange}
+                          placeholder="Key (e.g. ABCD-1234-EFGH-5678)"
+                          className="font-mono flex-1 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-xs text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleCopyKey(formData.extendKey)}
+                          disabled={!formData.extendKey}
+                          className="flex items-center gap-1 rounded-lg border border-[#d3c4af]/40 bg-white px-2.5 py-2 text-xs font-medium text-[#785600] transition-colors hover:bg-[#785600]/10 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400"
+                          title="Copy Key"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newKey = generateKey();
+                            setFormData((prev) => ({
+                              ...prev,
+                              extendKey: newKey,
+                            }));
+                            toast.success('Key generated!');
+                          }}
+                          className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2.5 py-2 text-xs font-medium text-white transition-colors hover:from-[#6b4c00] hover:to-[#875f00]"
+                        >
+                          Generate
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expiry Advance Preview Notice */}
+                  {(() => {
+                    const preview = getExtendedExpiryPreview(
+                      formData.expiryDate,
+                      formData.extendDays,
+                    );
+                    if (!preview) return null;
+                    return (
+                      <div className="flex items-center gap-2 rounded-lg bg-[#785600]/10 p-2.5 text-xs text-[#785600] dark:bg-amber-950/40 dark:text-amber-300">
+                        <ShieldCheck className="h-4 w-4 shrink-0" />
+                        <span>
+                          {preview.isExtendingFromCurrent
+                            ? `Extension starts after current expiry date (${formData.expiryDate.slice(0, 10)}). New expiry: `
+                            : 'Extension starts from today. New expiry: '}
+                          <strong>{preview.dateFormatted}</strong> (+
+                          {formData.extendDays} days)
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Row 6: Password */}
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                  Password{' '}
+                  {editingAdmin ? (
+                    <span className="text-gray-400 font-normal">
+                      (Leave blank to keep unchanged)
+                    </span>
+                  ) : (
+                    <span className="text-red-500">*</span>
+                  )}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder={editingAdmin ? '••••••••' : 'Pass@123'}
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.password ? 'border-red-500' : ''
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#817563] hover:text-[#785600]"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="mt-1 text-xs text-red-500">{errors.password}</p>
                 )}
               </div>
 
-              {/* Form Action Buttons */}
+              {/* Modal Actions */}
               <div className="border-gray-100 flex justify-end gap-3 border-t pt-4 dark:border-slate-800">
                 <GenericButton
                   type="button"

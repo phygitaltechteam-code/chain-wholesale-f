@@ -282,7 +282,8 @@ const BackupAndRestorePage = () => {
               type="button"
               onClick={handleDownloadBackup}
               disabled={isDownloading}
-              className="!bg-blue-600 !px-6 !text-white hover:!bg-blue-700"
+              variant="primary"
+              className="!px-6"
             >
               {isDownloading ? (
                 <>

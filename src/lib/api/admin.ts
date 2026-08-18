@@ -5,16 +5,25 @@ import toast from 'react-hot-toast';
 export interface AdminPayload {
   id?: string;
   fullname: string;
+  shopName?: string;
   email?: string;
   username: string;
   password?: string;
   phoneNumber: string;
   secondaryPhoneNumber?: string;
   address: string;
-  accessType: 'ONLINE' | 'OFFLINE' | string;
+  pincode?: string;
+  city?: string;
+  district?: string;
+  state?: string;
+  price?: number | string;
+  renewalCharges?: number | string;
+  accessType: 'ONLINE' | 'OFFLINE' | 'TRAIL' | 'TRIAL' | string;
   expiryDate?: string;
   key?: string;
   role?: string;
+  extendKey?: string | null;
+  extendDays?: number | string | null;
 }
 
 // API call to fetch all admins
@@ -75,7 +84,7 @@ export const useGetAdminById = (id?: string) => {
 // API call to create a new admin
 export const createAdminApi = async (data: AdminPayload) => {
   try {
-    const response = await api.post('/users/register', data);
+    const response = await api.post('/users/self-register', data);
     return response.data;
   } catch (error: any) {
     if (error?.response?.data?.message) {

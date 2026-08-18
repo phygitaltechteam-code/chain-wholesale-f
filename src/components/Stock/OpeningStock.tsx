@@ -12,6 +12,7 @@ import {
   useDeleteStock,
   useGetStock,
 } from '@/lib/api/stock';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
 import {z} from 'zod';
 
 // Zod Schema for validation
@@ -66,6 +67,13 @@ const OpeningStock: React.FC = () => {
   const createStock = useCreateStock();
   const updateStock = useUpdateStock();
   const deleteStock = useDeleteStock();
+
+  // Weighing Scale table focus hook
+  const {getScaleProps} = useTableScaleFocus<'grams'>(
+    (index, field, weight) => {
+      handleInlineChange(index, field, weight.toString());
+    },
+  );
 
   // Initialize with existing stock data or empty row
   useEffect(() => {
@@ -514,6 +522,7 @@ const OpeningStock: React.FC = () => {
                       ? ''
                       : item.grams
                 }
+                {...getScaleProps(index, 'grams')}
                 onChange={(e) =>
                   handleInlineChange(index, 'grams', e.target.value)
                 }

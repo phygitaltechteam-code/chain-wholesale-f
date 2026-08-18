@@ -412,41 +412,41 @@ const StockMaster: React.FC = () => {
 
             {/* Action Buttons - Themed Colors */}
             <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto">
-              {/* Inward / Outward - Green theme */}
+              {/* Inward / Outward */}
               <GenericButton
                 type="button"
                 onClick={() => navigate({to: '/Stocks/stockmanagement'})}
-                className="whitespace-nowrap !bg-emerald-600 px-2 py-1.5 text-xs !text-white hover:!bg-emerald-700 sm:px-3 sm:py-2 sm:text-sm"
+                variant="primary"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Inward / Outward</span>
               </GenericButton>
 
-              {/* Opening Stock - Amber theme */}
+              {/* Opening Stock */}
               <GenericButton
                 type="button"
                 onClick={() => navigate({to: '/stock/openingstock'})}
-                className="whitespace-nowrap !bg-amber-600 px-2 py-1.5 text-xs !text-white hover:!bg-amber-700 sm:px-3 sm:py-2 sm:text-sm"
+                variant="primary"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Opening Stock</span>
               </GenericButton>
 
-              {/* Add Item - Blue theme */}
+              {/* Add Item */}
               <GenericButton
                 type="button"
                 onClick={() => navigate({to: '/master/additems'})}
-                className="whitespace-nowrap !bg-blue-600 px-2 py-1.5 text-xs !text-white hover:!bg-blue-700 sm:px-3 sm:py-2 sm:text-sm"
+                variant="primary"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Add Item</span>
               </GenericButton>
 
-              {/* Add Size - Purple theme */}
+              {/* Add Size */}
               <GenericButton
                 type="button"
                 onClick={() => navigate({to: '/master/size'})}
-                className="whitespace-nowrap !bg-purple-600 px-2 py-1.5 text-xs !text-white hover:!bg-purple-700 sm:px-3 sm:py-2 sm:text-sm"
+                variant="primary"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Add Size</span>

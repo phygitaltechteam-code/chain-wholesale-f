@@ -78,6 +78,9 @@ const GenericWeeklyDatePicker: React.FC<GenericWeeklyDatePickerProps> = ({
     const fp = flatpickr(inputRef.current, {
       mode: 'single',
       dateFormat: 'd/m/Y',
+      locale: {
+        firstDayOfWeek: 1, // Start week on Monday
+      },
       onChange: (dates) => {
         if (dates && dates.length > 0) {
           const selected = dates[0];

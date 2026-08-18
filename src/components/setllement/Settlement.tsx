@@ -32,6 +32,7 @@ import {useGetHeader} from '@/lib/api/headerapi';
 import GenericInputField from '../Forms/Input/GenericInputField';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
+import {useScaleFocus} from '@/lib/hooks/useScaleFocus';
 
 // ======================================================
 // TYPES
@@ -137,10 +138,19 @@ const Settlement: React.FC = () => {
   });
 
   // ----------------------------------------------------
-  // INPUT REF
+  // INPUT REF & SCALE FOCUS
   // ----------------------------------------------------
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const scaleFocus = useScaleFocus((weight) => {
+    const val = weight.toString();
+    setLocalAmount(val);
+    setSettlementDetail((prev) => ({
+      ...prev,
+      settlementAmount: weight,
+    }));
+  });
 
   // ======================================================
   // AUTO FOCUS WHEN SETTLEMENT MODAL OPENS
@@ -948,6 +958,9 @@ const Settlement: React.FC = () => {
                 inputMode="decimal"
                 label="Amount (g)"
                 value={localAmount}
+                onFocus={() => {
+                  scaleFocus.onFocus();
+                }}
                 onChange={(e) => {
                   const value = e.target.value;
                   if (!/^\d*\.?\d{0,3}$/.test(value)) {
@@ -970,6 +983,7 @@ const Settlement: React.FC = () => {
                   }
                 }}
                 onBlur={() => {
+                  scaleFocus.onBlur();
                   const amount = Number(localAmount);
                   if (localAmount === '' || Number.isNaN(amount)) {
                     setLocalAmount('');

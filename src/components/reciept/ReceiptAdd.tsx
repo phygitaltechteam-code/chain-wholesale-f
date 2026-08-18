@@ -29,6 +29,7 @@ import {useGetQuantity, useBill} from '@/lib/api/bill';
 import GenericInputField from '../Forms/Input/GenericInputField';
 import {ClientSearch} from './ClientSearch';
 import {useGetHeader} from '@/lib/api/headerapi';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
 
 interface ReceiptItem {
   id: string;
@@ -119,6 +120,13 @@ const ReceiptAdd: React.FC = () => {
   const getpdfheaderdata = useGetHeader();
   const getQuantity = useGetQuantity();
   const savebill = useBill();
+
+  // Weighing Scale table focus hook
+  const {getScaleProps} = useTableScaleFocus<keyof ReceiptItem>(
+    (index, field, weight) => {
+      handleItemChange(index, field, weight);
+    },
+  );
 
   const handleAddClientFromPopup = async () => {
     try {
@@ -315,9 +323,12 @@ const ReceiptAdd: React.FC = () => {
     return grossWt * purityFactor + srp;
   };
 
-  // Update Total Fine calculation
+  // Update Total Fine calculation (Fine Wt + Labor Rate)
   const updateTotalFine = (items: ReceiptItem[]) => {
-    const total = items.reduce((sum, item) => sum + (item.fineWt || 0), 0);
+    const total = items.reduce(
+      (sum, item) => sum + (item.fineWt || 0) + (item.laborRate || 0),
+      0,
+    );
     return Math.round(total * 1000) / 1000;
   };
 
@@ -491,7 +502,7 @@ const ReceiptAdd: React.FC = () => {
 
   const calculateTotalFineWt = () => {
     return formData.items.reduce(
-      (total, item) => total + (item.fineWt || 0),
+      (total, item) => total + (item.fineWt || 0) + (item.laborRate || 0),
       0,
     );
   };
@@ -527,12 +538,18 @@ const ReceiptAdd: React.FC = () => {
     return Number(value.toFixed(2)).toString();
   };
 
-  // Negative opening balance means the client has a due balance.
+  // Get Client Due Balance from client.due or client.openingBalance
   const getClientDueBalance = (client: any) => {
+    if (!client) return 0;
+    const due =
+      client?.due !== null && client?.due !== undefined
+        ? Number(client.due)
+        : NaN;
+    if (!isNaN(due)) {
+      return Math.round(due * 1000) / 1000;
+    }
     const openingBalance = Number(client?.openingBalance) || 0;
-    return openingBalance < 0
-      ? Math.round(Math.abs(openingBalance) * 1000) / 1000
-      : 0;
+    return Math.round(openingBalance * 1000) / 1000;
   };
 
   const handlePrintReceipt = (billData: any) => {
@@ -811,7 +828,7 @@ const ReceiptAdd: React.FC = () => {
             border-bottom:1px dashed #dddddd;
             font-size:10px;
           ">
-            <span style="font-weight:bold;color:#666666;">Receive</span>
+            <span style="font-weight:bold;color:#666666;">Advance</span>
             <span style="font-family:monospace;font-weight:bold;">
               ${formatNumberThreeDecimals(receive)} G
             </span>
@@ -1224,6 +1241,7 @@ const ReceiptAdd: React.FC = () => {
             step="0.001"
             min="0"
             value={item.grossWt || ''}
+            {...getScaleProps(actualIndex, 'grossWt')}
             onChange={(e) => {
               const val = e.target.value;
               if (val === '') {
@@ -1395,107 +1413,80 @@ const ReceiptAdd: React.FC = () => {
             />
           </div>
         </div>
-        {/* Right Column - Weight Payment Details */}
-        <div className="space-y-3">
-          {/* Card 1: Advance & Issue */}
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {/* Advance - Optional */}
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
-                  Advance (Optional)
+        {/* PAYMENT SUMMARY - Left Aligned with In-Card Editable Inputs */}
+        <div className="mt-4 flex justify-start">
+          <div className="w-full max-w-sm overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            {/* Total Fine Wt (Editable) */}
+            <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-4 py-2.5 dark:border-slate-700">
+              <span className="text-sm font-medium text-[#4f4535] dark:text-slate-300">
+                Total Fine Wt
+              </span>
+              <div className="relative flex items-center">
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  value={formData.totalFine || ''}
+                  onChange={handleTotalFineChange}
+                  placeholder="0.000"
+                  className="font-mono w-28 rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+                <span className="pointer-events-none absolute right-2.5 text-xs text-[#817563] dark:text-slate-400">
+                  G
                 </span>
-
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.001"
-                    min="0"
-                    value={formData.customerWeight || ''}
-                    onChange={handleCustomerWeightChange}
-                    placeholder="0.000"
-                    className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 pr-8 text-right text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  />
-
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#817563] dark:text-slate-400">
-                    G
-                  </span>
-                </div>
-              </div>
-
-              {/* Issue - Editable */}
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
-                  Issue
-                </span>
-
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.001"
-                    min="0"
-                    value={formData.totalFine || ''}
-                    onChange={handleTotalFineChange}
-                    placeholder="0.000"
-                    className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 pr-8 text-right text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  />
-
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#817563] dark:text-slate-400">
-                    G
-                  </span>
-                </div>
               </div>
             </div>
 
-            {/* Due Balance + Remaining */}
-            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-              {/* Due Balance - Read Only */}
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
-                  Due Balance
+            {/* Advance (Editable) */}
+            <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-4 py-2.5 dark:border-slate-700">
+              <span className="text-sm font-medium text-[#4f4535] dark:text-slate-300">
+                Advance
+              </span>
+              <div className="relative flex items-center">
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  value={formData.customerWeight || ''}
+                  onChange={handleCustomerWeightChange}
+                  placeholder="0.000"
+                  className="font-mono w-28 rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-emerald-600 focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-emerald-400"
+                />
+                <span className="pointer-events-none absolute right-2.5 text-xs text-[#817563] dark:text-slate-400">
+                  G
                 </span>
-
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={formatNumberThreeDecimals(
-                      getClientDueBalance(
-                        clients.find(
-                          (client: any) => client.id === formData.clientId,
-                        ),
-                      ),
-                    )}
-                    readOnly
-                    className="bg-gray-50 font-mono w-full cursor-default rounded-lg border border-[#d3c4af]/20 px-3 py-1.5 pr-8 text-right text-sm text-[#1a1c1b] outline-none dark:border-slate-700 dark:bg-slate-700 dark:text-white"
-                  />
-
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#817563] dark:text-slate-400">
-                    G
-                  </span>
-                </div>
               </div>
+            </div>
 
-              {/* Remaining - Read Only */}
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
-                  Remaining
-                </span>
+            {/* Due Balance (Client Due - Read Only) */}
+            <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-4 py-2.5 dark:border-slate-700">
+              <span className="text-sm font-medium text-[#4f4535] dark:text-slate-300">
+                Due Balance
+              </span>
+              <span className="font-mono text-sm font-semibold text-black dark:text-black">
+                {formatNumberThreeDecimals(
+                  getClientDueBalance(
+                    clients.find(
+                      (client: any) => client.id === formData.clientId,
+                    ),
+                  ),
+                )}{' '}
+                G
+              </span>
+            </div>
 
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={formatNumberThreeDecimals(
-                      calculateRemainingWeight(),
-                    )}
-                    readOnly
-                    className="bg-gray-50 font-mono w-full cursor-default rounded-lg border border-[#d3c4af]/20 px-3 py-1.5 pr-8 text-right text-sm text-[#1a1c1b] outline-none dark:border-slate-700 dark:bg-slate-700 dark:text-white"
-                  />
-
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#817563] dark:text-slate-400">
-                    G
-                  </span>
-                </div>
-              </div>
+            {/* Remaining Balance (Calculated: Advance - Total Fine Wt) */}
+            <div className="flex items-center justify-between bg-[#f4f0e5] px-4 py-3 dark:bg-slate-800">
+              <span className="text-sm font-bold text-[#1a1c1b] dark:text-white">
+                Remaining Balance
+              </span>
+              <span
+                className={
+                  'font-mono text-base font-bold text-black dark:text-black'
+                }
+              >
+                {formatNumberThreeDecimals(calculateRemainingWeight())} G
+              </span>
             </div>
           </div>
         </div>
@@ -1507,7 +1498,7 @@ const ReceiptAdd: React.FC = () => {
               type="button"
               onClick={handleSaveAsDraft}
               disabled={savebill.isPending}
-              className="hover:!bg-gray-700 !bg-gradient-to-br from-[#d97706] to-[#92400e] !text-white"
+              variant="secondary"
             >
               <FileText className="h-5 w-5" />
               {savebill.isPending ? 'Saving...' : 'Save as Draft'}
