@@ -8,6 +8,7 @@ import GenericDropdown from '@/components/Forms/DropDown/GenericDropDown';
 import {useGetItems} from '@/lib/api/items';
 import {useGetSizes} from '@/lib/api/sizes';
 import {useGetAllStock, useUpdateStock} from '@/lib/api/stockmanagement';
+import {useScaleFocus} from '@/lib/hooks/useScaleFocus';
 import {z} from 'zod';
 import {useForm, FormProvider} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
@@ -68,6 +69,11 @@ const StockManagment: React.FC = () => {
   const watchedPurity = watch('purity');
   const watchedStockQty = watch('stockQty');
   const watchedStockType = watch('stockType');
+
+  // Weighing Scale focus hook
+  const scaleFocus = useScaleFocus((weight) => {
+    setValue('stockQty', weight, {shouldValidate: true, shouldDirty: true});
+  });
 
   // Stock type options
   const stockTypeOptions = [
@@ -438,6 +444,8 @@ const StockManagment: React.FC = () => {
                   <input
                     type="text"
                     value={watchedStockQty || ''}
+                    onFocus={scaleFocus.onFocus}
+                    onBlur={scaleFocus.onBlur}
                     onChange={(e) => {
                       const value = e.target.value.replace(/[^0-9.]/g, '');
                       setValue('stockQty', parseFloat(value) || 0);

@@ -7,7 +7,13 @@ interface GenericButtonProps {
   disabled?: boolean;
   children: React.ReactNode;
   label?: string;
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'success';
+  variant?:
+    | 'primary'
+    | 'secondary'
+    | 'outline'
+    | 'danger'
+    | 'success'
+    | 'amber';
   size?: 'xs' | 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
 }
@@ -36,7 +42,9 @@ const GenericButton: React.FC<GenericButtonProps> = ({
     primary:
       'bg-gradient-to-br from-[#785600] to-[#986d00] text-white hover:shadow-md',
     secondary:
-      'bg-gradient-to-br from-gray-600 to-gray-800 text-white hover:shadow-md',
+      'bg-gradient-to-br from-amber-600 to-amber-700 text-white hover:shadow-md',
+    amber:
+      'bg-gradient-to-br from-amber-600 to-amber-700 text-white hover:shadow-md',
     outline:
       'border-2 border-[#785600] text-[#785600] bg-transparent hover:bg-[#785600]/10',
     danger:

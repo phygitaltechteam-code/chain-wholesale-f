@@ -186,19 +186,20 @@ export const ClientSearch: React.FC<ClientSearchProps> = ({
                   </>
                 )}
 
-                {!isLoading && searchQuery && filteredClients.length === 0 && (
+                {!isLoading && filteredClients.length === 0 && (
                   <div className="p-4 text-center">
                     <p className="text-sm text-[#4f4535] dark:text-slate-400">
-                      No Client found
+                      {searchQuery ? 'No Client found' : 'No clients added yet'}
                     </p>
 
                     {onAddNewClient && (
                       <button
                         type="button"
                         onClick={handleAddClient}
-                        className="mt-2 text-sm font-medium text-[#785600] hover:underline dark:text-amber-400"
+                        className="mt-2.5 inline-flex items-center justify-center gap-2 rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-bold text-[#785600] transition-colors hover:bg-amber-100 dark:bg-slate-800 dark:text-amber-400 dark:hover:bg-slate-700"
                       >
-                        + Add new Client
+                        <UserPlus className="h-4 w-4" />
+                        <span>+ Add New Client</span>
                       </button>
                     )}
                   </div>

@@ -22,6 +22,8 @@ export interface AdminPayload {
   expiryDate?: string;
   key?: string;
   role?: string;
+  extendKey?: string | null;
+  extendDays?: number | string | null;
 }
 
 // API call to fetch all admins

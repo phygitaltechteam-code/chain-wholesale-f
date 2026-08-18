@@ -300,7 +300,7 @@ const SizeMaster: React.FC = () => {
                 type="button"
                 onClick={editingSize ? handleEditSize : handleAddSize}
                 disabled={isFormSubmitting}
-                className="!bg-amber-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-amber-700 sm:!px-4 sm:!py-2 sm:!text-sm"
+                variant="primary"
               >
                 {isFormSubmitting
                   ? 'Saving...'

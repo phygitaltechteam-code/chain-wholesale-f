@@ -24,6 +24,7 @@ import {
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import {useGetHeader} from '@/lib/api/headerapi';
+import {useScaleFocus, useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
 
 interface TarEntry {
   id: string;
@@ -121,6 +122,17 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
   // Mutation hooks
   const createTar = useCreateTar();
   const saveTar = useSaveTar();
+
+  // Scale hooks for modal and table
+  const fineScaleFocus = useScaleFocus((weight) => {
+    setFormData((prev) => ({...prev, fine: weight.toString()}));
+  });
+
+  const {getScaleProps} = useTableScaleFocus<'tar' | 'scrap'>(
+    (index, field, weight) => {
+      handleInlineChange(index, field, weight.toString());
+    },
+  );
 
   // Format date helper for history
   const formatDate = (dateString: string) => {
@@ -947,6 +959,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
                       ? ''
                       : item.tar
                 }
+                {...getScaleProps(index, 'tar')}
                 onChange={(e) =>
                   handleInlineChange(index, 'tar', e.target.value)
                 }
@@ -984,6 +997,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
                       ? ''
                       : item.scrap
                 }
+                {...getScaleProps(index, 'scrap')}
                 onChange={(e) =>
                   handleInlineChange(index, 'scrap', e.target.value)
                 }
@@ -1120,11 +1134,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
                 type="button"
                 onClick={handleOpenModal}
                 disabled={isTarCompleted}
-                className={`flex items-center whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
-                  isTarCompleted
-                    ? '!bg-gray-400 cursor-not-allowed opacity-60'
-                    : '!bg-amber-600 hover:!bg-amber-700'
-                }`}
+                variant="primary"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>{isTarCompleted ? 'Completed' : 'Add Tar'}</span>
@@ -1180,7 +1190,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
               <GenericButton
                 type="button"
                 onClick={handlePrintHistory}
-                className="flex items-center gap-1.5 whitespace-nowrap !bg-green-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-green-700 sm:!px-4 sm:!py-2 sm:!text-sm"
+                variant="primary"
               >
                 <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Print</span>
@@ -1191,11 +1201,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
-                showHistory
-                  ? '!bg-amber-600 hover:!bg-amber-700'
-                  : '!bg-blue-600 hover:!bg-blue-700'
-              }`}
+              variant="primary"
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -1350,6 +1356,8 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
                     type="text"
                     name="fine"
                     value={formData.fine}
+                    onFocus={fineScaleFocus.onFocus}
+                    onBlur={fineScaleFocus.onBlur}
                     onChange={handleFormChange}
                     placeholder="e.g., 5.000"
                     className="font-mono w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 pr-8 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
@@ -1366,7 +1374,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
               <GenericButton
                 onClick={handleSaveFromPopup}
                 disabled={isLoading}
-                className="!bg-amber-600 !text-white hover:!bg-amber-700"
+                variant="primary"
               >
                 {isLoading ? 'Saving...' : 'Add'}
               </GenericButton>
@@ -1381,8 +1389,8 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
               <div className="mb-4 flex items-center justify-center">
-                <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
-                  <Save className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                <div className="rounded-full bg-[#785600]/10 p-3 dark:bg-amber-900/30">
+                  <Save className="h-6 w-6 text-[#785600] dark:text-amber-400" />
                 </div>
               </div>
               <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
@@ -1409,7 +1417,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
                 <GenericButton
                   onClick={confirmSave}
                   disabled={isLoading}
-                  className="!bg-amber-600 !text-white hover:!bg-amber-700"
+                  variant="primary"
                 >
                   {isLoading ? 'Saving...' : 'Confirm & Continue'}
                 </GenericButton>

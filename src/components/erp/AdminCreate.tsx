@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, {useState, useMemo} from 'react';
 import axios from 'axios';
 import {
   Plus,
@@ -27,7 +27,7 @@ import {
   getAdminByIdApi,
   AdminPayload,
 } from '@/lib/api/admin';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import PageHeader from '@/components/Forms/Common/PageHeader';
 import toast from 'react-hot-toast';
@@ -47,13 +47,19 @@ export interface AdminItem {
   state?: string;
   address: string;
   accessType: 'ONLINE' | 'OFFLINE' | 'TRAIL' | 'TRIAL' | string;
-  price?: string | number;
-  renewalCharges?: string | number;
+  amount?: string | number;
+  renewalAmount?: string | number;
   expiryDate?: string;
   rawExpiryDate?: string;
+  effectiveExpiryDate?: string;
+  hasExtension?: boolean;
   isExpired?: boolean;
   key?: string;
   role?: string;
+  extendKey?: string | null;
+  extendDays?: number | string | null;
+  isExtendUsedKey?: boolean | null;
+  startDate?: string;
   createdAt?: string;
   rawItem?: any;
 }
@@ -93,6 +99,63 @@ const formatForDatetimeLocal = (isoString?: string) => {
   }
 };
 
+const formatDate = (dateString?: string) => {
+  if (!dateString) return {date: '-', time: '-'};
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return {date: dateString, time: ''};
+    return {
+      date: d.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }),
+      time: d.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }),
+    };
+  } catch {
+    return {date: dateString || '-', time: ''};
+  }
+};
+
+// Calculate extended expiry preview
+const getExtendedExpiryPreview = (
+  expiryDateStr?: string,
+  extendDaysVal?: string | number | null,
+) => {
+  const days = Number(extendDaysVal);
+  if (!days || isNaN(days) || days <= 0) return null;
+
+  let baseDate: Date;
+  let isExtendingFromCurrent = false;
+
+  if (expiryDateStr) {
+    const parsed = new Date(expiryDateStr);
+    if (!isNaN(parsed.getTime())) {
+      baseDate = parsed;
+      isExtendingFromCurrent = true;
+    } else {
+      baseDate = new Date();
+    }
+  } else {
+    baseDate = new Date();
+  }
+
+  const extendedDate = new Date(baseDate.getTime() + days * 86400000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dateFormatted = `${pad(extendedDate.getDate())}/${pad(extendedDate.getMonth() + 1)}/${extendedDate.getFullYear()} ${pad(extendedDate.getHours())}:${pad(extendedDate.getMinutes())}`;
+
+  return {
+    extendedDate,
+    dateFormatted,
+    isExtendingFromCurrent,
+  };
+};
+
+// Update formatDisplayDateTime to handle ISO strings
 const formatDisplayDateTime = (dateStr?: string) => {
   if (!dateStr) return 'N/A';
   try {
@@ -119,7 +182,9 @@ const AdminCreate: React.FC = () => {
   >('ALL');
 
   // Sorting state for Create Date & Expiry Date
-  const [sortField, setSortField] = useState<'createdAt' | 'expiryDate' | null>(null);
+  const [sortField, setSortField] = useState<'createdAt' | 'expiryDate' | null>(
+    null,
+  );
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -141,18 +206,20 @@ const AdminCreate: React.FC = () => {
     state: '',
     address: '',
     accessType: 'ONLINE',
-    price: '',
-    renewalCharges: '',
+    amount: '',
+    renewalAmount: '',
     expiryDate: calculateDefaultExpiry('ONLINE'),
     key: '12345',
     role: 'ADMIN',
+    extendDays: '',
+    extendKey: '',
   });
 
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [showPassword, setShowPassword] = useState(false);
 
   // API Hooks
-  const { data: adminsData, isLoading } = useGetAdmins();
+  const {data: adminsData, isLoading} = useGetAdmins();
   const createAdmin = useCreateAdmin();
   const updateAdmin = useUpdateAdmin();
 
@@ -166,90 +233,76 @@ const AdminCreate: React.FC = () => {
   const adminsList: AdminItem[] = useMemo(() => {
     const now = Date.now();
     return rawList.map((item: any, idx: number) => {
+      // Handle both nested and flat structures
       const userObj = item.user || {};
-      const rawExp =
-        item.expiryDate ||
-        userObj.expiryDate ||
-        item.expiryDateTime ||
-        userObj.expiryDateTime ||
-        '';
-      const expTime = rawExp ? new Date(rawExp).getTime() : NaN;
-      const isExpired = !isNaN(expTime) && expTime < now;
 
-      const shopNameVal =
-        item.shopName ||
-        userObj.shopName ||
-        item.storeName ||
-        userObj.storeName ||
-        item.businessName ||
-        userObj.businessName ||
-        '';
+      // Get expiry date - from item or user
+      const rawExp = item.expiryDate || userObj.expiryDate || '';
+      const extDays = Number(item.extendDays ?? userObj.extendDays) || 0;
 
-      const cityVal =
-        item.city ||
-        userObj.city ||
-        item.district ||
-        userObj.district ||
-        (item.address && item.address.includes(',')
-          ? item.address.split(',').pop()?.trim()
-          : item.address) ||
-        '';
+      // Calculate effective expiry date
+      let effectiveExpTime = rawExp ? new Date(rawExp).getTime() : NaN;
+      let effectiveExpDate = rawExp;
+      let hasExtension = false;
+
+      if (!isNaN(effectiveExpTime) && extDays > 0) {
+        hasExtension = true;
+        const extendedTime = effectiveExpTime + extDays * 86400000;
+        effectiveExpDate = new Date(extendedTime).toISOString();
+        effectiveExpTime = extendedTime;
+      }
+
+      // Calculate expiry status based on effective expiry date
+      const isExpired = !isNaN(effectiveExpTime) && effectiveExpTime < now;
+
+      // Get shop name
+      const shopNameVal = item.shopName || userObj.shopName || 'N/A';
+
+      // Get address
+      const addressVal = userObj.address || item.address || 'N/A';
 
       return {
         id: item.id || `admin-${idx}`,
         userId: item.userId || userObj.id || item.id,
-        fullname:
-          userObj.fullname ||
-          userObj.name ||
-          item.fullname ||
-          item.fullName ||
-          'N/A',
-        shopName: shopNameVal || 'N/A',
-        email: userObj.email || item.contactPersonEmail || item.email || '',
+        fullname: userObj.fullname || userObj.name || item.fullname || 'N/A',
+        shopName: shopNameVal,
+        email: userObj.email || item.email || '',
         username:
           userObj.username || userObj.phoneNumber || item.phoneNumber || 'N/A',
-        phoneNumber:
-          userObj.phoneNumber || userObj.phone || item.phoneNumber || 'N/A',
+        phoneNumber: userObj.phoneNumber || item.phoneNumber || 'N/A',
         secondaryPhoneNumber:
-          userObj.secondaryPhoneNumber ||
-          userObj.secondazyPhoneNumber ||
-          item.contactPersonNumber ||
-          item.secondaryPhoneNumber ||
-          '',
-        pincode:
-          item.pincode ||
-          userObj.pincode ||
-          item.pinCode ||
-          userObj.pinCode ||
-          item.postalCode ||
-          '',
-        city: cityVal,
+          userObj.secondaryPhoneNumber || item.secondaryPhoneNumber || '',
+        pincode: item.pincode || userObj.pincode || '',
+        city: item.city || userObj.city || '',
         district: item.district || userObj.district || '',
         state: item.state || userObj.state || '',
-        address: item.address || userObj.address || 'N/A',
+        address: addressVal,
         accessType: (
           item.accessType ||
           userObj.accessType ||
           'ONLINE'
         ).toUpperCase(),
-        price: item.price ?? userObj.price ?? '',
-        renewalCharges:
-          item.renewalCharges ??
-          userObj.renewalCharges ??
-          item.renewalCharge ??
-          userObj.renewalCharge ??
+        amount: item.amount ?? userObj.amount ?? '',
+        renewalAmount:
+          item.renewalAmount ??
+          userObj.renewalAmount ??
           '',
         rawExpiryDate: rawExp,
-        expiryDate: rawExp ? formatDisplayDateTime(rawExp) : '',
-        isExpired,
-        key: item.key || item.offlineKey || '',
+        expiryDate: rawExp ? formatDisplayDateTime(rawExp) : 'Unlimited',
+        effectiveExpiryDate: effectiveExpDate,
+        hasExtension: hasExtension,
+        isExpired: isExpired,
+        key: item.key || '',
         role: userObj.role || item.role || 'ADMIN',
+        extendKey: item.extendKey || userObj.extendKey || '',
+        extendDays: item.extendDays !== undefined && item.extendDays !== null ? item.extendDays : userObj.extendDays,
+        isExtendUsedKey: item.isExtendUsedKey ?? userObj.isExtendUsedKey,
+        startDate: item.startDate || userObj.startDate || '',
         createdAt: item.createdAt || userObj.createdAt || '',
         rawItem: item,
       };
     });
   }, [rawList]);
-
   // Extract unique cities for City filter dropdown
   const uniqueCities = useMemo(() => {
     const citySet = new Set<string>();
@@ -365,8 +418,8 @@ const AdminCreate: React.FC = () => {
         timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       } else if (sortField === 'expiryDate') {
-        const rawA = a.rawExpiryDate || a.expiryDate;
-        const rawB = b.rawExpiryDate || b.expiryDate;
+        const rawA = a.effectiveExpiryDate || a.rawExpiryDate || a.expiryDate;
+        const rawB = b.effectiveExpiryDate || b.rawExpiryDate || b.expiryDate;
         timeA = rawA ? new Date(rawA).getTime() : 0;
         timeB = rawB ? new Date(rawB).getTime() : 0;
       }
@@ -414,7 +467,7 @@ const AdminCreate: React.FC = () => {
         }));
 
         if (errors.pincode) {
-          setErrors((prev) => ({ ...prev, pincode: '' }));
+          setErrors((prev) => ({...prev, pincode: ''}));
         }
         toast.success(`Location detected: ${city}, ${state}`);
       } else {
@@ -438,6 +491,36 @@ const AdminCreate: React.FC = () => {
     return newKey;
   };
 
+  // Calculate new expiry preview when extendDays is added before/after expiration
+  const getExtendedExpiryPreview = (
+    currentExpiry?: string,
+    daysToAdd?: string | number,
+  ) => {
+    const days = Number(daysToAdd);
+    if (!days || isNaN(days) || days <= 0) return null;
+    let base = new Date();
+    let isExtendingFromCurrent = false;
+    if (currentExpiry) {
+      const parsed = new Date(currentExpiry.replace(' ', 'T'));
+      if (!isNaN(parsed.getTime()) && parsed.getTime() > Date.now()) {
+        base = parsed;
+        isExtendingFromCurrent = true;
+      }
+    }
+    const newDate = new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+    return {
+      dateFormatted: newDate.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }),
+      isExtendingFromCurrent,
+    };
+  };
+
   const handleOpenCreateModal = () => {
     setEditingAdmin(null);
     setFormData({
@@ -454,11 +537,13 @@ const AdminCreate: React.FC = () => {
       state: '',
       address: '',
       accessType: 'ONLINE',
-      price: '',
-      renewalCharges: '',
+      amount: '',
+      renewalAmount: '',
       expiryDate: calculateDefaultExpiry('ONLINE'),
       key: '12345',
       role: 'ADMIN',
+      extendDays: '',
+      extendKey: '',
     });
     setErrors({});
     setShowPassword(false);
@@ -502,17 +587,22 @@ const AdminCreate: React.FC = () => {
       state: admin.state || '',
       address: addressVal,
       accessType: (admin.accessType || 'ONLINE').toUpperCase(),
-      price:
-        admin.price !== undefined && admin.price !== null
-          ? String(admin.price)
+      amount:
+        admin.amount !== undefined && admin.amount !== null
+          ? String(admin.amount)
           : '',
-      renewalCharges:
-        admin.renewalCharges !== undefined && admin.renewalCharges !== null
-          ? String(admin.renewalCharges)
+      renewalAmount:
+        admin.renewalAmount !== undefined && admin.renewalAmount !== null
+          ? String(admin.renewalAmount)
           : '',
       expiryDate: formatForDatetimeLocal(rawExpiry).replace('T', ' ') + ':00',
       key: admin.key || '12345',
       role: admin.role || 'ADMIN',
+      extendDays:
+        admin.extendDays !== undefined && admin.extendDays !== null
+          ? String(admin.extendDays)
+          : '',
+      extendKey: admin.extendKey || '',
     });
     setErrors({});
     setShowPassword(false);
@@ -561,20 +651,25 @@ const AdminCreate: React.FC = () => {
               u.accessType ||
               prev.accessType
             ).toUpperCase(),
-            price:
-              fullData.price !== undefined
-                ? String(fullData.price)
-                : prev.price,
-            renewalCharges:
-              fullData.renewalCharges !== undefined
-                ? String(fullData.renewalCharges)
-                : prev.renewalCharges,
+            amount:
+              fullData.amount !== undefined
+                ? String(fullData.amount)
+                : prev.amount,
+            renewalAmount:
+              fullData.renewalAmount !== undefined
+                ? String(fullData.renewalAmount)
+                : prev.renewalAmount,
             expiryDate: fullData.expiryDate
               ? formatForDatetimeLocal(fullData.expiryDate).replace('T', ' ') +
-              ':00'
+                ':00'
               : prev.expiryDate,
             key: fullData.key || prev.key,
             role: u.role || prev.role,
+            extendDays:
+              fullData.extendDays !== undefined && fullData.extendDays !== null
+                ? String(fullData.extendDays)
+                : prev.extendDays,
+            extendKey: fullData.extendKey || prev.extendKey,
           }));
         }
       }
@@ -586,15 +681,49 @@ const AdminCreate: React.FC = () => {
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
-    const { name, value } = e.target;
+    const {name, value} = e.target;
     setFormData((prev) => {
-      const updated = { ...prev, [name]: value };
+      const updated = {...prev, [name]: value};
       if (
         name === 'phoneNumber' &&
         (!prev.username || prev.username === prev.phoneNumber)
       ) {
         updated.username = value;
       }
+
+      // Automatically calculate and update Expiry Date on Expiry Date field when extendDays changes
+      if (name === 'extendDays') {
+        const days = Number(value);
+        if (days && !isNaN(days) && days > 0) {
+          let base = new Date();
+          const existingExp =
+            editingAdmin?.rawExpiryDate ||
+            editingAdmin?.expiryDate ||
+            editingAdmin?.rawItem?.expiryDate ||
+            prev.expiryDate;
+          if (existingExp) {
+            const parsed = new Date(existingExp.replace(' ', 'T'));
+            if (!isNaN(parsed.getTime()) && parsed.getTime() > Date.now()) {
+              base = parsed;
+            }
+          }
+          const newDate = new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+          const pad = (n: number) => String(n).padStart(2, '0');
+          updated.expiryDate = `${newDate.getFullYear()}-${pad(newDate.getMonth() + 1)}-${pad(newDate.getDate())} ${pad(newDate.getHours())}:${pad(newDate.getMinutes())}:00`;
+        } else if (!value) {
+          if (editingAdmin) {
+            const rawExpiry =
+              editingAdmin.rawItem?.expiryDate ||
+              editingAdmin.rawExpiryDate ||
+              editingAdmin.expiryDate;
+            updated.expiryDate =
+              formatForDatetimeLocal(rawExpiry).replace('T', ' ') + ':00';
+          } else {
+            updated.expiryDate = calculateDefaultExpiry(prev.accessType);
+          }
+        }
+      }
+
       return updated;
     });
 
@@ -605,7 +734,7 @@ const AdminCreate: React.FC = () => {
     }
 
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({...prev, [name]: ''}));
     }
   };
 
@@ -626,13 +755,13 @@ const AdminCreate: React.FC = () => {
           : '12345',
     }));
     if (errors.accessType) {
-      setErrors((prev) => ({ ...prev, accessType: '' }));
+      setErrors((prev) => ({...prev, accessType: ''}));
     }
   };
 
   const handleGenerateKey = () => {
     const newKey = generateKey();
-    setFormData((prev) => ({ ...prev, key: newKey }));
+    setFormData((prev) => ({...prev, key: newKey}));
     toast.success('Offline access key generated!');
   };
 
@@ -647,7 +776,7 @@ const AdminCreate: React.FC = () => {
   };
 
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
+    const newErrors: {[key: string]: string} = {};
 
     if (!formData.fullname.trim()) {
       newErrors.fullname = 'First Name / Full Name is required';
@@ -672,10 +801,7 @@ const AdminCreate: React.FC = () => {
       newErrors.secondaryPhoneNumber =
         'Secondary phone number must be 10 digits';
     }
-    if (
-      formData.pincode.trim() &&
-      !/^\d{6}$/.test(formData.pincode.trim())
-    ) {
+    if (formData.pincode.trim() && !/^\d{6}$/.test(formData.pincode.trim())) {
       newErrors.pincode = 'Pincode must be 6 digits';
     }
     if (!formData.address.trim()) {
@@ -690,10 +816,6 @@ const AdminCreate: React.FC = () => {
       }
     } else if (formData.password && formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (formData.accessType === 'OFFLINE' && !formData.key) {
-      newErrors.key = 'Please generate an offline key';
     }
 
     setErrors(newErrors);
@@ -730,13 +852,25 @@ const AdminCreate: React.FC = () => {
       state: formData.state.trim() || undefined,
       address: formData.address.trim(),
       accessType: formData.accessType.toUpperCase(),
-      price: formData.price ? Number(formData.price) || formData.price : undefined,
-      renewalCharges: formData.renewalCharges
-        ? Number(formData.renewalCharges) || formData.renewalCharges
+      amount: formData.amount
+        ? Number(formData.amount) || formData.amount
+        : undefined,
+      renewalAmount: formData.renewalAmount
+        ? Number(formData.renewalAmount) || formData.renewalAmount
         : undefined,
       expiryDate: formattedExpiry || undefined,
       key: formData.accessType === 'OFFLINE' ? formData.key : '12345',
       role: formData.role || 'ADMIN',
+      extendKey:
+        formData.extendKey && formData.extendKey.trim()
+          ? formData.extendKey.trim()
+          : null,
+      extendDays:
+        formData.extendDays !== '' &&
+        formData.extendDays !== null &&
+        formData.extendDays !== undefined
+          ? Number(formData.extendDays) || null
+          : null,
     };
 
     if (formData.password) {
@@ -745,7 +879,7 @@ const AdminCreate: React.FC = () => {
 
     try {
       if (editingAdmin) {
-        await updateAdmin.mutateAsync({ id: editingAdmin.id, data: payload });
+        await updateAdmin.mutateAsync({id: editingAdmin.id, data: payload});
       } else {
         await createAdmin.mutateAsync(payload);
       }
@@ -767,9 +901,6 @@ const AdminCreate: React.FC = () => {
               ? item.shopName
               : item.fullname}
           </span>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            {item.fullname}
-          </span>
         </div>
       ),
     },
@@ -781,11 +912,6 @@ const AdminCreate: React.FC = () => {
           <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
             {item.city && item.city !== 'N/A' ? item.city : '-'}
           </span>
-          {item.state && (
-            <span className="text-[11px] text-gray-400 dark:text-gray-500">
-              {item.state}
-            </span>
-          )}
         </div>
       ),
     },
@@ -797,11 +923,6 @@ const AdminCreate: React.FC = () => {
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
             {item.phoneNumber}
           </span>
-          {item.secondaryPhoneNumber && (
-            <span className="font-mono text-[11px] text-gray-500 dark:text-gray-400">
-              Sec: {item.secondaryPhoneNumber}
-            </span>
-          )}
         </div>
       ),
     },
@@ -861,11 +982,19 @@ const AdminCreate: React.FC = () => {
           )}
         </button>
       ),
-      render: (item) => (
-        <span className="text-xs text-gray-600 dark:text-gray-300">
-          {formatDisplayDateTime(item.createdAt)}
-        </span>
-      ),
+      render: (item) => {
+        const {date, time} = formatDate(item?.createdAt);
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {date}
+            </span>
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
+              {time}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: 'expiryDate',
@@ -895,23 +1024,59 @@ const AdminCreate: React.FC = () => {
         </button>
       ),
       render: (item) => {
-        const expFormatted = formatDisplayDateTime(
-          item.rawExpiryDate || item.expiryDate,
-        );
+        const rawDate = item.rawExpiryDate || item.expiryDate;
+        if (!rawDate) {
+          return (
+            <div className="flex flex-col items-center">
+              <span className="text-sm text-[#1a1c1b] dark:text-white">
+                Unlimited
+              </span>
+            </div>
+          );
+        }
+
+        const extDays = Number(item.extendDays) || 0;
+        const originalTime = new Date(rawDate).getTime();
+        const isOriginalExpired =
+          !isNaN(originalTime) && originalTime < Date.now();
+
+        if (extDays > 0 && item.effectiveExpiryDate) {
+          const {date: extDate, time: extTime} = formatDate(
+            item.effectiveExpiryDate,
+          );
+          const {date: origDate} = formatDate(rawDate);
+
+          return (
+            <div className="flex flex-col items-center gap-0.5">
+              <span
+                className='text-black'
+              >
+                {extDate}
+              </span>
+              {extTime && extTime !== '-' && (
+                <span className="text-gray-500 dark:text-gray-400 text-xs">
+                  {extTime}
+                </span>
+              )}
+            </div>
+          );
+        }
+
+        const {date, time} = formatDate(rawDate);
         return (
-          <div className="flex flex-col">
+          <div className="flex flex-col items-center">
             <span
-              className={`font-mono text-xs ${
+              className={`text-sm ${
                 item.isExpired
                   ? 'font-semibold text-red-600 dark:text-red-400'
                   : 'text-[#1a1c1b] dark:text-white'
               }`}
             >
-              {expFormatted !== 'N/A' ? expFormatted : 'Unlimited'}
+              {date}
             </span>
-            {item.isExpired && (
-              <span className="mt-0.5 inline-flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
-                <AlertTriangle className="h-2.5 w-2.5" /> Expired
+            {time && time !== '-' && (
+              <span className="text-gray-500 dark:text-gray-400 text-sm">
+                {time}
               </span>
             )}
           </div>
@@ -919,14 +1084,14 @@ const AdminCreate: React.FC = () => {
       },
     },
     {
-      key: 'renewalCharges',
+      key: 'renewalAmount',
       header: 'Renewal Charges',
       render: (item) => (
-        <span className="font-semibold text-sm text-[#785600] dark:text-amber-400">
-          {item.renewalCharges !== undefined &&
-            item.renewalCharges !== null &&
-            item.renewalCharges !== ''
-            ? `₹${Number(item.renewalCharges).toLocaleString('en-IN')}`
+        <span className="text-sm font-semibold text-[#785600] dark:text-amber-400">
+          {item.renewalAmount !== undefined &&
+          item.renewalAmount !== null &&
+          item.renewalAmount !== ''
+            ? `₹${Number(item.renewalAmount).toLocaleString('en-IN')}`
             : '-'}
         </span>
       ),
@@ -949,7 +1114,7 @@ const AdminCreate: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-      <div className="mx-auto px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6 space-y-4">
+      <div className="mx-auto space-y-4 px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
         {/* Page Header */}
         <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
           <PageHeader title="Admin Management" />
@@ -977,10 +1142,9 @@ const AdminCreate: React.FC = () => {
             />
           </div>
 
-
           {/* 3. Third: Status / Type Filter Tabs */}
           <div className="flex items-center gap-1 overflow-x-auto py-0.5">
-            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">
+            <label className="text-gray-500 whitespace-nowrap text-xs font-medium dark:text-slate-400">
               City:
             </label>
             <select
@@ -996,7 +1160,9 @@ const AdminCreate: React.FC = () => {
               ))}
             </select>
 
-            {(searchTerm || selectedCity !== 'ALL' || selectedTab !== 'ALL') && (
+            {(searchTerm ||
+              selectedCity !== 'ALL' ||
+              selectedTab !== 'ALL') && (
               <button
                 type="button"
                 onClick={() => {
@@ -1004,7 +1170,7 @@ const AdminCreate: React.FC = () => {
                   setSelectedCity('ALL');
                   setSelectedTab('ALL');
                 }}
-                className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300 whitespace-nowrap"
+                className="border-gray-200 text-gray-600 hover:bg-gray-50 dark:text-gray-300 flex items-center gap-1 whitespace-nowrap rounded-lg border bg-white px-2.5 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800"
                 title="Reset filters"
               >
                 <RotateCcw className="h-3 w-3" />
@@ -1014,17 +1180,19 @@ const AdminCreate: React.FC = () => {
             <button
               type="button"
               onClick={() => setSelectedTab('ALL')}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all ${selectedTab === 'ALL'
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'ALL'
                   ? 'bg-[#785600] text-white shadow-sm'
-                  : 'bg-gray-100/70 text-gray-600 hover:bg-gray-200/70 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700'
-                }`}
+                  : 'bg-gray-100/70 text-gray-600 hover:bg-gray-200/70 dark:text-gray-300 dark:bg-slate-800 dark:hover:bg-slate-700'
+              }`}
             >
               All
               <span
-                className={`rounded-full px-1.5 py-0.2 text-[10px] ${selectedTab === 'ALL'
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'ALL'
                     ? 'bg-white/25 text-white'
-                    : 'bg-gray-200 text-gray-700 dark:bg-slate-700 dark:text-gray-200'
-                  }`}
+                    : 'bg-gray-200 text-gray-700 dark:text-gray-200 dark:bg-slate-700'
+                }`}
               >
                 {tabCounts.all}
               </span>
@@ -1033,18 +1201,20 @@ const AdminCreate: React.FC = () => {
             <button
               type="button"
               onClick={() => setSelectedTab('ONLINE')}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all ${selectedTab === 'ONLINE'
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'ONLINE'
                   ? 'bg-emerald-700 text-white shadow-sm'
-                  : 'bg-gray-100/70 text-gray-600 hover:bg-emerald-50 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700'
-                }`}
+                  : 'bg-gray-100/70 text-gray-600 dark:text-gray-300 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-700'
+              }`}
             >
               <ShieldCheck className="h-3.5 w-3.5" />
               Online
               <span
-                className={`rounded-full px-1.5 py-0.2 text-[10px] ${selectedTab === 'ONLINE'
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'ONLINE'
                     ? 'bg-white/25 text-white'
                     : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400'
-                  }`}
+                }`}
               >
                 {tabCounts.online}
               </span>
@@ -1053,18 +1223,20 @@ const AdminCreate: React.FC = () => {
             <button
               type="button"
               onClick={() => setSelectedTab('OFFLINE')}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all ${selectedTab === 'OFFLINE'
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'OFFLINE'
                   ? 'bg-amber-700 text-white shadow-sm'
-                  : 'bg-gray-100/70 text-gray-600 hover:bg-amber-50 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700'
-                }`}
+                  : 'bg-gray-100/70 text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:bg-slate-800 dark:hover:bg-slate-700'
+              }`}
             >
               <Key className="h-3.5 w-3.5" />
               Offline
               <span
-                className={`rounded-full px-1.5 py-0.2 text-[10px] ${selectedTab === 'OFFLINE'
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'OFFLINE'
                     ? 'bg-white/25 text-white'
                     : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400'
-                  }`}
+                }`}
               >
                 {tabCounts.offline}
               </span>
@@ -1073,18 +1245,20 @@ const AdminCreate: React.FC = () => {
             <button
               type="button"
               onClick={() => setSelectedTab('TRAIL')}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all ${selectedTab === 'TRAIL'
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'TRAIL'
                   ? 'bg-purple-700 text-white shadow-sm'
-                  : 'bg-gray-100/70 text-gray-600 hover:bg-purple-50 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700'
-                }`}
+                  : 'bg-gray-100/70 text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:bg-slate-800 dark:hover:bg-slate-700'
+              }`}
             >
               <Sparkles className="h-3.5 w-3.5" />
               Trail
               <span
-                className={`rounded-full px-1.5 py-0.2 text-[10px] ${selectedTab === 'TRAIL'
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'TRAIL'
                     ? 'bg-white/25 text-white'
                     : 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300'
-                  }`}
+                }`}
               >
                 {tabCounts.trail}
               </span>
@@ -1093,18 +1267,20 @@ const AdminCreate: React.FC = () => {
             <button
               type="button"
               onClick={() => setSelectedTab('EXPIRED')}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all ${selectedTab === 'EXPIRED'
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'EXPIRED'
                   ? 'bg-red-700 text-white shadow-sm'
-                  : 'bg-gray-100/70 text-gray-600 hover:bg-red-50 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700'
-                }`}
+                  : 'bg-gray-100/70 text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-slate-700'
+              }`}
             >
               <AlertTriangle className="h-3.5 w-3.5" />
               Expired
               <span
-                className={`rounded-full px-1.5 py-0.2 text-[10px] ${selectedTab === 'EXPIRED'
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'EXPIRED'
                     ? 'bg-white/25 text-white'
                     : 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-400'
-                  }`}
+                }`}
               >
                 {tabCounts.expired}
               </span>
@@ -1121,7 +1297,7 @@ const AdminCreate: React.FC = () => {
           renderActions={renderActions}
           showSrNo={true}
           srNoLabel="Sr No."
-          onSave={() => { }}
+          onSave={() => {}}
         />
       </div>
 
@@ -1155,7 +1331,8 @@ const AdminCreate: React.FC = () => {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    First Name / Full Name <span className="text-red-500">*</span>
+                    First Name / Full Name{' '}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1163,10 +1340,11 @@ const AdminCreate: React.FC = () => {
                     value={formData.fullname}
                     onChange={handleInputChange}
                     placeholder="e.g. Rahul Sharma"
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.fullname
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.fullname
                         ? 'border-red-500 focus:ring-red-500/20'
                         : ''
-                      }`}
+                    }`}
                   />
                   {errors.fullname && (
                     <p className="mt-1 text-xs text-red-500">
@@ -1185,10 +1363,11 @@ const AdminCreate: React.FC = () => {
                     value={formData.shopName}
                     onChange={handleInputChange}
                     placeholder="e.g. Royal Jewellers"
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.shopName
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.shopName
                         ? 'border-red-500 focus:ring-red-500/20'
                         : ''
-                      }`}
+                    }`}
                   />
                   {errors.shopName && (
                     <p className="mt-1 text-xs text-red-500">
@@ -1210,8 +1389,9 @@ const AdminCreate: React.FC = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="admin@example.com"
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.email ? 'border-red-500 focus:ring-red-500/20' : ''
-                      }`}
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.email ? 'border-red-500 focus:ring-red-500/20' : ''
+                    }`}
                   />
                   {errors.email && (
                     <p className="mt-1 text-xs text-red-500">{errors.email}</p>
@@ -1229,10 +1409,11 @@ const AdminCreate: React.FC = () => {
                     onChange={handleInputChange}
                     placeholder="10-digit phone number"
                     maxLength={10}
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.phoneNumber
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.phoneNumber
                         ? 'border-red-500 focus:ring-red-500/20'
                         : ''
-                      }`}
+                    }`}
                   />
                   {errors.phoneNumber && (
                     <p className="mt-1 text-xs text-red-500">
@@ -1246,7 +1427,7 @@ const AdminCreate: React.FC = () => {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    2nd Number (Secondary Phone)
+                    Secondary Phone
                   </label>
                   <input
                     type="text"
@@ -1255,10 +1436,11 @@ const AdminCreate: React.FC = () => {
                     onChange={handleInputChange}
                     placeholder="Alternate phone number (optional)"
                     maxLength={10}
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.secondaryPhoneNumber
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.secondaryPhoneNumber
                         ? 'border-red-500 focus:ring-red-500/20'
                         : ''
-                      }`}
+                    }`}
                   />
                   {errors.secondaryPhoneNumber && (
                     <p className="mt-1 text-xs text-red-500">
@@ -1283,8 +1465,8 @@ const AdminCreate: React.FC = () => {
               </div>
 
               {/* Row 4: Pincode, City, District, State */}
-              <div className="rounded-lg border border-[#d3c4af]/30 bg-[#fbf9f6] p-3.5 dark:border-slate-800 dark:bg-slate-800/40 space-y-3">
-                <div className="text-xs font-bold text-[#785600] dark:text-amber-400 flex items-center gap-1.5">
+              <div className="space-y-3 rounded-lg border border-[#d3c4af]/30 bg-[#fbf9f6] p-3.5 dark:border-slate-800 dark:bg-slate-800/40">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#785600] dark:text-amber-400">
                   <MapPin className="h-4 w-4" />
                   Address & Location Details
                 </div>
@@ -1302,8 +1484,9 @@ const AdminCreate: React.FC = () => {
                         onChange={handleInputChange}
                         placeholder="6-digit pincode"
                         maxLength={6}
-                        className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-8 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.pincode ? 'border-red-500' : ''
-                          }`}
+                        className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-8 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                          errors.pincode ? 'border-red-500' : ''
+                        }`}
                       />
                       {isPincodeLoading && (
                         <Loader2 className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#785600]" />
@@ -1361,7 +1544,8 @@ const AdminCreate: React.FC = () => {
 
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    Address Line / Street <span className="text-red-500">*</span>
+                    Address Line / Street{' '}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1369,10 +1553,11 @@ const AdminCreate: React.FC = () => {
                     value={formData.address}
                     onChange={handleInputChange}
                     placeholder="e.g. Shop No. 12, MG Road Market"
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.address
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.address
                         ? 'border-red-500 focus:ring-red-500/20'
                         : ''
-                      }`}
+                    }`}
                   />
                   {errors.address && (
                     <p className="mt-1 text-xs text-red-500">
@@ -1406,8 +1591,8 @@ const AdminCreate: React.FC = () => {
                   </label>
                   <input
                     type="number"
-                    name="price"
-                    value={formData.price}
+                    name="amount"
+                    value={formData.amount}
                     onChange={handleInputChange}
                     placeholder="e.g. 5000"
                     min={0}
@@ -1421,8 +1606,8 @@ const AdminCreate: React.FC = () => {
                   </label>
                   <input
                     type="number"
-                    name="renewalCharges"
-                    value={formData.renewalCharges}
+                    name="renewalAmount"
+                    value={formData.renewalAmount}
                     onChange={handleInputChange}
                     placeholder="e.g. 2000"
                     min={0}
@@ -1449,41 +1634,99 @@ const AdminCreate: React.FC = () => {
                 </div>
               </div>
 
-              {/* Row 5b: Offline Key when OFFLINE */}
+              {/* Offline / Extension Key & Days - Only shown when Access Type is OFFLINE */}
               {formData.accessType === 'OFFLINE' && (
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    Offline Key <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      name="key"
-                      value={formData.key}
-                      onChange={handleInputChange}
-                      placeholder="Offline key"
-                      className="font-mono flex-1 rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-xs text-[#1a1c1b] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleCopyKey(formData.key)}
-                      className="flex items-center gap-1.5 rounded-lg border border-[#d3c4af]/40 bg-white px-3 py-2 text-xs font-medium text-[#785600] transition-colors hover:bg-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400 dark:hover:bg-slate-700"
-                      title="Copy Key to Clipboard"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                      <span>Copy</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleGenerateKey}
-                      className="rounded-lg bg-[#785600] px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-[#5d4200]"
-                    >
-                      Generate Key
-                    </button>
+                <div className="space-y-3 rounded-lg border border-[#d3c4af]/30 bg-[#fbfbf9] p-3.5 dark:border-slate-700 dark:bg-slate-800/60">
+                  <div className="flex items-center justify-between border-b border-[#d3c4af]/20 pb-2 dark:border-slate-700">
+                    <div className="flex items-center gap-1.5">
+                      <Key className="h-4 w-4 text-[#785600] dark:text-amber-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#785600] dark:text-amber-400">
+                        Offline Key & Days Extension
+                      </span>
+                    </div>
+                    <span className="text-gray-400 text-[10px]">
+                      Offline Only
+                    </span>
                   </div>
-                  {errors.key && (
-                    <p className="mt-1 text-xs text-red-500">{errors.key}</p>
-                  )}
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {/* Extend Days Field */}
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                        Extension Days
+                      </label>
+                      <input
+                        type="number"
+                        name="extendDays"
+                        value={formData.extendDays}
+                        onChange={handleInputChange}
+                        placeholder="Enter days (e.g. 30)"
+                        min={0}
+                        className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      />
+                    </div>
+
+                    {/* Extend Key Field */}
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                        Offline / Extension Key
+                      </label>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          name="extendKey"
+                          value={formData.extendKey}
+                          onChange={handleInputChange}
+                          placeholder="Key (e.g. ABCD-1234-EFGH-5678)"
+                          className="font-mono flex-1 rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-xs text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleCopyKey(formData.extendKey)}
+                          disabled={!formData.extendKey}
+                          className="flex items-center gap-1 rounded-lg border border-[#d3c4af]/40 bg-white px-2.5 py-2 text-xs font-medium text-[#785600] transition-colors hover:bg-[#785600]/10 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400"
+                          title="Copy Key"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newKey = generateKey();
+                            setFormData((prev) => ({
+                              ...prev,
+                              extendKey: newKey,
+                            }));
+                            toast.success('Key generated!');
+                          }}
+                          className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2.5 py-2 text-xs font-medium text-white transition-colors hover:from-[#6b4c00] hover:to-[#875f00]"
+                        >
+                          Generate
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expiry Advance Preview Notice */}
+                  {(() => {
+                    const preview = getExtendedExpiryPreview(
+                      formData.expiryDate,
+                      formData.extendDays,
+                    );
+                    if (!preview) return null;
+                    return (
+                      <div className="flex items-center gap-2 rounded-lg bg-[#785600]/10 p-2.5 text-xs text-[#785600] dark:bg-amber-950/40 dark:text-amber-300">
+                        <ShieldCheck className="h-4 w-4 shrink-0" />
+                        <span>
+                          {preview.isExtendingFromCurrent
+                            ? `Extension starts after current expiry date (${formData.expiryDate.slice(0, 10)}). New expiry: `
+                            : 'Extension starts from today. New expiry: '}
+                          <strong>{preview.dateFormatted}</strong> (+
+                          {formData.extendDays} days)
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -1506,8 +1749,9 @@ const AdminCreate: React.FC = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder={editingAdmin ? '••••••••' : 'Pass@123'}
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.password ? 'border-red-500' : ''
-                      }`}
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.password ? 'border-red-500' : ''
+                    }`}
                   />
                   <button
                     type="button"
@@ -1522,9 +1766,7 @@ const AdminCreate: React.FC = () => {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {errors.password}
-                  </p>
+                  <p className="mt-1 text-xs text-red-500">{errors.password}</p>
                 )}
               </div>
 

@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import AdminProfile from './AdminProfile';
 import HeaderPdfDesign from './HeaderPdfDesign';
+import BackupAndRestorePage from './Backup&RestorePage';
 
 export const Settings = () => {
   const [activeTab, setActiveTab] = useState<'profile' | 'header'>('profile');
@@ -14,6 +15,7 @@ export const Settings = () => {
             {[
               {id: 'profile', label: 'Admin Profile'},
               {id: 'header', label: 'Bill Header'},
+              {id: 'backup', label: 'Backup & Restore Data'},
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -34,6 +36,7 @@ export const Settings = () => {
         <div>
           {activeTab === 'profile' && <AdminProfile />}
           {activeTab === 'header' && <HeaderPdfDesign />}
+          {activeTab === 'backup' && <BackupAndRestorePage />}
         </div>
       </div>
     </div>

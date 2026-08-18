@@ -255,7 +255,7 @@ const ItemMaster: React.FC = () => {
             <GenericButton
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-1.5 whitespace-nowrap !bg-amber-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-amber-700 sm:!px-4 sm:!py-2 sm:!text-sm"
+              variant="primary"
             >
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span className="xs:inline hidden">Add Item</span>
@@ -340,7 +340,8 @@ const ItemMaster: React.FC = () => {
                 type="button"
                 onClick={editingItem ? handleEditItem : handleAddItem}
                 disabled={isFormSubmitting}
-                className="!bg-amber-600 !px-4 !py-2 !text-sm !text-white hover:!bg-amber-700"
+                variant="primary"
+                className="!px-4 !py-2"
               >
                 {isFormSubmitting
                   ? 'Saving...'

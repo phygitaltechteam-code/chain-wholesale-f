@@ -238,11 +238,7 @@ export function GenericTable<T extends {id: string | number}>({
               )}
 
               {onAdd && (
-                <GenericButton
-                  type="button"
-                  onClick={onAdd}
-                  className="flex items-center gap-2 whitespace-nowrap !bg-amber-600 !px-4 !py-2 !text-white hover:!bg-amber-700"
-                >
+                <GenericButton type="button" onClick={onAdd} variant="primary">
                   <span className="text-lg leading-none">+</span>
                   {addButtonLabel}
                 </GenericButton>

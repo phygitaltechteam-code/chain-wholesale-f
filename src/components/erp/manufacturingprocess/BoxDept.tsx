@@ -14,6 +14,7 @@ import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import {useGetBox, useGetBoxHistory, useSubmitBox} from '@/lib/api/box';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import {useGetHeader} from '@/lib/api/headerapi';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
 
 interface BoxEntry {
   id: string;
@@ -73,6 +74,13 @@ const BoxDept: React.FC = () => {
     refetch: refetchHistory,
   } = useGetBoxHistory();
   const submitBox = useSubmitBox();
+
+  // Weighing Scale table focus hook
+  const {getScaleProps} = useTableScaleFocus<'chainWeight' | 'scrap'>(
+    (index, field, weight) => {
+      handleInlineChange(index, field, weight.toString());
+    },
+  );
 
   // Helper function to get week start (Monday 00:00) and end (Sunday 23:59:59)
   const getDefaultWeekRange = () => {
@@ -784,6 +792,7 @@ const BoxDept: React.FC = () => {
                       ? ''
                       : item.chainWeight
                 }
+                {...getScaleProps(index, 'chainWeight')}
                 onChange={(e) =>
                   handleInlineChange(index, 'chainWeight', e.target.value)
                 }
@@ -821,6 +830,7 @@ const BoxDept: React.FC = () => {
                       ? ''
                       : item.scrap
                 }
+                {...getScaleProps(index, 'scrap')}
                 onChange={(e) =>
                   handleInlineChange(index, 'scrap', e.target.value)
                 }
@@ -954,7 +964,7 @@ const BoxDept: React.FC = () => {
               <GenericButton
                 type="button"
                 onClick={handlePrintHistory}
-                className="flex items-center gap-1.5 whitespace-nowrap !bg-green-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-green-700 sm:!px-4 sm:!py-2 sm:!text-sm"
+                variant="primary"
               >
                 <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Print</span>
@@ -965,11 +975,7 @@ const BoxDept: React.FC = () => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
-                showHistory
-                  ? '!bg-amber-600 hover:!bg-amber-700'
-                  : '!bg-blue-600 hover:!bg-blue-700'
-              }`}
+              variant="primary"
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

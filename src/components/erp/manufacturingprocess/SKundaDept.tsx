@@ -23,6 +23,7 @@ import {
 } from '@/lib/api/cutting';
 import PageHeader from '@/components/Forms/Common/PageHeader';
 import {useGetHeader} from '@/lib/api/headerapi';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
 
 interface KundaEntry {
   id: string;
@@ -103,6 +104,13 @@ const SKundaDept: React.FC = () => {
     refetch: refetchHistory,
   } = useGetKundaHistory();
   const submitKunda = useSubmitKunda();
+
+  // Weighing Scale table focus hook
+  const {getScaleProps} = useTableScaleFocus<'chainReceived' | 'scrap'>(
+    (index, field, weight) => {
+      handleInlineChange(index, field, weight.toString());
+    },
+  );
 
   useEffect(() => {
     if (kundaLoading) return;
@@ -608,13 +616,13 @@ const SKundaDept: React.FC = () => {
       setShowConfirmModal(false);
       setSaveIndex(null);
       await refetch();
-      // toast.success('S Kunda process stopped successfully!');
+      // toast.success('S Kunda process stockped successfully!');
       navigate({
         to: '/Stocks/stockpage',
       });
     } catch (error) {
-      console.error('Error stopping S Kunda process:', error);
-      toast.error('Failed to stop S Kunda process');
+      console.error('Error stockping S Kunda process:', error);
+      toast.error('Failed to stock S Kunda process');
       setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
@@ -726,6 +734,7 @@ const SKundaDept: React.FC = () => {
                       ? ''
                       : item.chainReceived
                 }
+                {...getScaleProps(index, 'chainReceived')}
                 onChange={(e) =>
                   handleInlineChange(index, 'chainReceived', e.target.value)
                 }
@@ -761,6 +770,7 @@ const SKundaDept: React.FC = () => {
                       ? ''
                       : item.scrap
                 }
+                {...getScaleProps(index, 'scrap')}
                 onChange={(e) =>
                   handleInlineChange(index, 'scrap', e.target.value)
                 }
@@ -809,7 +819,7 @@ const SKundaDept: React.FC = () => {
                     title="Stop Process"
                   >
                     <Square className="h-3.5 w-3.5 fill-current" />
-                    <span>Stop</span>
+                    <span>Stock</span>
                   </button>
                 </div>
               );
@@ -985,7 +995,7 @@ const SKundaDept: React.FC = () => {
                 <GenericButton
                   type="button"
                   onClick={handlePrintHistory}
-                  className="flex items-center gap-1.5 whitespace-nowrap !bg-green-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-green-700 sm:!px-4 sm:!py-2 sm:!text-sm"
+                  variant="primary"
                 >
                   <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <span>Print</span>
@@ -996,11 +1006,7 @@ const SKundaDept: React.FC = () => {
             <GenericButton
               type="button"
               onClick={toggleHistory}
-              className={`flex items-center gap-1.5 whitespace-nowrap !px-3 !py-1.5 !text-xs !text-white sm:!px-4 sm:!py-2 sm:!text-sm ${
-                showHistory
-                  ? '!bg-amber-600 hover:!bg-amber-700'
-                  : '!bg-blue-600 hover:!bg-blue-700'
-              }`}
+              variant="primary"
             >
               {showHistory ? (
                 <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -1112,10 +1118,10 @@ const SKundaDept: React.FC = () => {
                 </div>
               </div>
               <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
-                Confirm Stop Process
+                Confirm Move To Stock Process
               </h3>
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
-                Are you sure you want to stop the S Kunda process for this
+                Are you sure you want to stock the S Kunda process for this
                 entry?
               </p>
               <div className="mt-6 flex justify-center gap-3">

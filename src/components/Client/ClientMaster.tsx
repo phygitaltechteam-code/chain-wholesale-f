@@ -327,7 +327,7 @@ const ClientMaster: React.FC = () => {
             <GenericButton
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="!sm:py-2 flex items-center gap-1.5 whitespace-nowrap !bg-amber-600 !px-3 !py-1.5 !text-xs !text-white hover:!bg-amber-700 sm:!px-4 sm:!text-sm"
+              variant="primary"
             >
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span className="xs:inline hidden">Add Client</span>
@@ -346,7 +346,7 @@ const ClientMaster: React.FC = () => {
             onSave={(item) => console.log('Save:', item)}
             emptyMessage="No clients found. Click 'Add Client' to create one."
             isLoading={isLoading || isSubmitting}
-            renderActions={renderActions}
+            // renderActions={renderActions}
             showSrNo={true}
             srNoLabel="Sr No."
             onRowClick={handleRowClick}
@@ -478,7 +478,8 @@ const ClientMaster: React.FC = () => {
                 type="button"
                 onClick={editingClient ? handleEditClient : handleAddClient}
                 disabled={isSubmitting}
-                className="!bg-amber-600 !px-4 !py-2 !text-sm !text-white hover:!bg-amber-700"
+                variant="primary"
+                className="!px-4 !py-2"
               >
                 {isSubmitting
                   ? 'Saving...'

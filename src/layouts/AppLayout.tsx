@@ -3,8 +3,14 @@ import {useAuthContext} from '@/context/AuthContext';
 import {Outlet, useNavigate} from '@tanstack/react-router';
 import React, {useEffect, useState} from 'react';
 import {Menu} from 'lucide-react';
+import WorkflowGuide from '@/components/common/WorkflowGuide';
+import {WeightScaleProvider} from '@/context/WeightScaleContext';
+import WeightScaleStatusWidget from '@/components/common/WeightScaleStatusWidget';
+import AdminExpiryModal from '@/components/common/AdminExpiryModal';
 
-const AppLayout: React.FC<{children?: React.ReactNode}> = ({children}) => {
+const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
+  children,
+}) => {
   const navigate = useNavigate();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -54,8 +60,11 @@ const AppLayout: React.FC<{children?: React.ReactNode}> = ({children}) => {
         navigate({to: '/addadmin', replace: true});
       }
 
-      // ADMIN should go to billing if they're on addadmin
-      if (user.role === 'ADMIN' && currentPath === '/addadmin') {
+      // ADMIN should go to billing if they're on addadmin or epinrequest
+      if (
+        user.role === 'ADMIN' &&
+        (currentPath === '/addadmin' || currentPath === '/epinrequest')
+      ) {
         navigate({to: '/billing', replace: true});
       }
     }
@@ -123,7 +132,12 @@ const AppLayout: React.FC<{children?: React.ReactNode}> = ({children}) => {
           </div>
         )}
 
-        <main className="min-h-full">{children ?? <Outlet />}</main>
+        <main className="min-h-full">
+          {user?.role !== 'SUPERADMIN' && <WorkflowGuide />}
+          {/* {user?.role !== 'SUPERADMIN' && <WeightScaleStatusWidget />} */}
+          <AdminExpiryModal />
+          {children ?? <Outlet />}
+        </main>
       </div>
 
       {/* Mobile overlay */}
@@ -134,6 +148,14 @@ const AppLayout: React.FC<{children?: React.ReactNode}> = ({children}) => {
         />
       )}
     </div>
+  );
+};
+
+const AppLayout: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  return (
+    <WeightScaleProvider>
+      <AppLayoutContent>{children}</AppLayoutContent>
+    </WeightScaleProvider>
   );
 };
 

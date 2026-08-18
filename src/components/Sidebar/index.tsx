@@ -22,6 +22,7 @@ import {
   MdPictureAsPdf,
 } from 'react-icons/md';
 import {useAuthContext} from '@/context/AuthContext';
+import {EPinIcon} from '@/icons';
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
@@ -75,12 +76,6 @@ const Sidebar = ({
       roles: ['ADMIN'],
     },
     {
-      label: 'Settlement',
-      path: '/setlment/settlement',
-      icon: <MdAccountBalance size={22} />,
-      roles: ['ADMIN'],
-    },
-    {
       label: 'Manufacturing',
       path: '/manufacturingprocess/process',
       icon: <MdPrecisionManufacturing size={22} />,
@@ -99,15 +94,15 @@ const Sidebar = ({
       roles: ['ADMIN'],
     },
     {
-      label: 'Manufacturing Report',
-      path: '/reports/manufacturingreport',
-      icon: <MdAssessment size={22} />,
+      label: 'Settlement',
+      path: '/setlment/settlement',
+      icon: <MdAccountBalance size={22} />,
       roles: ['ADMIN'],
     },
     {
-      label: 'Backup & Restore',
-      path: '/backup&restore',
-      icon: <MdBackup size={22} />,
+      label: 'Manufacturing Report',
+      path: '/reports/manufacturingreport',
+      icon: <MdAssessment size={22} />,
       roles: ['ADMIN'],
     },
     {
@@ -117,10 +112,10 @@ const Sidebar = ({
       roles: ['SUPERADMIN'],
     },
     // {
-    //   label: 'PDF Header Design',
-    //   path: '/pdfdesign',
-    //   icon: <MdPictureAsPdf  size={22} />,
-    //   roles: ['ADMIN'],
+    //   label: 'E-PIN Request',
+    //   path: '/epinrequest',
+    //   icon: <EPinIcon size={22} />,
+    //   roles: ['SUPERADMIN'],
     // },
     {
       label: 'Admin Profile',
@@ -143,12 +138,17 @@ const Sidebar = ({
     let finalFiltered = roleFiltered;
     if (role === 'SUPERADMIN') {
       finalFiltered = roleFiltered.filter((item) =>
-        ['Add Admin', 'PDF Header Design', 'Admin Profile'].includes(
-          item.label,
-        ),
+        [
+          'Add Admin',
+          'E-PIN Request',
+          'PDF Header Design',
+          'Admin Profile',
+        ].includes(item.label),
       );
     } else if (role === 'ADMIN') {
-      finalFiltered = roleFiltered.filter((item) => item.label !== 'Add Admin');
+      finalFiltered = roleFiltered.filter(
+        (item) => item.label !== 'Add Admin' && item.label !== 'E-PIN Request',
+      );
     }
 
     return finalFiltered;
@@ -477,7 +477,7 @@ const Sidebar = ({
         )}
       </nav>
 
-      <div className="border-t border-white/10 px-3 py-4">
+      {/* <div className="border-t border-white/10 px-3 py-4">
         <div
           className={`flex items-center ${
             isCollapsed && !isMobileDevice ? 'justify-center' : 'gap-3'
@@ -497,7 +497,7 @@ const Sidebar = ({
             </div>
           )}
         </div>
-      </div>
+      </div> */}
 
       <div className="border-t border-white/5 px-2 py-4">
         <button

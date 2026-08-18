@@ -79,7 +79,7 @@ const Process: React.FC = () => {
     },
     {
       id: 'kunda',
-      name: 'S Kunda',
+      name: 'S / Kunda',
       icon: <CheckCircle className="h-4 w-4" />,
       component: <SKundaDept />,
       path: '/manufacturingprocess/skunda',
