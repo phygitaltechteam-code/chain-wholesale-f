@@ -41,6 +41,7 @@ interface CuttingEntry {
   itemId?: string;
   sizeId?: string;
   isCompleted?: boolean;
+  isDirty?: boolean;
 }
 
 // Helper functions for safely extracting values
@@ -168,17 +169,14 @@ const CuttingDept: React.FC = () => {
             loss: loss,
             isEditing: !isSaved,
             isSaved: isSaved,
-            chainGivenRaw: cutting.chainWeight
-              ? cutting.chainWeight.toString()
-              : '',
-            chainReceivedRaw: cutting.chainReceived
-              ? cutting.chainReceived.toString()
-              : '',
-            scrapRaw: cutting.scrap ? cutting.scrap.toString() : '',
-            purityRaw: cutting.purity ? cutting.purity.toString() : '',
+            chainGivenRaw: '',
+            chainReceivedRaw: '',
+            scrapRaw: '',
+            purityRaw: '',
             itemId: cutting.itemId,
             sizeId: cutting.sizeId,
             isCompleted: cutting.isCompleted || false,
+            isDirty: false,
           };
         },
       );
@@ -659,6 +657,8 @@ const CuttingDept: React.FC = () => {
               }
             }
 
+            // Mark row as dirty so only this row shows the action button
+            updated.isDirty = true;
             return updated;
           }
           return entry;
@@ -801,15 +801,12 @@ const CuttingDept: React.FC = () => {
   // Action column is hidden initially and appears only after
   // the user edits one of the input fields.
   const hasEditableValues = (entry: CuttingEntry): boolean => {
-    return Boolean(
-      entry.chainGivenRaw?.trim() ||
-      entry.chainReceivedRaw?.trim() ||
-      entry.scrapRaw?.trim() ||
-      entry.purityRaw?.trim(),
-    );
+    return Boolean(entry.isDirty);
   };
 
-  const showActionColumn = hasEditedRow;
+  const showActionColumn = cuttingEntries.some(
+    (entry) => !entry.isSaved && entry.isDirty,
+  );
 
   // Define columns for GenericTable
   const columns: Column<CuttingEntry>[] = [
@@ -989,7 +986,7 @@ const CuttingDept: React.FC = () => {
             key: 'actions',
             header: 'Action',
             render: (item: CuttingEntry, index: number) => {
-              if (item.isSaved) {
+              if (item.isSaved || !hasEditableValues(item)) {
                 return null;
               }
 

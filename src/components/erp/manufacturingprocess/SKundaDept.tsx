@@ -166,12 +166,10 @@ const SKundaDept: React.FC = () => {
             loss: loss,
             isEditing: !isSaved,
             isSaved: isSaved,
-            kundaGivenRaw: kundaGiven ? kundaGiven.toString() : '',
-            chainReceivedRaw: kunda.chainReceived
-              ? kunda.chainReceived.toString()
-              : '',
-            scrapRaw: kunda.scrap ? kunda.scrap.toString() : '',
-            purityRaw: kunda.purity ? kunda.purity.toString() : '',
+            kundaGivenRaw: '',
+            chainReceivedRaw: '',
+            scrapRaw: '',
+            purityRaw: '',
             itemId: kunda.itemId,
             sizeId: kunda.sizeId,
             isCompleted: kunda.isCompleted || false,
@@ -656,10 +654,15 @@ const SKundaDept: React.FC = () => {
     }
   }, [saveIndex, kundaEntries, submitKunda, refetch]);
 
-  // Action column is hidden initially.
+  // A row is edited only when the user has entered a value.
+  const hasEditableValues = (entry: KundaEntry): boolean => {
+    return Boolean(entry.isDirty);
+  };
+
+  // The whole Action column is conditional.
   // It appears only after the user changes one of the input fields.
   const showActionColumn = kundaEntries.some(
-    (entry) => entry.isDirty === true && entry.isSaved !== true,
+    (entry) => !entry.isSaved && entry.isDirty,
   );
 
   const columns: Column<KundaEntry>[] = [
@@ -870,7 +873,7 @@ const SKundaDept: React.FC = () => {
             header: 'Action',
             render: (item: KundaEntry, index: number) => {
               // Only show the action button after the user has changed an input.
-              if (!item.isDirty || item.isSaved || !item.isEditing) return null;
+              if (item.isSaved || !item.isEditing || !hasEditableValues(item)) return null;
 
               return (
                 <div className="flex items-center justify-center">

@@ -1,13 +1,13 @@
-import React, {useState, useEffect, useCallback, useRef} from 'react';
-import {Save, History, ChevronRight, ChevronDown, Printer} from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Save, History, ChevronRight, ChevronDown, Printer } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import {useGetJoint, useGetJointHistory, useSubmitJoint} from '@/lib/api/joint';
+import { useGetJoint, useGetJointHistory, useSubmitJoint } from '@/lib/api/joint';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import {useGetHeader} from '@/lib/api/headerapi';
-import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
+import { useGetHeader } from '@/lib/api/headerapi';
+import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 
 interface JointEntry {
   id: string;
@@ -32,6 +32,7 @@ interface JointEntry {
   itemId?: string;
   sizeId?: string;
   isCompleted?: boolean;
+  isDirty?: boolean;
 }
 
 // Helper functions for safely extracting values
@@ -71,11 +72,11 @@ const JointDept: React.FC = () => {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return {monday, sunday};
+    return { monday, sunday };
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const {monday, sunday} = getDefaultWeekRange();
+    const { monday, sunday } = getDefaultWeekRange();
     return [monday, sunday];
   });
 
@@ -95,7 +96,7 @@ const JointDept: React.FC = () => {
   const submitJoint = useSubmitJoint();
 
   // Weighing Scale table focus hook
-  const {getScaleProps} = useTableScaleFocus<
+  const { getScaleProps } = useTableScaleFocus<
     'powderReceived' | 'powder' | 'scrap'
   >((index, field, weight) => {
     handleInlineChange(index, field, weight.toString());
@@ -148,16 +149,15 @@ const JointDept: React.FC = () => {
             scrap: joint.scrap || 0,
             isEditing: !isSaved,
             isSaved: isSaved,
-            powderReceivedRaw: joint.powderReceived
-              ? joint.powderReceived.toString()
-              : '',
-            powderRaw: joint.powder ? joint.powder.toString() : '',
-            srpRaw: joint.srp ? joint.srp.toString() : '',
-            purityRaw: joint.purity ? joint.purity.toString() : '',
-            scrapRaw: joint.scrap ? joint.scrap.toString() : '',
+            powderReceivedRaw: '',
+            powderRaw: '',
+            srpRaw: '',
+            purityRaw: '',
+            scrapRaw: '',
             itemId: joint.itemId,
             sizeId: joint.sizeId,
             isCompleted: joint.isCompleted || false,
+            isDirty: false,
           };
         },
       );
@@ -169,7 +169,7 @@ const JointDept: React.FC = () => {
 
   // Format date helper for history
   const formatDate = (dateString: string) => {
-    if (!dateString) return {date: '-', time: '-'};
+    if (!dateString) return { date: '-', time: '-' };
     const date = new Date(dateString);
     return {
       date: date.toLocaleDateString('en-IN', {
@@ -287,8 +287,8 @@ const JointDept: React.FC = () => {
     // Build the table rows - Compact with minimum padding
     const rows = filteredData
       .map((item: any, index: number) => {
-        const {date, time} = formatDate(item?.createdAt);
-        const {date: proceedDate, time: proceedTime} = formatDate(
+        const { date, time } = formatDate(item?.createdAt);
+        const { date: proceedDate, time: proceedTime } = formatDate(
           item?.updatedAt,
         );
 
@@ -398,17 +398,16 @@ const JointDept: React.FC = () => {
   <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
     Joint History Report
   </h2>
-  ${
-    dateRange.length === 2
-      ? `
+  ${dateRange.length === 2
+        ? `
     <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
       From: ${new Date(dateRange[0]).toLocaleDateString('en-IN')} &nbsp; To: ${new Date(dateRange[1]).toLocaleDateString('en-IN')}
     </div>
   `
-      : `
+        : `
     <div style="flex:1;"></div>
   `
-  }
+      }
 </div>
 
             <!-- Table -->
@@ -506,7 +505,7 @@ const JointDept: React.FC = () => {
       key: 'createdAt',
       header: 'Date & Time',
       render: (item) => {
-        const {date, time} = formatDate(item.createdAt);
+        const { date, time } = formatDate(item.createdAt);
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
@@ -547,15 +546,6 @@ const JointDept: React.FC = () => {
       ),
     },
     {
-      key: 'powderReceived',
-      header: 'Powder Received (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.powderReceived)} G
-        </span>
-      ),
-    },
-    {
       key: 'powder',
       header: 'Powder Given (G)',
       render: (item) => (
@@ -564,7 +554,17 @@ const JointDept: React.FC = () => {
         </span>
       ),
     },
-    
+    {
+      key: 'powderReceived',
+      header: 'Powder Received (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.powderReceived)} G
+        </span>
+      ),
+    },
+
+
     {
       key: 'purity',
       header: 'Purity (%)',
@@ -587,7 +587,7 @@ const JointDept: React.FC = () => {
       key: 'updatedAt',
       header: 'Proceed Date & Time',
       render: (item) => {
-        const {date, time} = formatDate(item.updatedAt);
+        const { date, time } = formatDate(item.updatedAt);
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
@@ -612,7 +612,7 @@ const JointDept: React.FC = () => {
       setJointEntries((prev) =>
         prev.map((entry, i) => {
           if (i === index) {
-            const updated = {...entry};
+            const updated = { ...entry };
 
             if (field === 'powderReceived') {
               updated.powderReceivedRaw = value;
@@ -648,6 +648,8 @@ const JointDept: React.FC = () => {
               }
             }
 
+            // Mark row as dirty so only this row shows the action button
+            updated.isDirty = true;
             return updated;
           }
           return entry;
@@ -692,7 +694,7 @@ const JointDept: React.FC = () => {
       setJointEntries((prev) =>
         prev.map((s, i) =>
           i === index
-            ? {...s, isEditing: false, isSaved: true, isCompleted: true}
+            ? { ...s, isEditing: false, isSaved: true, isCompleted: true }
             : s,
         ),
       );
@@ -704,7 +706,7 @@ const JointDept: React.FC = () => {
 
       navigate({
         to: '/manufacturingprocess/process',
-        state: {selectedTab: 'cutting'},
+        state: { selectedTab: 'cutting' },
       });
     } catch (error) {
       console.error('Error saving joint:', error);
@@ -714,6 +716,16 @@ const JointDept: React.FC = () => {
       setSaveIndex(null);
     }
   }, [saveIndex, jointEntries, submitJoint, navigate, refetch]);
+
+  // A row is edited only when the user has entered a value.
+  const hasEditableValues = (entry: JointEntry): boolean => {
+    return Boolean(entry.isDirty);
+  };
+
+  // The whole Action column is conditional.
+  const showActionColumn = jointEntries.some(
+    (entry) => !entry.isSaved && entry.isDirty,
+  );
 
   // Define columns for GenericTable
   const columns: Column<JointEntry>[] = [
@@ -768,42 +780,7 @@ const JointDept: React.FC = () => {
         </span>
       ),
     },
-    {
-      key: 'powderReceived',
-      header: 'Powder Received (G)',
-      render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <div className="relative inline-block">
-              <input
-                type="text"
-                value={
-                  item.powderReceivedRaw !== undefined
-                    ? item.powderReceivedRaw
-                    : item.powderReceived === 0
-                      ? ''
-                      : item.powderReceived
-                }
-                {...getScaleProps(index, 'powderReceived')}
-                onChange={(e) =>
-                  handleInlineChange(index, 'powderReceived', e.target.value)
-                }
-                placeholder="0.000"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-              />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
-              </span>
-            </div>
-          );
-        }
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.powderReceived)} G
-          </span>
-        );
-      },
-    },
+
     {
       key: 'powder',
       header: 'Powder Given (G)',
@@ -836,6 +813,42 @@ const JointDept: React.FC = () => {
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
             {formatNumberDisplay(item.powder)} G
+          </span>
+        );
+      },
+    },
+    {
+      key: 'powderReceived',
+      header: 'Powder Received (G)',
+      render: (item, index) => {
+        if (item.isEditing) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                value={
+                  item.powderReceivedRaw !== undefined
+                    ? item.powderReceivedRaw
+                    : item.powderReceived === 0
+                      ? ''
+                      : item.powderReceived
+                }
+                {...getScaleProps(index, 'powderReceived')}
+                onChange={(e) =>
+                  handleInlineChange(index, 'powderReceived', e.target.value)
+                }
+                placeholder="0.000"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                G
+              </span>
+            </div>
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.powderReceived)} G
           </span>
         );
       },
@@ -912,36 +925,34 @@ const JointDept: React.FC = () => {
         );
       },
     },
-    {
-      key: 'actions',
-      header: 'Action',
-      render: (item: JointEntry, index: number) => {
-        if (item.isSaved) {
-          return (
-            <div className="flex items-center justify-center">
-              <span className="text-xs font-semibold text-green-600 dark:text-green-400">
-                Completed
-              </span>
-            </div>
-          );
-        }
+    ...(showActionColumn
+      ? [
+          {
+            key: 'actions',
+            header: 'Action',
+            render: (item: JointEntry, index: number) => {
+              if (item.isSaved || !hasEditableValues(item)) {
+                return null;
+              }
 
-        return (
-          <div className="flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => handleSaveClick(index)}
-              disabled={isLoading || isSubmitting}
-              className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-              title="Save Entry"
-            >
-              <Save className="h-3.5 w-3.5" />
-              <span>cutting</span>
-            </button>
-          </div>
-        );
-      },
-    },
+              return (
+                <div className="flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveClick(index)}
+                    disabled={isLoading || isSubmitting}
+                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Save Entry"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    <span>cutting</span>
+                  </button>
+                </div>
+              );
+            },
+          } as Column<JointEntry>,
+        ]
+      : []),
   ];
 
   const isSubmitting = submitJoint.isPending;
