@@ -1,14 +1,14 @@
 import Sidebar from '@/components/Sidebar';
-import {useAuthContext} from '@/context/AuthContext';
-import {Outlet, useNavigate} from '@tanstack/react-router';
-import React, {useEffect, useState} from 'react';
-import {Menu} from 'lucide-react';
+import { useAuthContext } from '@/context/AuthContext';
+import { Outlet, useNavigate } from '@tanstack/react-router';
+import React, { useEffect, useState } from 'react';
+import { Menu } from 'lucide-react';
 import WorkflowGuide from '@/components/common/WorkflowGuide';
-import {WeightScaleProvider} from '@/context/WeightScaleContext';
+import { WeightScaleProvider } from '@/context/WeightScaleContext';
 import WeightScaleStatusWidget from '@/components/common/WeightScaleStatusWidget';
 import AdminExpiryModal from '@/components/common/AdminExpiryModal';
 
-const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
+const AppLayoutContent: React.FC<{ children?: React.ReactNode }> = ({
   children,
 }) => {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const {isAuthenticated, isLoading, user} = useAuthContext();
+  const { isAuthenticated, isLoading, user } = useAuthContext();
   const [isReady, setIsReady] = useState(false);
 
   // Check if screen is mobile
@@ -57,7 +57,7 @@ const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
 
       // SUPERADMIN should go to addadmin if they're on billing
       if (user.role === 'SUPERADMIN' && currentPath === '/billing') {
-        navigate({to: '/addadmin', replace: true});
+        navigate({ to: '/addadmin', replace: true });
       }
 
       // ADMIN should go to billing if they're on addadmin or epinrequest
@@ -65,7 +65,7 @@ const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
         user.role === 'ADMIN' &&
         (currentPath === '/addadmin' || currentPath === '/epinrequest')
       ) {
-        navigate({to: '/billing', replace: true});
+        navigate({ to: '/billing', replace: true });
       }
     }
   }, [isLoading, isAuthenticated, user, navigate]);
@@ -104,9 +104,8 @@ const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
     <div className="h-screen overflow-hidden bg-[#f9f9f7] dark:bg-slate-950">
       {/* Sidebar - fixed position */}
       <div
-        className={`fixed left-0 top-0 z-50 h-full transition-transform duration-300 ${
-          isMobile && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'
-        }`}
+        className={`fixed left-0 top-0 z-50 h-full transition-transform duration-300 ${isMobile && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'
+          }`}
       >
         <Sidebar
           onCollapseChange={setSidebarCollapsed}
@@ -151,7 +150,7 @@ const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
   );
 };
 
-const AppLayout: React.FC<{children?: React.ReactNode}> = ({children}) => {
+const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   return (
     <WeightScaleProvider>
       <AppLayoutContent>{children}</AppLayoutContent>

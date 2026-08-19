@@ -54,6 +54,9 @@ interface SettlementEntry {
   amount: number;
   remark?: string;
   createdAt?: string;
+  updatedAt?: string;
+  bills?: Array<any>;
+  receipts?: Array<any>;
 }
 
 interface SettlementDetail {
@@ -71,22 +74,55 @@ interface SettlementDetail {
 }
 
 // ======================================================
-// HELPER: Get Current Week Range
+// HELPER: Robust Date Parser
 // ======================================================
-const getCurrentWeekRange = () => {
-  const today = new Date();
-  const day = today.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
+const parseDateSafely = (dateVal: any): Date | null => {
+  if (!dateVal) return null;
+  if (dateVal instanceof Date) {
+    return Number.isNaN(dateVal.getTime()) ? null : dateVal;
+  }
+  if (typeof dateVal === 'number') {
+    const d = new Date(dateVal);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof dateVal === 'string') {
+    const trimmed = dateVal.trim();
+    if (!trimmed) return null;
 
-  const monday = new Date(today);
-  monday.setDate(today.getDate() + diffToMonday);
-  monday.setHours(0, 0, 0, 0);
+    // Check if it's DD/MM/YYYY or DD-MM-YYYY (e.g. 18/08/2026 or 18-08-2026)
+    const ddmmyyyyMatch = trimmed.match(
+      /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(.*)$/,
+    );
+    if (ddmmyyyyMatch) {
+      const day = parseInt(ddmmyyyyMatch[1], 10);
+      const month = parseInt(ddmmyyyyMatch[2], 10) - 1;
+      const year = parseInt(ddmmyyyyMatch[3], 10);
+      const rest = ddmmyyyyMatch[4].trim();
 
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
+      if (rest) {
+        const timeMatch = rest.match(
+          /(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?\s*(am|pm)?/i,
+        );
+        if (timeMatch) {
+          let hours = parseInt(timeMatch[1], 10);
+          const minutes = parseInt(timeMatch[2], 10);
+          const seconds = timeMatch[3] ? parseInt(timeMatch[3], 10) : 0;
+          const ampm = timeMatch[4] ? timeMatch[4].toLowerCase() : null;
+          if (ampm === 'pm' && hours < 12) hours += 12;
+          if (ampm === 'am' && hours === 12) hours = 0;
+          const d = new Date(year, month, day, hours, minutes, seconds);
+          if (!Number.isNaN(d.getTime())) return d;
+        }
+      }
+      const d = new Date(year, month, day);
+      if (!Number.isNaN(d.getTime())) return d;
+    }
 
-  return {monday, sunday};
+    // Try standard ISO or string date constructor
+    const d = new Date(trimmed);
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+  return null;
 };
 
 // ======================================================
@@ -101,9 +137,26 @@ const Settlement: React.FC = () => {
   const [settlements, setSettlements] = useState<SettlementEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [balanceFilter, setBalanceFilter] = useState<string>('all');
-  const [dateRange, setDateRange] = useState({
-    from: '',
-    to: '',
+
+  // Helper function to get week start (Monday 00:00) and end (Sunday 23:59:59)
+  const getDefaultWeekRange = () => {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sun, 1 = Mon, ...
+    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now);
+    monday.setDate(diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    return {monday, sunday};
+  };
+
+  const [dateRange, setDateRange] = useState<Date[]>(() => {
+    const {monday, sunday} = getDefaultWeekRange();
+    return [monday, sunday];
   });
 
   // ----------------------------------------------------
@@ -180,28 +233,6 @@ const Settlement: React.FC = () => {
   const submitSettlementMutation = useSubmitSettlement();
 
   // ======================================================
-  // DEFAULT DATE RANGE
-  // ======================================================
-
-  useEffect(() => {
-    setDefaultDateRange();
-  }, []);
-
-  const setDefaultDateRange = () => {
-    const {monday, sunday} = getCurrentWeekRange();
-    const formatYMD = (d: Date) => {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-    setDateRange({
-      from: formatYMD(monday),
-      to: formatYMD(sunday),
-    });
-  };
-
-  // ======================================================
   // PROCESS API DATA
   // ======================================================
 
@@ -234,7 +265,17 @@ const Settlement: React.FC = () => {
           amount: Number(item.openingBalance ?? 0),
           remark: Number(item.openingBalance ?? 0) > 0 ? 'Received' : 'Given',
           createdAt:
-            item.createdAt || item.updatedAt || item.client?.createdAt || '',
+            item.createdAt ||
+            item.updatedAt ||
+            item.date ||
+            item.dateTime ||
+            item.created_at ||
+            item.updated_at ||
+            item.client?.createdAt ||
+            '',
+          updatedAt: item.updatedAt || item.updated_at || '',
+          bills: item.bills || item.receipts || [],
+          receipts: item.receipts || item.bills || [],
         }),
       );
 
@@ -416,10 +457,16 @@ const Settlement: React.FC = () => {
             <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
               Settlement Report
             </h2>
+            ${
+              dateRange && dateRange[0] && dateRange[1]
+                ? `
             <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
-              From: ${formatDateForDisplay(dateRange.from) || 'Start'} 
-              &nbsp;&nbsp; To: ${formatDateForDisplay(dateRange.to) || 'End'}
+              From: ${formatDateForDisplay(dateRange[0])} 
+              &nbsp;&nbsp; To: ${formatDateForDisplay(dateRange[1])}
             </div>
+            `
+                : `<div style="flex:1;"></div>`
+            }
           </div>
 
           <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
@@ -704,17 +751,44 @@ const Settlement: React.FC = () => {
       (balanceFilter === 'zero' && entry.goldBalance === 0);
 
     let matchesDate = true;
-    if (dateRange.from || dateRange.to) {
-      if (entry.createdAt) {
-        const entryDate = new Date(entry.createdAt);
-        if (!Number.isNaN(entryDate.getTime())) {
-          if (dateRange.from) {
-            const from = new Date(dateRange.from + 'T00:00:00');
-            if (entryDate < from) matchesDate = false;
-          }
-          if (dateRange.to) {
-            const to = new Date(dateRange.to + 'T23:59:59.999');
-            if (entryDate > to) matchesDate = false;
+    if (dateRange && dateRange.length > 0) {
+      const fromDate = dateRange[0] ? parseDateSafely(dateRange[0]) : null;
+      const toDate = dateRange[1] ? parseDateSafely(dateRange[1]) : null;
+
+      if (fromDate) fromDate.setHours(0, 0, 0, 0);
+      if (toDate) toDate.setHours(23, 59, 59, 999);
+
+      if (fromDate || toDate) {
+        const allBills = [...(entry.bills || []), ...(entry.receipts || [])];
+
+        if (allBills.length > 0) {
+          // Check if ANY bill was created in the selected date range
+          const hasMatchingBill = allBills.some((bill: any) => {
+            const billDateStr =
+              bill?.createdAt ||
+              bill?.created_at ||
+              bill?.date ||
+              bill?.dateTime ||
+              bill?.updatedAt;
+            const billDate = parseDateSafely(billDateStr);
+            if (!billDate) return false;
+
+            if (fromDate && billDate.getTime() < fromDate.getTime()) return false;
+            if (toDate && billDate.getTime() > toDate.getTime()) return false;
+            return true;
+          });
+
+          matchesDate = hasMatchingBill;
+        } else {
+          // Fallback to client record date if no bills array is available
+          const entryDate = parseDateSafely(entry.createdAt || entry.updatedAt);
+          if (entryDate) {
+            if (fromDate && entryDate.getTime() < fromDate.getTime()) {
+              matchesDate = false;
+            }
+            if (toDate && entryDate.getTime() > toDate.getTime()) {
+              matchesDate = false;
+            }
           }
         }
       }
@@ -727,21 +801,21 @@ const Settlement: React.FC = () => {
   // TOTALS
   // ======================================================
 
-  const totalPositiveBalance = settlements.reduce(
+  const totalPositiveBalance = filteredSettlements.reduce(
     (sum, item) => (item.goldBalance > 0 ? sum + item.goldBalance : sum),
     0,
   );
 
-  const totalNegativeBalance = settlements.reduce(
+  const totalNegativeBalance = filteredSettlements.reduce(
     (sum, item) =>
       item.goldBalance < 0 ? sum + Math.abs(item.goldBalance) : sum,
     0,
   );
 
-  const totalPending = settlements.filter(
+  const totalPending = filteredSettlements.filter(
     (item) => item.status !== 'settled',
   ).length;
-  const totalSettled = settlements.filter(
+  const totalSettled = filteredSettlements.filter(
     (item) => item.status === 'settled',
   ).length;
 
@@ -811,7 +885,7 @@ const Settlement: React.FC = () => {
       header: 'Total Bills',
       render: (item) => (
         <span className="font-mono text-sm text-black dark:text-white">
-          {item.totalBills || 0} G
+          {item.totalBills || 0}
         </span>
       ),
     },
@@ -1183,7 +1257,7 @@ const Settlement: React.FC = () => {
                   Total Clients
                 </span>
                 <span className="text-lg font-bold text-black dark:text-white">
-                  {settlements.length}
+                  {filteredSettlements.length}
                 </span>
               </div>
               <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-blue-700/30 dark:bg-blue-900/30">
@@ -1272,24 +1346,14 @@ const Settlement: React.FC = () => {
               id="from-date-settlement"
               placeholder="DD/MM/YYYY"
               mode="from"
-              initialDates={
-                dateRange.from ? [new Date(dateRange.from + 'T00:00:00')] : []
-              }
+              initialDates={dateRange}
               onDateChange={(dates) => {
                 if (dates && dates.length > 0) {
-                  const d = dates[0];
-                  const year = d.getFullYear();
-                  const month = String(d.getMonth() + 1).padStart(2, '0');
-                  const day = String(d.getDate()).padStart(2, '0');
-                  setDateRange((prev) => ({
-                    ...prev,
-                    from: `${year}-${month}-${day}`,
-                  }));
+                  const from = new Date(dates[0]);
+                  from.setHours(0, 0, 0, 0);
+                  setDateRange((prev) => [from, prev[1] || from]);
                 } else {
-                  setDateRange((prev) => ({
-                    ...prev,
-                    from: '',
-                  }));
+                  setDateRange((prev) => [undefined as any, prev[1]]);
                 }
               }}
               className="w-32 sm:w-36 md:w-40"
@@ -1299,24 +1363,14 @@ const Settlement: React.FC = () => {
               id="to-date-settlement"
               placeholder="DD/MM/YYYY"
               mode="to"
-              initialDates={
-                dateRange.to ? [new Date(dateRange.to + 'T00:00:00')] : []
-              }
+              initialDates={dateRange}
               onDateChange={(dates) => {
                 if (dates && dates.length > 0) {
-                  const d = dates[0];
-                  const year = d.getFullYear();
-                  const month = String(d.getMonth() + 1).padStart(2, '0');
-                  const day = String(d.getDate()).padStart(2, '0');
-                  setDateRange((prev) => ({
-                    ...prev,
-                    to: `${year}-${month}-${day}`,
-                  }));
+                  const to = new Date(dates[0]);
+                  to.setHours(23, 59, 59, 999);
+                  setDateRange((prev) => [prev[0] || to, to]);
                 } else {
-                  setDateRange((prev) => ({
-                    ...prev,
-                    to: '',
-                  }));
+                  setDateRange((prev) => [prev[0], undefined as any]);
                 }
               }}
               className="w-32 sm:w-36 md:w-40"

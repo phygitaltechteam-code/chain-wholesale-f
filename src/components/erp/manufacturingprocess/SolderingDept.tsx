@@ -157,15 +157,17 @@ const SolderingDept: React.FC = () => {
           const sizeName = soldering.size?.size || soldering.sizeId || 'N/A';
 
           const chainGiven = soldering.chainWeight || 0;
+          const chainReceived = soldering.chainReceived || 0;
           const powder = soldering.powder || 0;
-          const increase = powder - chainGiven;
+          const increase =
+            chainGiven > 0 && chainReceived > 0
+              ? Math.round(((chainReceived / chainGiven) * 100) * 1000) / 1000
+              : 0;
 
           const isSaved =
             soldering.isCompleted === true &&
             soldering.chainReceived !== null &&
-            soldering.chainReceived !== undefined &&
-            soldering.scrap !== null &&
-            soldering.scrap !== undefined;
+            soldering.chainReceived !== undefined;
 
           return {
             id: soldering.id,
@@ -185,10 +187,10 @@ const SolderingDept: React.FC = () => {
             purity: soldering.purity || '22K',
 
             chainGiven: chainGiven,
-            chainReceived: soldering.chainReceived || 0,
+            chainReceived: chainReceived,
             powder: powder,
 
-            increase: increase > 0 ? increase : 0,
+            increase: increase,
 
             scrap: soldering.scrap || 0,
 
@@ -361,15 +363,15 @@ const SolderingDept: React.FC = () => {
                     </td>
 
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-                        ${formatNumber(item?.chainReceived)}
-                    </td>
-
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
                         ${formatNumber(item?.powder)}
                     </td>
 
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-                        ${formatNumber(item?.increase)}
+                        ${formatNumber(item?.chainReceived)}
+                    </td>
+
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
+                        ${formatNumber(item?.increase)}%
                     </td>
 
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
@@ -448,21 +450,17 @@ const SolderingDept: React.FC = () => {
             <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
               Soldering History Report
             </h2>
-
             ${
               fromDate && toDate
                 ? `
-                  <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
-                    From: ${new Date(fromDate).toLocaleDateString('en-IN')}
-                    &nbsp; To:
-                    ${new Date(toDate).toLocaleDateString('en-IN')}
-                  </div>
-                `
+            <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
+              From: ${formatDate(fromDate.toISOString()).date} &nbsp; To: ${formatDate(toDate.toISOString()).date}
+            </div>
+          `
                 : `
-                  <div style="flex:1;"></div>
-                `
+            <div style="flex:1;"></div>
+          `
             }
-
           </div>
 
           <!-- Table -->
@@ -497,15 +495,15 @@ const SolderingDept: React.FC = () => {
                 </th>
 
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
+                  Powder Given
+                </th>
+
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
                   Chain Rec
                 </th>
 
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Powder
-                </th>
-
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Increase
+                  Increase %
                 </th>
 
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
@@ -664,6 +662,17 @@ const SolderingDept: React.FC = () => {
     },
 
     {
+      key: 'powder',
+      header: 'Powder Given (G)',
+
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.powder)} G
+        </span>
+      ),
+    },
+
+    {
       key: 'chainReceived',
       header: 'Chain Received (G)',
 
@@ -675,23 +684,12 @@ const SolderingDept: React.FC = () => {
     },
 
     {
-      key: 'powder',
-      header: 'Powder (G)',
-
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.powder)} G
-        </span>
-      ),
-    },
-
-    {
       key: 'increase',
-      header: 'Increase',
+      header: 'Increase %',
 
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.increase)} G
+          {formatNumber(item.increase)} %
         </span>
       ),
     },
@@ -772,6 +770,13 @@ const SolderingDept: React.FC = () => {
 
                 updated.powder = isNaN(numValue) ? 0 : numValue;
               }
+
+              // Auto calculate: Chain Received = Chain Given + Powder Given
+              const autoChainReceived =
+                Math.round((entry.chainGiven + updated.powder) * 1000) / 1000;
+              updated.chainReceived = autoChainReceived;
+              updated.chainReceivedRaw =
+                autoChainReceived > 0 ? autoChainReceived.toString() : '';
             } else if (field === 'scrap') {
               updated.scrapRaw = value;
 
@@ -784,7 +789,14 @@ const SolderingDept: React.FC = () => {
               }
             }
 
-            updated.increase = Math.max(0, updated.powder - entry.chainGiven);
+            if (entry.chainGiven > 0 && updated.chainReceived > 0) {
+              updated.increase =
+                Math.round(
+                  ((updated.chainReceived / entry.chainGiven) * 100) * 1000,
+                ) / 1000;
+            } else {
+              updated.increase = 0;
+            }
 
             return updated;
           }
@@ -808,11 +820,6 @@ const SolderingDept: React.FC = () => {
 
       if (!entry.powder || entry.powder < 0) {
         toast.error('Please enter a valid powder weight');
-        return;
-      }
-
-      if (!entry.scrap || entry.scrap < 0) {
-        toast.error('Please enter a valid scrap weight');
         return;
       }
 
@@ -1077,6 +1084,45 @@ const SolderingDept: React.FC = () => {
     },
 
     {
+      key: 'powder',
+      header: 'Powder Given(G)',
+
+      render: (item, index) => {
+        if (item.isEditing) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                value={
+                  item.powderRaw !== undefined
+                    ? item.powderRaw
+                    : item.powder === 0
+                      ? ''
+                      : item.powder
+                }
+                {...getScaleProps(index, 'powder')}
+                onChange={(e) =>
+                  handleInlineChange(index, 'powder', e.target.value)
+                }
+                placeholder="0.000"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                G
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.powder)} G
+          </span>
+        );
+      },
+    },
+
+    {
       key: 'chainReceived',
       header: 'Chain Received(G)',
 
@@ -1116,51 +1162,12 @@ const SolderingDept: React.FC = () => {
     },
 
     {
-      key: 'powder',
-      header: 'Powder(G)',
-
-      render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <div className="relative inline-block">
-              <input
-                type="text"
-                value={
-                  item.powderRaw !== undefined
-                    ? item.powderRaw
-                    : item.powder === 0
-                      ? ''
-                      : item.powder
-                }
-                {...getScaleProps(index, 'powder')}
-                onChange={(e) =>
-                  handleInlineChange(index, 'powder', e.target.value)
-                }
-                placeholder="0.000"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-              />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
-              </span>
-            </div>
-          );
-        }
-
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.powder)} G
-          </span>
-        );
-      },
-    },
-
-    {
       key: 'increase',
-      header: 'Increase',
+      header: 'Increase %',
 
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.increase)} G
+          {formatNumberDisplay(item.increase)} %
         </span>
       ),
     },

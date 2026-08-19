@@ -400,30 +400,34 @@ const StockManagment: React.FC = () => {
                   onChange={(value) => handleItemChange(value)}
                 />
 
-                {/* Size Dropdown - Disabled for Gold */}
-                <GenericDropdown
-                  name="sizeId"
-                  label="Size"
-                  options={getSizeOptions(watchedItemId)}
-                  placeholder="Select Size"
-                  control={control}
-                  required={!isGoldSelected}
-                  error={errors.sizeId?.message}
-                  disabled={!watchedItemId || isGoldSelected}
-                  onChange={(value) => handleSizeChange(value)}
-                />
+                {/* Size Dropdown - Hidden for Gold */}
+                {!isGoldSelected && (
+                  <GenericDropdown
+                    name="sizeId"
+                    label="Size"
+                    options={getSizeOptions(watchedItemId)}
+                    placeholder="Select Size"
+                    control={control}
+                    required
+                    error={errors.sizeId?.message}
+                    disabled={!watchedItemId}
+                    onChange={(value) => handleSizeChange(value)}
+                  />
+                )}
 
-                {/* Purity Dropdown - Disabled for Gold */}
-                <GenericDropdown
-                  name="purity"
-                  label="Purity (%)"
-                  options={getFilteredPurityOptions()}
-                  placeholder="Select Purity"
-                  control={control}
-                  required={!isGoldSelected}
-                  error={errors.purity?.message}
-                  disabled={!watchedItemId || !watchedSizeId || isGoldSelected}
-                />
+                {/* Purity Dropdown - Hidden for Gold */}
+                {!isGoldSelected && (
+                  <GenericDropdown
+                    name="purity"
+                    label="Purity (%)"
+                    options={getFilteredPurityOptions()}
+                    placeholder="Select Purity"
+                    control={control}
+                    required
+                    error={errors.purity?.message}
+                    disabled={!watchedItemId || !watchedSizeId}
+                  />
+                )}
 
                 {/* Stock Type Dropdown */}
                 <GenericDropdown

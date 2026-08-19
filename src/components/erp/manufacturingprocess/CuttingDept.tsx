@@ -683,11 +683,6 @@ const CuttingDept: React.FC = () => {
         return;
       }
 
-      if (!entry.scrap || entry.scrap < 0) {
-        toast.error('Please enter a valid scrap weight');
-        return;
-      }
-
       if (!entry.purity || entry.purity < 0 || entry.purity > 100) {
         toast.error('Please enter a valid purity percentage (1-100)');
         return;

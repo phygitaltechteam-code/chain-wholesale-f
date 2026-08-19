@@ -8,6 +8,8 @@ export interface Tar {
   dateTime: string;
   item: string;
   size: string;
+  grosswt?: number;
+  grossWt?: number;
   fine: number;
   tar: number;
   scrap: number;
@@ -36,19 +38,26 @@ const getTarApi = async () => {
 const createTarApi = async (data: {
   itemId: string;
   sizeId: string;
+  grosswt?: number;
+  grossWt?: number;
   fine: number;
   item: string;
   size: string;
   tar: number;
   scrap: number;
   loss: number;
-  purity: string;
+  purity: number | string;
   isSaved: boolean;
+  dateTime?: string;
 }) => {
   try {
+    const grossVal = Number(data.grosswt ?? data.grossWt ?? data.fine ?? 0);
     const payload = {
       ...data,
+      grosswt: grossVal,
+      grossWt: grossVal,
       fine: Number(data.fine),
+      purity: Number(data.purity || 0),
       tar: Number(data.tar || 0),
       scrap: Number(data.scrap || 0),
       loss: Number(data.loss || 0),
@@ -65,18 +74,21 @@ const createTarApi = async (data: {
 
 const saveTarApi = async ({id, data}: {id: string; data: Partial<Tar>}) => {
   try {
+    const grossVal = Number((data as any).grosswt ?? (data as any).grossWt ?? data.fine ?? 0);
     // Include all required fields in the payload
     const payload = {
       id: id,
       itemId: data.itemId || '',
       sizeId: data.sizeId || '',
+      grosswt: grossVal,
+      grossWt: grossVal,
       fine: data.fine !== undefined ? Number(data.fine) : 0,
       item: data.item || '',
       size: data.size || '',
       tar: data.tar !== undefined ? Number(data.tar) : 0,
       scrap: data.scrap !== undefined ? Number(data.scrap) : 0,
       loss: data.loss !== undefined ? Number(data.loss) : 0,
-      purity: data.purity || '',
+      purity: Number(data.purity || 0),
       isSaved: data.isSaved || false,
     };
 

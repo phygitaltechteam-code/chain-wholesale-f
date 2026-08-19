@@ -9,6 +9,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
     "preview": "vite preview",
+    "scale": "node scale-server.js",
     "prepare": "husky && husky install",
     "pull": "git pull origin main"
   },
@@ -58,9 +59,11 @@
     "react-virtuoso": "^4.18.1",
     "react-webcam": "^7.2.0",
     "recharts": "^3.8.1",
+    "serialport": "^13.0.0",
     "tailwind-merge": "^3.5.0",
     "use-debounce": "^10.1.0",
     "usehooks-ts": "^3.1.0",
+    "ws": "^8.21.3",
     "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
