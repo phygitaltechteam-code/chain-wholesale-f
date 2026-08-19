@@ -160,6 +160,11 @@ class WeightScaleService {
       return; // Already using direct serial
     }
 
+    if (this.wsReconnectTimer) {
+      clearTimeout(this.wsReconnectTimer);
+      this.wsReconnectTimer = null;
+    }
+
     try {
       this.ws = new WebSocket(wsUrl);
 
@@ -172,7 +177,8 @@ class WeightScaleService {
 
       this.ws.onmessage = (event) => {
         try {
-          const payload = JSON.parse(event.data);
+          const rawData = typeof event.data === 'string' ? event.data : '';
+          const payload = JSON.parse(rawData);
           if (
             typeof payload.weight === 'number' ||
             typeof payload.liveWeight === 'number'
@@ -187,14 +193,15 @@ class WeightScaleService {
               liveWeight: Number(live.toFixed(3)),
               stableWeight: Number(stable.toFixed(3)),
               isStable: isStable,
-              rawMessage: String(event.data),
+              rawMessage: rawData,
               timestamp: Date.now(),
             });
           } else {
-            this.processRawData(String(event.data));
+            this.processRawData(rawData);
           }
         } catch (e) {
-          this.processRawData(String(event.data));
+          const rawData = typeof event.data === 'string' ? event.data : '';
+          this.processRawData(rawData);
         }
       };
 
@@ -202,13 +209,22 @@ class WeightScaleService {
         if (!this.serialPort && this.status === 'connected') {
           this.updateStatus('disconnected');
         }
+        if (!this.serialPort) {
+          this.wsReconnectTimer = setTimeout(() => {
+            this.initLocalWebSocketBridge(wsUrl);
+          }, 3000);
+        }
       };
 
       this.ws.onerror = () => {
         // Silent fail for bridge background polling
       };
     } catch (e) {
-      // ignore
+      if (!this.serialPort) {
+        this.wsReconnectTimer = setTimeout(() => {
+          this.initLocalWebSocketBridge(wsUrl);
+        }, 3000);
+      }
     }
   }
 

@@ -90,24 +90,20 @@ const OpeningStock: React.FC = () => {
         const isGold = item?.name?.toLowerCase() === 'gold' || index === 0;
 
         // Handle null values with fallbacks
-        const weight = stock.weight || 0;
-        const purity = stock.purity || 0;
+        const weight = stock.weight ? Number(stock.weight) : 0;
+        const purity = stock.purity ? Number(stock.purity) : 0;
 
         return {
           id: stock.id,
           srNo: index + 1,
           item: isGold ? 'Gold' : item?.name || '',
           size: isGold ? '-' : size?.size || '',
-          purity: isGold
-            ? 0
-            : typeof purity === 'string'
-              ? parseFloat(purity)
-              : purity,
-          grams: isGold ? weight : weight,
+          purity: isGold ? 0 : purity,
+          grams: weight,
           isEditing: false,
           isSaved: true,
-          gramsRaw: weight ? weight.toString() : '0',
-          purityRaw: isGold ? '' : purity ? purity.toString() : '',
+          gramsRaw: weight ? formatNumberDisplay(weight, 3) : '0',
+          purityRaw: isGold ? '' : purity ? formatNumberDisplay(purity, 3) : '',
           itemId: stock.itemId || '',
           sizeId: stock.sizeId || '',
           isGoldRow: isGold,
@@ -241,14 +237,23 @@ const OpeningStock: React.FC = () => {
     );
   };
 
-  // Helper function to format grams without trailing zeros
-  const formatGrams = (value: number): string => {
-    if (value === 0) return '0';
-    const str = value.toString();
-    if (str.includes('.')) {
-      return str.replace(/\.?0+$/, '');
-    }
-    return str;
+  // Helper function to format numbers up to 3 decimal places without unnecessary trailing zeros
+  // (e.g. 1.200000000000003 -> "1.2", 1.233 -> "1.233", 92 -> "92")
+  const formatNumberDisplay = (
+    value: number | string | null | undefined,
+    maxDecimals: number = 3,
+  ): string => {
+    if (value === null || value === undefined || value === '') return '-';
+    const num = typeof value === 'number' ? value : parseFloat(String(value));
+    if (isNaN(num)) return '-';
+    if (num === 0) return '0';
+
+    const fixed = num.toFixed(maxDecimals);
+    return parseFloat(fixed).toString();
+  };
+
+  const formatGrams = (value: number | string | null | undefined): string => {
+    return formatNumberDisplay(value, 3);
   };
 
   // Handle row save - Create or Update
@@ -297,8 +302,10 @@ const OpeningStock: React.FC = () => {
               ...s,
               isEditing: false,
               isSaved: true,
-              gramsRaw: formatGrams(entry.grams || 0),
-              purityRaw: (entry.purity || 0).toString(),
+              gramsRaw: formatNumberDisplay(entry.grams || 0, 3),
+              purityRaw: isGoldRow(entry)
+                ? ''
+                : formatNumberDisplay(entry.purity || 0, 3),
             };
           }
           return s;
@@ -576,7 +583,7 @@ const OpeningStock: React.FC = () => {
         }
         return (
           <span className="font-mono text-[#1a1c1b] dark:text-white">
-            {item.purity || '-'} %
+            {formatNumberDisplay(item.purity, 3)} %
           </span>
         );
       },

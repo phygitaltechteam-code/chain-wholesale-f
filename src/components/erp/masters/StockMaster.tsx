@@ -9,6 +9,7 @@ import {
   Ruler,
   Search,
   Eye,
+  RefreshCw,
 } from 'lucide-react';
 import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
@@ -80,10 +81,6 @@ const StockMaster: React.FC = () => {
       return;
     }
 
-    if (isInitialized) {
-      return;
-    }
-
     // Separate gold items and other items
     let entries: OpeningStockEntry[] = [];
 
@@ -93,23 +90,20 @@ const StockMaster: React.FC = () => {
           const item = items.find((i) => i.id === stock.itemId);
           const size = sizes.find((s) => s.id === stock.sizeId);
 
+          const weight = stock.weight ? Number(stock.weight) : 0;
+          const purity = stock.purity ? Number(stock.purity) : 0;
+
           return {
             id: stock.id,
             srNo: index + 1,
             item: item?.name || '',
             size: size?.size || '',
-            purity:
-              typeof stock.purity === 'string'
-                ? parseFloat(stock.purity)
-                : stock.purity || '99.99',
-            grams: stock.weight,
+            purity: purity,
+            grams: weight,
             isEditing: false,
             isSaved: true,
-            gramsRaw: stock.weight.toString(),
-            purityRaw:
-              typeof stock.purity === 'string'
-                ? stock.purity
-                : stock.purity?.toString() || '',
+            gramsRaw: formatNumberDisplay(weight, 3),
+            purityRaw: formatNumberDisplay(purity, 3),
             itemId: stock.itemId,
             sizeId: stock.sizeId,
           };
@@ -147,16 +141,7 @@ const StockMaster: React.FC = () => {
     }
 
     setOpeningEntries(entries);
-    setIsInitialized(true);
-  }, [
-    stockData,
-    items,
-    sizes,
-    itemsLoading,
-    sizesLoading,
-    stockLoading,
-    isInitialized,
-  ]);
+  }, [stockData, items, sizes, itemsLoading, sizesLoading, stockLoading]);
 
   // Filter data based on search term - search across all fields
   const filteredData = searchTerm
@@ -262,14 +247,23 @@ const StockMaster: React.FC = () => {
     );
   };
 
-  // Helper function to format grams - remove trailing zeros
-  const formatGrams = (value: number): string => {
-    if (value === 0) return '0';
-    const str = value.toString();
-    if (str.includes('.')) {
-      return str.replace(/\.?0+$/, '');
-    }
-    return str;
+  // Helper function to format numbers up to 3 decimal places without unnecessary trailing zeros
+  // (e.g. 1.200000000000003 -> "1.2", 1.233 -> "1.233", 92 -> "92")
+  const formatNumberDisplay = (
+    value: number | string | null | undefined,
+    maxDecimals: number = 3,
+  ): string => {
+    if (value === null || value === undefined || value === '') return '-';
+    const num = typeof value === 'number' ? value : parseFloat(String(value));
+    if (isNaN(num)) return '-';
+    if (num === 0) return '0';
+
+    const fixed = num.toFixed(maxDecimals);
+    return parseFloat(fixed).toString();
+  };
+
+  const formatGrams = (value: number | string | null | undefined): string => {
+    return formatNumberDisplay(value, 3);
   };
 
   // Handle row save - Create or Update
@@ -307,8 +301,8 @@ const StockMaster: React.FC = () => {
               ...s,
               isEditing: false,
               isSaved: true,
-              gramsRaw: formatGrams(entry.grams),
-              purityRaw: entry.purity.toString(),
+              gramsRaw: formatNumberDisplay(entry.grams, 3),
+              purityRaw: formatNumberDisplay(entry.purity, 3),
             };
           }
           return s;
@@ -355,7 +349,7 @@ const StockMaster: React.FC = () => {
       render: (item, index) => {
         return (
           <span className="font-mono text-[#1a1c1b] dark:text-white">
-            {formatGrams(item.grams)} G
+            {formatNumberDisplay(item.grams, 3)} G
           </span>
         );
       },
@@ -366,7 +360,7 @@ const StockMaster: React.FC = () => {
       render: (item, index) => {
         return (
           <span className="font-mono text-[#1a1c1b] dark:text-white">
-            {item.purity || '99.99'} %
+            {formatNumberDisplay(item.purity, 3)} %
           </span>
         );
       },
@@ -381,11 +375,25 @@ const StockMaster: React.FC = () => {
       {/* Header with Title, Search and Buttons */}
       <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
         <div className="flex flex-col items-center justify-between gap-3 px-3 py-2 sm:px-4 sm:py-3 md:px-6 lg:flex-row">
-          {/* Left side - Title */}
+          {/* Left side - Title with Refresh Icon */}
           <div className="flex w-full min-w-0 items-center gap-2 lg:w-auto">
             <h2 className="whitespace-nowrap font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Stocks
             </h2>
+            <button
+              type="button"
+              onClick={async () => {
+                await refetch();
+                toast.success('Stock data refreshed');
+              }}
+              disabled={stockLoading}
+              title="Refresh Stock Data"
+              className="flex items-center justify-center rounded-lg p-1.5 text-[#785600] transition-all hover:bg-[#785600]/10 hover:scale-105 active:scale-95 disabled:opacity-50 dark:text-amber-400 dark:hover:bg-slate-800"
+            >
+              <RefreshCw
+                className={`h-4 w-4 sm:h-5 sm:w-5 ${stockLoading ? 'animate-spin' : ''}`}
+              />
+            </button>
           </div>
 
           {/* Right side - Search and Action Buttons */}

@@ -36,13 +36,13 @@ interface ReceiptItem {
   srNo: number;
   item: string;
   size: string;
-  purity: number;
-  availableQty: number;
-  grossWt: number;
-  wastage: number;
-  srp: number;
+  purity: number | string;
+  availableQty: number | string;
+  grossWt: number | string;
+  wastage: number | string;
+  srp: number | string;
   fineWt: number;
-  laborRate: number;
+  laborRate: number | string;
   isLoadingQty?: boolean;
 }
 
@@ -51,8 +51,8 @@ interface ReceiptFormData {
   clientName: string;
   date: string;
   items: ReceiptItem[];
-  customerWeight: number;
-  totalFine: number;
+  customerWeight: number | string;
+  totalFine: number | string;
   goldInfo: {
     karat: string;
     rate: number;
@@ -174,13 +174,13 @@ const ReceiptAdd: React.FC = () => {
       srNo: formData.items.length + 1,
       item: '',
       size: '',
-      purity: 0,
-      availableQty: 0,
-      grossWt: 0,
-      wastage: 0,
-      srp: 0,
+      purity: '',
+      availableQty: '',
+      grossWt: '',
+      wastage: '',
+      srp: '',
       fineWt: 0,
-      laborRate: 0,
+      laborRate: '',
       isLoadingQty: false,
     };
     setFormData({
@@ -326,7 +326,7 @@ const ReceiptAdd: React.FC = () => {
   // Update Total Fine calculation (Fine Wt + Labor Rate)
   const updateTotalFine = (items: ReceiptItem[]) => {
     const total = items.reduce(
-      (sum, item) => sum + (item.fineWt || 0) + (item.laborRate || 0),
+      (sum, item) => sum + (item.fineWt || 0) + (Number(item.laborRate) || 0),
       0,
     );
     return Math.round(total * 1000) / 1000;
@@ -340,34 +340,25 @@ const ReceiptAdd: React.FC = () => {
     const updatedItems = [...formData.items];
     const item = updatedItems[index];
 
-    if (field === 'grossWt') {
-      const strValue = String(value);
+    if (
+      field === 'grossWt' ||
+      field === 'availableQty' ||
+      field === 'purity' ||
+      field === 'srp' ||
+      field === 'laborRate' ||
+      field === 'wastage'
+    ) {
+      const strValue = value === null || value === undefined ? '' : String(value);
       if (strValue.includes('.')) {
         const decimalPlaces = strValue.split('.')[1]?.length || 0;
         if (decimalPlaces > 3) {
-          toast.error('Gross weight can have maximum 3 decimal places');
+          toast.error(`${field} can have maximum 3 decimal places`);
           return;
         }
       }
-      const numValue = parseFloat(strValue);
-      if (!isNaN(numValue)) {
-        const roundedValue = Math.round(numValue * 1000) / 1000;
-        updatedItems[index] = {
-          ...item,
-          [field]: roundedValue,
-        };
-      } else {
-        updatedItems[index] = {
-          ...item,
-          [field]: 0,
-        };
-      }
-    } else if (field === 'purity') {
-      // Handle purity as number
-      const numValue = parseFloat(value);
       updatedItems[index] = {
         ...item,
-        [field]: isNaN(numValue) ? 0 : Math.min(100, Math.max(0, numValue)),
+        [field]: strValue,
       };
     } else {
       updatedItems[index] = {
@@ -379,17 +370,11 @@ const ReceiptAdd: React.FC = () => {
     // Recalculate fine weight for the changed item
     const currentItem = updatedItems[index];
     if (field === 'purity' || field === 'grossWt' || field === 'srp') {
-      const purity =
-        field === 'purity' ? currentItem.purity : currentItem.purity;
-      const grossWt =
-        field === 'grossWt' ? currentItem.grossWt : currentItem.grossWt;
-      const srp = field === 'srp' ? currentItem.srp : currentItem.srp;
+      const purity = Number(currentItem.purity) || 0;
+      const grossWt = Number(currentItem.grossWt) || 0;
+      const srp = Number(currentItem.srp) || 0;
 
-      currentItem.fineWt = calculateFineWeight(
-        Number(purity) || 0,
-        Number(grossWt) || 0,
-        Number(srp) || 0,
-      );
+      currentItem.fineWt = calculateFineWeight(purity, grossWt, srp);
     }
 
     // Update total fine
@@ -404,7 +389,8 @@ const ReceiptAdd: React.FC = () => {
     // Fetch quantity if purity changed
     if (field === 'purity') {
       const currentItem = updatedItems[index];
-      if (currentItem.item && currentItem.size && currentItem.purity > 0) {
+      const purityNum = Number(currentItem.purity) || 0;
+      if (currentItem.item && currentItem.size && purityNum > 0) {
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
         }
@@ -413,7 +399,7 @@ const ReceiptAdd: React.FC = () => {
             index,
             currentItem.item,
             currentItem.size,
-            currentItem.purity,
+            purityNum,
           );
         }, 800);
       }
@@ -437,19 +423,23 @@ const ReceiptAdd: React.FC = () => {
   const validateAllItems = (): boolean => {
     for (let i = 0; i < formData.items.length; i++) {
       const item = formData.items[i];
+      const purityNum = Number(item.purity) || 0;
+      const grossWtNum = Number(item.grossWt) || 0;
+      const srpNum = Number(item.srp) || 0;
+
       if (!item.item || !item.size) {
         toast.error(`Row ${i + 1}: Please select item and size`);
         return false;
       }
-      if (item.purity <= 0 || item.purity > 100) {
+      if (purityNum <= 0 || purityNum > 100) {
         toast.error(`Row ${i + 1}: Purity must be between 1 and 100`);
         return false;
       }
-      if (item.grossWt <= 0) {
+      if (grossWtNum <= 0) {
         toast.error(`Row ${i + 1}: Please enter a valid gross weight`);
         return false;
       }
-      if (item.srp < 0) {
+      if (srpNum < 0) {
         toast.error(`Row ${i + 1}: Please enter a valid SRP`);
         return false;
       }
@@ -468,52 +458,36 @@ const ReceiptAdd: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const value = e.target.value;
-    if (value === '') {
-      setFormData({...formData, customerWeight: 0});
-      return;
-    }
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue) && numValue >= 0) {
-      const roundedValue = Math.round(numValue * 1000) / 1000;
-      setFormData({...formData, customerWeight: roundedValue});
-    }
+    setFormData((prev) => ({...prev, customerWeight: value}));
   };
 
   // Handle Total Fine (Issue) change - Manual edit
   const handleTotalFineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (value === '') {
-      setFormData({...formData, totalFine: 0});
-      return;
-    }
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue) && numValue >= 0) {
-      const roundedValue = Math.round(numValue * 1000) / 1000;
-      setFormData({...formData, totalFine: roundedValue});
-    }
+    setFormData((prev) => ({...prev, totalFine: value}));
   };
 
   const calculateTotalGrossWt = () => {
     return formData.items.reduce(
-      (total, item) => total + (item.grossWt || 0),
+      (total, item) => total + (Number(item.grossWt) || 0),
       0,
     );
   };
 
   const calculateTotalFineWt = () => {
     return formData.items.reduce(
-      (total, item) => total + (item.fineWt || 0) + (item.laborRate || 0),
+      (total, item) => total + (item.fineWt || 0) + (Number(item.laborRate) || 0),
       0,
     );
   };
 
   const calculateTotalSRP = () => {
-    return formData.items.reduce((total, item) => total + (item.srp || 0), 0);
+    return formData.items.reduce((total, item) => total + (Number(item.srp) || 0), 0);
   };
 
   const calculateTotalLabor = () => {
     return formData.items.reduce(
-      (total, item) => total + (item.laborRate || 0),
+      (total, item) => total + (Number(item.laborRate) || 0),
       0,
     );
   };
@@ -1005,16 +979,16 @@ const ReceiptAdd: React.FC = () => {
           itemName: item.item,
           sizeId: sizes.find((s: any) => s.size === item.size)?.id,
           size: item.size,
-          purity: item.purity,
-          availableQty: item.availableQty,
-          grossWeight: Number(item.grossWt.toFixed(3)),
-          srp: item.srp,
-          fineWeight: Number(item.fineWt.toFixed(3)),
-          laborRate: item.laborRate || 0,
+          purity: Number(item.purity) || 0,
+          availableQty: Number(item.availableQty) || 0,
+          grossWeight: Number(Number(item.grossWt || 0).toFixed(3)),
+          srp: Number(item.srp) || 0,
+          fineWeight: Number(Number(item.fineWt || 0).toFixed(3)),
+          laborRate: Number(item.laborRate) || 0,
         })),
-        customerWeight: Number(formData.customerWeight.toFixed(3)),
-        remainingWeight: Number(remainingWeight.toFixed(3)),
-        totalWeight: Number(totalGrossWt.toFixed(3)),
+        customerWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
+        remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
+        totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
         type: 'DRAFT',
       };
 
@@ -1054,16 +1028,16 @@ const ReceiptAdd: React.FC = () => {
           itemName: item.item,
           sizeId: sizes.find((s: any) => s.size === item.size)?.id,
           size: item.size,
-          purity: item.purity,
-          availableQty: item.availableQty,
-          grossWeight: Number(item.grossWt.toFixed(3)),
-          srp: item.srp,
-          fineWeight: Number(item.fineWt.toFixed(3)),
-          laborRate: item.laborRate || 0,
+          purity: Number(item.purity) || 0,
+          availableQty: Number(item.availableQty) || 0,
+          grossWeight: Number(Number(item.grossWt || 0).toFixed(3)),
+          srp: Number(item.srp) || 0,
+          fineWeight: Number(Number(item.fineWt || 0).toFixed(3)),
+          laborRate: Number(item.laborRate) || 0,
         })),
-        customerWeight: Number(formData.customerWeight.toFixed(3)),
-        remainingWeight: Number(remainingWeight.toFixed(3)),
-        totalWeight: Number(totalGrossWt.toFixed(3)),
+        customerWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
+        remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
+        totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
         type: 'BILL',
       };
 
@@ -1184,22 +1158,23 @@ const ReceiptAdd: React.FC = () => {
         return (
           <div className="relative flex-1">
             <GenericInputField
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
+              step="0.001"
               min="0"
               max="100"
-              value={item.purity || ''}
+              value={item.purity !== undefined && item.purity !== null ? item.purity : ''}
               onChange={(e) =>
                 handleItemChange(
                   actualIndex,
                   'purity',
-                  parseFloat(e.target.value) || 0,
+                  e.target.value,
                 )
               }
-              placeholder="0"
+              placeholder="0.000"
               suffix="%"
               className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
-              decimalScale={2}
+              decimalScale={3}
             />
             {item.isLoadingQty && (
               <Loader2 className="absolute right-8 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#785600]" />
@@ -1211,21 +1186,28 @@ const ReceiptAdd: React.FC = () => {
     {
       key: 'availableQty',
       header: 'Available Qty',
-      render: (item) => {
+      render: (item, index) => {
+        const actualIndex = formData.items.indexOf(item);
         return (
           <div className="relative w-full">
-            <input
-              type="number"
+            <GenericInputField
+              type="text"
+              inputMode="decimal"
               step="0.001"
               min="0"
-              value={item.availableQty || ''}
-              placeholder="Auto"
-              className="bg-gray-50 w-full min-w-0 cursor-not-allowed rounded-md border border-[#d3c4af]/30 px-1.5 py-1.5 pr-6 text-right text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-700 dark:text-white"
-              readOnly
+              value={item.availableQty !== undefined && item.availableQty !== null ? item.availableQty : ''}
+              onChange={(e) =>
+                handleItemChange(
+                  actualIndex,
+                  'availableQty',
+                  e.target.value,
+                )
+              }
+              placeholder="0.000"
+              suffix="G"
+              className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
+              decimalScale={3}
             />
-            <span className="text-gray-500 absolute right-2 top-1/2 -translate-y-1/2 text-[10px] dark:text-slate-400">
-              G
-            </span>
           </div>
         );
       },
@@ -1237,26 +1219,14 @@ const ReceiptAdd: React.FC = () => {
         const actualIndex = formData.items.indexOf(item);
         return (
           <GenericInputField
-            type="number"
+            type="text"
+            inputMode="decimal"
             step="0.001"
             min="0"
-            value={item.grossWt || ''}
+            value={item.grossWt !== undefined && item.grossWt !== null ? item.grossWt : ''}
             {...getScaleProps(actualIndex, 'grossWt')}
             onChange={(e) => {
-              const val = e.target.value;
-              if (val === '') {
-                handleItemChange(actualIndex, 'grossWt', 0);
-                return;
-              }
-              const num = parseFloat(val);
-              if (!isNaN(num)) {
-                const decimalPart = val.split('.')[1];
-                if (decimalPart && decimalPart.length > 3) {
-                  toast.error('Gross weight can have maximum 3 decimal places');
-                  return;
-                }
-                handleItemChange(actualIndex, 'grossWt', num);
-              }
+              handleItemChange(actualIndex, 'grossWt', e.target.value);
             }}
             placeholder="0.000"
             suffix="G"
@@ -1273,21 +1243,22 @@ const ReceiptAdd: React.FC = () => {
         const actualIndex = formData.items.indexOf(item);
         return (
           <GenericInputField
-            type="number"
-            step="0.01"
+            type="text"
+            inputMode="decimal"
+            step="0.001"
             min="0"
-            value={item.srp || ''}
+            value={item.srp !== undefined && item.srp !== null ? item.srp : ''}
             onChange={(e) =>
               handleItemChange(
                 actualIndex,
                 'srp',
-                parseFloat(e.target.value) || 0,
+                e.target.value,
               )
             }
-            placeholder="0.00"
+            placeholder="0.000"
             suffix="G"
             className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
-            decimalScale={2}
+            decimalScale={3}
           />
         );
       },
@@ -1313,21 +1284,22 @@ const ReceiptAdd: React.FC = () => {
         const actualIndex = formData.items.indexOf(item);
         return (
           <GenericInputField
-            type="number"
-            step="0.01"
+            type="text"
+            inputMode="decimal"
+            step="0.001"
             min="0"
-            value={item.laborRate || ''}
+            value={item.laborRate !== undefined && item.laborRate !== null ? item.laborRate : ''}
             onChange={(e) =>
               handleItemChange(
                 actualIndex,
                 'laborRate',
-                parseFloat(e.target.value) || 0,
+                e.target.value,
               )
             }
-            placeholder="0.00"
+            placeholder="0.000"
             suffix="G"
             className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
-            decimalScale={2}
+            decimalScale={3}
           />
         );
       },
@@ -1542,11 +1514,7 @@ const ReceiptAdd: React.FC = () => {
             </div>
 
             <div className="px-5 py-5">
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/20">
-                <p className="break-words text-sm font-medium leading-6 text-red-700 dark:text-red-300">
-                  {stockErrorMessage}
-                </p>
-              </div>
+            
 
               <p className="mt-4 text-sm leading-6 text-[#4f4535] dark:text-slate-300">
                 You can save this bill as a draft and complete it later after

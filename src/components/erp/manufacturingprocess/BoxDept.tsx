@@ -646,11 +646,6 @@ const BoxDept: React.FC = () => {
         return;
       }
 
-      if (!entry.scrap || entry.scrap < 0) {
-        toast.error('Please enter a valid scrap weight');
-        return;
-      }
-
       if (entry.loss < 0) {
         toast.error(
           'Loss Weight cannot be negative. Chain weight must be less than or equal to Tar Weight.',

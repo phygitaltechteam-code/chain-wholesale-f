@@ -33,11 +33,13 @@ interface KundaEntry {
   size: string;
   purity: number;
   chainGiven: number;
+  kundaGiven: number;
   chainReceived: number;
   scrap: number;
   loss: number;
   isEditing?: boolean;
   isSaved?: boolean;
+  kundaGivenRaw?: string;
   chainReceivedRaw?: string;
   scrapRaw?: string;
   purityRaw?: string;
@@ -106,11 +108,11 @@ const SKundaDept: React.FC = () => {
   const submitKunda = useSubmitKunda();
 
   // Weighing Scale table focus hook
-  const {getScaleProps} = useTableScaleFocus<'chainReceived' | 'scrap'>(
-    (index, field, weight) => {
-      handleInlineChange(index, field, weight.toString());
-    },
-  );
+  const {getScaleProps} = useTableScaleFocus<
+    'kundaGiven' | 'chainReceived' | 'scrap'
+  >((index, field, weight) => {
+    handleInlineChange(index, field, weight.toString());
+  });
 
   useEffect(() => {
     if (kundaLoading) return;
@@ -132,9 +134,14 @@ const SKundaDept: React.FC = () => {
           const sizeName = kunda.size?.size || kunda.sizeId || 'N/A';
 
           const chainGiven = kunda.chainWeight || 0;
+          const kundaGiven =
+            kunda.kundaGiven || kunda.kundaGiven || kunda.kunda || 0;
           const chainReceived = kunda.chainReceived || 0;
           const scrap = kunda.scrap || 0;
-          const loss = Math.max(0, chainGiven - (chainReceived + scrap));
+          const loss = Math.max(
+            0,
+            chainGiven + kundaGiven - chainReceived,
+          );
 
           const isSaved = kunda.isCompleted === true;
 
@@ -153,11 +160,13 @@ const SKundaDept: React.FC = () => {
             size: sizeName,
             purity: kunda.purity || 0,
             chainGiven: chainGiven,
+            kundaGiven: kundaGiven,
             chainReceived: chainReceived,
             scrap: scrap,
             loss: loss,
             isEditing: !isSaved,
             isSaved: isSaved,
+            kundaGivenRaw: kundaGiven ? kundaGiven.toString() : '',
             chainReceivedRaw: kunda.chainReceived
               ? kunda.chainReceived.toString()
               : '',
@@ -241,6 +250,7 @@ const SKundaDept: React.FC = () => {
     (
       acc: {
         totalGiven: number;
+        totalKundaGiven: number;
         totalReceived: number;
         totalScrap: number;
         totalLoss: number;
@@ -248,11 +258,20 @@ const SKundaDept: React.FC = () => {
       item: any,
     ) => ({
       totalGiven: acc.totalGiven + toNumber(item?.chainWeight),
+      totalKundaGiven:
+        acc.totalKundaGiven +
+        toNumber(item?.kundaGiven || item?.kundaGiven || item?.kunda),
       totalReceived: acc.totalReceived + toNumber(item?.chainReceived),
       totalScrap: acc.totalScrap + toNumber(item?.scrap),
       totalLoss: acc.totalLoss + toNumber(item?.loss),
     }),
-    {totalGiven: 0, totalReceived: 0, totalScrap: 0, totalLoss: 0},
+    {
+      totalGiven: 0,
+      totalKundaGiven: 0,
+      totalReceived: 0,
+      totalScrap: 0,
+      totalLoss: 0,
+    },
   );
 
   // ======================================================
@@ -300,6 +319,7 @@ const SKundaDept: React.FC = () => {
             <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${getItemName(item?.item)}</td>
             <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${getSizeName(item?.size)}</td>
             <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.chainWeight)}</td>
+            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.kundaGiven || item?.kundaGiven || item?.kunda || 0)}</td>
             <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.chainReceived)}</td>
             <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
             <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.loss)}</td>
@@ -400,6 +420,7 @@ const SKundaDept: React.FC = () => {
                 <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Item</th>
                 <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Size</th>
                 <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Chain Given</th>
+                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">S/Kunda Given</th>
                 <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Chain Received</th>
                 <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Scrap</th>
                 <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Loss</th>
@@ -504,7 +525,7 @@ const SKundaDept: React.FC = () => {
   const handleInlineChange = useCallback(
     (
       index: number,
-      field: 'chainReceived' | 'scrap' | 'purity',
+      field: 'kundaGiven' | 'chainReceived' | 'scrap' | 'purity',
       value: string,
     ) => {
       setKundaEntries((prev) =>
@@ -512,7 +533,15 @@ const SKundaDept: React.FC = () => {
           if (i === index) {
             const updated = {...entry};
 
-            if (field === 'chainReceived') {
+            if (field === 'kundaGiven') {
+              updated.kundaGivenRaw = value;
+              if (value === '' || value === '.' || value === '-') {
+                updated.kundaGiven = 0;
+              } else {
+                const numValue = parseFloat(value);
+                updated.kundaGiven = isNaN(numValue) ? 0 : numValue;
+              }
+            } else if (field === 'chainReceived') {
               updated.chainReceivedRaw = value;
               if (value === '' || value === '.' || value === '-') {
                 updated.chainReceived = 0;
@@ -538,9 +567,10 @@ const SKundaDept: React.FC = () => {
               }
             }
 
+            const totalGiven = updated.chainGiven + (updated.kundaGiven || 0);
             updated.loss = Math.max(
               0,
-              updated.chainGiven - (updated.chainReceived + updated.scrap),
+              totalGiven - updated.chainReceived,
             );
             // Show Action column only after the user actually changes an input field.
             updated.isDirty = true;
@@ -559,11 +589,6 @@ const SKundaDept: React.FC = () => {
 
       if (!entry.chainReceived || entry.chainReceived < 0) {
         toast.error('Please enter a valid chain received weight');
-        return;
-      }
-
-      if (!entry.scrap || entry.scrap < 0) {
-        toast.error('Please enter a valid scrap weight');
         return;
       }
 
@@ -590,6 +615,8 @@ const SKundaDept: React.FC = () => {
       await submitKunda.mutateAsync({
         id: entry.id,
         data: {
+          kundaGiven: entry.kundaGiven,
+          kundaGiven: entry.kundaGiven,
           chainReceived: entry.chainReceived,
           scrap: entry.scrap,
           purity: entry.purity,
@@ -717,6 +744,42 @@ const SKundaDept: React.FC = () => {
           {formatNumberDisplay(item.chainGiven)} G
         </span>
       ),
+    },
+    {
+      key: 'kundaGiven',
+      header: 'S/Kunda Given (G)',
+      render: (item, index) => {
+        if (item.isEditing) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                value={
+                  item.kundaGivenRaw !== undefined
+                    ? item.kundaGivenRaw
+                    : item.kundaGiven === 0
+                      ? ''
+                      : item.kundaGiven
+                }
+                {...getScaleProps(index, 'kundaGiven')}
+                onChange={(e) =>
+                  handleInlineChange(index, 'kundaGiven', e.target.value)
+                }
+                placeholder="0.000"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                G
+              </span>
+            </div>
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.kundaGiven)} G
+          </span>
+        );
+      },
     },
     {
       key: 'chainReceived',
@@ -884,6 +947,18 @@ const SKundaDept: React.FC = () => {
       ),
     },
     {
+      key: 'kundaGiven',
+      header: 'S/Kunda Given (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(
+            item.kundaGiven || item.kundaGiven || item.kunda || 0,
+          )}{' '}
+          G
+        </span>
+      ),
+    },
+    {
       key: 'chainReceived',
       header: 'Chain Received (G)',
       render: (item) => (
@@ -1032,7 +1107,7 @@ const SKundaDept: React.FC = () => {
         ) : (
           <div>
             {/* Summary Cards - History Totals */}
-            <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
               {/* Chain Given */}
               <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
                 <div className="flex items-start justify-between">
@@ -1042,6 +1117,20 @@ const SKundaDept: React.FC = () => {
                     </span>
                     <span className="text-lg font-bold text-black dark:text-amber-400">
                       {formatNumberDisplay(historyTotals.totalGiven)} G
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* S/Kunda Given */}
+              <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                      S/Kunda Given
+                    </span>
+                    <span className="text-lg font-bold text-black dark:text-amber-500">
+                      {formatNumberDisplay(historyTotals.totalKundaGiven)} G
                     </span>
                   </div>
                 </div>

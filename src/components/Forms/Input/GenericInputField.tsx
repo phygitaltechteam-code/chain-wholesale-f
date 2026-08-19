@@ -123,6 +123,11 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (isDecimalInput) {
+        if (e.ctrlKey || e.metaKey) {
+          onKeyDown?.(e);
+          return;
+        }
+
         const invalidKeys = ['e', 'E', '+', '-'];
 
         if (invalidKeys.includes(e.key)) {
@@ -147,8 +152,16 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
         if (allowedKeys.includes(e.key)) {
           // allowed
         } else if (e.key === '.') {
-          const currentValue = (e.target as HTMLInputElement).value;
-          if (currentValue.includes('.')) e.preventDefault();
+          const input = e.target as HTMLInputElement;
+          const currentValue = input.value;
+          const isTextSelected =
+            input.selectionStart !== null &&
+            input.selectionEnd !== null &&
+            input.selectionStart !== input.selectionEnd;
+
+          if (currentValue.includes('.') && !isTextSelected) {
+            e.preventDefault();
+          }
         } else if (!/^\d$/.test(e.key)) {
           e.preventDefault();
         }

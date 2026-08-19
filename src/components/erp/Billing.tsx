@@ -1,5 +1,14 @@
 import React, {useState, useEffect, useRef} from 'react';
-import {X, Search, Printer, Edit, Trash2, Plus, Calendar} from 'lucide-react';
+import {
+  X,
+  Search,
+  Printer,
+  Edit,
+  Trash2,
+  Plus,
+  Calendar,
+  Factory,
+} from 'lucide-react';
 import {useNavigate} from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
 import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
@@ -72,6 +81,8 @@ interface BillGroup {
   type: 'DRAFT' | 'BILL';
   createdAt: string;
   items: {
+    itemId?: string;
+    sizeId?: string;
     item: string;
     size: string;
     purity: number;
@@ -238,6 +249,8 @@ const Billing: React.FC = () => {
           // Map all items
           const items =
             receipt.receiptItems?.map((item) => ({
+              itemId: item.itemID || (item as any).itemId || item.item?.id || '',
+              sizeId: item.sizeID || (item as any).sizeId || item.size?.id || '',
               item: item.item?.name || 'N/A',
               size: item.size?.size || 'N/A',
               purity: item.purity || 0,
@@ -295,6 +308,10 @@ const Billing: React.FC = () => {
     setIsLoading(false);
   }, [billData, billLoading]);
 
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'BILL' | 'DRAFT'>(
+    'ALL',
+  );
+
   // Filter entries
   const filteredGroups = billingGroups.filter((group) => {
     const matchesSearch =
@@ -304,6 +321,9 @@ const Billing: React.FC = () => {
       group.items.some((item) =>
         item.item.toLowerCase().includes(searchTerm.toLowerCase()),
       );
+
+    const matchesStatus =
+      statusFilter === 'ALL' || group.type === statusFilter;
 
     let matchesDate = true;
     if (dateRange.from || dateRange.to) {
@@ -323,7 +343,7 @@ const Billing: React.FC = () => {
       }
     }
 
-    return matchesSearch && matchesDate;
+    return matchesSearch && matchesDate && matchesStatus;
   });
 
   // Calculate totals from filtered entries
@@ -1022,8 +1042,72 @@ const Billing: React.FC = () => {
     }
   };
 
+  const [showManufacturingItemPicker, setShowManufacturingItemPicker] =
+    useState<BillGroup | null>(null);
+
+  const handleSendToManufacturing = (group: BillGroup) => {
+    if (!group.items || group.items.length === 0) {
+      toast.error('No items found in this bill');
+      return;
+    }
+
+    if (group.items.length === 1) {
+      const singleItem = group.items[0];
+      sessionStorage.setItem(
+        'manufacturing_billing_prefill',
+        JSON.stringify({
+          itemId: singleItem.itemId || '',
+          sizeId: singleItem.sizeId || '',
+          itemName: singleItem.item,
+          sizeName: singleItem.size,
+          grossWt: singleItem.grossWeight,
+          purity: singleItem.purity,
+          fine: singleItem.finWt,
+        }),
+      );
+      toast.success(
+        `Sending ${singleItem.item} (${singleItem.grossWeight}g) to Tar Department...`,
+      );
+      navigate({to: '/manufacturingprocess/process'});
+    } else {
+      setShowManufacturingItemPicker(group);
+    }
+  };
+
+  const handleSelectManufacturingItem = (item: any) => {
+    sessionStorage.setItem(
+      'manufacturing_billing_prefill',
+      JSON.stringify({
+        itemId: item.itemId || '',
+        sizeId: item.sizeId || '',
+        itemName: item.item,
+        sizeName: item.size,
+        grossWt: item.grossWeight,
+        purity: item.purity,
+        fine: item.finWt,
+      }),
+    );
+    setShowManufacturingItemPicker(null);
+    toast.success(
+      `Sending ${item.item} (${item.grossWeight}g) to Tar Department...`,
+    );
+    navigate({to: '/manufacturingprocess/process'});
+  };
+
   const renderActions = (item: BillGroup, index: number) => (
     <div className="flex items-center justify-center gap-1">
+      {item.type === 'DRAFT' && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSendToManufacturing(item);
+          }}
+          className="rounded-lg p-1.5 text-amber-600 transition-colors hover:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-400/20"
+          title="Start Manufacturing (Add Tar)"
+        >
+          <Factory className="h-4 w-4" />
+        </button>
+      )}
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -1377,6 +1461,17 @@ const Billing: React.FC = () => {
               }}
               className="w-32 sm:w-36 md:w-40"
             />
+            <select
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as 'ALL' | 'BILL' | 'DRAFT')
+              }
+              className="h-[38px] rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 text-xs font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            >
+              <option value="ALL">All Status</option>
+              <option value="BILL">Bill (Completed)</option>
+              <option value="DRAFT">Draft</option>
+            </select>
           </div>
           <GenericButton
             onClick={() => {
@@ -1511,6 +1606,71 @@ const Billing: React.FC = () => {
                     System Administrator
                   </span>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Manufacturing Item Picker Modal (When bill has multiple items) */}
+        {showManufacturingItemPicker && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl dark:bg-slate-900">
+              <div className="flex items-center justify-between border-b border-[#d3c4af]/20 p-4 dark:border-slate-700">
+                <div className="flex items-center gap-2">
+                  <div className="rounded-lg bg-amber-500/10 p-2 text-amber-600 dark:bg-amber-400/20 dark:text-amber-400">
+                    <Factory className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#1a1c1b] dark:text-white">
+                      Select Item for Manufacturing
+                    </h3>
+                    <p className="text-xs text-[#817563] dark:text-slate-400">
+                      Bill #{showManufacturingItemPicker.billNo} • {showManufacturingItemPicker.clientName}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowManufacturingItemPicker(null)}
+                  className="rounded-lg p-1.5 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800"
+                >
+                  <X className="h-5 w-5 text-[#4f4535] dark:text-slate-400" />
+                </button>
+              </div>
+
+              <div className="max-h-[60vh] overflow-y-auto p-4 space-y-2.5">
+                <p className="text-xs text-[#4f4535] dark:text-slate-300 mb-2">
+                  Click on an item to send its details (Item, Size, Gross Weight, Purity) to the <strong>Tar Department</strong>:
+                </p>
+                {showManufacturingItemPicker.items.map((it, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSelectManufacturingItem(it)}
+                    className="w-full text-left flex items-center justify-between p-3.5 rounded-lg border border-[#d3c4af]/30 bg-[#fbfaf8] hover:bg-amber-50/50 hover:border-amber-400/50 transition-all dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700/60"
+                  >
+                    <div>
+                      <div className="text-sm font-bold text-[#1a1c1b] dark:text-white">
+                        {it.item} <span className="text-xs font-normal text-[#817563] dark:text-slate-400">({it.size})</span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-3 text-xs text-[#4f4535] dark:text-slate-300">
+                        <span>Gross: <strong className="font-mono">{it.grossWeight}g</strong></span>
+                        <span>Purity: <strong className="font-mono">{it.purity}%</strong></span>
+                        <span>Fine: <strong className="font-mono text-[#785600] dark:text-amber-400">{it.finWt}g</strong></span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                      <span>Send</span>
+                      <Factory className="h-4 w-4" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex justify-end border-t border-[#d3c4af]/20 p-3.5 dark:border-slate-700">
+                <button
+                  onClick={() => setShowManufacturingItemPicker(null)}
+                  className="rounded-lg px-4 py-2 text-xs font-medium text-[#4f4535] transition-colors hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>

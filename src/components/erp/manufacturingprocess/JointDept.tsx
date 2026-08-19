@@ -25,6 +25,7 @@ interface JointEntry {
   isEditing?: boolean;
   isSaved?: boolean;
   powderReceivedRaw?: string;
+  powderRaw?: string;
   srpRaw?: string;
   purityRaw?: string;
   scrapRaw?: string;
@@ -94,11 +95,11 @@ const JointDept: React.FC = () => {
   const submitJoint = useSubmitJoint();
 
   // Weighing Scale table focus hook
-  const {getScaleProps} = useTableScaleFocus<'powderReceived' | 'scrap'>(
-    (index, field, weight) => {
-      handleInlineChange(index, field, weight.toString());
-    },
-  );
+  const {getScaleProps} = useTableScaleFocus<
+    'powderReceived' | 'powder' | 'scrap'
+  >((index, field, weight) => {
+    handleInlineChange(index, field, weight.toString());
+  });
 
   // Load data from API
   useEffect(() => {
@@ -120,8 +121,6 @@ const JointDept: React.FC = () => {
             joint.isCompleted === true &&
             joint.powderReceived !== null &&
             joint.powderReceived !== undefined &&
-            joint.srp !== null &&
-            joint.srp !== undefined &&
             joint.purity !== null &&
             joint.purity !== undefined &&
             joint.scrap !== null &&
@@ -152,6 +151,7 @@ const JointDept: React.FC = () => {
             powderReceivedRaw: joint.powderReceived
               ? joint.powderReceived.toString()
               : '',
+            powderRaw: joint.powder ? joint.powder.toString() : '',
             srpRaw: joint.srp ? joint.srp.toString() : '',
             purityRaw: joint.purity ? joint.purity.toString() : '',
             scrapRaw: joint.scrap ? joint.scrap.toString() : '',
@@ -305,7 +305,6 @@ const JointDept: React.FC = () => {
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.powder)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.powderReceived)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.srp)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
                         ${proceedDate} ${proceedTime}
@@ -330,10 +329,6 @@ const JointDept: React.FC = () => {
     );
     const totalPowderReceived = filteredData.reduce(
       (sum: number, item: any) => sum + (item?.powderReceived || 0),
-      0,
-    );
-    const totalSRP = filteredData.reduce(
-      (sum: number, item: any) => sum + (item?.srp || 0),
       0,
     );
     const totalScrap = filteredData.reduce(
@@ -425,11 +420,10 @@ const JointDept: React.FC = () => {
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Given</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Rec</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Powder</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Powder Rec</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Powder Given</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Powder Rec (Joint)</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">SRP</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Proceed</th>
                     </tr>
@@ -548,25 +542,7 @@ const JointDept: React.FC = () => {
       header: 'Chain Given (G)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.chainWeight)} G
-        </span>
-      ),
-    },
-    {
-      key: 'chainReceived',
-      header: 'Chain Received (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.chainReceived)} G
-        </span>
-      ),
-    },
-    {
-      key: 'powder',
-      header: 'Powder Given (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.powder)} G
         </span>
       ),
     },
@@ -579,6 +555,16 @@ const JointDept: React.FC = () => {
         </span>
       ),
     },
+    {
+      key: 'powder',
+      header: 'Powder Given (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.powder)} G
+        </span>
+      ),
+    },
+    
     {
       key: 'purity',
       header: 'Purity (%)',
@@ -620,7 +606,7 @@ const JointDept: React.FC = () => {
   const handleInlineChange = useCallback(
     (
       index: number,
-      field: 'powderReceived' | 'srp' | 'purity' | 'scrap',
+      field: 'powderReceived' | 'powder' | 'purity' | 'scrap',
       value: string,
     ) => {
       setJointEntries((prev) =>
@@ -636,13 +622,13 @@ const JointDept: React.FC = () => {
                 const numValue = parseFloat(value);
                 updated.powderReceived = isNaN(numValue) ? 0 : numValue;
               }
-            } else if (field === 'srp') {
-              updated.srpRaw = value;
+            } else if (field === 'powder') {
+              updated.powderRaw = value;
               if (value === '' || value === '.' || value === '-') {
-                updated.srp = 0;
+                updated.powder = 0;
               } else {
                 const numValue = parseFloat(value);
-                updated.srp = isNaN(numValue) ? 0 : numValue;
+                updated.powder = isNaN(numValue) ? 0 : numValue;
               }
             } else if (field === 'purity') {
               updated.purityRaw = value;
@@ -676,26 +662,6 @@ const JointDept: React.FC = () => {
     (index: number) => {
       const entry = jointEntries[index];
 
-      if (!entry.powderReceived || entry.powderReceived < 0) {
-        toast.error('Please enter a valid powder received weight');
-        return;
-      }
-
-      if (!entry.srp || entry.srp < 0) {
-        toast.error('Please enter a valid SRP (Majuri)');
-        return;
-      }
-
-      if (!entry.purity || entry.purity < 0) {
-        toast.error('Please enter a valid purity percentage');
-        return;
-      }
-
-      if (!entry.scrap || entry.scrap < 0) {
-        toast.error('Please enter a valid scrap weight');
-        return;
-      }
-
       setSaveIndex(index);
       setShowConfirmModal(true);
     },
@@ -716,7 +682,7 @@ const JointDept: React.FC = () => {
         id: entry.id,
         data: {
           powderReceived: entry.powderReceived,
-          srp: entry.srp,
+          powder: entry.powder,
           purity: entry.purity,
           scrap: entry.scrap,
           isCompleted: true,
@@ -748,21 +714,6 @@ const JointDept: React.FC = () => {
       setSaveIndex(null);
     }
   }, [saveIndex, jointEntries, submitJoint, navigate, refetch]);
-
-  // Action column is shown only when at least one unsaved row
-  // has an entered Powder Received / SRP / Purity / Scrap value.
-  const hasEditableValues = (entry: JointEntry): boolean => {
-    return Boolean(
-      entry.powderReceivedRaw?.trim() ||
-      entry.srpRaw?.trim() ||
-      entry.purityRaw?.trim() ||
-      entry.scrapRaw?.trim(),
-    );
-  };
-
-  const showActionColumn = jointEntries.some(
-    (entry) => !entry.isSaved && hasEditableValues(entry),
-  );
 
   // Define columns for GenericTable
   const columns: Column<JointEntry>[] = [
@@ -813,25 +764,7 @@ const JointDept: React.FC = () => {
       header: 'Chain Given (G)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.chainWeight)} G
-        </span>
-      ),
-    },
-    {
-      key: 'chainReceived',
-      header: 'Chain Received (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.chainReceived)} G
-        </span>
-      ),
-    },
-    {
-      key: 'powder',
-      header: 'Powder Given (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.powder)} G
+          {formatNumberDisplay(item.chainReceived || item.chainWeight)} G
         </span>
       ),
     },
@@ -872,6 +805,42 @@ const JointDept: React.FC = () => {
       },
     },
     {
+      key: 'powder',
+      header: 'Powder Given (G)',
+      render: (item, index) => {
+        if (item.isEditing) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                value={
+                  item.powderRaw !== undefined
+                    ? item.powderRaw
+                    : item.powder === 0
+                      ? ''
+                      : item.powder
+                }
+                {...getScaleProps(index, 'powder')}
+                onChange={(e) =>
+                  handleInlineChange(index, 'powder', e.target.value)
+                }
+                placeholder="0.000"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                G
+              </span>
+            </div>
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.powder)} G
+          </span>
+        );
+      },
+    },
+    {
       key: 'purity',
       header: 'Purity (%)',
       render: (item, index) => {
@@ -902,41 +871,6 @@ const JointDept: React.FC = () => {
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
             {formatNumberDisplay(item.purity)} %
-          </span>
-        );
-      },
-    },
-    {
-      key: 'srp',
-      header: 'SRP (Majuri)',
-      render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <div className="relative inline-block">
-              <input
-                type="text"
-                value={
-                  item.srpRaw !== undefined
-                    ? item.srpRaw
-                    : item.srp === 0
-                      ? ''
-                      : item.srp
-                }
-                onChange={(e) =>
-                  handleInlineChange(index, 'srp', e.target.value)
-                }
-                placeholder="0.000"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-              />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
-              </span>
-            </div>
-          );
-        }
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.srp)} G
           </span>
         );
       },
@@ -978,36 +912,36 @@ const JointDept: React.FC = () => {
         );
       },
     },
+    {
+      key: 'actions',
+      header: 'Action',
+      render: (item: JointEntry, index: number) => {
+        if (item.isSaved) {
+          return (
+            <div className="flex items-center justify-center">
+              <span className="text-xs font-semibold text-green-600 dark:text-green-400">
+                Completed
+              </span>
+            </div>
+          );
+        }
 
-    // Action column appears only after the user enters a value.
-    ...(showActionColumn
-      ? [
-          {
-            key: 'actions',
-            header: 'Action',
-            render: (item: JointEntry, index: number) => {
-              if (item.isSaved || !hasEditableValues(item)) {
-                return null;
-              }
-
-              return (
-                <div className="flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => handleSaveClick(index)}
-                    disabled={isLoading || isSubmitting}
-                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    title="Save Entry"
-                  >
-                    <Save className="h-3.5 w-3.5" />
-                    <span>cutting</span>
-                  </button>
-                </div>
-              );
-            },
-          } as Column<JointEntry>,
-        ]
-      : []),
+        return (
+          <div className="flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => handleSaveClick(index)}
+              disabled={isLoading || isSubmitting}
+              className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              title="Save Entry"
+            >
+              <Save className="h-3.5 w-3.5" />
+              <span>cutting</span>
+            </button>
+          </div>
+        );
+      },
+    },
   ];
 
   const isSubmitting = submitJoint.isPending;

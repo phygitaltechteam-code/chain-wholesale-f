@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Plus,
   X,
@@ -9,11 +9,11 @@ import {
   Search,
   Eye,
 } from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
-import {z} from 'zod';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import { z } from 'zod';
 import {
   useGetClients,
   useCreateClient,
@@ -54,7 +54,7 @@ const ClientMaster: React.FC = () => {
   }>({});
 
   // React Query hooks
-  const {data: clients = [], isLoading, refetch} = useGetClients();
+  const { data: clients = [], isLoading, refetch } = useGetClients();
   const createClient = useCreateClient();
   const updateClient = useUpdateClient();
   const deleteClient = useDeleteClient();
@@ -62,31 +62,31 @@ const ClientMaster: React.FC = () => {
   // Filter clients based on search term
   const filteredClients = searchTerm
     ? clients.filter(
-        (client: Client) =>
-          client.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          client.phoneNumber?.includes(searchTerm) ||
-          client.address?.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
+      (client: Client) =>
+        client.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.phoneNumber?.includes(searchTerm) ||
+        client.address?.toLowerCase().includes(searchTerm.toLowerCase()),
+    )
     : clients;
 
   // Handle form input change
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
-    const {name, value} = e.target;
+    const { name, value } = e.target;
 
     if (name === 'openingBalance') {
       const sanitized = value.replace(/[^0-9.]/g, '');
       const parts = sanitized.split('.');
       const formatted =
         parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : sanitized;
-      setFormData((prev) => ({...prev, [name]: formatted}));
+      setFormData((prev) => ({ ...prev, [name]: formatted }));
     } else {
-      setFormData((prev) => ({...prev, [name]: value}));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
 
     if (formErrors[name as keyof typeof formErrors]) {
-      setFormErrors((prev) => ({...prev, [name]: undefined}));
+      setFormErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
 
@@ -202,7 +202,7 @@ const ClientMaster: React.FC = () => {
 
   // Handle row click - Navigate to client detail page
   const handleRowClick = (client: Client) => {
-    navigate({to: '/client/clientreport/$id', params: {id: client.id}});
+    navigate({ to: '/client/clientreport/$id', params: { id: client.id } });
   };
 
   // Reset form
@@ -264,7 +264,7 @@ const ClientMaster: React.FC = () => {
     },
     {
       key: 'openingBalance',
-      header: 'Opening Balance (G)',
+      header: 'Due Balance (G)',
       render: (item) => (
         <span className="text-sm text-[#1a1c1b] dark:text-white">
           {formatNumber(item.openingBalance)} G
@@ -384,9 +384,8 @@ const ClientMaster: React.FC = () => {
                   value={formData.fullName}
                   onChange={handleInputChange}
                   placeholder="Enter client name"
-                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
-                    formErrors.fullName ? 'ring-2 ring-red-500' : ''
-                  }`}
+                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${formErrors.fullName ? 'ring-2 ring-red-500' : ''
+                    }`}
                   autoFocus
                 />
                 {formErrors.fullName && (
@@ -407,9 +406,8 @@ const ClientMaster: React.FC = () => {
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
                   placeholder="Enter phone number"
-                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
-                    formErrors.phoneNumber ? 'ring-2 ring-red-500' : ''
-                  }`}
+                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${formErrors.phoneNumber ? 'ring-2 ring-red-500' : ''
+                    }`}
                 />
                 {formErrors.phoneNumber && (
                   <p className="mt-1 text-[10px] text-red-500 sm:text-xs">
@@ -429,9 +427,8 @@ const ClientMaster: React.FC = () => {
                   onChange={handleInputChange}
                   placeholder="Enter address"
                   rows={3}
-                  className={`w-full resize-none rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
-                    formErrors.address ? 'ring-2 ring-red-500' : ''
-                  }`}
+                  className={`w-full resize-none rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${formErrors.address ? 'ring-2 ring-red-500' : ''
+                    }`}
                 />
                 {formErrors.address && (
                   <p className="mt-1 text-[10px] text-red-500 sm:text-xs">
@@ -451,9 +448,8 @@ const ClientMaster: React.FC = () => {
                   value={formData.openingBalance}
                   onChange={handleInputChange}
                   placeholder="e.g., 50.5"
-                  className={`font-mono w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
-                    formErrors.openingBalance ? 'ring-2 ring-red-500' : ''
-                  }`}
+                  className={`font-mono w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${formErrors.openingBalance ? 'ring-2 ring-red-500' : ''
+                    }`}
                 />
                 {formErrors.openingBalance && (
                   <p className="mt-1 text-[10px] text-red-500 sm:text-xs">

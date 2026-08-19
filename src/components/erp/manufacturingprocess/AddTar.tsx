@@ -95,6 +95,8 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
   const [formData, setFormData] = useState({
     itemId: '',
     sizeId: '',
+    grossWt: '',
+    purity: '',
     fine: '',
   });
 
@@ -126,6 +128,18 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
   // Scale hooks for modal and table
   const fineScaleFocus = useScaleFocus((weight) => {
     setFormData((prev) => ({...prev, fine: weight.toString()}));
+  });
+
+  const grossScaleFocus = useScaleFocus((weight) => {
+    setFormData((prev) => {
+      const next = {...prev, grossWt: weight.toString()};
+      const purityNum = parseFloat(prev.purity);
+      if (!isNaN(weight) && !isNaN(purityNum) && weight > 0 && purityNum > 0) {
+        const autoFine = Math.round(((weight * purityNum) / 100) * 1000) / 1000;
+        next.fine = autoFine.toString();
+      }
+      return next;
+    });
   });
 
   const {getScaleProps} = useTableScaleFocus<'tar' | 'scrap'>(
@@ -621,11 +635,110 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
     return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
   };
 
+  // Auto-fill from Billing when navigated via Manufacturing action
+  useEffect(() => {
+    if (
+      itemsLoading ||
+      sizesLoading ||
+      items.length === 0 ||
+      sizes.length === 0
+    ) {
+      return;
+    }
+
+    try {
+      const prefillRaw = sessionStorage.getItem(
+        'manufacturing_billing_prefill',
+      );
+      if (prefillRaw) {
+        sessionStorage.removeItem('manufacturing_billing_prefill');
+        const prefill = JSON.parse(prefillRaw);
+        if (prefill) {
+          let resolvedItemId = prefill.itemId || '';
+          if (!resolvedItemId && prefill.itemName) {
+            const foundItem = items.find(
+              (i) => i.name?.toLowerCase() === prefill.itemName.toLowerCase(),
+            );
+            if (foundItem) resolvedItemId = foundItem.id;
+          }
+
+          let resolvedSizeId = prefill.sizeId || '';
+          if (!resolvedSizeId && prefill.sizeName) {
+            const foundSize = sizes.find(
+              (s) => s.size?.toLowerCase() === prefill.sizeName.toLowerCase(),
+            );
+            if (foundSize) resolvedSizeId = foundSize.id;
+          }
+
+          const grossNum = parseFloat(prefill.grossWt) || 0;
+          const purityNum = parseFloat(prefill.purity) || 0;
+          let calculatedFine = '';
+          if (grossNum > 0 && purityNum > 0) {
+            calculatedFine = (
+              Math.round(((grossNum * purityNum) / 100) * 1000) / 1000
+            ).toString();
+          } else if (prefill.fine) {
+            calculatedFine = String(prefill.fine);
+          }
+
+          setFormData({
+            itemId: resolvedItemId,
+            sizeId: resolvedSizeId,
+            grossWt:
+              prefill.grossWt !== undefined && prefill.grossWt !== null
+                ? String(prefill.grossWt)
+                : '',
+            purity:
+              prefill.purity !== undefined && prefill.purity !== null
+                ? String(prefill.purity)
+                : '',
+            fine: calculatedFine,
+          });
+
+          const now = new Date();
+          setSelectedDate({
+            day: now.getDate(),
+            month: now.getMonth() + 1,
+            year: now.getFullYear(),
+            hour: now.getHours(),
+            minute: now.getMinutes(),
+          });
+
+          setIsModalOpen(true);
+        }
+      }
+    } catch (e) {
+      console.error('Error loading manufacturing prefill data:', e);
+    }
+  }, [items, sizes, itemsLoading, sizesLoading]);
+
   const handleFormChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const {name, value} = e.target;
-    if (name === 'fine') {
+    if (name === 'grossWt' || name === 'purity') {
+      const sanitized = value.replace(/[^0-9.]/g, '');
+      setFormData((prev) => {
+        const next = {...prev, [name]: sanitized};
+        const grossNum = parseFloat(
+          name === 'grossWt' ? sanitized : prev.grossWt,
+        );
+        const purityNum = parseFloat(
+          name === 'purity' ? sanitized : prev.purity,
+        );
+        if (
+          !isNaN(grossNum) &&
+          !isNaN(purityNum) &&
+          grossNum > 0 &&
+          purityNum > 0
+        ) {
+          const autoFine =
+            Math.round(((grossNum * purityNum) / 100) * 1000) / 1000;
+          next.fine = autoFine.toString();
+        }
+        return next;
+      });
+    } else if (name === 'fine') {
       const sanitized = value.replace(/[^0-9.]/g, '');
       setFormData((prev) => ({...prev, [name]: sanitized}));
     } else {
@@ -651,6 +764,8 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
     setFormData({
       itemId: '',
       sizeId: '',
+      grossWt: '',
+      purity: '',
       fine: '',
     });
     setIsModalOpen(true);
@@ -667,15 +782,18 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
       return;
     }
 
-    if (!formData.fine || parseFloat(formData.fine) <= 0) {
-      toast.error('Please enter a valid fine value');
+    const fineValue = parseFloat(formData.fine) || 0;
+    const grossWtValue = parseFloat(formData.grossWt) || 0;
+    const purityValue = parseFloat(formData.purity) || 0;
+
+    if (fineValue <= 0) {
+      toast.error('Please enter a valid fine weight');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const fineValue = parseFloat(formData.fine) || 0;
       const selectedItem = items.find((i) => i.id === formData.itemId);
       const selectedSize = sizes.find((s) => s.id === formData.sizeId);
 
@@ -683,16 +801,20 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
       const date = new Date(year, month - 1, day, hour, minute);
       const dateTimeStr = formatDateTime(date);
 
+      const grossVal = grossWtValue > 0 ? grossWtValue : fineValue;
+
       const payload = {
         itemId: formData.itemId,
         sizeId: formData.sizeId,
+        grosswt: grossVal,
+        grossWt: grossVal,
         fine: fineValue,
         item: selectedItem?.name || '',
         size: selectedSize?.size || '',
         tar: 0,
         scrap: 0,
         loss: 0,
-        purity: 0,
+        purity: purityValue,
         isSaved: false,
         dateTime: dateTimeStr,
       };
@@ -709,11 +831,11 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
         tar: 0,
         scrap: 0,
         loss: 0,
-        purity: 0,
+        purity: purityValue,
         isSaved: false,
         tarRaw: '',
         scrapRaw: '',
-        purityRaw: '',
+        purityRaw: purityValue > 0 ? String(purityValue) : '',
         itemId: formData.itemId,
         sizeId: formData.sizeId,
       };
@@ -791,11 +913,6 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
       return;
     }
 
-    if (!entry.scrap || entry.scrap < 0) {
-      toast.error('Please enter a valid scrap weight');
-      return;
-    }
-
     if (!entry.purity || entry.purity <= 0) {
       toast.error('Please enter purity (टंच)');
       return;
@@ -866,6 +983,8 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
     setFormData({
       itemId: '',
       sizeId: '',
+      grossWt: '',
+      purity: '',
       fine: '',
     });
   };
@@ -1023,7 +1142,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
       header: 'Loss (G)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.loss)}
+          {formatNumberDisplay(item.loss)} G
         </span>
       ),
     },
@@ -1298,10 +1417,10 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="flex items-center justify-between border-b border-[#d3c4af]/10 p-4 dark:border-slate-700">
               <h3 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
-                Add New
+                Add New Tar Process
               </h3>
               <button
-                onClick={closeModal}
+                onClick={() => setIsModalOpen(false)}
                 className="rounded-lg p-1 transition-colors hover:bg-[#f4f4f2] dark:hover:bg-slate-800"
               >
                 <X className="h-5 w-5 text-[#4f4535] dark:text-slate-400" />
@@ -1317,7 +1436,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
                   name="itemId"
                   value={formData.itemId}
                   onChange={handleFormChange}
-                  className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
+                  className="w-full rounded-lg border border-[#d3c4af]/30 bg-[#f4f4f2] px-3 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 >
                   <option value="">Select Item</option>
                   {items.map((item) => (
@@ -1336,7 +1455,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
                   name="sizeId"
                   value={formData.sizeId}
                   onChange={handleFormChange}
-                  className="w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
+                  className="w-full rounded-lg border border-[#d3c4af]/30 bg-[#f4f4f2] px-3 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 >
                   <option value="">Select Size</option>
                   {sizes.map((size) => (
@@ -1347,9 +1466,51 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
                 </select>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
+                    Gross Wt (G) <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="grossWt"
+                      value={formData.grossWt}
+                      onFocus={grossScaleFocus.onFocus}
+                      onBlur={grossScaleFocus.onBlur}
+                      onChange={handleFormChange}
+                      placeholder="0.000"
+                      className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-[#f4f4f2] px-3 py-2.5 pr-8 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    />
+                    <span className="text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                      G
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
+                    Purity (%) <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="purity"
+                      value={formData.purity}
+                      onChange={handleFormChange}
+                      placeholder="e.g. 93"
+                      className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-[#f4f4f2] px-3 py-2.5 pr-8 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    />
+                    <span className="text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                      %
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
-                  Fine (लगड) <span className="text-red-500">*</span>
+                  Fine Wt (लगड) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -1359,9 +1520,8 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
                     onFocus={fineScaleFocus.onFocus}
                     onBlur={fineScaleFocus.onBlur}
                     onChange={handleFormChange}
-                    placeholder="e.g., 5.000"
-                    className="font-mono w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 pr-8 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
-                    autoFocus
+                    placeholder="0.000"
+                    className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-[#f4f4f2] px-3 py-2.5 pr-8 text-sm font-semibold text-[#785600] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400"
                   />
                   <span className="text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                     G
