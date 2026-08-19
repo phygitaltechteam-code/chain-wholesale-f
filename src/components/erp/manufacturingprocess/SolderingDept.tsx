@@ -99,7 +99,7 @@ const SolderingDept: React.FC = () => {
 
   // Weighing Scale table focus hook
   const {getScaleProps} = useTableScaleFocus<
-    'chainReceived' | 'powder' | 'scrap'
+    'chainReceived' | 'scrap'
   >((index, field, weight) => {
     handleInlineChange(index, field, weight.toString());
   });
@@ -158,7 +158,13 @@ const SolderingDept: React.FC = () => {
 
           const chainGiven = soldering.chainWeight || 0;
           const chainReceived = soldering.chainReceived || 0;
-          const powder = soldering.powder || 0;
+          const powder =
+            chainReceived > 0
+              ? Math.max(
+                  0,
+                  Math.round((chainReceived - chainGiven) * 1000) / 1000,
+                )
+              : soldering.powder || 0;
           const increase =
             chainGiven > 0 && chainReceived > 0
               ? Math.round(((chainReceived / chainGiven) * 100) * 1000) / 1000
@@ -363,11 +369,11 @@ const SolderingDept: React.FC = () => {
                     </td>
 
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-                        ${formatNumber(item?.powder)}
+                        ${formatNumber(item?.chainReceived)}
                     </td>
 
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-                        ${formatNumber(item?.chainReceived)}
+                        ${formatNumber(item?.powder)}
                     </td>
 
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
@@ -495,11 +501,11 @@ const SolderingDept: React.FC = () => {
                 </th>
 
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Powder Given
+                  Chain Rec
                 </th>
 
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Chain Rec
+                  Powder Given
                 </th>
 
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
@@ -662,23 +668,23 @@ const SolderingDept: React.FC = () => {
     },
 
     {
-      key: 'powder',
-      header: 'Powder Given (G)',
-
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.powder)} G
-        </span>
-      ),
-    },
-
-    {
       key: 'chainReceived',
       header: 'Chain Received (G)',
 
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumber(item.chainReceived)} G
+        </span>
+      ),
+    },
+
+    {
+      key: 'powder',
+      header: 'Powder Given (G)',
+
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.powder)} G
         </span>
       ),
     },
@@ -739,7 +745,7 @@ const SolderingDept: React.FC = () => {
   const handleInlineChange = useCallback(
     (
       index: number,
-      field: 'chainReceived' | 'powder' | 'scrap',
+      field: 'chainReceived' | 'scrap',
       value: string,
     ) => {
       // Show Action column when user edits an input
@@ -760,23 +766,17 @@ const SolderingDept: React.FC = () => {
 
                 updated.chainReceived = isNaN(numValue) ? 0 : numValue;
               }
-            } else if (field === 'powder') {
-              updated.powderRaw = value;
 
-              if (value === '' || value === '.' || value === '-') {
-                updated.powder = 0;
-              } else {
-                const numValue = parseFloat(value);
-
-                updated.powder = isNaN(numValue) ? 0 : numValue;
-              }
-
-              // Auto calculate: Chain Received = Chain Given + Powder Given
-              const autoChainReceived =
-                Math.round((entry.chainGiven + updated.powder) * 1000) / 1000;
-              updated.chainReceived = autoChainReceived;
-              updated.chainReceivedRaw =
-                autoChainReceived > 0 ? autoChainReceived.toString() : '';
+              // Auto calculate: Powder Given = Chain Received - Chain Given
+              const autoPowder =
+                Math.max(
+                  0,
+                  Math.round((updated.chainReceived - entry.chainGiven) * 1000) /
+                    1000,
+                );
+              updated.powder = autoPowder;
+              updated.powderRaw =
+                autoPowder > 0 ? autoPowder.toString() : '0';
             } else if (field === 'scrap') {
               updated.scrapRaw = value;
 
@@ -813,13 +813,8 @@ const SolderingDept: React.FC = () => {
     (index: number, action: 'joint' | 'cutting') => {
       const entry = solderingEntries[index];
 
-      if (!entry.chainReceived || entry.chainReceived < 0) {
+      if (!entry.chainReceived || entry.chainReceived <= 0) {
         toast.error('Please enter a valid chain received weight');
-        return;
-      }
-
-      if (!entry.powder || entry.powder < 0) {
-        toast.error('Please enter a valid powder weight');
         return;
       }
 
@@ -979,44 +974,14 @@ const SolderingDept: React.FC = () => {
     refetch,
   ]);
 
-  // Custom action renderer
-  const renderActions = useCallback(
-    (item: SolderingEntry, index: number) => {
-      if (!item.isEditing) {
-        return (
-          <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-            ✓ Completed
-          </span>
-        );
-      }
+  // A row is edited only when the user has entered a value.
+  const hasEditableValues = (entry: SolderingEntry): boolean => {
+    return Boolean(entry.chainReceivedRaw?.trim() || entry.scrapRaw?.trim());
+  };
 
-      return (
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => handleSaveClick(index, 'joint')}
-            disabled={isLoading}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-3 py-1.5 text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-            title="Go to Joint"
-          >
-            <Hammer className="h-4 w-4" />
-
-            <span className="text-xs">Joint</span>
-          </button>
-
-          <button
-            onClick={() => handleSaveClick(index, 'cutting')}
-            disabled={isLoading}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-            title="Go to Cutting"
-          >
-            <Scissors className="h-4 w-4" />
-
-            <span className="text-xs">Cutting</span>
-          </button>
-        </div>
-      );
-    },
-    [isLoading, handleSaveClick],
+  // The whole Action column is conditional.
+  const showActionColumn = solderingEntries.some(
+    (entry) => !entry.isSaved && hasEditableValues(entry),
   );
 
   // Define columns for GenericTable
@@ -1084,45 +1049,6 @@ const SolderingDept: React.FC = () => {
     },
 
     {
-      key: 'powder',
-      header: 'Powder Given(G)',
-
-      render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <div className="relative inline-block">
-              <input
-                type="text"
-                value={
-                  item.powderRaw !== undefined
-                    ? item.powderRaw
-                    : item.powder === 0
-                      ? ''
-                      : item.powder
-                }
-                {...getScaleProps(index, 'powder')}
-                onChange={(e) =>
-                  handleInlineChange(index, 'powder', e.target.value)
-                }
-                placeholder="0.000"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-              />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
-              </span>
-            </div>
-          );
-        }
-
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.powder)} G
-          </span>
-        );
-      },
-    },
-
-    {
       key: 'chainReceived',
       header: 'Chain Received(G)',
 
@@ -1159,6 +1085,17 @@ const SolderingDept: React.FC = () => {
           </span>
         );
       },
+    },
+
+    {
+      key: 'powder',
+      header: 'Powder Given(G)',
+
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.powder)} G
+        </span>
+      ),
     },
 
     {
@@ -1210,6 +1147,46 @@ const SolderingDept: React.FC = () => {
         );
       },
     },
+
+    ...(showActionColumn
+      ? [
+          {
+            key: 'actions',
+            header: 'Action',
+            render: (item: SolderingEntry, index: number) => {
+              if (item.isSaved || !hasEditableValues(item)) {
+                return null;
+              }
+
+              return (
+                <div className="flex items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveClick(index, 'joint')}
+                    disabled={isLoading || isSubmitting}
+                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Go to Joint"
+                  >
+                    <Hammer className="h-3.5 w-3.5" />
+                    <span>Joint</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSaveClick(index, 'cutting')}
+                    disabled={isLoading || isSubmitting}
+                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Go to Cutting"
+                  >
+                    <Scissors className="h-3.5 w-3.5" />
+                    <span>Cutting</span>
+                  </button>
+                </div>
+              );
+            },
+          } as Column<SolderingEntry>,
+        ]
+      : []),
   ];
 
   const isSubmitting = submitSoldering.isPending || submitCutting.isPending;
@@ -1326,7 +1303,6 @@ const SolderingDept: React.FC = () => {
             onSave={(item, index) => handleSaveClick(index, 'joint')}
             emptyMessage="No soldering entries found."
             isLoading={solderingLoading || isSubmitting}
-            renderActions={hasEditedRow ? renderActions : undefined}
             showSrNo={true}
             srNoLabel="Sr No."
           />

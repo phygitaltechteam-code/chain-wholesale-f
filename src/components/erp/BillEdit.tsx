@@ -132,6 +132,24 @@ const BillEdit: React.FC = () => {
     },
   );
 
+  const calculateFineWeight = (
+    purity: number,
+    grossWt: number,
+    srp: number,
+  ) => {
+    const purityFactor = purity / 100;
+    return Math.round((grossWt * purityFactor + srp) * 1000) / 1000;
+  };
+
+  // Update Total Fine calculation (Fine Wt + Labor Rate)
+  const updateTotalFine = (items: ReceiptItem[]) => {
+    const total = items.reduce(
+      (sum, item) => sum + (item.fineWt || 0) + (Number(item.laborRate) || 0),
+      0,
+    );
+    return Math.round(total * 1000) / 1000;
+  };
+
   // Add empty row function
   const handleAddItem = () => {
     const newItem: ReceiptItem = {
@@ -188,6 +206,86 @@ const BillEdit: React.FC = () => {
       return;
     }
 
+    // Handle receipt items
+    const receiptItems =
+      billData.receiptItems ||
+      billData.items ||
+      billData.billItems ||
+      [];
+
+    console.log('Receipt Items:', receiptItems);
+
+    let itemsList: ReceiptItem[] = [];
+    if (receiptItems.length > 0) {
+      itemsList = receiptItems.map((item: any, index: number) => {
+        const purity =
+          item.purity !== undefined && item.purity !== null ? item.purity : '';
+        const grossWt =
+          item.grossWeight !== undefined && item.grossWeight !== null
+            ? item.grossWeight
+            : item.grossWt !== undefined && item.grossWt !== null
+              ? item.grossWt
+              : '';
+        const srp =
+          item.srp !== undefined && item.srp !== null ? item.srp : '';
+        const laborRate =
+          item.laborRate !== undefined && item.laborRate !== null
+            ? item.laborRate
+            : '';
+
+        let fineWt = item.fineWeight ?? item.fineWt ?? item.finWt;
+        if (fineWt === undefined || fineWt === null || fineWt === 0 || fineWt === '') {
+          const p = Number(purity) || 0;
+          const g = Number(grossWt) || 0;
+          const s = Number(srp) || 0;
+          fineWt = p && g ? calculateFineWeight(p, g, s) : 0;
+        } else {
+          fineWt = Number(fineWt);
+        }
+
+        return {
+          id: item.id || `item-${Date.now()}-${index}`,
+          srNo: index + 1,
+          item: item.item?.name || item.itemName || item.name || '',
+          size: item.size?.size || item.sizeName || item.size || '',
+          purity: purity,
+          availableQty:
+            item.availableQty !== undefined && item.availableQty !== null
+              ? item.availableQty
+              : '',
+          grossWt: grossWt,
+          wastage: '',
+          srp: srp,
+          fineWt: Math.round(fineWt * 1000) / 1000,
+          laborRate: laborRate,
+          isLoadingQty: false,
+          itemId: item.itemID || item.itemId || item.item?.id || '',
+          sizeId: item.sizeID || item.sizeId || item.size?.id || '',
+        };
+      });
+
+      console.log('Mapped Items:', itemsList);
+    }
+
+    let initialTotalFine =
+      billData.totalFine ??
+      billData.totalFinWt ??
+      billData.totalFineWeight ??
+      billData.totalWeight ??
+      billData.fineWeight ??
+      billData.fineWt;
+
+    if (
+      initialTotalFine === undefined ||
+      initialTotalFine === null ||
+      initialTotalFine === 0 ||
+      initialTotalFine === ''
+    ) {
+      initialTotalFine = updateTotalFine(itemsList);
+    } else {
+      initialTotalFine = Number(initialTotalFine);
+    }
+
     // Map the data to form fields
     const mappedData = {
       clientId:
@@ -200,38 +298,15 @@ const BillEdit: React.FC = () => {
       date: billData.receiptDate
         ? new Date(billData.receiptDate).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0],
-      customerWeight: billData.customerWeight || 0,
-      totalFine: billData.totalFine || 0,
+      customerWeight:
+        billData.customerWeight ??
+        billData.advance ??
+        billData.receivedWeight ??
+        0,
+      totalFine: initialTotalFine,
     };
 
     console.log('Mapped Form Data:', mappedData);
-
-    // Handle receipt items
-    const receiptItems = billData.receiptItems || billData.items || [];
-
-    console.log('Receipt Items:', receiptItems);
-
-    let itemsList: ReceiptItem[] = [];
-    if (receiptItems.length > 0) {
-      itemsList = receiptItems.map((item: any, index: number) => ({
-        id: item.id || `item-${Date.now()}-${index}`,
-        srNo: index + 1,
-        item: item.item?.name || item.itemName || item.name || '',
-        size: item.size?.size || item.sizeName || item.size || '',
-        purity: item.purity !== undefined && item.purity !== null ? item.purity : '',
-        availableQty: item.availableQty !== undefined && item.availableQty !== null ? item.availableQty : '',
-        grossWt: item.grossWeight !== undefined && item.grossWeight !== null ? item.grossWeight : (item.grossWt || ''),
-        wastage: '',
-        srp: item.srp !== undefined && item.srp !== null ? item.srp : '',
-        fineWt: item.fineWeight || item.fineWt || 0,
-        laborRate: item.laborRate !== undefined && item.laborRate !== null ? item.laborRate : '',
-        isLoadingQty: false,
-        itemId: item.itemID || item.itemId || item.item?.id || '',
-        sizeId: item.sizeID || item.sizeId || item.size?.id || '',
-      }));
-
-      console.log('Mapped Items:', itemsList);
-    }
 
     // Set all form data at once to prevent multiple updates
     setFormData((prev) => ({
@@ -303,9 +378,11 @@ const BillEdit: React.FC = () => {
     updatedItems.forEach((item, idx) => {
       item.srNo = idx + 1;
     });
+    const newTotalFine = updateTotalFine(updatedItems);
     setFormData((prev) => ({
       ...prev,
       items: updatedItems,
+      totalFine: newTotalFine,
     }));
     toast.success('Item removed');
   };
@@ -414,24 +491,6 @@ const BillEdit: React.FC = () => {
         ),
       }));
     }
-  };
-
-  const calculateFineWeight = (
-    purity: number,
-    grossWt: number,
-    srp: number,
-  ) => {
-    const purityFactor = purity / 100;
-    return grossWt * purityFactor + srp;
-  };
-
-  // Update Total Fine calculation (Fine Wt + Labor Rate)
-  const updateTotalFine = (items: ReceiptItem[]) => {
-    const total = items.reduce(
-      (sum, item) => sum + (item.fineWt || 0) + (Number(item.laborRate) || 0),
-      0,
-    );
-    return Math.round(total * 1000) / 1000;
   };
 
   const handleItemChange = (
@@ -1514,7 +1573,13 @@ const BillEdit: React.FC = () => {
                   type="number"
                   step="0.001"
                   min="0"
-                  value={formData.totalFine || ''}
+                  value={
+                    formData.totalFine !== undefined &&
+                    formData.totalFine !== null &&
+                    formData.totalFine !== ''
+                      ? formData.totalFine
+                      : ''
+                  }
                   onChange={handleTotalFineChange}
                   placeholder="0.000"
                   className="font-mono w-28 rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
