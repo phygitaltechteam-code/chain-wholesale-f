@@ -152,7 +152,7 @@ const JointDept: React.FC = () => {
             powderReceivedRaw: '',
             powderRaw: '',
             srpRaw: '',
-            purityRaw: '',
+            purityRaw: joint.purity ? joint.purity.toString() : '',
             scrapRaw: '',
             itemId: joint.itemId,
             sizeId: joint.sizeId,
@@ -780,6 +780,7 @@ const JointDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
+                inputMode="decimal"
                 value={
                   item.purityRaw !== undefined
                     ? item.purityRaw

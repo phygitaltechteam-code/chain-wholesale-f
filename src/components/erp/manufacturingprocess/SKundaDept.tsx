@@ -169,7 +169,7 @@ const SKundaDept: React.FC = () => {
             kundaGivenRaw: '',
             chainReceivedRaw: '',
             scrapRaw: '',
-            purityRaw: '',
+            purityRaw: kunda.purity ? kunda.purity.toString() : '',
             itemId: kunda.itemId,
             sizeId: kunda.sizeId,
             isCompleted: kunda.isCompleted || false,
@@ -614,7 +614,6 @@ const SKundaDept: React.FC = () => {
         id: entry.id,
         data: {
           kundaGiven: entry.kundaGiven,
-          kundaGiven: entry.kundaGiven,
           chainReceived: entry.chainReceived,
           scrap: entry.scrap,
           purity: entry.purity,
@@ -713,6 +712,7 @@ const SKundaDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
+                inputMode="decimal"
                 value={
                   item.purityRaw !== undefined
                     ? item.purityRaw

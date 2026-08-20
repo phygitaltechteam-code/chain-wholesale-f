@@ -157,6 +157,7 @@ const SolderingDept: React.FC = () => {
           const sizeName = soldering.size?.size || soldering.sizeId || 'N/A';
 
           const chainGiven = soldering.chainWeight || 0;
+          const purity=soldering.purity;
           const chainReceived = soldering.chainReceived || 0;
           const powder =
             chainReceived > 0
@@ -190,7 +191,7 @@ const SolderingDept: React.FC = () => {
 
             item: itemName,
             size: sizeName,
-            purity: soldering.purity || '22K',
+            purity: soldering.purity || '',
 
             chainGiven: chainGiven,
             chainReceived: chainReceived,

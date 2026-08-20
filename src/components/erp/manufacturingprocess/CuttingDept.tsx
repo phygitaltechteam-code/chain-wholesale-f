@@ -172,7 +172,7 @@ const CuttingDept: React.FC = () => {
             chainGivenRaw: '',
             chainReceivedRaw: '',
             scrapRaw: '',
-            purityRaw: '',
+            purityRaw: cutting.purity ? cutting.purity.toString() : '',
             itemId: cutting.itemId,
             sizeId: cutting.sizeId,
             isCompleted: cutting.isCompleted || false,
@@ -862,6 +862,7 @@ const CuttingDept: React.FC = () => {
             <div className="relative inline-block">
               <input
                 type="text"
+                inputMode="decimal"
                 value={
                   item.purityRaw !== undefined
                     ? item.purityRaw

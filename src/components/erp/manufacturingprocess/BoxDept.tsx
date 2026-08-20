@@ -29,6 +29,7 @@ interface BoxEntry {
   loss: number;
   isEditing?: boolean;
   isSaved?: boolean;
+  purityRaw?: string;
   chainWeightRaw?: string;
   scrapRaw?: string;
   itemId?: string;
@@ -159,12 +160,14 @@ const BoxDept: React.FC = () => {
           dateTime: dateTime,
           item: itemName,
           size: sizeName,
+          purity: box.purity || box.tar?.purity || 0,
           tarWeight: tarWeight,
           chainWeight: chainWeight,
           scrap: box.scrap || 0,
           loss: loss,
           isEditing: !isSaved,
           isSaved: isSaved,
+          purityRaw: box.purity ? box.purity.toString() : (box.tar?.purity ? box.tar.purity.toString() : ''),
           chainWeightRaw: box.chainWeight ? box.chainWeight.toString() : '',
           scrapRaw: box.scrap ? box.scrap.toString() : '',
           itemId: box.itemId,
@@ -613,7 +616,11 @@ const BoxDept: React.FC = () => {
 
   // Handle inline field change
   const handleInlineChange = useCallback(
-    (index: number, field: 'chainWeight' | 'scrap', value: string) => {
+    (
+      index: number,
+      field: 'chainWeight' | 'scrap' | 'purity',
+      value: string,
+    ) => {
       setBoxEntries((prev) =>
         prev.map((entry, i) => {
           if (i === index) {
@@ -635,6 +642,14 @@ const BoxDept: React.FC = () => {
               } else {
                 const numValue = parseFloat(value);
                 updated.scrap = isNaN(numValue) ? 0 : numValue;
+              }
+            } else if (field === 'purity') {
+              updated.purityRaw = value;
+              if (value === '' || value === '.' || value === '-') {
+                updated.purity = 0;
+              } else {
+                const numValue = parseFloat(value);
+                updated.purity = isNaN(numValue) ? 0 : numValue;
               }
             }
 
@@ -686,6 +701,7 @@ const BoxDept: React.FC = () => {
           chainWeight: entry.chainWeight,
           scrap: entry.scrap,
           loss: entry.loss,
+          purity: entry.purity,
           isCompleted: true,
         },
       });
@@ -721,7 +737,11 @@ const BoxDept: React.FC = () => {
 
   // Check if any editable field has values
   const hasEditableValues = (entry: BoxEntry): boolean => {
-    return Boolean(entry.chainWeightRaw?.trim() || entry.scrapRaw?.trim());
+    return Boolean(
+      entry.chainWeightRaw?.trim() ||
+        entry.scrapRaw?.trim() ||
+        entry.purityRaw?.trim(),
+    );
   };
 
   // Action column is shown only when at least one unsaved row is edited.
@@ -772,11 +792,11 @@ const BoxDept: React.FC = () => {
         </span>
       ),
     },
-        {
+    {
       key: 'purity',
       header: 'Purity % (टंच)',
       render: (item, index) => {
-        if (!item.isSaved) {
+        if (item.isEditing) {
           return (
             <div className="relative inline-block">
               <input
@@ -818,7 +838,7 @@ const BoxDept: React.FC = () => {
         </span>
       ),
     },
-   
+
     {
       key: 'chainWeight',
       header: 'Chain Weight(G)',
