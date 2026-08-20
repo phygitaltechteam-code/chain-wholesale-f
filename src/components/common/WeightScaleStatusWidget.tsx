@@ -31,7 +31,7 @@ export const WeightScaleStatusWidget: React.FC = () => {
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [baudRate, setBaudRate] = useState<number>(9600);
-  const [wsUrl, setWsUrl] = useState<string>('ws://localhost:8080');
+  const [wsUrl, setWsUrl] = useState<string>('ws://localhost:8181');
 
   const handleConnectSerial = async () => {
     await connectSerial(baudRate);
@@ -203,7 +203,7 @@ export const WeightScaleStatusWidget: React.FC = () => {
                       type="text"
                       value={wsUrl}
                       onChange={(e) => setWsUrl(e.target.value)}
-                      placeholder="ws://localhost:8080"
+                      placeholder="ws://localhost:8181"
                       className="font-mono flex-1 rounded-lg border border-white/15 bg-black/40 px-2.5 py-1 text-xs text-white outline-none"
                     />
                     <button
@@ -214,6 +214,9 @@ export const WeightScaleStatusWidget: React.FC = () => {
                       Connect
                     </button>
                   </div>
+                  <p className="mt-1 text-[9px] text-amber-200/60">
+                    Auto-redirects to ports 8181, 8080, 8081, 8082 if busy
+                  </p>
                 </div>
               </>
             ) : (

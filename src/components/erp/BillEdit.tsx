@@ -1,5 +1,5 @@
 // components/erp/BillEdit.tsx
-import React, {useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Save,
@@ -16,22 +16,22 @@ import {
   UserPlus,
   Printer,
 } from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import {useGetClients, useCreateClient} from '@/lib/api/client';
-import {useGetItems} from '@/lib/api/items';
-import {useGetSizes} from '@/lib/api/sizes';
+import { useGetClients, useCreateClient } from '@/lib/api/client';
+import { useGetItems } from '@/lib/api/items';
+import { useGetSizes } from '@/lib/api/sizes';
 import toast from 'react-hot-toast';
-import {z} from 'zod';
+import { z } from 'zod';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
-import {useGetQuantity, useGetBillByid, useBillUpdate} from '@/lib/api/bill';
-import {Route} from '@/routes/_app/billiupdate.$id';
+import { useGetQuantity, useGetBillByid, useBillUpdate } from '@/lib/api/bill';
+import { Route } from '@/routes/_app/billiupdate.$id';
 import GenericInputField from '../Forms/Input/GenericInputField';
-import {useGetHeader} from '@/lib/api/headerapi';
-import {ClientSearch} from '../reciept/ClientSearch';
-import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
+import { useGetHeader } from '@/lib/api/headerapi';
+import { ClientSearch } from '../reciept/ClientSearch';
+import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 
 interface ReceiptItem {
   id: string;
@@ -73,7 +73,7 @@ const ClientSchema = z.object({
 });
 
 const BillEdit: React.FC = () => {
-  const {id} = Route.useParams();
+  const { id } = Route.useParams();
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date[]>([]);
   const [showStockErrorModal, setShowStockErrorModal] = useState(false);
@@ -115,18 +115,18 @@ const BillEdit: React.FC = () => {
     purity: number;
   } | null>(null);
 
-  const {data: clients = [], refetch: refetchClients} = useGetClients();
-  const {data: items = []} = useGetItems();
-  const {data: sizes = []} = useGetSizes();
+  const { data: clients = [], refetch: refetchClients } = useGetClients();
+  const { data: items = [] } = useGetItems();
+  const { data: sizes = [] } = useGetSizes();
   const createClient = useCreateClient();
 
   const getpdfheaderdata = useGetHeader();
   const getQuantity = useGetQuantity();
-  const {data: billResponse, isLoading: isLoadingBill} = useGetBillByid(id);
+  const { data: billResponse, isLoading: isLoadingBill } = useGetBillByid(id);
   const updateBill = useBillUpdate();
 
   // Weighing Scale table focus hook
-  const {getScaleProps} = useTableScaleFocus<keyof ReceiptItem>(
+  const { getScaleProps } = useTableScaleFocus<keyof ReceiptItem>(
     (index, field, weight) => {
       handleItemChange(index, field, weight);
     },
@@ -137,9 +137,10 @@ const BillEdit: React.FC = () => {
     grossWt: number,
     srp: number,
   ) => {
-    const purityFactor = purity / 100;
-    return Math.round((grossWt * purityFactor + srp) * 1000) / 1000;
+    const effectivePurity = (purity + srp) / 100;
+    return Math.round(grossWt * effectivePurity * 1000) / 1000;
   };
+
 
   // Update Total Fine calculation (Fine Wt + Labor Rate)
   const updateTotalFine = (items: ReceiptItem[]) => {
@@ -405,7 +406,7 @@ const BillEdit: React.FC = () => {
       return;
     }
 
-    const currentFetch = {item, size, purity};
+    const currentFetch = { item, size, purity };
     if (
       lastFetchRef.current &&
       lastFetchRef.current.item === currentFetch.item &&
@@ -419,7 +420,7 @@ const BillEdit: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       items: prev.items.map((entry, i) =>
-        i === index ? {...entry, isLoadingQty: true} : entry,
+        i === index ? { ...entry, isLoadingQty: true } : entry,
       ),
     }));
 
@@ -466,11 +467,11 @@ const BillEdit: React.FC = () => {
           items: prev.items.map((entry, i) =>
             i === index
               ? {
-                  ...entry,
-                  availableQty: weight,
-                  srp: srpValue > 0 ? srpValue : entry.srp,
-                  isLoadingQty: false,
-                }
+                ...entry,
+                availableQty: weight,
+                srp: srpValue > 0 ? srpValue : entry.srp,
+                isLoadingQty: false,
+              }
               : entry,
           ),
         }));
@@ -478,7 +479,7 @@ const BillEdit: React.FC = () => {
         setFormData((prev) => ({
           ...prev,
           items: prev.items.map((entry, i) =>
-            i === index ? {...entry, isLoadingQty: false} : entry,
+            i === index ? { ...entry, isLoadingQty: false } : entry,
           ),
         }));
       }
@@ -487,7 +488,7 @@ const BillEdit: React.FC = () => {
       setFormData((prev) => ({
         ...prev,
         items: prev.items.map((entry, i) =>
-          i === index ? {...entry, isLoadingQty: false} : entry,
+          i === index ? { ...entry, isLoadingQty: false } : entry,
         ),
       }));
     }
@@ -617,12 +618,12 @@ const BillEdit: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const value = e.target.value;
-    setFormData((prev) => ({...prev, customerWeight: value}));
+    setFormData((prev) => ({ ...prev, customerWeight: value }));
   };
 
   const handleTotalFineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setFormData((prev) => ({...prev, totalFine: value}));
+    setFormData((prev) => ({ ...prev, totalFine: value }));
   };
 
   const calculateTotalGrossWt = () => {
@@ -1155,9 +1156,9 @@ const BillEdit: React.FC = () => {
         type: 'DRAFT',
       };
 
-      await updateBill.mutateAsync({id, data: billData});
+      await updateBill.mutateAsync({ id, data: billData });
       // toast.success('Bill updated as draft successfully!');
-      navigate({to: '/billing'});
+      navigate({ to: '/billing' });
     } catch (error) {
       console.error('Error saving draft:', error);
       toast.error('Failed to save draft');
@@ -1206,7 +1207,7 @@ const BillEdit: React.FC = () => {
         type: 'BILL',
       };
 
-      await updateBill.mutateAsync({id, data: billData});
+      await updateBill.mutateAsync({ id, data: billData });
       // toast.success('Bill updated successfully!');
 
       // Print the receipt after successful update
@@ -1216,7 +1217,7 @@ const BillEdit: React.FC = () => {
 
       // Navigate after print
       setTimeout(() => {
-        navigate({to: '/billing'});
+        navigate({ to: '/billing' });
       }, 2000);
     } catch (error: any) {
       console.error('Error updating receipt:', error);
@@ -1487,7 +1488,7 @@ const BillEdit: React.FC = () => {
         <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate({to: '/billing'})}
+              onClick={() => navigate({ to: '/billing' })}
               className="flex flex-shrink-0 items-center gap-2 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -1575,8 +1576,8 @@ const BillEdit: React.FC = () => {
                   min="0"
                   value={
                     formData.totalFine !== undefined &&
-                    formData.totalFine !== null &&
-                    formData.totalFine !== ''
+                      formData.totalFine !== null &&
+                      formData.totalFine !== ''
                       ? formData.totalFine
                       : ''
                   }
@@ -1691,7 +1692,7 @@ const BillEdit: React.FC = () => {
             </div>
 
             <div className="px-5 py-5">
-              
+
               <p className="mt-4 text-sm leading-6 text-[#4f4535] dark:text-slate-300">
                 You can save this bill as a draft and complete it later after
                 the required stock is available.

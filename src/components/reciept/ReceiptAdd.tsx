@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Save,
@@ -15,21 +15,21 @@ import {
   UserPlus,
   Printer,
 } from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import {useGetClients, useCreateClient} from '@/lib/api/client';
-import {useGetItems} from '@/lib/api/items';
-import {useGetSizes} from '@/lib/api/sizes';
+import { useGetClients, useCreateClient } from '@/lib/api/client';
+import { useGetItems } from '@/lib/api/items';
+import { useGetSizes } from '@/lib/api/sizes';
 import toast from 'react-hot-toast';
-import {z} from 'zod';
+import { z } from 'zod';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
-import {useGetQuantity, useBill} from '@/lib/api/bill';
+import { useGetQuantity, useBill } from '@/lib/api/bill';
 import GenericInputField from '../Forms/Input/GenericInputField';
-import {ClientSearch} from './ClientSearch';
-import {useGetHeader} from '@/lib/api/headerapi';
-import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
+import { ClientSearch } from './ClientSearch';
+import { useGetHeader } from '@/lib/api/headerapi';
+import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 
 interface ReceiptItem {
   id: string;
@@ -111,9 +111,9 @@ const ReceiptAdd: React.FC = () => {
   } | null>(null);
 
   // Fetch data from API
-  const {data: clients = [], refetch: refetchClients} = useGetClients();
-  const {data: items = []} = useGetItems();
-  const {data: sizes = []} = useGetSizes();
+  const { data: clients = [], refetch: refetchClients } = useGetClients();
+  const { data: items = [] } = useGetItems();
+  const { data: sizes = [] } = useGetSizes();
   const createClient = useCreateClient();
 
   // API hooks
@@ -122,7 +122,7 @@ const ReceiptAdd: React.FC = () => {
   const savebill = useBill();
 
   // Weighing Scale table focus hook
-  const {getScaleProps} = useTableScaleFocus<keyof ReceiptItem>(
+  const { getScaleProps } = useTableScaleFocus<keyof ReceiptItem>(
     (index, field, weight) => {
       handleItemChange(index, field, weight);
     },
@@ -225,7 +225,7 @@ const ReceiptAdd: React.FC = () => {
       return;
     }
 
-    const currentFetch = {item, size, purity};
+    const currentFetch = { item, size, purity };
     if (
       lastFetchRef.current &&
       lastFetchRef.current.item === currentFetch.item &&
@@ -239,7 +239,7 @@ const ReceiptAdd: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       items: prev.items.map((entry, i) =>
-        i === index ? {...entry, isLoadingQty: true} : entry,
+        i === index ? { ...entry, isLoadingQty: true } : entry,
       ),
     }));
 
@@ -286,12 +286,11 @@ const ReceiptAdd: React.FC = () => {
           items: prev.items.map((entry, i) =>
             i === index
               ? {
-                  ...entry,
-                  availableQty: weight,
-                  // ✅ Auto-fill SRP if received from API
-                  srp: srpValue > 0 ? srpValue : entry.srp,
-                  isLoadingQty: false,
-                }
+                ...entry,
+                availableQty: weight,
+                srp: srpValue > 0 ? srpValue : entry.srp,
+                isLoadingQty: false,
+              }
               : entry,
           ),
         }));
@@ -299,7 +298,7 @@ const ReceiptAdd: React.FC = () => {
         setFormData((prev) => ({
           ...prev,
           items: prev.items.map((entry, i) =>
-            i === index ? {...entry, isLoadingQty: false} : entry,
+            i === index ? { ...entry, isLoadingQty: false } : entry,
           ),
         }));
       }
@@ -308,7 +307,7 @@ const ReceiptAdd: React.FC = () => {
       setFormData((prev) => ({
         ...prev,
         items: prev.items.map((entry, i) =>
-          i === index ? {...entry, isLoadingQty: false} : entry,
+          i === index ? { ...entry, isLoadingQty: false } : entry,
         ),
       }));
     }
@@ -319,9 +318,10 @@ const ReceiptAdd: React.FC = () => {
     grossWt: number,
     srp: number,
   ) => {
-    const purityFactor = purity / 100;
-    return grossWt * purityFactor + srp;
+    const effectivePurity = (purity + srp) / 100;
+    return Math.round(grossWt * effectivePurity * 1000) / 1000;
   };
+
 
   // Update Total Fine calculation (Fine Wt + Labor Rate)
   const updateTotalFine = (items: ReceiptItem[]) => {
@@ -458,13 +458,13 @@ const ReceiptAdd: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const value = e.target.value;
-    setFormData((prev) => ({...prev, customerWeight: value}));
+    setFormData((prev) => ({ ...prev, customerWeight: value }));
   };
 
   // Handle Total Fine (Issue) change - Manual edit
   const handleTotalFineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setFormData((prev) => ({...prev, totalFine: value}));
+    setFormData((prev) => ({ ...prev, totalFine: value }));
   };
 
   const calculateTotalGrossWt = () => {
@@ -994,7 +994,7 @@ const ReceiptAdd: React.FC = () => {
 
       await savebill.mutateAsync(billData);
       // toast.success('Bill saved as draft successfully!');
-      navigate({to: '/billing'});
+      navigate({ to: '/billing' });
     } catch (error) {
       console.error('Error saving draft:', error);
       toast.error('Failed to save draft');
@@ -1054,7 +1054,7 @@ const ReceiptAdd: React.FC = () => {
 
       // Navigate after print
       setTimeout(() => {
-        navigate({to: '/billing'});
+        navigate({ to: '/billing' });
       }, 1500);
     } catch (error: any) {
       console.error('Error saving receipt:', error);
@@ -1313,7 +1313,7 @@ const ReceiptAdd: React.FC = () => {
         <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate({to: '/billing'})}
+              onClick={() => navigate({ to: '/billing' })}
               className="flex flex-shrink-0 items-center gap-2 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -1514,7 +1514,7 @@ const ReceiptAdd: React.FC = () => {
             </div>
 
             <div className="px-5 py-5">
-            
+
 
               <p className="mt-4 text-sm leading-6 text-[#4f4535] dark:text-slate-300">
                 You can save this bill as a draft and complete it later after

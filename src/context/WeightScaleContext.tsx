@@ -74,11 +74,17 @@ export const WeightScaleProvider: React.FC<{children: React.ReactNode}> = ({
     toast('Scale disconnected', {icon: '🔌'});
   }, []);
 
-  const connectWebSocket = useCallback((url = 'ws://localhost:8080') => {
+  const connectWebSocket = useCallback((url?: string) => {
     weightScaleService.initLocalWebSocketBridge(url);
-    toast.success(`Connecting to local scale server at ${url}...`, {
-      icon: '🌐',
-    });
+    if (url) {
+      toast.success(`Connecting to local scale server at ${url}...`, {
+        icon: '🌐',
+      });
+    } else {
+      toast.success('Scanning local scale ports (8181, 8080, 8081, 8082)...', {
+        icon: '🌐',
+      });
+    }
   }, []);
 
   // Injects the current stable scale weight into whichever input field is focused

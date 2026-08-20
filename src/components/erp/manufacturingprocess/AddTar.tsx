@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Plus,
   Save,
@@ -8,12 +8,12 @@ import {
   ChevronRight,
   Printer,
 } from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import {Column, GenericTable} from '@/components/Forms/Table/GenericTable';
+import { Column, GenericTable } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import {useGetItems, Item} from '@/lib/api/items';
-import {useGetSizes, Size} from '@/lib/api/sizes';
+import { useGetItems, Item } from '@/lib/api/items';
+import { useGetSizes, Size } from '@/lib/api/sizes';
 import {
   useTar,
   useCreateTar,
@@ -23,8 +23,8 @@ import {
 } from '@/lib/api/tar';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import {useGetHeader} from '@/lib/api/headerapi';
-import {useScaleFocus, useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
+import { useGetHeader } from '@/lib/api/headerapi';
+import { useScaleFocus, useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 
 interface TarEntry {
   id: string;
@@ -64,7 +64,7 @@ const getSizeName = (size: any): string => {
   return '-';
 };
 
-const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
+const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   const getpdfheaderdata = useGetHeader();
   const navigate = useNavigate();
   const [tarEntries, setTarEntries] = useState<TarEntry[]>([]);
@@ -110,11 +110,11 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
   });
 
   // Fetch items and sizes from API
-  const {data: items = [], isLoading: itemsLoading} = useGetItems();
-  const {data: sizes = [], isLoading: sizesLoading} = useGetSizes();
+  const { data: items = [], isLoading: itemsLoading } = useGetItems();
+  const { data: sizes = [], isLoading: sizesLoading } = useGetSizes();
 
   // Fetch existing tar data
-  const {data: tarData = [], isLoading: tarLoading, refetch} = useTar();
+  const { data: tarData = [], isLoading: tarLoading, refetch } = useTar();
   const {
     data: tarHistory = [],
     isLoading: tarHistoryLoading,
@@ -127,12 +127,12 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
 
   // Scale hooks for modal and table
   const fineScaleFocus = useScaleFocus((weight) => {
-    setFormData((prev) => ({...prev, fine: weight.toString()}));
+    setFormData((prev) => ({ ...prev, fine: weight.toString() }));
   });
 
   const grossScaleFocus = useScaleFocus((weight) => {
     setFormData((prev) => {
-      const next = {...prev, grossWt: weight.toString()};
+      const next = { ...prev, grossWt: weight.toString() };
       const purityNum = parseFloat(prev.purity);
       if (!isNaN(weight) && !isNaN(purityNum) && weight > 0 && purityNum > 0) {
         const autoFine = Math.round(((weight * purityNum) / 100) * 1000) / 1000;
@@ -142,7 +142,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
     });
   });
 
-  const {getScaleProps} = useTableScaleFocus<'tar' | 'scrap'>(
+  const { getScaleProps } = useTableScaleFocus<'tar' | 'scrap'>(
     (index, field, weight) => {
       handleInlineChange(index, field, weight.toString());
     },
@@ -150,7 +150,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
 
   // Format date helper for history
   const formatDate = (dateString: string) => {
-    if (!dateString) return {date: '-', time: '-'};
+    if (!dateString) return { date: '-', time: '-' };
     const date = new Date(dateString);
     return {
       date: date.toLocaleDateString('en-IN', {
@@ -272,8 +272,8 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
     // Build the table rows - Compact with minimum padding
     const rows = filteredData
       .map((item: any, index: number) => {
-        const {date, time} = formatDate(item?.createdAt);
-        const {date: proceedDate, time: proceedTime} = formatDate(
+        const { date, time } = formatDate(item?.createdAt);
+        const { date: proceedDate, time: proceedTime } = formatDate(
           item?.updatedAt,
         );
 
@@ -286,10 +286,10 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.fine)}</td>
+                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.purity)}%</td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.tar)}</td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.scrap)}</td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.loss)}</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.purity)}%</td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
                             ${proceedDate} ${proceedTime}
                         </td>
@@ -362,17 +362,16 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
   <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
     Tar History Report
   </h2>
-  ${
-    dateRange.length === 2
-      ? `
+  ${dateRange.length === 2
+        ? `
     <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
       From: ${new Date(dateRange[0]).toLocaleDateString('en-IN')} &nbsp; To: ${new Date(dateRange[1]).toLocaleDateString('en-IN')}
     </div>
   `
-      : `
+        : `
     <div style="flex:1;"></div>
   `
-  }
+      }
 </div>
 
                 <!-- Table -->
@@ -384,10 +383,10 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Fine</th>
+                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Tar</th>
                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
-                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Proceed</th>
                         </tr>
                     </thead>
@@ -470,7 +469,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
       key: 'createdAt',
       header: 'Date & Time',
       render: (item) => {
-        const {date, time} = formatDate(item.createdAt);
+        const { date, time } = formatDate(item.createdAt);
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
@@ -511,6 +510,15 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
       ),
     },
     {
+      key: 'purity',
+      header: 'Purity %',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.purity)}%
+        </span>
+      ),
+    },
+    {
       key: 'tar',
       header: 'Tar (G)',
       render: (item) => (
@@ -538,19 +546,10 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
       ),
     },
     {
-      key: 'purity',
-      header: 'Purity %',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.purity)}%
-        </span>
-      ),
-    },
-    {
       key: 'updatedAt',
       header: 'Proceed Date & Time',
       render: (item) => {
-        const {date, time} = formatDate(item.updatedAt);
+        const { date, time } = formatDate(item.updatedAt);
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
@@ -715,11 +714,11 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
   const handleFormChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
-    const {name, value} = e.target;
+    const { name, value } = e.target;
     if (name === 'grossWt' || name === 'purity') {
       const sanitized = value.replace(/[^0-9.]/g, '');
       setFormData((prev) => {
-        const next = {...prev, [name]: sanitized};
+        const next = { ...prev, [name]: sanitized };
         const grossNum = parseFloat(
           name === 'grossWt' ? sanitized : prev.grossWt,
         );
@@ -740,9 +739,9 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
       });
     } else if (name === 'fine') {
       const sanitized = value.replace(/[^0-9.]/g, '');
-      setFormData((prev) => ({...prev, [name]: sanitized}));
+      setFormData((prev) => ({ ...prev, [name]: sanitized }));
     } else {
-      setFormData((prev) => ({...prev, [name]: value}));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -797,7 +796,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
       const selectedItem = items.find((i) => i.id === formData.itemId);
       const selectedSize = sizes.find((s) => s.id === formData.sizeId);
 
-      const {day, month, year, hour, minute} = selectedDate;
+      const { day, month, year, hour, minute } = selectedDate;
       const date = new Date(year, month - 1, day, hour, minute);
       const dateTimeStr = formatDateTime(date);
 
@@ -863,7 +862,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
     setTarEntries((prev) =>
       prev.map((entry, i) => {
         if (i === index) {
-          const updated = {...entry};
+          const updated = { ...entry };
 
           if (field === 'tar') {
             const sanitized = value.replace(/[^0-9.]/g, '');
@@ -956,7 +955,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
       });
 
       setTarEntries((prev) =>
-        prev.map((s, i) => (i === index ? {...s, isSaved: true} : s)),
+        prev.map((s, i) => (i === index ? { ...s, isSaved: true } : s)),
       );
 
       setIsTarCompleted(true);
@@ -968,7 +967,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
 
       navigate({
         to: '/manufacturingprocess/process',
-        state: {selectedTab: 'box'},
+        state: { selectedTab: 'box' },
       });
     } catch (error) {
       console.error('Error saving tar:', error);
@@ -1062,6 +1061,43 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
       ),
     },
     {
+      key: 'purity',
+      header: 'Purity % (टंच)',
+      render: (item, index) => {
+        if (!item.isSaved) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={
+                  item.purityRaw !== undefined
+                    ? item.purityRaw
+                    : item.purity === 0
+                      ? ''
+                      : item.purity
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'purity', e.target.value)
+                }
+                placeholder="98"
+                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                %
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.purity)}
+          </span>
+        );
+      },
+    },
+    {
       key: 'tar',
       header: 'Tar (G)',
       render: (item, index) => {
@@ -1146,69 +1182,33 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
         </span>
       ),
     },
-    {
-      key: 'purity',
-      header: 'Purity % (टंच)',
-      render: (item, index) => {
-        if (!item.isSaved) {
-          return (
-            <div className="relative inline-block">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={
-                  item.purityRaw !== undefined
-                    ? item.purityRaw
-                    : item.purity === 0
-                      ? ''
-                      : item.purity
-                }
-                onChange={(e) =>
-                  handleInlineChange(index, 'purity', e.target.value)
-                }
-                placeholder="98"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-              />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                %
-              </span>
-            </div>
-          );
-        }
 
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.purity)}
-          </span>
-        );
-      },
-    },
 
     ...(showActionColumn
       ? [
-          {
-            key: 'actions',
-            header: 'Action',
-            render: (item: TarEntry, index: number) => {
-              if (item.isSaved || !hasEditableValues(item)) {
-                return null;
-              }
+        {
+          key: 'actions',
+          header: 'Action',
+          render: (item: TarEntry, index: number) => {
+            if (item.isSaved || !hasEditableValues(item)) {
+              return null;
+            }
 
-              return (
-                <button
-                  type="button"
-                  onClick={() => handleSaveClick(index)}
-                  disabled={isLoading || isSubmitting}
-                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Save Entry"
-                >
-                  <Save className="h-3 w-3" />
-                  <span>Box</span>
-                </button>
-              );
-            },
-          } as Column<TarEntry>,
-        ]
+            return (
+              <button
+                type="button"
+                onClick={() => handleSaveClick(index)}
+                disabled={isLoading || isSubmitting}
+                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                title="Save Entry"
+              >
+                <Save className="h-3 w-3" />
+                <span>Box</span>
+              </button>
+            );
+          },
+        } as Column<TarEntry>,
+      ]
       : []),
   ];
 
@@ -1221,21 +1221,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
       refetchHistory();
     }
   };
-  const getCurrentWeekRange = () => {
-    const today = new Date();
-    const day = today.getDay();
-    const diffToMonday = day === 0 ? -6 : 1 - day;
 
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
-    return {monday, sunday};
-  };
 
   return (
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
