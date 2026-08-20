@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback, useRef} from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Save,
   History,
@@ -7,14 +7,14 @@ import {
   Printer,
   Calendar,
 } from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import {useGetBox, useGetBoxHistory, useSubmitBox} from '@/lib/api/box';
+import { useGetBox, useGetBoxHistory, useSubmitBox } from '@/lib/api/box';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import {useGetHeader} from '@/lib/api/headerapi';
-import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
+import { useGetHeader } from '@/lib/api/headerapi';
+import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 
 interface BoxEntry {
   id: string;
@@ -22,6 +22,7 @@ interface BoxEntry {
   dateTime: string;
   item: any;
   size: any;
+  purity: number;
   tarWeight: number;
   chainWeight: number;
   scrap: number;
@@ -67,7 +68,7 @@ const BoxDept: React.FC = () => {
   const isInitialMount = useRef(true);
 
   // Fetch data from API
-  const {data: boxData = [], isLoading: boxLoading, refetch} = useGetBox();
+  const { data: boxData = [], isLoading: boxLoading, refetch } = useGetBox();
   const {
     data: boxHistory = [],
     isLoading: historyLoading,
@@ -76,7 +77,7 @@ const BoxDept: React.FC = () => {
   const submitBox = useSubmitBox();
 
   // Weighing Scale table focus hook
-  const {getScaleProps} = useTableScaleFocus<'chainWeight' | 'scrap'>(
+  const { getScaleProps } = useTableScaleFocus<'chainWeight' | 'scrap'>(
     (index, field, weight) => {
       handleInlineChange(index, field, weight.toString());
     },
@@ -95,11 +96,11 @@ const BoxDept: React.FC = () => {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return {monday, sunday};
+    return { monday, sunday };
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const {monday, sunday} = getDefaultWeekRange();
+    const { monday, sunday } = getDefaultWeekRange();
     return [monday, sunday];
   });
 
@@ -179,7 +180,7 @@ const BoxDept: React.FC = () => {
 
   // Format date helper for history
   const formatDate = (dateString: string) => {
-    if (!dateString) return {date: '-', time: '-'};
+    if (!dateString) return { date: '-', time: '-' };
     const date = new Date(dateString);
     return {
       date: date.toLocaleDateString('en-IN', {
@@ -254,7 +255,7 @@ const BoxDept: React.FC = () => {
           item?.loss ?? (item?.tarWeight || 0) - (item?.chainWeight || 0),
         ),
     }),
-    {totalTar: 0, totalChain: 0, totalScrap: 0, totalLoss: 0},
+    { totalTar: 0, totalChain: 0, totalScrap: 0, totalLoss: 0 },
   );
 
   // Print History Function
@@ -285,8 +286,8 @@ const BoxDept: React.FC = () => {
     // Build the table rows - Compact with minimum padding
     const rows = filteredData
       .map((item: any, index: number) => {
-        const {date, time} = formatDate(item?.createdAt);
-        const {date: proceedDate, time: proceedTime} = formatDate(
+        const { date, time } = formatDate(item?.createdAt);
+        const { date: proceedDate, time: proceedTime } = formatDate(
           item?.updatedAt,
         );
 
@@ -299,11 +300,12 @@ const BoxDept: React.FC = () => {
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.tarWeight)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainWeight)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(
-              item?.loss ?? (item?.tarWeight || 0) - (item?.chainWeight || 0),
-            )}</td>
+          item?.loss ?? (item?.tarWeight || 0) - (item?.chainWeight || 0),
+        )}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
               ${proceedDate} ${proceedTime}
             </td>
@@ -395,17 +397,16 @@ const BoxDept: React.FC = () => {
   <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
     Box History Report
   </h2>
-  ${
-    fromDate.length > 0 && toDate.length > 0
-      ? `
+  ${fromDate.length > 0 && toDate.length > 0
+        ? `
     <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
       From: ${new Date(fromDate[0]).toLocaleDateString('en-IN')} &nbsp; To: ${new Date(toDate[0]).toLocaleDateString('en-IN')}
     </div>
   `
-      : `
+        : `
     <div style="flex:1;"></div>
   `
-  }
+      }
 </div>
 
         <!-- Table -->
@@ -417,6 +418,7 @@ const BoxDept: React.FC = () => {
               <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
               <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
               <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Tar</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
               <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Wt</th>
               <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
               <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
@@ -514,7 +516,7 @@ const BoxDept: React.FC = () => {
       key: 'createdAt',
       header: 'Date & Time',
       render: (item) => {
-        const {date, time} = formatDate(item?.createdAt);
+        const { date, time } = formatDate(item?.createdAt);
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
@@ -555,6 +557,15 @@ const BoxDept: React.FC = () => {
       ),
     },
     {
+      key: 'purity',
+      header: 'Purity %',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.purity)}%
+        </span>
+      ),
+    },
+    {
       key: 'chainWeight',
       header: 'Chain Weight (G)',
       render: (item) => (
@@ -585,7 +596,7 @@ const BoxDept: React.FC = () => {
       key: 'updatedAt',
       header: 'Proceed Date & Time',
       render: (item) => {
-        const {date, time} = formatDate(item?.updatedAt);
+        const { date, time } = formatDate(item?.updatedAt);
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
@@ -606,7 +617,7 @@ const BoxDept: React.FC = () => {
       setBoxEntries((prev) =>
         prev.map((entry, i) => {
           if (i === index) {
-            const updated = {...entry};
+            const updated = { ...entry };
 
             if (field === 'chainWeight') {
               updated.chainWeightRaw = value;
@@ -682,7 +693,7 @@ const BoxDept: React.FC = () => {
       setBoxEntries((prev) =>
         prev.map((s, i) =>
           i === index
-            ? {...s, isEditing: false, isSaved: true, isCompleted: true}
+            ? { ...s, isEditing: false, isSaved: true, isCompleted: true }
             : s,
         ),
       );
@@ -694,7 +705,7 @@ const BoxDept: React.FC = () => {
 
       navigate({
         to: '/manufacturingprocess/process',
-        state: {selectedTab: 'soldering'},
+        state: { selectedTab: 'soldering' },
       });
     } catch (error) {
       console.error('Error saving box:', error);
@@ -761,6 +772,43 @@ const BoxDept: React.FC = () => {
         </span>
       ),
     },
+        {
+      key: 'purity',
+      header: 'Purity % (टंच)',
+      render: (item, index) => {
+        if (!item.isSaved) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={
+                  item.purityRaw !== undefined
+                    ? item.purityRaw
+                    : item.purity === 0
+                      ? ''
+                      : item.purity
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'purity', e.target.value)
+                }
+                placeholder="98"
+                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                %
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.purity)}%
+          </span>
+        );
+      },
+    },
     {
       key: 'tarWeight',
       header: 'Tar(तार)',
@@ -770,6 +818,7 @@ const BoxDept: React.FC = () => {
         </span>
       ),
     },
+   
     {
       key: 'chainWeight',
       header: 'Chain Weight(G)',
@@ -860,29 +909,29 @@ const BoxDept: React.FC = () => {
     // This entire column is added only after the user edits a row.
     ...(showActionColumn
       ? [
-          {
-            key: 'actions',
-            header: 'Action',
-            render: (item: BoxEntry, index: number) => {
-              if (item.isSaved || !hasEditableValues(item)) {
-                return null;
-              }
+        {
+          key: 'actions',
+          header: 'Action',
+          render: (item: BoxEntry, index: number) => {
+            if (item.isSaved || !hasEditableValues(item)) {
+              return null;
+            }
 
-              return (
-                <button
-                  type="button"
-                  onClick={() => handleSaveClick(index)}
-                  disabled={isLoading || isSubmitting}
-                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Save Entry"
-                >
-                  <Save className="h-3 w-3" />
-                  <span>Soldering</span>
-                </button>
-              );
-            },
-          } as Column<BoxEntry>,
-        ]
+            return (
+              <button
+                type="button"
+                onClick={() => handleSaveClick(index)}
+                disabled={isLoading || isSubmitting}
+                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                title="Save Entry"
+              >
+                <Save className="h-3 w-3" />
+                <span>Soldering</span>
+              </button>
+            );
+          },
+        } as Column<BoxEntry>,
+      ]
       : []),
   ];
 
@@ -898,7 +947,7 @@ const BoxDept: React.FC = () => {
 
   // Reset date range to current week
   const resetDateRange = () => {
-    const {monday, sunday} = getDefaultWeekRange();
+    const { monday, sunday } = getDefaultWeekRange();
     setDateRange([monday, sunday]);
   };
 

@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback, useRef} from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Save,
   Scissors,
@@ -8,20 +8,20 @@ import {
   ChevronDown,
   Printer,
 } from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import {
   useGetSoldering,
   useGetSolderingHistory,
   useSubmitSoldering,
 } from '@/lib/api/soldering';
-import {useSubmitCutting, useSubmitMoveCutting} from '@/lib/api/cutting';
+import { useSubmitCutting, useSubmitMoveCutting } from '@/lib/api/cutting';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import {useGetHeader} from '@/lib/api/headerapi';
-import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
+import { useGetHeader } from '@/lib/api/headerapi';
+import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 
 // ======================================================
 // HELPER: Get Current Week Range
@@ -39,7 +39,7 @@ const getCurrentWeekRange = () => {
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
 
-  return {monday, sunday};
+  return { monday, sunday };
 };
 
 interface SolderingEntry {
@@ -98,7 +98,7 @@ const SolderingDept: React.FC = () => {
   const [toDate, setToDate] = useState<Date | null>(null);
 
   // Weighing Scale table focus hook
-  const {getScaleProps} = useTableScaleFocus<
+  const { getScaleProps } = useTableScaleFocus<
     'chainReceived' | 'scrap'
   >((index, field, weight) => {
     handleInlineChange(index, field, weight.toString());
@@ -117,10 +117,10 @@ const SolderingDept: React.FC = () => {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return {monday, sunday};
+    return { monday, sunday };
   };
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const {monday, sunday} = getDefaultWeekRange();
+    const { monday, sunday } = getDefaultWeekRange();
     return [monday, sunday];
   });
   // Fetch data from API
@@ -161,9 +161,9 @@ const SolderingDept: React.FC = () => {
           const powder =
             chainReceived > 0
               ? Math.max(
-                  0,
-                  Math.round((chainReceived - chainGiven) * 1000) / 1000,
-                )
+                0,
+                Math.round((chainReceived - chainGiven) * 1000) / 1000,
+              )
               : soldering.powder || 0;
           const increase =
             chainGiven > 0 && chainReceived > 0
@@ -336,9 +336,9 @@ const SolderingDept: React.FC = () => {
     // Build the table rows
     const rows = filteredData
       .map((item: any, index: number) => {
-        const {date, time} = formatDate(item?.createdAt);
+        const { date, time } = formatDate(item?.createdAt);
 
-        const {date: proceedDate, time: proceedTime} = formatDate(
+        const { date: proceedDate, time: proceedTime } = formatDate(
           item?.updatedAt,
         );
 
@@ -456,17 +456,16 @@ const SolderingDept: React.FC = () => {
             <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
               Soldering History Report
             </h2>
-            ${
-              fromDate && toDate
-                ? `
+            ${fromDate && toDate
+        ? `
             <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
               From: ${formatDate(fromDate.toISOString()).date} &nbsp; To: ${formatDate(toDate.toISOString()).date}
             </div>
           `
-                : `
+        : `
             <div style="flex:1;"></div>
           `
-            }
+      }
           </div>
 
           <!-- Table -->
@@ -619,7 +618,7 @@ const SolderingDept: React.FC = () => {
       header: 'Date & Time',
 
       render: (item) => {
-        const {date, time} = formatDate(item.createdAt);
+        const { date, time } = formatDate(item.createdAt);
 
         return (
           <div className="flex flex-col items-center">
@@ -653,6 +652,15 @@ const SolderingDept: React.FC = () => {
       render: (item) => (
         <span className="text-sm text-[#1a1c1b] dark:text-white">
           {item?.size?.size}
+        </span>
+      ),
+    },
+    {
+      key: 'purity',
+      header: 'Purity % (टंच)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.purity)}%
         </span>
       ),
     },
@@ -724,7 +732,7 @@ const SolderingDept: React.FC = () => {
       header: 'Proceed Date & Time',
 
       render: (item) => {
-        const {date, time} = formatDate(item.updatedAt);
+        const { date, time } = formatDate(item.updatedAt);
 
         return (
           <div className="flex flex-col items-center">
@@ -754,7 +762,7 @@ const SolderingDept: React.FC = () => {
       setSolderingEntries((prev) =>
         prev.map((entry, i) => {
           if (i === index) {
-            const updated = {...entry};
+            const updated = { ...entry };
 
             if (field === 'chainReceived') {
               updated.chainReceivedRaw = value;
@@ -772,7 +780,7 @@ const SolderingDept: React.FC = () => {
                 Math.max(
                   0,
                   Math.round((updated.chainReceived - entry.chainGiven) * 1000) /
-                    1000,
+                  1000,
                 );
               updated.powder = autoPowder;
               updated.powderRaw =
@@ -853,11 +861,11 @@ const SolderingDept: React.FC = () => {
         prev.map((s, i) =>
           i === index
             ? {
-                ...s,
-                isEditing: false,
-                isSaved: true,
-                isCompleted: true,
-              }
+              ...s,
+              isEditing: false,
+              isSaved: true,
+              isCompleted: true,
+            }
             : s,
         ),
       );
@@ -931,11 +939,11 @@ const SolderingDept: React.FC = () => {
         prev.map((s, i) =>
           i === index
             ? {
-                ...s,
-                isEditing: false,
-                isSaved: true,
-                isCompleted: true,
-              }
+              ...s,
+              isEditing: false,
+              isSaved: true,
+              isCompleted: true,
+            }
             : s,
         ),
       );
@@ -1036,7 +1044,43 @@ const SolderingDept: React.FC = () => {
         </span>
       ),
     },
+    {
+      key: 'purity',
+      header: 'Purity % (टंच)',
+      render: (item, index) => {
+        if (!item.isSaved) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={
+                  item.purityRaw !== undefined
+                    ? item.purityRaw
+                    : item.purity === 0
+                      ? ''
+                      : item.purity
+                }
+                onChange={(e) =>
+                  handleInlineChange(index, 'purity', e.target.value)
+                }
+                placeholder="98"
+                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                %
+              </span>
+            </div>
+          );
+        }
 
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.purity)}
+          </span>
+        );
+      },
+    },
     {
       key: 'chainGiven',
       header: 'Chain Given(G)',
@@ -1150,42 +1194,42 @@ const SolderingDept: React.FC = () => {
 
     ...(showActionColumn
       ? [
-          {
-            key: 'actions',
-            header: 'Action',
-            render: (item: SolderingEntry, index: number) => {
-              if (item.isSaved || !hasEditableValues(item)) {
-                return null;
-              }
+        {
+          key: 'actions',
+          header: 'Action',
+          render: (item: SolderingEntry, index: number) => {
+            if (item.isSaved || !hasEditableValues(item)) {
+              return null;
+            }
 
-              return (
-                <div className="flex items-center justify-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleSaveClick(index, 'joint')}
-                    disabled={isLoading || isSubmitting}
-                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    title="Go to Joint"
-                  >
-                    <Hammer className="h-3.5 w-3.5" />
-                    <span>Joint</span>
-                  </button>
+            return (
+              <div className="flex items-center justify-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleSaveClick(index, 'joint')}
+                  disabled={isLoading || isSubmitting}
+                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Go to Joint"
+                >
+                  <Hammer className="h-3.5 w-3.5" />
+                  <span>Joint</span>
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleSaveClick(index, 'cutting')}
-                    disabled={isLoading || isSubmitting}
-                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    title="Go to Cutting"
-                  >
-                    <Scissors className="h-3.5 w-3.5" />
-                    <span>Cutting</span>
-                  </button>
-                </div>
-              );
-            },
-          } as Column<SolderingEntry>,
-        ]
+                <button
+                  type="button"
+                  onClick={() => handleSaveClick(index, 'cutting')}
+                  disabled={isLoading || isSubmitting}
+                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Go to Cutting"
+                >
+                  <Scissors className="h-3.5 w-3.5" />
+                  <span>Cutting</span>
+                </button>
+              </div>
+            );
+          },
+        } as Column<SolderingEntry>,
+      ]
       : []),
   ];
 
@@ -1200,7 +1244,7 @@ const SolderingDept: React.FC = () => {
     } else {
       setShowHistory(true);
       // Set default dates when showing history
-      const {monday, sunday} = getCurrentWeekRange();
+      const { monday, sunday } = getCurrentWeekRange();
       setFromDate(monday);
       setToDate(sunday);
       refetchHistory();
@@ -1316,10 +1360,10 @@ const SolderingDept: React.FC = () => {
             emptyMessage={
               fromDate && toDate
                 ? `No history records found for the selected date range (${new Date(
-                    fromDate,
-                  ).toLocaleDateString()} to ${new Date(
-                    toDate,
-                  ).toLocaleDateString()})`
+                  fromDate,
+                ).toLocaleDateString()} to ${new Date(
+                  toDate,
+                ).toLocaleDateString()})`
                 : 'No history records found. Complete a soldering process to see history.'
             }
             isLoading={historyLoading}

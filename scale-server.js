@@ -11,24 +11,14 @@ import { WebSocketServer } from 'ws';
 
 const COM_PORT = process.env.SCALE_PORT || 'COM4';
 const BAUD_RATE = Number(process.env.SCALE_BAUD) || 9600;
-const WS_PORT = Number(process.env.WS_PORT) || 8080;
+const PREFERRED_PORT = Number(process.env.WS_PORT) || 8181;
+const FALLBACK_PORTS = [PREFERRED_PORT, 8080, 8081, 8082, 8182, 8888];
+const CANDIDATE_PORTS = [...new Set(FALLBACK_PORTS)];
 
-// 1. WebSocket Server for Frontend Connection
-const wss = new WebSocketServer({ port: WS_PORT });
-
-console.log(`🚀 Scale WebSocket Server running on ws://localhost:${WS_PORT}`);
-
+// 1. WebSocket Server for Frontend Connection with Port Fallback Redirection
 const clients = new Set();
-
-wss.on('connection', (ws) => {
-  clients.add(ws);
-  console.log(`🔌 Frontend connected to scale bridge (Total clients: ${clients.size})`);
-
-  ws.on('close', () => {
-    clients.delete(ws);
-    console.log(`❌ Frontend disconnected (Total clients: ${clients.size})`);
-  });
-});
+let wss = null;
+let activeWsPort = null;
 
 function broadcast(data) {
   const json = JSON.stringify(data);
@@ -38,6 +28,59 @@ function broadcast(data) {
     }
   }
 }
+
+function startWsServer(portIndex = 0) {
+  if (portIndex >= CANDIDATE_PORTS.length) {
+    console.error(
+      `❌ Could not bind WebSocket server to any available ports: ${CANDIDATE_PORTS.join(', ')}`,
+    );
+    return;
+  }
+
+  const port = CANDIDATE_PORTS[portIndex];
+  const server = new WebSocketServer({ port });
+
+  server.on('listening', () => {
+    wss = server;
+    activeWsPort = port;
+    console.log(`🚀 Scale WebSocket Server running on ws://localhost:${port}`);
+    if (port !== CANDIDATE_PORTS[0]) {
+      console.log(
+        `ℹ️ Port ${CANDIDATE_PORTS[0]} was busy. Automatically redirected to port ${port}.`,
+      );
+    }
+
+    server.on('connection', (ws) => {
+      clients.add(ws);
+      console.log(
+        `🔌 Frontend connected to scale bridge on port ${port} (Total clients: ${clients.size})`,
+      );
+
+      ws.on('close', () => {
+        clients.delete(ws);
+        console.log(`❌ Frontend disconnected (Total clients: ${clients.size})`);
+      });
+    });
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(
+        `⚠️ Port ${port} is in use / not available. Redirecting to next fallback port...`,
+      );
+      try {
+        server.close();
+      } catch (e) {
+        // ignore
+      }
+      startWsServer(portIndex + 1);
+    } else {
+      console.error(`⚠️ WebSocket error on port ${port}:`, err.message);
+    }
+  });
+}
+
+startWsServer(0);
 
 // 2. Open Serial Port to Weighing Scale
 console.log(`⏳ Connecting to Scale on ${COM_PORT} @ ${BAUD_RATE} baud...`);

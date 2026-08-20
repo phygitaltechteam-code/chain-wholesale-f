@@ -43,6 +43,10 @@ class WeightScaleService {
   // Local WebSocket Bridge state
   private ws: WebSocket | null = null;
   private wsReconnectTimer: any = null;
+  private fallbackPorts: number[] = [8181, 8080, 8081, 8082, 8182, 8888];
+  private currentPortIndex = 0;
+  private customWsUrl: string | null = null;
+  private activeWsUrl = 'ws://localhost:8181';
 
   private constructor() {
     // Attempt local WebSocket bridge auto-connect (in case local node server is running)
@@ -125,6 +129,11 @@ class WeightScaleService {
 
   public async disconnect(): Promise<void> {
     this.keepReading = false;
+    if (this.wsReconnectTimer) {
+      clearTimeout(this.wsReconnectTimer);
+      this.wsReconnectTimer = null;
+    }
+
     if (this.reader) {
       try {
         await this.reader.cancel();
@@ -144,7 +153,15 @@ class WeightScaleService {
     }
 
     if (this.ws) {
-      this.ws.close();
+      try {
+        this.ws.onopen = null;
+        this.ws.onmessage = null;
+        this.ws.onerror = null;
+        this.ws.onclose = null;
+        this.ws.close();
+      } catch (e) {
+        // ignore
+      }
       this.ws = null;
     }
 
@@ -155,7 +172,11 @@ class WeightScaleService {
   // 2. LOCAL WEBSOCKET BRIDGE (Connects to running Node.js scale server on localhost)
   // ─────────────────────────────────────────────────────────────────────────────
 
-  public initLocalWebSocketBridge(wsUrl = 'ws://localhost:8080') {
+  public getActiveWsUrl(): string {
+    return this.activeWsUrl;
+  }
+
+  public initLocalWebSocketBridge(wsUrl?: string) {
     if (this.status === 'connected' && this.serialPort) {
       return; // Already using direct serial
     }
@@ -165,17 +186,55 @@ class WeightScaleService {
       this.wsReconnectTimer = null;
     }
 
-    try {
-      this.ws = new WebSocket(wsUrl);
+    if (this.ws) {
+      try {
+        this.ws.onopen = null;
+        this.ws.onmessage = null;
+        this.ws.onerror = null;
+        this.ws.onclose = null;
+        this.ws.close();
+      } catch (e) {
+        // ignore
+      }
+      this.ws = null;
+    }
 
-      this.ws.onopen = () => {
+    if (wsUrl !== undefined) {
+      this.customWsUrl = wsUrl.trim() ? wsUrl.trim() : null;
+    }
+
+    const targetUrl =
+      this.customWsUrl ||
+      `ws://localhost:${this.fallbackPorts[this.currentPortIndex]}`;
+
+    try {
+      const socket = new WebSocket(targetUrl);
+      this.ws = socket;
+      let connectedSuccessfully = false;
+
+      // Timeout safety if connection hangs without triggering error/close
+      const connectionTimeout = setTimeout(() => {
+        if (!connectedSuccessfully && this.ws === socket) {
+          try {
+            socket.close();
+          } catch (e) {
+            // ignore
+          }
+          this.handleWsConnectionFailure(targetUrl);
+        }
+      }, 2500);
+
+      socket.onopen = () => {
+        connectedSuccessfully = true;
+        clearTimeout(connectionTimeout);
+        this.activeWsUrl = targetUrl;
         this.updateStatus(
           'connected',
-          `Connected to local scale bridge (${wsUrl})`,
+          `Connected to scale bridge (${targetUrl})`,
         );
       };
 
-      this.ws.onmessage = (event) => {
+      socket.onmessage = (event) => {
         try {
           const rawData = typeof event.data === 'string' ? event.data : '';
           const payload = JSON.parse(rawData);
@@ -205,26 +264,50 @@ class WeightScaleService {
         }
       };
 
-      this.ws.onclose = () => {
-        if (!this.serialPort && this.status === 'connected') {
-          this.updateStatus('disconnected');
-        }
-        if (!this.serialPort) {
-          this.wsReconnectTimer = setTimeout(() => {
-            this.initLocalWebSocketBridge(wsUrl);
-          }, 3000);
+      socket.onclose = () => {
+        clearTimeout(connectionTimeout);
+        if (!connectedSuccessfully) {
+          this.handleWsConnectionFailure(targetUrl);
+        } else {
+          // Connection was established earlier and now lost
+          if (!this.serialPort && this.status === 'connected') {
+            this.updateStatus('disconnected', 'Scale bridge disconnected');
+          }
+          if (!this.serialPort) {
+            this.wsReconnectTimer = setTimeout(() => {
+              this.initLocalWebSocketBridge();
+            }, 3000);
+          }
         }
       };
 
-      this.ws.onerror = () => {
-        // Silent fail for bridge background polling
+      socket.onerror = () => {
+        // Will trigger onclose or timeout
       };
     } catch (e) {
-      if (!this.serialPort) {
-        this.wsReconnectTimer = setTimeout(() => {
-          this.initLocalWebSocketBridge(wsUrl);
-        }, 3000);
-      }
+      this.handleWsConnectionFailure(targetUrl);
+    }
+  }
+
+  private handleWsConnectionFailure(failedUrl: string) {
+    if (this.serialPort) return;
+
+    if (!this.customWsUrl) {
+      // Auto-fallback: try next candidate port in list
+      const nextIndex =
+        (this.currentPortIndex + 1) % this.fallbackPorts.length;
+      this.currentPortIndex = nextIndex;
+
+      // If we finished a full cycle through all fallback ports, wait 3 seconds before next round
+      const delay = nextIndex === 0 ? 3000 : 350;
+      this.wsReconnectTimer = setTimeout(() => {
+        this.initLocalWebSocketBridge();
+      }, delay);
+    } else {
+      // Specific custom URL was provided, retry after 3 seconds
+      this.wsReconnectTimer = setTimeout(() => {
+        this.initLocalWebSocketBridge(this.customWsUrl!);
+      }, 3000);
     }
   }
 
