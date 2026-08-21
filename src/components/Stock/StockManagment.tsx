@@ -183,7 +183,7 @@ const StockManagment: React.FC = () => {
           if (goldStock.purity !== null && goldStock.purity !== undefined) {
             setValue('purity', String(goldStock.purity));
           } else {
-            setValue('purity', '');
+            setValue('purity', '100');
           }
         } else {
           setCurrentStock(0);

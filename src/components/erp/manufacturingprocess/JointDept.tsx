@@ -687,6 +687,7 @@ const JointDept: React.FC = () => {
           powder: entry.powder,
           purity: entry.purity,
           scrap: entry.scrap,
+          srp: 0,
           isCompleted: true,
         },
       });

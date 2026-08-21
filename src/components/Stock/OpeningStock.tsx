@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {Plus, Save, X, Edit, Trash2, Search, ArrowLeft} from 'lucide-react';
 import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
@@ -47,21 +47,29 @@ interface OpeningStockEntry {
   isGoldRow?: boolean;
 }
 
+const EMPTY_ITEMS: Item[] = [];
+const EMPTY_SIZES: Size[] = [];
+const EMPTY_STOCK: any[] = [];
+
 const OpeningStock: React.FC = () => {
   const navigate = useNavigate();
   const [openingEntries, setOpeningEntries] = useState<OpeningStockEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch items and sizes from API
-  const {data: items = [], isLoading: itemsLoading} = useGetItems();
-  const {data: sizes = [], isLoading: sizesLoading} = useGetSizes();
+  const {data: rawItems, isLoading: itemsLoading} = useGetItems();
+  const {data: rawSizes, isLoading: sizesLoading} = useGetSizes();
 
   // Fetch existing stock data
   const {
-    data: stockData = [],
+    data: rawStockData,
     isLoading: stockLoading,
     refetch,
   } = useGetStock();
+
+  const items = rawItems || EMPTY_ITEMS;
+  const sizes = rawSizes || EMPTY_SIZES;
+  const stockData = rawStockData || EMPTY_STOCK;
 
   // Mutation hooks
   const createStock = useCreateStock();
@@ -81,13 +89,13 @@ const OpeningStock: React.FC = () => {
       return;
     }
 
-    if (stockData.length > 0) {
-      const entries: OpeningStockEntry[] = stockData.map((stock, index) => {
-        const item = items.find((i) => i.id === stock.itemId);
-        const size = sizes.find((s) => s.id === stock.sizeId);
+    if (stockData && stockData.length > 0) {
+      const entries: OpeningStockEntry[] = stockData.map((stock: any, index: number) => {
+        const item = items.find((i: any) => i.id === stock.itemId);
+        const size = sizes.find((s: any) => s.id === stock.sizeId);
 
-        // Check if this is a gold row
-        const isGold = item?.name?.toLowerCase() === 'gold' || index === 0;
+        // Check if this is a gold row (strictly based on item name, not index)
+        const isGold = item?.name?.trim().toLowerCase() === 'gold';
 
         // Handle null values with fallbacks
         const weight = stock.weight ? Number(stock.weight) : 0;
@@ -98,32 +106,43 @@ const OpeningStock: React.FC = () => {
           srNo: index + 1,
           item: isGold ? 'Gold' : item?.name || '',
           size: isGold ? '-' : size?.size || '',
-          purity: isGold ? 0 : purity,
+          purity: isGold ? 100 : purity,
           grams: weight,
           isEditing: false,
           isSaved: true,
           gramsRaw: weight ? formatNumberDisplay(weight, 3) : '0',
-          purityRaw: isGold ? '' : purity ? formatNumberDisplay(purity, 3) : '',
+          purityRaw: isGold ? '100' : purity ? formatNumberDisplay(purity, 3) : '',
           itemId: stock.itemId || '',
           sizeId: stock.sizeId || '',
           isGoldRow: isGold,
         };
       });
-      setOpeningEntries(entries);
-    } else {
-      setOpeningEntries([]);
-    }
-  }, [stockData, items, sizes, itemsLoading, sizesLoading, stockLoading]);
 
-  // Filter data based on search term
-  const filteredData = searchTerm
-    ? openingEntries.filter(
-        (item) =>
-          item.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.purity.toString().includes(searchTerm),
-      )
-    : openingEntries;
+      // Keep Gold row on top if present, followed by other inventory items
+      const goldEntries = entries.filter((e) => e.isGoldRow);
+      const otherEntries = entries.filter((e) => !e.isGoldRow);
+      const sortedEntries = [...goldEntries, ...otherEntries].map((e, idx) => ({
+        ...e,
+        srNo: idx + 1,
+      }));
+
+      setOpeningEntries(sortedEntries);
+    } else {
+      setOpeningEntries((prev) => (prev.length === 0 ? prev : []));
+    }
+  }, [rawStockData, rawItems, rawSizes, itemsLoading, sizesLoading, stockLoading]);
+
+  // Filter data based on search term (memoized)
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return openingEntries;
+    const term = searchTerm.toLowerCase();
+    return openingEntries.filter(
+      (item) =>
+        item.item.toLowerCase().includes(term) ||
+        item.size.toLowerCase().includes(term) ||
+        item.purity.toString().includes(term),
+    );
+  }, [openingEntries, searchTerm]);
 
   // Validate form data - Skip validation for gold row
   const validateEntry = (entry: OpeningStockEntry): boolean => {
@@ -375,7 +394,7 @@ const OpeningStock: React.FC = () => {
 
   // Check if a row is the gold row
   const isGoldRow = (entry: OpeningStockEntry) => {
-    return entry.isGoldRow || (entry.item === 'Gold' && entry.srNo === 1);
+    return Boolean(entry.isGoldRow || entry.item?.trim().toLowerCase() === 'gold');
   };
 
   // Custom action renderer for GenericTable with matching theme
@@ -553,9 +572,13 @@ const OpeningStock: React.FC = () => {
       key: 'purity',
       header: 'Purity (%)',
       render: (item, index) => {
-        // If it's a gold row, show "-" as read-only
-        if (isGoldRow(item) && item.isSaved) {
-          return <span className="text-[#4f4535] dark:text-slate-400">-</span>;
+        // If it's a gold row, show "100%" as static read-only
+        if (isGoldRow(item)) {
+          return (
+            <span className="font-mono font-medium text-[#785600] dark:text-amber-400">
+              100%
+            </span>
+          );
         }
         if (item.isEditing) {
           return (

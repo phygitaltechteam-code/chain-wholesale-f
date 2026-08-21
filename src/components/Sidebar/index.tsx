@@ -22,6 +22,8 @@ import {
   MdPictureAsPdf,
 } from 'react-icons/md';
 import {useAuthContext} from '@/context/AuthContext';
+import {useWeightScale} from '@/context/WeightScaleContext';
+import {Scale} from 'lucide-react';
 import {EPinIcon} from '@/icons';
 
 interface SidebarProps {
@@ -46,6 +48,89 @@ interface SubMenuItem {
   icon?: React.ReactNode;
 }
 
+const ScaleSidebarButton: React.FC<{
+  role?: string | null;
+  isCollapsed: boolean;
+  isMobileDevice: boolean;
+}> = React.memo(({role, isCollapsed, isMobileDevice}) => {
+  if (role?.toUpperCase() === 'SUPERADMIN') return null;
+
+  const {
+    isConnected: isScaleConnected,
+    liveWeight,
+    stableWeight,
+    isStable,
+    connectSerial,
+    disconnect: disconnectScale,
+  } = useWeightScale();
+
+  return (
+    <div className="border-t border-white/10 px-3 py-2">
+      <button
+        type="button"
+        onClick={isScaleConnected ? disconnectScale : () => connectSerial(9600)}
+        className={`flex h-[46px] w-full items-center rounded-xl select-none overflow-hidden transition-colors duration-150 ${
+          isCollapsed && !isMobileDevice
+            ? 'justify-center p-2'
+            : 'px-3 py-2'
+        } ${
+          isScaleConnected
+            ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 shadow-sm shadow-emerald-950/40'
+            : 'bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/40'
+        }`}
+        title={
+          isScaleConnected
+            ? `Scale Connected: ${isStable ? stableWeight.toFixed(3) : liveWeight.toFixed(3)}g (Click to disconnect)`
+            : 'Click to connect weighing machine via USB/COM'
+        }
+      >
+        <div
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+            isScaleConnected
+              ? 'bg-emerald-500/20 text-emerald-300'
+              : 'bg-amber-500/20 text-amber-400'
+          } ${isCollapsed && !isMobileDevice ? '' : 'mr-2.5'}`}
+        >
+          <Scale
+            size={16}
+            className={`shrink-0 ${isScaleConnected ? 'animate-pulse' : ''}`}
+          />
+        </div>
+
+        {(!isCollapsed || isMobileDevice) && (
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden text-left leading-tight">
+            <div className="flex items-center justify-between gap-1 overflow-hidden">
+              <span className="truncate text-xs font-bold text-white">
+                {isScaleConnected ? 'Scale Connected' : 'Connect Scale'}
+              </span>
+              {isScaleConnected && (
+                <span
+                  className={`shrink-0 rounded px-1 py-0.2 text-[8px] font-black tracking-wider ${
+                    isStable
+                      ? 'bg-emerald-400/20 text-emerald-300'
+                      : 'bg-amber-400/20 text-amber-300'
+                  }`}
+                >
+                  {isStable ? 'STABLE' : 'LIVE'}
+                </span>
+              )}
+            </div>
+            {isScaleConnected ? (
+              <span className="font-mono truncate text-[11px] font-extrabold text-emerald-300">
+                {(isStable ? stableWeight : liveWeight).toFixed(3)} g
+              </span>
+            ) : (
+              <span className="truncate text-[10px] text-slate-400">
+                USB / COM Port
+              </span>
+            )}
+          </div>
+        )}
+      </button>
+    </div>
+  );
+});
+
 const Sidebar = ({
   onCollapseChange,
   isMobile: propIsMobile,
@@ -56,13 +141,32 @@ const Sidebar = ({
   const {pathname} = location;
   const {user, isAuthenticated} = useAuthContext();
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('sidebar-collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
 
-  const role = user?.role;
+  const role = useMemo(() => {
+    if (user?.role) return user.role;
+    try {
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed?.role || null;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }, [user]);
+
   const isMobileDevice = propIsMobile !== undefined ? propIsMobile : isMobile;
 
   // ============================================================
@@ -242,13 +346,24 @@ const Sidebar = ({
   };
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
     sessionStorage.clear();
     window.location.href = '/signin';
   };
 
   const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
+    const next = !isCollapsed;
+    setIsCollapsed(next);
+    try {
+      localStorage.setItem('sidebar-collapsed', String(next));
+    } catch {
+      // ignore
+    }
+    if (onCollapseChange) {
+      onCollapseChange(next);
+    }
   };
 
   const toggleMobileMenu = () => {
@@ -499,7 +614,13 @@ const Sidebar = ({
         </div>
       </div> */}
 
-      <div className="border-t border-white/5 px-2 py-4">
+      <ScaleSidebarButton
+        role={role}
+        isCollapsed={isCollapsed}
+        isMobileDevice={isMobileDevice}
+      />
+
+      <div className="border-t border-white/5 px-2 py-3">
         <button
           onClick={handleLogout}
           className={`flex w-full items-center rounded-lg transition-all duration-200 ${

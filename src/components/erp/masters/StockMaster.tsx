@@ -90,14 +90,18 @@ const StockMaster: React.FC = () => {
           const item = items.find((i) => i.id === stock.itemId);
           const size = sizes.find((s) => s.id === stock.sizeId);
 
+          const isGold =
+            item?.name?.toLowerCase().includes('gold') ||
+            (stock.sizeId === null && stock.purity === null);
+
           const weight = stock.weight ? Number(stock.weight) : 0;
-          const purity = stock.purity ? Number(stock.purity) : 0;
+          const purity = isGold ? 100 : stock.purity ? Number(stock.purity) : 0;
 
           return {
             id: stock.id,
             srNo: index + 1,
-            item: item?.name || '',
-            size: size?.size || '',
+            item: item?.name || (isGold ? 'Gold' : ''),
+            size: isGold ? '-' : size?.size || '',
             purity: purity,
             grams: weight,
             isEditing: false,

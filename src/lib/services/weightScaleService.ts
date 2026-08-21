@@ -68,6 +68,30 @@ class WeightScaleService {
     return typeof navigator !== 'undefined' && 'serial' in navigator;
   }
 
+  public async autoConnectPreviousSerial(baudRate = 9600): Promise<boolean> {
+    if (!this.isWebSerialSupported() || this.status === 'connected') return false;
+    try {
+      const ports = await (navigator as any).serial.getPorts();
+      if (ports && ports.length > 0) {
+        this.serialPort = ports[0];
+        await this.serialPort.open({
+          baudRate: baudRate,
+          dataBits: 8,
+          stopBits: 1,
+          parity: 'none',
+          flowControl: 'none',
+        });
+        this.keepReading = true;
+        this.updateStatus('connected', 'Scale auto-connected via Web Serial');
+        this.startSerialReadLoop();
+        return true;
+      }
+    } catch (err) {
+      console.debug('Auto-connect previous serial not available or failed:', err);
+    }
+    return false;
+  }
+
   public async connectSerial(baudRate = 9600): Promise<boolean> {
     if (!this.isWebSerialSupported()) {
       this.updateStatus(

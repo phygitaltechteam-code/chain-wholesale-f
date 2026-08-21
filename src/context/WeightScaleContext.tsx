@@ -50,6 +50,9 @@ export const WeightScaleProvider: React.FC<{children: React.ReactNode}> = ({
       if (message) setStatusMessage(message);
     });
 
+    // Auto-reconnect previously authorized COM port on web/HTTPS
+    weightScaleService.autoConnectPreviousSerial();
+
     return () => {
       unsubReading();
       unsubStatus();
