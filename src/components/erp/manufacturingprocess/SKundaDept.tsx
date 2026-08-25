@@ -166,9 +166,9 @@ const SKundaDept: React.FC = () => {
             loss: loss,
             isEditing: !isSaved,
             isSaved: isSaved,
-            kundaGivenRaw: '',
-            chainReceivedRaw: '',
-            scrapRaw: '',
+            kundaGivenRaw: kunda.kundaGiven || kunda.kunda ? (kunda.kundaGiven || kunda.kunda).toString() : '',
+            chainReceivedRaw: kunda.chainReceived ? kunda.chainReceived.toString() : '',
+            scrapRaw: kunda.scrap ? kunda.scrap.toString() : '',
             purityRaw: kunda.purity ? kunda.purity.toString() : '',
             itemId: kunda.itemId,
             sizeId: kunda.sizeId,
@@ -581,7 +581,7 @@ const SKundaDept: React.FC = () => {
     [],
   );
 
-  const handleStopClick = useCallback(
+  const handleStockClick = useCallback(
     (index: number) => {
       const entry = kundaEntries[index];
 
@@ -601,7 +601,7 @@ const SKundaDept: React.FC = () => {
     [kundaEntries],
   );
 
-  const confirmStop = useCallback(async () => {
+  const confirmStock = useCallback(async () => {
     if (saveIndex === null) return;
 
     const index = saveIndex;
@@ -879,10 +879,10 @@ const SKundaDept: React.FC = () => {
                 <div className="flex items-center justify-center">
                   <button
                     type="button"
-                    onClick={() => handleStopClick(index)}
+                    onClick={() => handleStockClick(index)}
                     disabled={isLoading || submitKunda.isPending}
                     className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#5d4200] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    title="Stop Process"
+                    title="Stock Process"
                   >
                     <Square className="h-3.5 w-3.5 fill-current" />
                     <span>Stock</span>
@@ -1199,22 +1199,20 @@ const SKundaDept: React.FC = () => {
         )}
       </div>
 
-      {/* Confirm Stop Modal */}
+      {/* Confirm Stock Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
-              <div className="mb-4 flex items-center justify-center">
-                <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-3 dark:border-amber-700/30 dark:bg-amber-900/30">
-                  <Square className="h-6 w-6 fill-current text-[#785600] dark:text-amber-400" />
-                </div>
-              </div>
               <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
-                Confirm Move To Stock Process
+                Confirm Move To Stock (स्टॉकमध्ये पाठवा)
               </h3>
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
-                Are you sure you want to stock the S Kunda process for this
-                entry?
+                Are you sure you want to move this S Kunda entry to{' '}
+                <strong className="text-[#785600] dark:text-amber-400">
+                  Stock (स्टॉक)
+                </strong>
+                ?
               </p>
               <div className="mt-6 flex justify-center gap-3">
                 <button
@@ -1224,14 +1222,14 @@ const SKundaDept: React.FC = () => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel
+                  Cancel (रद्द करा)
                 </button>
                 <button
-                  onClick={confirmStop}
+                  onClick={confirmStock}
                   disabled={isLoading}
                   className="rounded-lg bg-[#785600] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#5d4200] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isLoading ? 'Stopping...' : 'Confirm Stop'}
+                  {isLoading ? 'Moving...' : 'Confirm Stock (स्टॉक करा)'}
                 </button>
               </div>
             </div>

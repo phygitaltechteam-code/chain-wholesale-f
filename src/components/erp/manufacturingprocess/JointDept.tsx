@@ -118,14 +118,7 @@ const JointDept: React.FC = () => {
           const itemName = joint.item?.name || joint.itemId || 'N/A';
           const sizeName = joint.size?.size || joint.sizeId || 'N/A';
 
-          const isSaved =
-            joint.isCompleted === true &&
-            joint.powderReceived !== null &&
-            joint.powderReceived !== undefined &&
-            joint.purity !== null &&
-            joint.purity !== undefined &&
-            joint.scrap !== null &&
-            joint.scrap !== undefined;
+          const isSaved = joint.isCompleted === true;
 
           return {
             id: joint.id,
@@ -150,7 +143,10 @@ const JointDept: React.FC = () => {
             isEditing: !isSaved,
             isSaved: isSaved,
             powderReceivedRaw: '',
-            powderRaw: '',
+            powderRaw:
+              joint.powder !== null && joint.powder !== undefined
+                ? joint.powder.toString()
+                : '',
             srpRaw: '',
             purityRaw: joint.purity ? joint.purity.toString() : '',
             scrapRaw: '',
@@ -718,15 +714,7 @@ const JointDept: React.FC = () => {
     }
   }, [saveIndex, jointEntries, submitJoint, navigate, refetch]);
 
-  // A row is edited only when the user has entered a value.
-  const hasEditableValues = (entry: JointEntry): boolean => {
-    return Boolean(entry.isDirty);
-  };
 
-  // The whole Action column is conditional.
-  const showActionColumn = jointEntries.some(
-    (entry) => !entry.isSaved && entry.isDirty,
-  );
 
   // Define columns for GenericTable
   const columns: Column<JointEntry>[] = [
@@ -772,7 +760,7 @@ const JointDept: React.FC = () => {
         </span>
       ),
     },
-      {
+    {
       key: 'purity',
       header: 'Purity (%)',
       render: (item, index) => {
@@ -890,7 +878,7 @@ const JointDept: React.FC = () => {
         );
       },
     },
-  
+
     {
       key: 'scrap',
       header: 'Scrap (स्क्रॅप)',
@@ -928,34 +916,30 @@ const JointDept: React.FC = () => {
         );
       },
     },
-    ...(showActionColumn
-      ? [
-          {
-            key: 'actions',
-            header: 'Action',
-            render: (item: JointEntry, index: number) => {
-              if (item.isSaved || !hasEditableValues(item)) {
-                return null;
-              }
+    {
+      key: 'actions',
+      header: 'Action',
+      render: (item: JointEntry, index: number) => {
+        if (item.isSaved) {
+          return null;
+        }
 
-              return (
-                <div className="flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => handleSaveClick(index)}
-                    disabled={isLoading || isSubmitting}
-                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    title="Save Entry"
-                  >
-                    <Save className="h-3.5 w-3.5" />
-                    <span>cutting</span>
-                  </button>
-                </div>
-              );
-            },
-          } as Column<JointEntry>,
-        ]
-      : []),
+        return (
+          <div className="flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => handleSaveClick(index)}
+              disabled={isLoading || isSubmitting}
+              className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              title="Proceed to Cutting"
+            >
+              <Save className="h-3.5 w-3.5" />
+              <span>Cutting</span>
+            </button>
+          </div>
+        );
+      },
+    },
   ];
 
   const isSubmitting = submitJoint.isPending;
@@ -1144,16 +1128,15 @@ const JointDept: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
-              <div className="mb-4 flex items-center justify-center">
-                <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
-                  <Save className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                </div>
-              </div>
               <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
                 Confirm Save
               </h3>
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
-                Are you sure you want to save this joint entry?
+                Are you sure you want to save this joint entry and proceed to{' '}
+                <strong className="text-[#785600] dark:text-amber-400">
+                  Cutting (कटिंग)
+                </strong>
+                ?
               </p>
               <div className="mt-6 flex justify-center gap-3">
                 <button
@@ -1163,7 +1146,7 @@ const JointDept: React.FC = () => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel
+                  Cancel (रद्द करा)
                 </button>
                 <button
                   onClick={confirmSave}

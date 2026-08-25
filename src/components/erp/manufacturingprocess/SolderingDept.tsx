@@ -59,6 +59,7 @@ interface SolderingEntry {
   chainReceivedRaw?: string;
   powderRaw?: string;
   scrapRaw?: string;
+  purityRaw?: string;
   itemId?: string;
   sizeId?: string;
   isCompleted?: boolean;
@@ -157,7 +158,7 @@ const SolderingDept: React.FC = () => {
           const sizeName = soldering.size?.size || soldering.sizeId || 'N/A';
 
           const chainGiven = soldering.chainWeight || 0;
-          const purity=soldering.purity;
+          const purity = soldering.purity;
           const chainReceived = soldering.chainReceived || 0;
           const powder =
             chainReceived > 0
@@ -167,8 +168,8 @@ const SolderingDept: React.FC = () => {
               )
               : soldering.powder || 0;
           const increase =
-            chainGiven > 0 && chainReceived > 0
-              ? Math.round(((chainReceived / chainGiven) * 100) * 1000) / 1000
+            powder > 0 && chainGiven > 0
+              ? Math.round((chainGiven / powder) * 1000) / 1000
               : 0;
 
           const isSaved =
@@ -211,6 +212,10 @@ const SolderingDept: React.FC = () => {
             powderRaw: soldering.powder ? soldering.powder.toString() : '',
 
             scrapRaw: soldering.scrap ? soldering.scrap.toString() : '',
+            purityRaw:
+              soldering.purity !== null && soldering.purity !== undefined
+                ? soldering.purity.toString()
+                : '',
 
             itemId: soldering.itemId,
             sizeId: soldering.sizeId,
@@ -378,7 +383,7 @@ const SolderingDept: React.FC = () => {
                     </td>
 
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-                        ${formatNumber(item?.increase)}%
+                        ${formatNumberDisplay(item?.increase)}%
                     </td>
 
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
@@ -704,7 +709,7 @@ const SolderingDept: React.FC = () => {
 
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.increase)} %
+          {formatNumberDisplay(item.increase)} %
         </span>
       ),
     },
@@ -754,7 +759,7 @@ const SolderingDept: React.FC = () => {
   const handleInlineChange = useCallback(
     (
       index: number,
-      field: 'chainReceived' | 'scrap',
+      field: 'chainReceived' | 'scrap' | 'purity',
       value: string,
     ) => {
       // Show Action column when user edits an input
@@ -765,7 +770,10 @@ const SolderingDept: React.FC = () => {
           if (i === index) {
             const updated = { ...entry };
 
-            if (field === 'chainReceived') {
+            if (field === 'purity') {
+              updated.purityRaw = value;
+              updated.purity = value;
+            } else if (field === 'chainReceived') {
               updated.chainReceivedRaw = value;
 
               if (value === '' || value === '.' || value === '-') {
@@ -798,11 +806,9 @@ const SolderingDept: React.FC = () => {
               }
             }
 
-            if (entry.chainGiven > 0 && updated.chainReceived > 0) {
+            if (updated.powder > 0 && entry.chainGiven > 0) {
               updated.increase =
-                Math.round(
-                  ((updated.chainReceived / entry.chainGiven) * 100) * 1000,
-                ) / 1000;
+                Math.round((entry.chainGiven / updated.powder) * 1000) / 1000;
             } else {
               updated.increase = 0;
             }
@@ -854,6 +860,7 @@ const SolderingDept: React.FC = () => {
           powder: entry.powder,
           increase: entry.increase,
           scrap: entry.scrap,
+          purity: entry.purity,
           isCompleted: true,
         },
       });
@@ -919,6 +926,7 @@ const SolderingDept: React.FC = () => {
           powder: entry.powder,
           increase: entry.increase,
           scrap: entry.scrap,
+          purity: entry.purity,
           isCompleted: true,
         },
       });
@@ -932,6 +940,7 @@ const SolderingDept: React.FC = () => {
           powder: entry.powder,
           increase: entry.increase,
           scrap: entry.scrap,
+          purity: entry.purity,
           isCompleted: true,
         },
       });
@@ -1058,15 +1067,13 @@ const SolderingDept: React.FC = () => {
                 value={
                   item.purityRaw !== undefined
                     ? item.purityRaw
-                    : item.purity === 0
-                      ? ''
-                      : item.purity
+                    : item.purity || ''
                 }
                 onChange={(e) =>
                   handleInlineChange(index, 'purity', e.target.value)
                 }
                 placeholder="98"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
               <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
                 %
@@ -1074,10 +1081,9 @@ const SolderingDept: React.FC = () => {
             </div>
           );
         }
-
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.purity)}
+            {formatNumberDisplay(item.purity)} %
           </span>
         );
       },
@@ -1380,19 +1386,15 @@ const SolderingDept: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
-              <div className="mb-4 flex items-center justify-center">
-                <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
-                  <Save className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                </div>
-              </div>
-
               <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
                 Confirm Save
               </h3>
 
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
                 Are you sure you want to save this soldering entry and go to the{' '}
-                <strong>{actionType === 'joint' ? 'Joint' : 'Cutting'}</strong>{' '}
+                <strong className="text-[#785600] dark:text-amber-400">
+                  {actionType === 'joint' ? 'Joint (जॉइंट)' : 'Cutting (कटिंग)'}
+                </strong>{' '}
                 department?
               </p>
 
@@ -1405,7 +1407,7 @@ const SolderingDept: React.FC = () => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel
+                  Cancel (रद्द करा)
                 </button>
 
                 <button

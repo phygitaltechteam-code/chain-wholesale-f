@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Search,
@@ -9,13 +9,13 @@ import {
   Calendar,
   Factory,
 } from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import toast from 'react-hot-toast';
 import GenericButton from '../Forms/Buttons/GenericButton';
-import {useDeleteBill, useGetBill} from '@/lib/api/bill';
-import {useGetHeader} from '@/lib/api/headerapi';
+import { useDeleteBill, useGetBill } from '@/lib/api/bill';
+import { useGetHeader } from '@/lib/api/headerapi';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
 import {
   Scale,
@@ -26,7 +26,7 @@ import {
   AlertTriangle,
   ShieldAlert,
 } from 'lucide-react';
-import {useGetProfileData, useActivateKey} from '@/lib/api/profile';
+import { useGetProfileData, useActivateKey } from '@/lib/api/profile';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
 
 interface ReceiptItem {
@@ -134,7 +134,7 @@ const Billing: React.FC = () => {
     }
 
     activateKeyMutation.mutate(
-      {key: cleanKey},
+      { key: cleanKey },
       {
         onSuccess: () => {
           setIsUnlocked(true);
@@ -210,14 +210,14 @@ const Billing: React.FC = () => {
   const fromDatePickerRef = useRef<any>(null);
   const toDatePickerRef = useRef<any>(null);
 
-  const {data: billData, isLoading: billLoading} = useGetBill();
+  const { data: billData, isLoading: billLoading } = useGetBill();
 
   useEffect(() => {
     setDefaultDateRange();
   }, []);
 
   const setDefaultDateRange = () => {
-    const {monday, sunday, fromStr, toStr} = getCurrentWeekRange();
+    const { monday, sunday, fromStr, toStr } = getCurrentWeekRange();
     setDateRange({
       from: fromStr,
       to: toStr,
@@ -1009,7 +1009,7 @@ const Billing: React.FC = () => {
   };
 
   const handleRowClick = (group: BillGroup) => {
-    navigate({to: '/billiupdate/$id', params: {id: group.id}});
+    navigate({ to: '/billiupdate/$id', params: { id: group.id } });
   };
 
   const handleDelete = (group: BillGroup) => {
@@ -1051,47 +1051,51 @@ const Billing: React.FC = () => {
       return;
     }
 
-    if (group.items.length === 1) {
-      const singleItem = group.items[0];
-      sessionStorage.setItem(
-        'manufacturing_billing_prefill',
-        JSON.stringify({
-          itemId: singleItem.itemId || '',
-          sizeId: singleItem.sizeId || '',
-          itemName: singleItem.item,
-          sizeName: singleItem.size,
-          grossWt: singleItem.grossWeight,
-          purity: singleItem.purity,
-          fine: singleItem.finWt,
-        }),
-      );
-      toast.success(
-        `Sending ${singleItem.item} (${singleItem.grossWeight}g) to Tar Department...`,
-      );
-      navigate({to: '/manufacturingprocess/process'});
-    } else {
-      setShowManufacturingItemPicker(group);
-    }
+    const itemsToSend = group.items.map((item) => ({
+      itemId: item.itemId || '',
+      sizeId: item.sizeId || '',
+      itemName: item.item,
+      sizeName: item.size,
+      grossWt: item.grossWeight,
+      purity: item.purity,
+      fine: item.finWt,
+    }));
+
+    sessionStorage.setItem(
+      'manufacturing_billing_prefill',
+      JSON.stringify(itemsToSend),
+    );
+    toast.success(
+      `Sending ${itemsToSend.length} item${itemsToSend.length > 1 ? 's' : ''} to Tar Department...`,
+    );
+    navigate({ to: '/manufacturingprocess/process' });
   };
 
   const handleSelectManufacturingItem = (item: any) => {
     sessionStorage.setItem(
       'manufacturing_billing_prefill',
-      JSON.stringify({
-        itemId: item.itemId || '',
-        sizeId: item.sizeId || '',
-        itemName: item.item,
-        sizeName: item.size,
-        grossWt: item.grossWeight,
-        purity: item.purity,
-        fine: item.finWt,
-      }),
+      JSON.stringify([
+        {
+          itemId: item.itemId || '',
+          sizeId: item.sizeId || '',
+          itemName: item.item,
+          sizeName: item.size,
+          grossWt: item.grossWeight,
+          purity: item.purity,
+          fine: item.finWt,
+        },
+      ]),
     );
     setShowManufacturingItemPicker(null);
     toast.success(
       `Sending ${item.item} (${item.grossWeight}g) to Tar Department...`,
     );
-    navigate({to: '/manufacturingprocess/process'});
+    navigate({ to: '/manufacturingprocess/process' });
+  };
+
+  const handleSendAllManufacturingItems = (group: BillGroup) => {
+    handleSendToManufacturing(group);
+    setShowManufacturingItemPicker(null);
   };
 
   const renderActions = (item: BillGroup, index: number) => (
@@ -1316,7 +1320,7 @@ const Billing: React.FC = () => {
             </div>
             <GenericButton
               type="button"
-              onClick={() => navigate({to: '/receipt/addreciept'})}
+              onClick={() => navigate({ to: '/receipt/addreciept' })}
             >
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span>Add Bill</span>
@@ -1545,12 +1549,12 @@ const Billing: React.FC = () => {
                     <span className="font-bold text-red-600 dark:text-red-400">
                       {expiryDate
                         ? new Date(expiryDate).toLocaleString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
                         : 'Expired'}
                     </span>
                   </div>
@@ -1571,11 +1575,10 @@ const Billing: React.FC = () => {
                           if (keyError) setKeyError('');
                         }}
                         placeholder="e.g. XXXX-XXXX-XXXX-XXXX"
-                        className={`font-mono w-full rounded-lg border px-3.5 py-2.5 text-xs uppercase text-[#1a1c1b] placeholder:text-[#817563] focus:outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${
-                          keyError
+                        className={`font-mono w-full rounded-lg border px-3.5 py-2.5 text-xs uppercase text-[#1a1c1b] placeholder:text-[#817563] focus:outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${keyError
                             ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
                             : 'border-[#d3c4af]/40 focus:border-[#785600] focus:ring-[#785600]/10 dark:border-slate-700'
-                        }`}
+                          }`}
                       />
                     </div>
                     {keyError && (
@@ -1664,7 +1667,18 @@ const Billing: React.FC = () => {
                 ))}
               </div>
 
-              <div className="flex justify-end border-t border-[#d3c4af]/20 p-3.5 dark:border-slate-700">
+              <div className="flex items-center justify-between border-t border-[#d3c4af]/20 p-3.5 dark:border-slate-700">
+                <button
+                  onClick={() =>
+                    handleSendAllManufacturingItems(showManufacturingItemPicker)
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-amber-700 shadow-sm"
+                >
+                  <Factory className="h-4 w-4" />
+                  <span>
+                    Send All ({showManufacturingItemPicker.items.length} Items)
+                  </span>
+                </button>
                 <button
                   onClick={() => setShowManufacturingItemPicker(null)}
                   className="rounded-lg px-4 py-2 text-xs font-medium text-[#4f4535] transition-colors hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
