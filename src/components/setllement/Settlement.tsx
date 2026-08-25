@@ -698,11 +698,13 @@ const Settlement: React.FC = () => {
       }
 
       const signedAmount =
-        settlementDetail.settlementType === 'receive' ? amount : -amount;
+        settlementDetail.settlementType === 'receive' ? -amount : amount;
 
       const settlementData = {
         clientId: settlementDetail.clientId,
         amount: signedAmount,
+        type: settlementDetail.settlementType,
+        pendingBalance: settlementDetail.pendingBalance,
       };
 
       await submitSettlementMutation.mutateAsync(settlementData);
@@ -997,7 +999,7 @@ const Settlement: React.FC = () => {
                     : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                 }`}
               >
-                <Plus className="h-4 w-4" />
+                <Minus className="h-4 w-4" />
                 Receive
               </button>
               <button
@@ -1018,7 +1020,7 @@ const Settlement: React.FC = () => {
                     : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                 }`}
               >
-                <Minus className="h-4 w-4" />
+                <Plus className="h-4 w-4" />
                 Give
               </button>
             </div>
@@ -1097,7 +1099,11 @@ const Settlement: React.FC = () => {
                     closeSettlementModal();
                   }
                 }}
-                placeholder={`Max ${formatNumber(settlementDetail.pendingBalance)}g`}
+                placeholder={
+                  settlementDetail.settlementType === 'receive'
+                    ? `Max ${formatNumber(settlementDetail.pendingBalance)}g`
+                    : 'Enter amount (g)'
+                }
                 suffix="G"
               />
             </div>
@@ -1149,8 +1155,8 @@ const Settlement: React.FC = () => {
 
     const signedAmount =
       settlementDetail.settlementType === 'receive'
-        ? `+${formatNumber(settlementDetail.settlementAmount)}`
-        : `-${formatNumber(settlementDetail.settlementAmount)}`;
+        ? `-${formatNumber(settlementDetail.settlementAmount)}`
+        : `+${formatNumber(settlementDetail.settlementAmount)}`;
 
     return (
       <div

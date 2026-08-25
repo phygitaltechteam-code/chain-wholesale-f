@@ -1,10 +1,10 @@
-import React, {useRef, useState} from 'react';
-import {Download, Upload, Loader2, AlertCircle} from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Download, Upload, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 
-import {useQueryClient} from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
-import {getBackFile, useRestore} from '@/lib/api/backup';
+import { getBackFile, useRestore, useDeleteDatabase } from '@/lib/api/backup';
 
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import PageHeader from '@/components/Forms/Common/PageHeader';
@@ -15,12 +15,12 @@ const BackupAndRestorePage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
   const [isDownloading, setIsDownloading] = useState(false);
-
   const [isUploading, setIsUploading] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
 
   const restore = useRestore(queryClient);
+  const deleteDbMutation = useDeleteDatabase(queryClient);
 
   /**
    * ============================================
@@ -39,30 +39,7 @@ const BackupAndRestorePage = () => {
         id: 'backup-download',
       });
 
-      /**
-       * IMPORTANT:
-       *
-       * getBackFile() returns the Blob directly.
-       *
-       * Do NOT use:
-       * result.data
-       *
-       * Do NOT use:
-       * result
-       *
-       * Just use:
-       * blob
-       */
       const blob = await getBackFile();
-
-      console.log('========== DOWNLOAD ==========');
-
-      console.log('Blob:', blob);
-      console.log('Is Blob:', blob instanceof Blob);
-      console.log('Size:', blob.size);
-      console.log('Type:', blob.type);
-
-      console.log('==============================');
 
       if (!(blob instanceof Blob)) {
         throw new Error('Invalid backup file received');
@@ -72,40 +49,15 @@ const BackupAndRestorePage = () => {
         throw new Error('Backup file is empty');
       }
 
-      /**
-       * Create download URL
-       */
       const url = window.URL.createObjectURL(blob);
-
-      /**
-       * Create download link
-       */
       const link = document.createElement('a');
-
       link.href = url;
-
-      /**
-       * Current date
-       */
       const today = new Date().toISOString().split('T')[0];
-
-      /**
-       * SQL filename
-       */
       link.download = `database-backup-${today}.sql`;
-
-      /**
-       * Trigger download
-       */
       document.body.appendChild(link);
-
       link.click();
-
       document.body.removeChild(link);
 
-      /**
-       * Free memory
-       */
       setTimeout(() => {
         window.URL.revokeObjectURL(url);
       }, 1000);
@@ -114,12 +66,7 @@ const BackupAndRestorePage = () => {
         id: 'backup-download',
       });
     } catch (error: any) {
-      console.error('========== DOWNLOAD ERROR ==========');
-
-      console.error(error);
-
-      console.error('====================================');
-
+      console.error('========== DOWNLOAD ERROR ==========', error);
       toast.error(error?.message || 'Failed to download database backup', {
         id: 'backup-download',
       });
@@ -140,35 +87,17 @@ const BackupAndRestorePage = () => {
       return;
     }
 
-    /**
-     * Validate extension
-     */
     if (!file.name.toLowerCase().endsWith('.sql')) {
       toast.error('Please select a .sql backup file');
-
       event.target.value = '';
-
       return;
     }
 
-    /**
-     * Validate file size
-     */
     if (file.size === 0) {
       toast.error('Selected SQL backup file is empty');
-
       event.target.value = '';
-
       return;
     }
-
-    console.log('========== SELECTED FILE ==========');
-
-    console.log('Name:', file.name);
-    console.log('Size:', file.size);
-    console.log('Type:', file.type);
-
-    console.log('===================================');
 
     setSelectedFile(file);
   };
@@ -181,7 +110,6 @@ const BackupAndRestorePage = () => {
   const handleRestore = async () => {
     if (!selectedFile) {
       toast.error('Please select a backup file');
-
       return;
     }
 
@@ -202,18 +130,7 @@ const BackupAndRestorePage = () => {
       });
 
       const formData = new FormData();
-
       formData.append('file', selectedFile);
-
-      console.log('========== RESTORE ==========');
-
-      console.log('File name:', selectedFile.name);
-
-      console.log('File size:', selectedFile.size);
-
-      console.log('File type:', selectedFile.type);
-
-      console.log('=============================');
 
       await restore.mutateAsync(formData);
 
@@ -221,29 +138,14 @@ const BackupAndRestorePage = () => {
         id: 'database-restore',
       });
 
-      /**
-       * Clear selected file
-       */
       setSelectedFile(null);
-
-      /**
-       * Clear file input
-       */
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
 
-      /**
-       * Refresh application data
-       */
       await queryClient.invalidateQueries();
     } catch (error: any) {
-      console.error('========== RESTORE ERROR ==========');
-
-      console.error(error);
-
-      console.error('===================================');
-
+      console.error('========== RESTORE ERROR ==========', error);
       toast.error(error?.message || 'Failed to restore database', {
         id: 'database-restore',
       });
@@ -252,38 +154,66 @@ const BackupAndRestorePage = () => {
     }
   };
 
+  /**
+   * ============================================
+   * DELETE DATABASE
+   * ============================================
+   */
+  const handleDeleteDatabase = async () => {
+    try {
+      toast.loading('Deleting database records...', {
+        id: 'database-delete',
+      });
+
+      await deleteDbMutation.mutateAsync();
+
+      toast.success('Database records deleted successfully', {
+        id: 'database-delete',
+      });
+
+      setShowDeleteConfirmModal(false);
+      await queryClient.invalidateQueries();
+    } catch (error: any) {
+      console.error('========== DELETE DATABASE ERROR ==========', error);
+      toast.error(error?.message || 'Failed to delete database', {
+        id: 'database-delete',
+      });
+    }
+  };
+
   return (
-    <div className="bg-gray-50 min-h-screen p-6">
+    <div className="min-h-screen bg-gray-50 p-6 dark:bg-slate-950">
       <div className="mx-auto">
         {/* Header */}
         <div className="mb-6">
           <PageHeader
-            title="Data Backup"
-            subtitle="Backup and restore your database"
+            title="Data Backup & Management"
+            subtitle="Backup, restore, or reset your database"
           />
         </div>
 
-        {/* Download Backup */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="col:span-6 mb-4 rounded-lg border border-stroke bg-white p-6 shadow-sm">
-            <div className="mb-2 flex items-center gap-2">
-              <Download className="h-5 w-5 text-blue-600" />
-
-              <h2 className="text-lg font-semibold text-black">
-                Download Backup
-              </h2>
+        {/* 3 Action Cards */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Card 1: Download Backup */}
+          <div className="flex flex-col justify-between rounded-xl border border-[#d3c4af]/30 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <Download className="h-5 w-5 text-[#785600] dark:text-amber-400" />
+                <h2 className="text-lg font-semibold text-[#1a1c1b] dark:text-white">
+                  Download Backup
+                </h2>
+              </div>
+              <p className="mb-6 text-sm text-[#4f4535] dark:text-slate-400">
+                Download a complete SQL backup of your database safely to your device.
+              </p>
             </div>
-
-            <p className="text-gray-500 mb-4 text-sm">
-              Download a complete SQL backup of your database.
-            </p>
 
             <GenericButton
               type="button"
               onClick={handleDownloadBackup}
               disabled={isDownloading}
               variant="primary"
-              className="!px-6"
+              className="w-full !px-6"
             >
               {isDownloading ? (
                 <>
@@ -299,56 +229,128 @@ const BackupAndRestorePage = () => {
             </GenericButton>
           </div>
 
-          {/* Restore */}
-          <div className="mb-4 rounded-lg border border-stroke bg-white p-6 shadow-sm">
-            <div className="mb-2 flex items-center gap-2">
-              <Upload className="h-5 w-5 text-blue-600" />
+          {/* Card 2: Restore Data */}
+          <div className="flex flex-col justify-between rounded-xl border border-[#d3c4af]/30 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <Upload className="h-5 w-5 text-[#785600] dark:text-amber-400" />
+                <h2 className="text-lg font-semibold text-[#1a1c1b] dark:text-white">
+                  Restore Data
+                </h2>
+              </div>
+              <p className="mb-4 text-sm text-[#4f4535] dark:text-slate-400">
+                Upload an existing SQL backup file to restore database data.
+              </p>
 
-              <h2 className="text-lg font-semibold text-black">Restore Data</h2>
+              <div className="mb-4">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".sql,application/sql,text/plain"
+                  onChange={handleFileSelect}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-amber-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-[#785600] hover:file:bg-amber-100 dark:file:bg-slate-800 dark:file:text-amber-400"
+                />
+              </div>
             </div>
 
-            <p className="text-gray-500 mb-4 text-sm">
-              Upload a SQL backup file to restore your database.
-            </p>
+            <GenericButton
+              type="button"
+              onClick={handleRestore}
+              disabled={!selectedFile || restore.isPending || isUploading}
+              className={`w-full !whitespace-nowrap !px-6 ${
+                !selectedFile || restore.isPending || isUploading
+                  ? '!cursor-not-allowed !bg-gray-300 !text-gray-500 dark:!bg-slate-800 dark:!text-slate-600'
+                  : '!bg-emerald-600 !text-white hover:!bg-emerald-700'
+              }`}
+            >
+              {restore.isPending || isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Restoring...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Restore Data
+                </>
+              )}
+            </GenericButton>
+          </div>
 
-            {/* File Input & Restore Button */}
-            <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".sql,application/sql,text/plain"
-                onChange={handleFileSelect}
-                className="text-gray-500 block w-full flex-1 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
-              />
-
-              <GenericButton
-                type="button"
-                onClick={handleRestore}
-                disabled={!selectedFile || restore.isPending || isUploading}
-                className={`!whitespace-nowrap !px-6 ${
-                  !selectedFile || restore.isPending || isUploading
-                    ? '!bg-gray-300 !text-gray-500 cursor-not-allowed'
-                    : '!bg-red-600 !text-white hover:!bg-red-700'
-                } `}
-              >
-                {restore.isPending || isUploading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Restoring...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Restore Data
-                  </>
-                )}
-              </GenericButton>
+          {/* Card 3: Delete Database */}
+          <div className="flex flex-col justify-between rounded-xl border border-red-200 bg-white p-6 shadow-sm dark:border-red-900/30 dark:bg-slate-900">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
+                <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">
+                  Delete Database
+                </h2>
+              </div>
+              <p className="mb-6 text-sm text-[#4f4535] dark:text-slate-400">
+                Permanently clear and reset all database records. This action cannot be undone.
+              </p>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirmModal(true)}
+              disabled={deleteDbMutation.isPending}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-red-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {deleteDbMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  <span>Delete Database</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Delete Confirmation Modal (Simple popup without top icon & Hindi in brackets) */}
+        {showDeleteConfirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
+              <div className="p-6">
+                <h3 className="mb-2 text-center text-lg font-bold text-red-600 dark:text-red-400">
+                  Confirm Database Deletion (डेटाबेस डिलीट करा)
+                </h3>
+                <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
+                  Are you sure you want to permanently delete all database data? This action cannot be reversed.
+                  <br />
+                  <span className="mt-2 block font-medium text-red-600 dark:text-red-400">
+                    (सर्व डेटा नष्ट केला जाईल, कृपया खात्री करा.)
+                  </span>
+                </p>
+                <div className="mt-6 flex justify-center gap-3">
+                  <button
+                    onClick={() => setShowDeleteConfirmModal(false)}
+                    disabled={deleteDbMutation.isPending}
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
+                  >
+                    Cancel (रद्द करा)
+                  </button>
+                  <button
+                    onClick={handleDeleteDatabase}
+                    disabled={deleteDbMutation.isPending}
+                    className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-red-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {deleteDbMutation.isPending ? 'Deleting...' : 'Delete Database (डिलीट करा)'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default BackupAndRestorePage;
+

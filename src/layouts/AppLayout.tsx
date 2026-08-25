@@ -5,7 +5,6 @@ import React, { useEffect, useState } from 'react';
 import { Menu } from 'lucide-react';
 import WorkflowGuide from '@/components/common/WorkflowGuide';
 import { WeightScaleProvider } from '@/context/WeightScaleContext';
-import WeightScaleStatusWidget from '@/components/common/WeightScaleStatusWidget';
 import AdminExpiryModal from '@/components/common/AdminExpiryModal';
 
 const AppLayoutContent: React.FC<{ children?: React.ReactNode }> = ({
@@ -83,7 +82,7 @@ const AppLayoutContent: React.FC<{ children?: React.ReactNode }> = ({
   // Get margin based on sidebar state
   const getContentMargin = () => {
     if (isMobile) return 'ml-0';
-    return sidebarCollapsed ? 'ml-[72px]' : 'ml-[260px]';
+    return sidebarCollapsed ? 'ml-20' : 'ml-64';
   };
 
   // Show loading if still checking authentication
@@ -132,8 +131,7 @@ const AppLayoutContent: React.FC<{ children?: React.ReactNode }> = ({
         )}
 
         <main className="min-h-full">
-          {user?.role !== 'SUPERADMIN' && <WorkflowGuide />}
-          {/* {user?.role !== 'SUPERADMIN' && <WeightScaleStatusWidget />} */}
+          {user?.role?.toUpperCase() !== 'SUPERADMIN' && <WorkflowGuide />}
           <AdminExpiryModal />
           {children ?? <Outlet />}
         </main>

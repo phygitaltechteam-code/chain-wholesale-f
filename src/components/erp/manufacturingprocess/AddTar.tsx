@@ -7,6 +7,9 @@ import {
   ChevronDown,
   ChevronRight,
   Printer,
+  Trash2,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
@@ -21,10 +24,11 @@ import {
   Tar,
   useGetTarHistory,
 } from '@/lib/api/tar';
+import { useGetStock } from '@/lib/api/stock';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
-import { useScaleFocus, useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
+import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 
 interface TarEntry {
   id: string;
@@ -37,13 +41,34 @@ interface TarEntry {
   scrap: number;
   loss: number;
   purity: number;
+  grosswt: number;
   isSaved: boolean;
   tarRaw?: string;
   scrapRaw?: string;
   purityRaw?: string;
+  grosswtRaw?: string;
   itemId?: string;
   sizeId?: string;
 }
+
+interface TarCardForm {
+  id: string;
+  itemId: string;
+  sizeId: string;
+  grossWt: string;
+  purity: string;
+  fine: string;
+  isSaving?: boolean;
+}
+
+const createNewCard = (initial?: Partial<TarCardForm>): TarCardForm => ({
+  id: `card-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+  itemId: initial?.itemId || '',
+  sizeId: initial?.sizeId || '',
+  grossWt: initial?.grossWt || '',
+  purity: initial?.purity || '',
+  fine: initial?.fine || '',
+});
 
 interface AddTarProps {
   showBack?: boolean;
@@ -92,13 +117,9 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     return [monday, sunday];
   });
 
-  const [formData, setFormData] = useState({
-    itemId: '',
-    sizeId: '',
-    grossWt: '',
-    purity: '',
-    fine: '',
-  });
+  const [modalCards, setModalCards] = useState<TarCardForm[]>([
+    createNewCard(),
+  ]);
 
   // Date and Time state for modal
   const [selectedDate, setSelectedDate] = useState({
@@ -125,21 +146,63 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   const createTar = useCreateTar();
   const saveTar = useSaveTar();
 
-  // Scale hooks for modal and table
-  const fineScaleFocus = useScaleFocus((weight) => {
-    setFormData((prev) => ({ ...prev, fine: weight.toString() }));
-  });
+  // Fetch stock data
+  const { data: stockData = [] } = useGetStock();
 
-  const grossScaleFocus = useScaleFocus((weight) => {
-    setFormData((prev) => {
-      const next = { ...prev, grossWt: weight.toString() };
-      const purityNum = parseFloat(prev.purity);
-      if (!isNaN(weight) && !isNaN(purityNum) && weight > 0 && purityNum > 0) {
-        const autoFine = Math.round(((weight * purityNum) / 100) * 1000) / 1000;
-        next.fine = autoFine.toString();
+  // Helper to get total gold available
+  const getGoldAvailableWeight = (): number => {
+    if (!stockData || !Array.isArray(stockData)) return 0;
+    return stockData
+      .filter((s: any) => {
+        const item = items.find((i) => i.id === s.itemId);
+        const itemName = item?.name?.trim().toLowerCase() || '';
+        return itemName === 'gold' || itemName.includes('gold') || !s.sizeId;
+      })
+      .reduce((sum: number, s: any) => {
+        const wt = Number(s.weight ?? s.grams ?? s.stockQty ?? 0);
+        return sum + (isNaN(wt) ? 0 : wt);
+      }, 0);
+  };
+
+  // Helper to get stock quantity for a card's item, size, and purity
+  const getItemStockWeight = (
+    itemId: string,
+    sizeId?: string,
+    purity?: string,
+  ): number => {
+    if (!itemId || !stockData || !Array.isArray(stockData)) return 0;
+
+    let matching = stockData.filter((s: any) => s.itemId === itemId);
+    if (matching.length === 0) return 0;
+
+    if (sizeId) {
+      const sizeMatched = matching.filter((s: any) => s.sizeId === sizeId);
+      if (sizeMatched.length > 0) {
+        matching = sizeMatched;
       }
-      return next;
-    });
+    }
+
+    if (purity && parseFloat(purity) > 0) {
+      const purityNum = parseFloat(purity);
+      const purityMatched = matching.filter(
+        (s: any) => Number(s.purity) === purityNum,
+      );
+      if (purityMatched.length > 0) {
+        matching = purityMatched;
+      }
+    }
+
+    return matching.reduce((sum: number, s: any) => {
+      const wt = Number(s.weight ?? s.grams ?? s.stockQty ?? 0);
+      return sum + (isNaN(wt) ? 0 : wt);
+    }, 0);
+  };
+
+  // Scale hooks for modal and table
+  const { getScaleProps: getModalScaleProps } = useTableScaleFocus<
+    'grossWt' | 'fine'
+  >((cardIndex, field, weight) => {
+    handleCardChange(cardIndex, field, weight.toString());
   });
 
   const { getScaleProps } = useTableScaleFocus<'tar' | 'scrap'>(
@@ -599,10 +662,15 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             scrap: toNumber(tar.scrap),
             loss: toNumber(tar.loss ?? tar.lossWeight),
             purity: toNumber(tar.purity),
+            grosswt: toNumber(tar.grosswt ?? tar.grossWt),
             isSaved: tar.isSaved || false,
             tarRaw: toNumber(tar.tar) > 0 ? String(tar.tar) : '',
             scrapRaw: toNumber(tar.scrap) > 0 ? String(tar.scrap) : '',
             purityRaw: toNumber(tar.purity) > 0 ? String(tar.purity) : '',
+            grosswtRaw:
+              toNumber(tar.grosswt ?? tar.grossWt) > 0
+                ? String(tar.grosswt ?? tar.grossWt)
+                : '',
             itemId: tar.itemId || '',
             sizeId: tar.sizeId || '',
           };
@@ -651,48 +719,55 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
       );
       if (prefillRaw) {
         sessionStorage.removeItem('manufacturing_billing_prefill');
-        const prefill = JSON.parse(prefillRaw);
-        if (prefill) {
-          let resolvedItemId = prefill.itemId || '';
-          if (!resolvedItemId && prefill.itemName) {
-            const foundItem = items.find(
-              (i) => i.name?.toLowerCase() === prefill.itemName.toLowerCase(),
-            );
-            if (foundItem) resolvedItemId = foundItem.id;
-          }
+        const parsed = JSON.parse(prefillRaw);
+        const list = Array.isArray(parsed) ? parsed : [parsed];
 
-          let resolvedSizeId = prefill.sizeId || '';
-          if (!resolvedSizeId && prefill.sizeName) {
-            const foundSize = sizes.find(
-              (s) => s.size?.toLowerCase() === prefill.sizeName.toLowerCase(),
-            );
-            if (foundSize) resolvedSizeId = foundSize.id;
-          }
+        if (list.length > 0) {
+          const generatedCards: TarCardForm[] = list.map((prefill, idx) => {
+            let resolvedItemId = prefill.itemId || '';
+            if (!resolvedItemId && prefill.itemName) {
+              const foundItem = items.find(
+                (i) => i.name?.toLowerCase() === prefill.itemName.toLowerCase(),
+              );
+              if (foundItem) resolvedItemId = foundItem.id;
+            }
 
-          const grossNum = parseFloat(prefill.grossWt) || 0;
-          const purityNum = parseFloat(prefill.purity) || 0;
-          let calculatedFine = '';
-          if (grossNum > 0 && purityNum > 0) {
-            calculatedFine = (
-              Math.round(((grossNum * purityNum) / 100) * 1000) / 1000
-            ).toString();
-          } else if (prefill.fine) {
-            calculatedFine = String(prefill.fine);
-          }
+            let resolvedSizeId = prefill.sizeId || '';
+            if (!resolvedSizeId && prefill.sizeName) {
+              const foundSize = sizes.find(
+                (s) => s.size?.toLowerCase() === prefill.sizeName.toLowerCase(),
+              );
+              if (foundSize) resolvedSizeId = foundSize.id;
+            }
 
-          setFormData({
-            itemId: resolvedItemId,
-            sizeId: resolvedSizeId,
-            grossWt:
-              prefill.grossWt !== undefined && prefill.grossWt !== null
-                ? String(prefill.grossWt)
-                : '',
-            purity:
-              prefill.purity !== undefined && prefill.purity !== null
-                ? String(prefill.purity)
-                : '',
-            fine: calculatedFine,
+            const grossNum = parseFloat(prefill.grossWt) || 0;
+            const purityNum = parseFloat(prefill.purity) || 0;
+            let calculatedFine = '';
+            if (grossNum > 0 && purityNum > 0) {
+              calculatedFine = (
+                Math.round(((grossNum * purityNum) / 100) * 1000) / 1000
+              ).toString();
+            } else if (prefill.fine) {
+              calculatedFine = String(prefill.fine);
+            }
+
+            return {
+              id: `card-${Date.now()}-${idx}`,
+              itemId: resolvedItemId,
+              sizeId: resolvedSizeId,
+              grossWt:
+                prefill.grossWt !== undefined && prefill.grossWt !== null
+                  ? String(prefill.grossWt)
+                  : '',
+              purity:
+                prefill.purity !== undefined && prefill.purity !== null
+                  ? String(prefill.purity)
+                  : '',
+              fine: calculatedFine,
+            };
           });
+
+          setModalCards(generatedCards);
 
           const now = new Date();
           setSelectedDate({
@@ -711,38 +786,58 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     }
   }, [items, sizes, itemsLoading, sizesLoading]);
 
-  const handleFormChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  const handleCardChange = (
+    cardIndex: number,
+    field: 'itemId' | 'sizeId' | 'grossWt' | 'purity' | 'fine',
+    value: string,
   ) => {
-    const { name, value } = e.target;
-    if (name === 'grossWt' || name === 'purity') {
-      const sanitized = value.replace(/[^0-9.]/g, '');
-      setFormData((prev) => {
-        const next = { ...prev, [name]: sanitized };
-        const grossNum = parseFloat(
-          name === 'grossWt' ? sanitized : prev.grossWt,
-        );
-        const purityNum = parseFloat(
-          name === 'purity' ? sanitized : prev.purity,
-        );
-        if (
-          !isNaN(grossNum) &&
-          !isNaN(purityNum) &&
-          grossNum > 0 &&
-          purityNum > 0
-        ) {
-          const autoFine =
-            Math.round(((grossNum * purityNum) / 100) * 1000) / 1000;
-          next.fine = autoFine.toString();
+    setModalCards((prev) =>
+      prev.map((card, idx) => {
+        if (idx !== cardIndex) return card;
+
+        if (field === 'grossWt' || field === 'purity') {
+          const sanitized = value.replace(/[^0-9.]/g, '');
+          const nextCard = { ...card, [field]: sanitized };
+          const grossNum = parseFloat(
+            field === 'grossWt' ? sanitized : card.grossWt,
+          );
+          const purityNum = parseFloat(
+            field === 'purity' ? sanitized : card.purity,
+          );
+          if (
+            !isNaN(grossNum) &&
+            !isNaN(purityNum) &&
+            grossNum > 0 &&
+            purityNum > 0
+          ) {
+            const autoFine =
+              Math.round(((grossNum * purityNum) / 100) * 1000) / 1000;
+            nextCard.fine = autoFine.toString();
+          }
+          return nextCard;
+        } else if (field === 'fine') {
+          const sanitized = value.replace(/[^0-9.]/g, '');
+          return { ...card, fine: sanitized };
+        } else {
+          return { ...card, [field]: value };
         }
-        return next;
-      });
-    } else if (name === 'fine') {
-      const sanitized = value.replace(/[^0-9.]/g, '');
-      setFormData((prev) => ({ ...prev, [name]: sanitized }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
+      }),
+    );
+  };
+
+  const handleAddCard = () => {
+    setModalCards((prev) => [...prev, createNewCard()]);
+  };
+
+  const handleRemoveCard = (cardIndex: number) => {
+    setModalCards((prev) => {
+      const next = prev.filter((_, idx) => idx !== cardIndex);
+      if (next.length === 0) {
+        setIsModalOpen(false);
+        return [createNewCard()];
+      }
+      return next;
+    });
   };
 
   const handleOpenModal = () => {
@@ -760,51 +855,51 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
       hour: now.getHours(),
       minute: now.getMinutes(),
     });
-    setFormData({
-      itemId: '',
-      sizeId: '',
-      grossWt: '',
-      purity: '',
-      fine: '',
-    });
+    setModalCards([createNewCard()]);
     setIsModalOpen(true);
   };
 
-  const handleSaveFromPopup = async () => {
-    if (!formData.itemId) {
-      toast.error('Please select an item');
+  const handleSaveCard = async (cardIndex: number) => {
+    const card = modalCards[cardIndex];
+    if (!card) return;
+
+    if (!card.itemId) {
+      toast.error(`Please select an item for Process Item #${cardIndex + 1}`);
       return;
     }
 
-    if (!formData.sizeId) {
-      toast.error('Please select a size');
+    if (!card.sizeId) {
+      toast.error(`Please select a size for Process Item #${cardIndex + 1}`);
       return;
     }
 
-    const fineValue = parseFloat(formData.fine) || 0;
-    const grossWtValue = parseFloat(formData.grossWt) || 0;
-    const purityValue = parseFloat(formData.purity) || 0;
+    const fineValue = parseFloat(card.fine) || 0;
+    const grossWtValue = parseFloat(card.grossWt) || 0;
+    const purityValue = parseFloat(card.purity) || 0;
 
     if (fineValue <= 0) {
-      toast.error('Please enter a valid fine weight');
+      toast.error(
+        `Please enter a valid fine weight for Process Item #${cardIndex + 1}`,
+      );
       return;
     }
 
-    setIsLoading(true);
+    setModalCards((prev) =>
+      prev.map((c, idx) => (idx === cardIndex ? { ...c, isSaving: true } : c)),
+    );
 
     try {
-      const selectedItem = items.find((i) => i.id === formData.itemId);
-      const selectedSize = sizes.find((s) => s.id === formData.sizeId);
+      const selectedItem = items.find((i) => i.id === card.itemId);
+      const selectedSize = sizes.find((s) => s.id === card.sizeId);
 
       const { day, month, year, hour, minute } = selectedDate;
       const date = new Date(year, month - 1, day, hour, minute);
       const dateTimeStr = formatDateTime(date);
-
       const grossVal = grossWtValue > 0 ? grossWtValue : fineValue;
 
       const payload = {
-        itemId: formData.itemId,
-        sizeId: formData.sizeId,
+        itemId: card.itemId,
+        sizeId: card.sizeId,
         grosswt: grossVal,
         grossWt: grossVal,
         fine: fineValue,
@@ -831,16 +926,28 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         scrap: 0,
         loss: 0,
         purity: purityValue,
+        grosswt: grossVal,
         isSaved: false,
         tarRaw: '',
         scrapRaw: '',
         purityRaw: purityValue > 0 ? String(purityValue) : '',
-        itemId: formData.itemId,
-        sizeId: formData.sizeId,
+        grosswtRaw: grossVal > 0 ? String(grossVal) : '',
+        itemId: card.itemId,
+        sizeId: card.sizeId,
       };
 
       setTarEntries((prev) => [...prev, newEntry]);
-      setIsModalOpen(false);
+
+      // Remove this card from modal, leaving any other cards untouched
+      setModalCards((prev) => {
+        const next = prev.filter((_, idx) => idx !== cardIndex);
+        if (next.length === 0) {
+          setIsModalOpen(false);
+          return [createNewCard()];
+        }
+        return next;
+      });
+
       await refetch();
     } catch (error: any) {
       console.error('Error saving tar:', error);
@@ -849,14 +956,17 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         error?.message ||
         'Failed to save tar entry';
       toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
+      setModalCards((prev) =>
+        prev.map((c, idx) =>
+          idx === cardIndex ? { ...c, isSaving: false } : c,
+        ),
+      );
     }
   };
 
   const handleInlineChange = (
     index: number,
-    field: 'tar' | 'scrap' | 'purity',
+    field: 'tar' | 'scrap' | 'purity' | 'grosswt',
     value: string,
   ) => {
     setTarEntries((prev) =>
@@ -864,7 +974,16 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         if (i === index) {
           const updated = { ...entry };
 
-          if (field === 'tar') {
+          if (field === 'grosswt') {
+            const sanitized = value.replace(/[^0-9.]/g, '');
+            updated.grosswtRaw = sanitized;
+            if (sanitized === '' || sanitized === '.' || sanitized === '-') {
+              updated.grosswt = 0;
+            } else {
+              const numValue = parseFloat(sanitized);
+              updated.grosswt = isNaN(numValue) ? 0 : numValue;
+            }
+          } else if (field === 'tar') {
             const sanitized = value.replace(/[^0-9.]/g, '');
             updated.tarRaw = sanitized;
             if (sanitized === '' || sanitized === '.' || sanitized === '-') {
@@ -979,13 +1098,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   };
 
   const resetForm = () => {
-    setFormData({
-      itemId: '',
-      sizeId: '',
-      grossWt: '',
-      purity: '',
-      fine: '',
-    });
+    setModalCards([createNewCard()]);
   };
 
   const closeModal = () => {
@@ -996,7 +1109,10 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   // A row is edited only when the user has entered a value.
   const hasEditableValues = (entry: TarEntry): boolean => {
     return Boolean(
-      entry.tarRaw?.trim() || entry.scrapRaw?.trim() || entry.purityRaw?.trim(),
+      entry.tarRaw?.trim() ||
+      entry.scrapRaw?.trim() ||
+      entry.purityRaw?.trim() ||
+      entry.grosswtRaw?.trim(),
     );
   };
 
@@ -1093,6 +1209,44 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
             {formatNumberDisplay(item.purity)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'grosswt',
+      header: 'GrossWt (G)',
+      render: (item, index) => {
+        if (!item.isSaved) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={
+                  item.grosswtRaw !== undefined
+                    ? item.grosswtRaw
+                    : item.grosswt === 0
+                      ? ''
+                      : item.grosswt
+                }
+                {...getScaleProps(index, 'grosswt')}
+                onChange={(e) =>
+                  handleInlineChange(index, 'grosswt', e.target.value)
+                }
+                placeholder="0.000"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                G
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.grosswt)}
           </span>
         );
       },
@@ -1399,132 +1553,267 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
 
       {/* Add Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
-            <div className="flex items-center justify-between border-b border-[#d3c4af]/10 p-4 dark:border-slate-700">
-              <h3 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
-                Add New Tar Process
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-lg p-1 transition-colors hover:bg-[#f4f4f2] dark:hover:bg-slate-800"
-              >
-                <X className="h-5 w-5 text-[#4f4535] dark:text-slate-400" />
-              </button>
-            </div>
-
-            <div className="space-y-4 p-4">
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
-                  Item <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="itemId"
-                  value={formData.itemId}
-                  onChange={handleFormChange}
-                  className="w-full rounded-lg border border-[#d3c4af]/30 bg-[#f4f4f2] px-3 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                >
-                  <option value="">Select Item</option>
-                  {items.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name || JSON.stringify(item)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
-                  Size <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="sizeId"
-                  value={formData.sizeId}
-                  onChange={handleFormChange}
-                  className="w-full rounded-lg border border-[#d3c4af]/30 bg-[#f4f4f2] px-3 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                >
-                  <option value="">Select Size</option>
-                  {sizes.map((size) => (
-                    <option key={size.id} value={size.id}>
-                      {size.size || JSON.stringify(size)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
+          <div
+            className={`w-full ${modalCards.length > 1 ? 'max-w-4xl' : 'max-w-lg'
+              } flex max-h-[90vh] flex-col rounded-2xl bg-white shadow-2xl transition-all dark:bg-slate-900 border border-[#d3c4af]/30 dark:border-slate-700`}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#d3c4af]/20 p-4 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="rounded-lg bg-[#785600]/10 p-2 text-[#785600] dark:bg-amber-900/30 dark:text-amber-400">
+                  <Layers className="h-5 w-5" />
+                </div>
                 <div>
-                  <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
-                    Gross Wt (G) <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="grossWt"
-                      value={formData.grossWt}
-                      onFocus={grossScaleFocus.onFocus}
-                      onBlur={grossScaleFocus.onBlur}
-                      onChange={handleFormChange}
-                      placeholder="0.000"
-                      className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-[#f4f4f2] px-3 py-2.5 pr-8 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                    />
-                    <span className="text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                      G
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
-                    Purity (%) <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="purity"
-                      value={formData.purity}
-                      onChange={handleFormChange}
-                      placeholder="e.g. 93"
-                      className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-[#f4f4f2] px-3 py-2.5 pr-8 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                    />
-                    <span className="text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                      %
-                    </span>
-                  </div>
+                  <h3 className="text-base font-bold text-[#1a1c1b] dark:text-white sm:text-lg">
+                    Add Tar Process
+                  </h3>
+                  <p className="text-xs text-[#4f4535] dark:text-slate-400">
+                    {modalCards.length}{' '}
+                    {modalCards.length === 1 ? 'process item' : 'process items'}{' '}
+                    to configure
+                  </p>
                 </div>
               </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase text-[#4f4535] dark:text-slate-400">
-                  Fine Wt (लगड) <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="fine"
-                    value={formData.fine}
-                    onFocus={fineScaleFocus.onFocus}
-                    onBlur={fineScaleFocus.onBlur}
-                    onChange={handleFormChange}
-                    placeholder="0.000"
-                    className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-[#f4f4f2] px-3 py-2.5 pr-8 text-sm font-semibold text-[#785600] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400"
-                  />
-                  <span className="text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                    G
-                  </span>
-                </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddCard}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[#785600]/30 bg-[#785600]/5 px-2.5 py-1.5 text-xs font-semibold text-[#785600] transition-colors hover:bg-[#785600]/15 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20"
+                  title="Add another process card"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Add Card</span>
+                </button>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="rounded-lg p-1.5 text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-[#d3c4af]/10 p-4 dark:border-slate-700">
-              <GenericButton
-                onClick={handleSaveFromPopup}
-                disabled={isLoading}
-                variant="primary"
+            {/* Modal Body - Cards Container */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div
+                className={`grid gap-4 ${modalCards.length > 1
+                    ? 'grid-cols-1 md:grid-cols-2'
+                    : 'grid-cols-1'
+                  }`}
               >
-                {isLoading ? 'Saving...' : 'Add'}
-              </GenericButton>
+                {modalCards.map((card, idx) => {
+                  const isCardSaving = card.isSaving || false;
+                  return (
+                    <div
+                      key={card.id || idx}
+                      className="relative flex flex-col justify-between rounded-xl border border-[#d3c4af]/30 bg-[#fbfaf8] p-4 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800/80"
+                    >
+                      {/* Card Top / Header */}
+                      <div className="mb-3 flex items-center justify-between border-b border-[#d3c4af]/20 pb-2.5 dark:border-slate-700">
+                        <span className="flex items-center gap-1.5 rounded-md bg-[#785600]/10 px-2 py-0.5 text-xs font-bold text-[#785600] dark:bg-amber-900/30 dark:text-amber-400">
+                          <Sparkles className="h-3 w-3" />
+                          Process Item #{idx + 1}
+                        </span>
+                        {modalCards.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCard(idx)}
+                            disabled={isCardSaving}
+                            className="rounded-md p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40"
+                            title="Remove this card"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Card Inputs */}
+                      <div className="space-y-3">
+                        {/* Item */}
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                            Item <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={card.itemId}
+                            onChange={(e) =>
+                              handleCardChange(idx, 'itemId', e.target.value)
+                            }
+                            className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                          >
+                            <option value="">Select Item</option>
+                            {items.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.name || JSON.stringify(item)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Size */}
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                            Size <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={card.sizeId}
+                            onChange={(e) =>
+                              handleCardChange(idx, 'sizeId', e.target.value)
+                            }
+                            className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                          >
+                            <option value="">Select Size</option>
+                            {sizes.map((size) => (
+                              <option key={size.id} value={size.id}>
+                                {size.size || JSON.stringify(size)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Gross Wt & Purity */}
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div>
+                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                              Gross Wt (G) <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={card.grossWt}
+                                {...getModalScaleProps(idx, 'grossWt')}
+                                onChange={(e) =>
+                                  handleCardChange(
+                                    idx,
+                                    'grossWt',
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="0.000"
+                                className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                              />
+                              <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                                G
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                              Purity (%) <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={card.purity}
+                                onChange={(e) =>
+                                  handleCardChange(
+                                    idx,
+                                    'purity',
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="e.g. 93"
+                                className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                              />
+                              <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                                %
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Item & Size Stock Qty Banner (After Gross Wt & Purity) */}
+                        <div className="flex items-center justify-between rounded-lg bg-[#785600]/10 px-2.5 py-1.5 text-xs text-[#785600] dark:bg-amber-900/30 dark:text-amber-300">
+                          <span className="truncate text-[11px] font-medium">
+                            {card.itemId ? (
+                              <>
+                                <strong className="font-bold text-[#785600] dark:text-amber-300">
+                                  {items.find((i) => i.id === card.itemId)
+                                    ?.name || 'Item'}
+                                </strong>
+                                {card.sizeId && (
+                                  <span className="text-[#4f4535] dark:text-slate-400">
+                                    {' '}
+                                    (
+                                    {sizes.find((s) => s.id === card.sizeId)
+                                      ?.size || ''}
+                                    )
+                                  </span>
+                                )}
+                                {' '}Stock Qty:
+                              </>
+                            ) : (
+                              'Item Stock Qty:'
+                            )}
+                          </span>
+                          <span className="font-mono font-bold">
+                            {formatNumber(
+                              getItemStockWeight(
+                                card.itemId,
+                                card.sizeId,
+                                card.purity,
+                              ),
+                            )}{' '}
+                            G
+                          </span>
+                        </div>
+
+                        {/* Fine Wt */}
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                            Fine Wt (लगड) <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={card.fine}
+                              {...getModalScaleProps(idx, 'fine')}
+                              onChange={(e) =>
+                                handleCardChange(idx, 'fine', e.target.value)
+                              }
+                              placeholder="0.000"
+                              className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm font-bold text-[#785600] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-amber-400"
+                            />
+                            <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                              G
+                            </span>
+                          </div>
+
+                          {/* Gold Available Qty */}
+                          <div className="mt-1.5 flex items-center justify-between rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-xs text-[#785600] dark:bg-amber-900/30 dark:text-amber-300">
+                            <span className="text-[11px] font-medium">
+                              Gold Available Qty:
+                            </span>
+                            <span className="font-mono font-bold">
+                              {formatNumber(getGoldAvailableWeight())} G
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card Action */}
+                      <div className="mt-4 flex justify-end border-t border-[#d3c4af]/20 pt-3 dark:border-slate-700">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveCard(idx)}
+                          disabled={isCardSaving}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>{isCardSaving ? 'Adding...' : 'Add'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+
           </div>
         </div>
       )}
@@ -1534,11 +1823,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
-              <div className="mb-4 flex items-center justify-center">
-                <div className="rounded-full bg-[#785600]/10 p-3 dark:bg-amber-900/30">
-                  <Save className="h-6 w-6 text-[#785600] dark:text-amber-400" />
-                </div>
-              </div>
               <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
                 Confirm Save
               </h3>
@@ -1546,7 +1830,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                 Are you sure you want to save this tar entry? This will move to
                 the{' '}
                 <strong className="text-[#785600] dark:text-amber-400">
-                  Box Department
+                  Box Department (बॉक्स विभाग)
                 </strong>
                 .
               </p>
@@ -1558,14 +1842,14 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel
+                  Cancel (रद्द करा)
                 </button>
                 <GenericButton
                   onClick={confirmSave}
                   disabled={isLoading}
                   variant="primary"
                 >
-                  {isLoading ? 'Saving...' : 'Confirm & Continue'}
+                  {isLoading ? 'Saving...' : 'Confirm & Continue (पुष्टी करा)'}
                 </GenericButton>
               </div>
             </div>

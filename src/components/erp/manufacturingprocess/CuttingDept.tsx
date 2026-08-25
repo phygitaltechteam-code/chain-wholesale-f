@@ -138,7 +138,7 @@ const CuttingDept: React.FC = () => {
           const itemName = cutting.item?.name || cutting.itemId || 'N/A';
           const sizeName = cutting.size?.size || cutting.sizeId || 'N/A';
 
-          const chainGiven = cutting.chainWeight || 0;
+          const chainGiven = cutting.chainWeight || cutting.chainGiven || 0;
           const chainReceived = cutting.chainReceived || 0;
           const loss = calculateLoss(chainGiven, chainReceived);
 
@@ -169,9 +169,14 @@ const CuttingDept: React.FC = () => {
             loss: loss,
             isEditing: !isSaved,
             isSaved: isSaved,
-            chainGivenRaw: '',
-            chainReceivedRaw: '',
-            scrapRaw: '',
+            chainGivenRaw:
+              cutting.chainWeight || cutting.chainGiven
+                ? (cutting.chainWeight || cutting.chainGiven).toString()
+                : '',
+            chainReceivedRaw: cutting.chainReceived
+              ? cutting.chainReceived.toString()
+              : '',
+            scrapRaw: cutting.scrap ? cutting.scrap.toString() : '',
             purityRaw: cutting.purity ? cutting.purity.toString() : '',
             itemId: cutting.itemId,
             sizeId: cutting.sizeId,
@@ -996,21 +1001,6 @@ const CuttingDept: React.FC = () => {
               <div className="flex items-center justify-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => handleSaveClick(index, 'stock')}
-                  disabled={
-                    isLoading ||
-                    submitCutting.isPending ||
-                    submitMoveKunda.isPending
-                  }
-                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Save to Stock"
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  <span>Stock</span>
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => handleSaveClick(index, 'kunda')}
                   disabled={
                     isLoading ||
@@ -1022,6 +1012,20 @@ const CuttingDept: React.FC = () => {
                 >
                   <Save className="h-3.5 w-3.5" />
                   <span>S / Kunda</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveClick(index, 'stock')}
+                  disabled={
+                    isLoading ||
+                    submitCutting.isPending ||
+                    submitMoveKunda.isPending
+                  }
+                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Save to Stock"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  <span>Stock</span>
                 </button>
               </div>
             );
@@ -1211,17 +1215,15 @@ const CuttingDept: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
-              <div className="mb-4 flex items-center justify-center">
-                <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
-                  <Save className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                </div>
-              </div>
               <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
-                Confirm Action
+                Confirm Action (पुष्टी करा)
               </h3>
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
                 Are you sure you want to save this cutting entry and send it to{' '}
-                <strong>{actionType === 'stock' ? 'Stock' : 'S Kunda'}</strong>?
+                <strong className="text-[#785600] dark:text-amber-400">
+                  {actionType === 'stock' ? 'Stock (स्टॉक)' : 'S Kunda (एस कुंदा)'}
+                </strong>
+                ?
               </p>
               <div className="mt-6 flex justify-center gap-3">
                 <button
@@ -1232,7 +1234,7 @@ const CuttingDept: React.FC = () => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel
+                  Cancel (रद्द करा)
                 </button>
                 <button
                   onClick={

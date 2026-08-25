@@ -739,8 +739,8 @@ const BoxDept: React.FC = () => {
   const hasEditableValues = (entry: BoxEntry): boolean => {
     return Boolean(
       entry.chainWeightRaw?.trim() ||
-        entry.scrapRaw?.trim() ||
-        entry.purityRaw?.trim(),
+      entry.scrapRaw?.trim() ||
+      entry.purityRaw?.trim(),
     );
   };
 
@@ -1132,11 +1132,6 @@ const BoxDept: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
-              <div className="mb-4 flex items-center justify-center">
-                <div className="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
-                  <Save className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                </div>
-              </div>
               <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
                 Confirm Save
               </h3>
@@ -1144,7 +1139,7 @@ const BoxDept: React.FC = () => {
                 Are you sure you want to save this box entry? This will move to
                 the{' '}
                 <strong className="text-[#785600] dark:text-amber-400">
-                  Soldering Department
+                  Soldering Department (सोल्डरिंग विभाग)
                 </strong>
                 .
               </p>
@@ -1156,7 +1151,7 @@ const BoxDept: React.FC = () => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel
+                  Cancel (रद्द करा)
                 </button>
                 <button
                   onClick={confirmSave}

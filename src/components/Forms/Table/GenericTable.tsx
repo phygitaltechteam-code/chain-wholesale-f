@@ -1,5 +1,5 @@
 // components/Common/GenericTable.tsx
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {Edit, Trash2, Save, X, Search} from 'lucide-react';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 
@@ -78,10 +78,14 @@ export function GenericTable<T extends {id: string | number}>({
   const [tableData, setTableData] = useState<T[]>(data);
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
 
-  // Update tableData when data prop changes
+  // Update tableData only when inline edit mode is active and data changes
   useEffect(() => {
-    setTableData(data);
-  }, [data]);
+    if (enableInlineEdit) {
+      setTableData(data);
+    }
+  }, [data, enableInlineEdit]);
+
+  const sourceData = enableInlineEdit ? tableData : data;
 
   const handleEdit = (item: T, index: number) => {
     if (enableInlineEdit) {
@@ -114,18 +118,21 @@ export function GenericTable<T extends {id: string | number}>({
     }
   };
 
-  const filteredData =
-    searchFields.length > 0 && searchTerm
-      ? tableData.filter((item) =>
-          searchFields.some((field) => {
-            const value = item[field];
-            return (
-              value &&
-              String(value).toLowerCase().includes(searchTerm.toLowerCase())
-            );
-          }),
-        )
-      : tableData;
+  const filteredData = useMemo(() => {
+    if (searchFields.length > 0 && searchTerm) {
+      const term = searchTerm.toLowerCase();
+      return sourceData.filter((item) =>
+        searchFields.some((field) => {
+          const value = item[field];
+          return (
+            value &&
+            String(value).toLowerCase().includes(term)
+          );
+        }),
+      );
+    }
+    return sourceData;
+  }, [sourceData, searchFields, searchTerm]);
 
   const getValue = (item: T, key: string | keyof T) => {
     if (typeof key === 'string' && key.includes('.')) {

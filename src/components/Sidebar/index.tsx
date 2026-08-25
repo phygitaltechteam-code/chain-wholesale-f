@@ -46,6 +46,8 @@ interface SubMenuItem {
   icon?: React.ReactNode;
 }
 
+
+
 const Sidebar = ({
   onCollapseChange,
   isMobile: propIsMobile,
@@ -56,13 +58,32 @@ const Sidebar = ({
   const {pathname} = location;
   const {user, isAuthenticated} = useAuthContext();
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('sidebar-collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
 
-  const role = user?.role;
+  const role = useMemo(() => {
+    if (user?.role) return user.role;
+    try {
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed?.role || null;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }, [user]);
+
   const isMobileDevice = propIsMobile !== undefined ? propIsMobile : isMobile;
 
   // ============================================================
@@ -242,13 +263,24 @@ const Sidebar = ({
   };
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
     sessionStorage.clear();
     window.location.href = '/signin';
   };
 
   const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
+    const next = !isCollapsed;
+    setIsCollapsed(next);
+    try {
+      localStorage.setItem('sidebar-collapsed', String(next));
+    } catch {
+      // ignore
+    }
+    if (onCollapseChange) {
+      onCollapseChange(next);
+    }
   };
 
   const toggleMobileMenu = () => {
@@ -499,7 +531,9 @@ const Sidebar = ({
         </div>
       </div> */}
 
-      <div className="border-t border-white/5 px-2 py-4">
+
+
+      <div className="border-t border-white/5 px-2 py-3">
         <button
           onClick={handleLogout}
           className={`flex w-full items-center rounded-lg transition-all duration-200 ${

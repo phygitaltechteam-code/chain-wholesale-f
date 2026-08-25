@@ -1,5 +1,5 @@
-import {api} from '@/utils/axios';
-import {useMutation} from '@tanstack/react-query';
+import { api } from '@/utils/axios';
+import { useMutation } from '@tanstack/react-query';
 
 export const getBackFile = async (): Promise<Blob> => {
   try {
@@ -22,12 +22,6 @@ export const getBackFile = async (): Promise<Blob> => {
     }
     return response;
   } catch (error: any) {
-    console.error('========== BACKUP API ERROR ==========');
-
-    console.error(error);
-
-    console.error('======================================');
-
     throw new Error(error?.message || 'Failed to fetch database backup');
   }
 };
@@ -38,13 +32,20 @@ const getRestoreFile = async (formData: FormData) => {
 
     return response;
   } catch (error: any) {
-    console.error('========== RESTORE API ERROR ==========');
-
-    console.error(error);
-
-    console.error('=======================================');
-
     throw new Error(error?.message || 'Failed to restore database backup');
+  }
+};
+
+export const deleteDatabase = async () => {
+  try {
+    const response = await api.delete('/admin/backup/delete');
+    return response.data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      'Failed to delete database',
+    );
   }
 };
 
@@ -61,3 +62,18 @@ export const useRestore = (queryClient: any) => {
     },
   });
 };
+
+export const useDeleteDatabase = (queryClient?: any) => {
+  return useMutation({
+    mutationFn: deleteDatabase,
+    onSuccess: () => {
+      if (queryClient) {
+        queryClient.invalidateQueries();
+      }
+    },
+    onError: (error: any) => {
+      console.error('Delete database mutation error:', error);
+    },
+  });
+};
+
