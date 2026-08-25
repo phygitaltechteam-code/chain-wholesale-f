@@ -10,6 +10,7 @@ import {
   Trash2,
   Layers,
   Sparkles,
+  AlertCircle,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
@@ -99,6 +100,8 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isTarCompleted, setIsTarCompleted] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showStockErrorModal, setShowStockErrorModal] = useState(false);
+  const [stockErrorMessage, setStockErrorMessage] = useState('');
 
   // Default date range: Monday to Sunday of current week
   const [dateRange, setDateRange] = useState<Date[]>(() => {
@@ -951,11 +954,29 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
       await refetch();
     } catch (error: any) {
       console.error('Error saving tar:', error);
-      const errorMessage =
+
+      // Show the exact backend error when stock is insufficient.
+      const backendMessage =
         error?.response?.data?.message ||
+        error?.data?.message ||
         error?.message ||
-        'Failed to save tar entry';
-      toast.error(errorMessage);
+        '';
+
+      if (
+        typeof backendMessage === 'string' &&
+        backendMessage.toLowerCase().includes('insufficient stock')
+      ) {
+        setStockErrorMessage(backendMessage);
+        setShowStockErrorModal(true);
+        setModalCards((prev) =>
+          prev.map((c, idx) =>
+            idx === cardIndex ? { ...c, isSaving: false } : c,
+          ),
+        );
+        return;
+      }
+
+      toast.error(backendMessage || 'Failed to save tar entry');
       setModalCards((prev) =>
         prev.map((c, idx) =>
           idx === cardIndex ? { ...c, isSaving: false } : c,
@@ -1088,9 +1109,27 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         to: '/manufacturingprocess/process',
         state: { selectedTab: 'box' },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving tar:', error);
-      toast.error('Failed to save tar entry');
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        '';
+
+      if (
+        typeof backendMessage === 'string' &&
+        backendMessage.toLowerCase().includes('insufficient stock')
+      ) {
+        setStockErrorMessage(backendMessage);
+        setShowStockErrorModal(true);
+        setIsLoading(false);
+        setShowConfirmModal(false);
+        setSaveIndex(null);
+        return;
+      }
+
+      toast.error(backendMessage || 'Failed to save tar entry');
       setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
@@ -1173,7 +1212,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.fine)} G
-        </span>
+      sese  </span>
       ),
     },
     {
@@ -1852,6 +1891,42 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                   {isLoading ? 'Saving...' : 'Confirm & Continue (पुष्टी करा)'}
                 </GenericButton>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Insufficient Stock Modal */}
+      {showStockErrorModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
+            <div className="flex items-center gap-3 border-b border-[#d3c4af]/20 bg-red-50/80 px-5 py-3.5 dark:border-slate-700 dark:bg-red-950/30">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40">
+                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-sm font-bold text-[#1a1c1b] dark:text-white">
+                Insufficient Stock (स्टॉक कम है)
+              </h3>
+            </div>
+
+            <div className="px-5 py-4">
+              <p className="text-xs leading-relaxed text-[#4f4535] dark:text-slate-300">
+                {stockErrorMessage ||
+                  'Not enough stock available to add this tar entry.'}
+              </p>
+              <p className="mt-1 text-xs font-medium text-[#785600] dark:text-amber-400">
+                (उपलब्ध स्टॉक कम है, कृपया स्टॉक तपासा.)
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
+              <button
+                type="button"
+                onClick={() => setShowStockErrorModal(false)}
+                className="rounded-lg bg-[#785600] px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity hover:opacity-90 dark:bg-amber-600"
+              >
+                OK (समजले)
+              </button>
             </div>
           </div>
         </div>
