@@ -19,7 +19,7 @@ export const Settings = () => {
               { id: 'profile', label: 'Admin Profile' },
               { id: 'header', label: 'Bill Header' },
               { id: 'backup', label: 'Backup & Restore Data' },
-              { id: 'scale', label: 'Weighing Scale' },
+              { id: 'scale', label: 'Weight Scale' },
             ].map((tab) => (
               <button
                 key={tab.id}
