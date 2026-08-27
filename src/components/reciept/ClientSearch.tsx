@@ -78,7 +78,7 @@ export const ClientSearch: React.FC<ClientSearchProps> = ({
 
   const handleSelectClient = (client: ClientSearchClient) => {
     onSelectClient(client);
-    setSearchQuery(getClientName(client));
+    setSearchQuery('');
     setShowDropdown(false);
   };
 

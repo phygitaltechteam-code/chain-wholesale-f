@@ -7,3 +7,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Sleek custom scrollbars for desktop & all devices */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #f1ede6;
+  border-radius: 4px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+::-webkit-scrollbar-thumb {
+  background: #c5b497;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #785600;
+}

@@ -1,5 +1,4 @@
-// components/erp/BillEdit.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   X,
   Save,
@@ -107,6 +106,9 @@ const BillEdit: React.FC = () => {
     openingBalance?: string;
   }>({});
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [billType, setBillType] = useState<'DRAFT' | 'BILL'>('DRAFT');
+  const [billNo, setBillNo] = useState<string>('');
+  const [savedRemaining, setSavedRemaining] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
 
@@ -177,12 +179,12 @@ const BillEdit: React.FC = () => {
     }));
   };
 
+  const loadedBillIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     console.log('Bill Response:', billResponse);
-    console.log('Is Data Loaded:', isDataLoaded);
 
-    if (!billResponse || isDataLoaded) {
-      console.log('No bill response or already loaded');
+    if (!billResponse) {
       return;
     }
 
@@ -208,6 +210,12 @@ const BillEdit: React.FC = () => {
       }
       return;
     }
+
+    if (loadedBillIdRef.current === billData.id && isDataLoaded) {
+      return;
+    }
+    loadedBillIdRef.current = billData.id;
+    initialStockFetchedRef.current = false;
 
     // Handle receipt items
     const receiptItems =
@@ -270,23 +278,16 @@ const BillEdit: React.FC = () => {
       console.log('Mapped Items:', itemsList);
     }
 
-    let initialTotalFine =
-      billData.totalFine ??
-      billData.totalFinWt ??
-      billData.totalFineWeight ??
-      billData.totalWeight ??
-      billData.fineWeight ??
-      billData.fineWt;
+    const initialTotalFine = updateTotalFine(itemsList);
+    const bNumber =
+      billData.billNumber || billData.billNo || (billData as any).receiptNo || '';
+    setBillNo(bNumber);
 
     if (
-      initialTotalFine === undefined ||
-      initialTotalFine === null ||
-      initialTotalFine === 0 ||
-      initialTotalFine === ''
+      billData.remainingWeight !== undefined &&
+      billData.remainingWeight !== null
     ) {
-      initialTotalFine = updateTotalFine(itemsList);
-    } else {
-      initialTotalFine = Number(initialTotalFine);
+      setSavedRemaining(Number(billData.remainingWeight));
     }
 
     // Map the data to form fields
@@ -322,6 +323,11 @@ const BillEdit: React.FC = () => {
       items: itemsList.length > 0 ? itemsList : prev.items,
     }));
 
+    const currentType =
+      (billData.type as 'DRAFT' | 'BILL') ||
+      (billData.remainingWeight === 0 ? 'BILL' : 'DRAFT');
+    setBillType(currentType);
+
     setIsDataLoaded(true);
     console.log('Data loading completed');
   }, [billResponse, isDataLoaded]);
@@ -340,12 +346,14 @@ const BillEdit: React.FC = () => {
         openingBalance: parseFloat(clientFormData.openingBalance) || 0,
       });
 
-      await createClient.mutateAsync({
+      const res = await createClient.mutateAsync({
         fullName: parsed.fullName,
         phoneNumber: parsed.phoneNumber,
         address: parsed.address,
         openingBalance: parsed.openingBalance,
       });
+
+      const newClient = res?.data || res;
 
       setClientFormData({
         fullName: '',
@@ -355,7 +363,16 @@ const BillEdit: React.FC = () => {
       });
       setClientFormErrors({});
       setShowClientModal(false);
-      await refetchClients();
+      const refetched = await refetchClients();
+      const allClients = (refetched?.data as any[]) || [];
+      const foundClient =
+        allClients.find(
+          (c: any) =>
+            c.id === newClient?.id || c.phoneNumber === parsed.phoneNumber,
+        ) || newClient;
+      if (foundClient) {
+        handleClientSelect(foundClient);
+      }
       // toast.success('Client added successfully!');
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -390,6 +407,8 @@ const BillEdit: React.FC = () => {
     toast.success('Item removed');
   };
   // ─── Update the fetchQuantity function in BillEdit ────────────────────────
+  const initialStockFetchedRef = useRef(false);
+
   const fetchQuantity = async (
     index: number,
     item: string,
@@ -400,25 +419,17 @@ const BillEdit: React.FC = () => {
       return;
     }
 
-    const selectedItem = items.find((i: any) => i.name === item);
-    const selectedSize = sizes.find((s: any) => s.size === size);
+    const selectedItem = items.find((i: any) => i.name === item || i.id === item);
+    const selectedSize = sizes.find((s: any) => s.size === size || s.id === size);
 
-    if (!selectedItem || !selectedSize) {
-      toast.error('Item or size not found');
+    const itemId = selectedItem?.id || formData.items[index]?.itemId;
+    const sizeId = selectedSize?.id || formData.items[index]?.sizeId;
+
+    if (!itemId || !sizeId) {
       return;
     }
 
-    const currentFetch = { item, size, purity };
-    if (
-      lastFetchRef.current &&
-      lastFetchRef.current.item === currentFetch.item &&
-      lastFetchRef.current.size === currentFetch.size &&
-      lastFetchRef.current.purity === currentFetch.purity
-    ) {
-      return;
-    }
-    lastFetchRef.current = currentFetch;
-
+    // Removed blocking lastFetchRef check so all rows with same purity/item/size fetch available quantity
     setFormData((prev) => ({
       ...prev,
       items: prev.items.map((entry, i) =>
@@ -457,12 +468,6 @@ const BillEdit: React.FC = () => {
         weight = Number(response.quantity);
       }
 
-      if (response?.data?.srp !== undefined && response.data.srp !== null) {
-        srpValue = Number(response.data.srp);
-      } else if (response?.srp !== undefined && response.srp !== null) {
-        srpValue = Number(response.srp);
-      }
-
       if (!isNaN(weight) && weight >= 0) {
         setFormData((prev) => ({
           ...prev,
@@ -471,7 +476,6 @@ const BillEdit: React.FC = () => {
               ? {
                 ...entry,
                 availableQty: weight,
-                srp: srpValue > 0 ? srpValue : entry.srp,
                 isLoadingQty: false,
               }
               : entry,
@@ -550,7 +554,8 @@ const BillEdit: React.FC = () => {
       totalFine: newTotalFine,
     }));
 
-    if (field === 'purity') {
+    // Fetch quantity if purity, item, or size changed
+    if (field === 'purity' || field === 'item' || field === 'size') {
       const currentItem = updatedItems[index];
       const purityNum = Number(currentItem.purity) || 0;
       if (currentItem.item && currentItem.size && purityNum > 0) {
@@ -564,7 +569,7 @@ const BillEdit: React.FC = () => {
             currentItem.size,
             purityNum,
           );
-        }, 800);
+        }, 300);
       }
     }
   };
@@ -576,6 +581,28 @@ const BillEdit: React.FC = () => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (
+      !isDataLoaded ||
+      !formData.clientId ||
+      formData.items.length === 0 ||
+      initialStockFetchedRef.current
+    ) {
+      return;
+    }
+    if (items.length === 0 || sizes.length === 0) {
+      return;
+    }
+
+    initialStockFetchedRef.current = true;
+    formData.items.forEach((item, index) => {
+      const purityNum = Number(item.purity) || 0;
+      if (item.item && item.size && purityNum > 0) {
+        fetchQuantity(index, item.item, item.size, purityNum);
+      }
+    });
+  }, [isDataLoaded, items, sizes, formData.clientId, formData.items]);
 
   useEffect(() => {
     if (formData.items.length === 0 && !isLoadingBill && isDataLoaded) {
@@ -672,6 +699,9 @@ const BillEdit: React.FC = () => {
   };
 
   const calculateRemainingWeight = () => {
+    if (isReadOnly && savedRemaining !== null) {
+      return Math.round(Math.abs(savedRemaining) * 1000) / 1000;
+    }
     const client = clients.find((c: any) => c.id === formData.clientId);
     const dueBalance = getClientDueBalance(client);
     const advance = Number(formData.customerWeight) || 0;
@@ -787,7 +817,7 @@ const BillEdit: React.FC = () => {
     printContainer.innerHTML = `
       <div style="
         width:210mm;
-        height:135mm;
+        height:140mm;
         margin:0 auto;
         background:#ffffff;
         font-family:Arial,Helvetica,sans-serif;
@@ -865,16 +895,13 @@ const BillEdit: React.FC = () => {
         <div style="
           display:flex;
           align-items:center;
-          justify-content:space-between;
+          justify-content:center;
           margin:0 0 3px;
         ">
-          <div style="width:25%;"></div>
-
           <h2 style="
-            width:50%;
             margin:0;
             text-align:center;
-            font-size:15px;
+            font-size:14px;
             font-weight:bold;
             letter-spacing:2px;
             color:#111111;
@@ -934,28 +961,28 @@ const BillEdit: React.FC = () => {
           </tbody>
         </table>
 
-        <!-- PAYMENT SUMMARY -->
+        <!-- PAYMENT SUMMARY (Compact) -->
         <div style="
           display:flex;
           justify-content:flex-end;
           margin-top:1px;
         ">
           <div style="
-            width:38%;
+            width:32%;
             border:1px solid #d6c08a;
-            border-radius:5px;
+            border-radius:4px;
             background:#fffdf7;
             overflow:hidden;
           ">
             <div style="
               display:flex;
               justify-content:space-between;
-              padding:3px 7px;
+              padding:2.5px 6px;
               border-bottom:1px dashed #dddddd;
-              font-size:10px;
+              font-size:9.5px;
             ">
               <span style="font-weight:bold;color:#666666;">Total Fine Wt</span>
-              <span style="font-family:monospace;font-weight:bold;">
+              <span style="font-family:monospace;font-weight:bold;color:#111111;">
                 ${formatNumberThreeDecimals(totalFineWt)} G
               </span>
             </div>
@@ -963,12 +990,12 @@ const BillEdit: React.FC = () => {
             <div style="
               display:flex;
               justify-content:space-between;
-              padding:3px 7px;
+              padding:2.5px 6px;
               border-bottom:1px dashed #dddddd;
-              font-size:10px;
+              font-size:9.5px;
             ">
               <span style="font-weight:bold;color:#666666;">Advance</span>
-              <span style="font-family:monospace;font-weight:bold;">
+              <span style="font-family:monospace;font-weight:bold;color:#111111;">
                 ${formatNumberThreeDecimals(receive)} G
               </span>
             </div>
@@ -976,12 +1003,12 @@ const BillEdit: React.FC = () => {
             <div style="
               display:flex;
               justify-content:space-between;
-              padding:3px 7px;
+              padding:2.5px 6px;
               border-bottom:1px dashed #dddddd;
-              font-size:10px;
+              font-size:9.5px;
             ">
               <span style="font-weight:bold;color:#666666;">Pending</span>
-              <span style="font-family:monospace;font-weight:bold;">
+              <span style="font-family:monospace;font-weight:bold;color:#111111;">
                 ${formatNumberThreeDecimals(pending)} G
               </span>
             </div>
@@ -989,9 +1016,9 @@ const BillEdit: React.FC = () => {
             <div style="
               display:flex;
               justify-content:space-between;
-              padding:4px 7px;
+              padding:3px 6px;
               background:#f4f0e5;
-              font-size:10.5px;
+              font-size:10px;
             ">
               <span style="font-weight:bold;color:#111111;">Total</span>
               <span style="font-family:monospace;font-weight:bold;color:#785600;">
@@ -1006,30 +1033,25 @@ const BillEdit: React.FC = () => {
           display:flex;
           justify-content:space-between;
           align-items:flex-end;
-          margin:4px 0 0;
-          padding:4px 0 0;
+          margin-top:12px;
+          padding-top:3px;
           border-top:1px dashed #aaaaaa;
           font-size:9px;
           line-height:1;
           color:#444444;
         ">
-          <div style="
-            margin:0;
-            padding:0;
-          ">
+          <div>
             Contact For Support: 9511640351
           </div>
 
           <div style="
             width:120px;
-            margin:0;
-            padding:0;
             text-align:center;
           ">
             <div style="
               border-top:1px solid #555555;
               padding-top:2px;
-              margin:0;
+              font-weight:bold;
             ">
               Authorized Signature
             </div>
@@ -1043,10 +1065,15 @@ const BillEdit: React.FC = () => {
     style.textContent = `
       @page {
         size: A5 landscape;
-        margin: 0;
+        margin: 0mm !important;
       }
 
       @media print {
+        @page {
+          size: A5 landscape;
+          margin: 0mm !important;
+        }
+
         html,
         body {
           width: 210mm !important;
@@ -1055,6 +1082,8 @@ const BillEdit: React.FC = () => {
           padding: 0 !important;
           overflow: hidden !important;
           background: #ffffff !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
         body * {
@@ -1084,9 +1113,8 @@ const BillEdit: React.FC = () => {
         #print-container > div {
           width: 210mm !important;
           height: 148mm !important;
-          min-height: 148mm !important;
-          max-height: 148mm !important;
           box-sizing: border-box !important;
+          padding: 5mm 7mm !important;
           overflow: hidden !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
@@ -1262,7 +1290,10 @@ const BillEdit: React.FC = () => {
     }
   };
 
+  const isReadOnly = billType !== 'DRAFT';
+
   const renderActions = (item: ReceiptItem, index: number) => {
+    if (isReadOnly) return null;
     const actualIndex = formData.items.indexOf(item);
 
     return (
@@ -1286,197 +1317,267 @@ const BillEdit: React.FC = () => {
     );
   };
 
-  const columns: Column<ReceiptItem>[] = [
-    {
-      key: 'item',
-      header: 'Item',
-      render: (item, index) => {
-        const actualIndex = formData.items.indexOf(item);
-        return (
-          <select
-            value={item.item}
-            onChange={(e) =>
-              handleItemChange(actualIndex, 'item', e.target.value)
-            }
-            className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-white px-1.5 py-1.5 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-          >
-            <option value="">Select Item</option>
-            {items.map((item: any) => (
-              <option key={item.id} value={item.name}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        );
+  const columns: Column<ReceiptItem>[] = useMemo(() => {
+    const cols: Column<ReceiptItem>[] = [
+      {
+        key: 'item',
+        header: 'Item',
+        render: (item, index) => {
+          if (isReadOnly) {
+            return (
+              <span className="text-sm font-semibold text-[#1a1c1b] dark:text-white">
+                {item.item || '-'}
+              </span>
+            );
+          }
+          const actualIndex = formData.items.indexOf(item);
+          return (
+            <select
+              value={item.item}
+              onChange={(e) =>
+                handleItemChange(actualIndex, 'item', e.target.value)
+              }
+              className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-white px-1.5 py-1.5 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            >
+              <option value="">Select Item</option>
+              {items.map((item: any) => (
+                <option key={item.id} value={item.name}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          );
+        },
       },
-    },
-    {
-      key: 'size',
-      header: 'Size',
-      render: (item, index) => {
-        const actualIndex = formData.items.indexOf(item);
-        return (
-          <select
-            value={item.size}
-            onChange={(e) =>
-              handleItemChange(actualIndex, 'size', e.target.value)
-            }
-            className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-white px-1.5 py-1.5 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-          >
-            <option value="">Select Size</option>
-            {sizes.map((size: any) => (
-              <option key={size.id} value={size.size}>
-                {size.size}
-              </option>
-            ))}
-          </select>
-        );
+      {
+        key: 'size',
+        header: 'Size',
+        render: (item, index) => {
+          if (isReadOnly) {
+            return (
+              <span className="text-sm text-[#1a1c1b] dark:text-slate-200">
+                {item.size || '-'}
+              </span>
+            );
+          }
+          const actualIndex = formData.items.indexOf(item);
+          return (
+            <select
+              value={item.size}
+              onChange={(e) =>
+                handleItemChange(actualIndex, 'size', e.target.value)
+              }
+              className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-white px-1.5 py-1.5 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            >
+              <option value="">Select Size</option>
+              {sizes.map((size: any) => (
+                <option key={size.id} value={size.size}>
+                  {size.size}
+                </option>
+              ))}
+            </select>
+          );
+        },
       },
-    },
-    {
-      key: 'purity',
-      header: 'Purity (%)',
-      render: (item, index) => {
-        const actualIndex = formData.items.indexOf(item);
-        return (
-          <div className="relative flex-1">
+      {
+        key: 'purity',
+        header: 'Purity (%)',
+        render: (item, index) => {
+          if (isReadOnly) {
+            return (
+              <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+                {item.purity !== undefined &&
+                item.purity !== null &&
+                item.purity !== ''
+                  ? `${formatNumberThreeDecimals(Number(item.purity))}%`
+                  : '-'}
+              </span>
+            );
+          }
+          const actualIndex = formData.items.indexOf(item);
+          return (
+            <div className="relative flex-1">
+              <GenericInputField
+                type="text"
+                inputMode="decimal"
+                step="0.001"
+                min="0"
+                max="100"
+                value={
+                  item.purity !== undefined && item.purity !== null
+                    ? item.purity
+                    : ''
+                }
+                onChange={(e) =>
+                  handleItemChange(actualIndex, 'purity', e.target.value)
+                }
+                placeholder="0.000"
+                suffix="%"
+                className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
+                decimalScale={3}
+              />
+              {item.isLoadingQty && (
+                <Loader2 className="absolute right-8 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#785600]" />
+              )}
+            </div>
+          );
+        },
+      },
+    ];
+
+    if (!isReadOnly) {
+      cols.push({
+        key: 'availableQty',
+        header: 'Available Qty',
+        render: (item) => (
+          <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#d3c4af]/30 bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+            <span className="font-mono font-bold text-black dark:text-white">
+              {item.availableQty !== undefined &&
+              item.availableQty !== null &&
+              item.availableQty !== ''
+                ? formatNumberThreeDecimals(Number(item.availableQty))
+                : '0'}
+            </span>
+            <span className="text-gray-500 text-[10px] dark:text-slate-400">
+              G
+            </span>
+          </div>
+        ),
+      });
+    }
+
+    cols.push(
+      {
+        key: 'grossWt',
+        header: 'Gross Wt (G)',
+        render: (item, index) => {
+          if (isReadOnly) {
+            return (
+              <span className="font-mono text-sm font-semibold text-[#1a1c1b] dark:text-white">
+                {item.grossWt !== undefined &&
+                item.grossWt !== null &&
+                item.grossWt !== ''
+                  ? `${formatNumberThreeDecimals(Number(item.grossWt))} G`
+                  : '0 G'}
+              </span>
+            );
+          }
+          const actualIndex = formData.items.indexOf(item);
+          return (
             <GenericInputField
               type="text"
               inputMode="decimal"
               step="0.001"
               min="0"
-              max="100"
-              value={item.purity !== undefined && item.purity !== null ? item.purity : ''}
-              onChange={(e) =>
-                handleItemChange(
-                  actualIndex,
-                  'purity',
-                  e.target.value,
-                )
+              value={
+                item.grossWt !== undefined && item.grossWt !== null
+                  ? item.grossWt
+                  : ''
               }
+              {...getScaleProps(actualIndex, 'grossWt')}
+              onChange={(e) => {
+                handleItemChange(actualIndex, 'grossWt', e.target.value);
+              }}
               placeholder="0.000"
-              suffix="%"
+              suffix="G"
               className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
               decimalScale={3}
             />
-            {item.isLoadingQty && (
-              <Loader2 className="absolute right-8 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#785600]" />
-            )}
+          );
+        },
+      },
+      {
+        key: 'srp',
+        header: 'SRP (G)',
+        render: (item, index) => {
+          if (isReadOnly) {
+            return (
+              <span className="font-mono text-sm text-[#4f4535] dark:text-slate-300">
+                {item.srp !== undefined &&
+                item.srp !== null &&
+                item.srp !== ''
+                  ? `${formatNumberThreeDecimals(Number(item.srp))} G`
+                  : '0 G'}
+              </span>
+            );
+          }
+          const actualIndex = formData.items.indexOf(item);
+          return (
+            <GenericInputField
+              type="text"
+              inputMode="decimal"
+              step="0.001"
+              min="0"
+              value={
+                item.srp !== undefined && item.srp !== null ? item.srp : ''
+              }
+              onChange={(e) =>
+                handleItemChange(actualIndex, 'srp', e.target.value)
+              }
+              placeholder="0.000"
+              suffix="G"
+              className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
+              decimalScale={3}
+            />
+          );
+        },
+      },
+      {
+        key: 'fineWt',
+        header: 'Fine Wt (G)',
+        render: (item) => (
+          <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#d3c4af]/30 bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+            <span className="font-mono font-bold text-[#785600] dark:text-amber-400">
+              {formatNumberThreeDecimals(item.fineWt)}
+            </span>
+            <span className="text-gray-500 text-[10px] dark:text-slate-400">
+              G
+            </span>
           </div>
-        );
+        ),
       },
-    },
-    {
-      key: 'availableQty',
-      header: 'Available Qty',
-      render: (item) => (
-        <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#d3c4af]/30 bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
-          <span className="font-mono font-bold text-black dark:text-white">
-            {item.availableQty !== undefined &&
-            item.availableQty !== null &&
-            item.availableQty !== ''
-              ? formatNumberThreeDecimals(Number(item.availableQty))
-              : '0'}
-          </span>
-          <span className="text-gray-500 text-[10px] dark:text-slate-400">
-            G
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: 'grossWt',
-      header: 'Gross Wt (G)',
-      render: (item, index) => {
-        const actualIndex = formData.items.indexOf(item);
-        return (
-          <GenericInputField
-            type="text"
-            inputMode="decimal"
-            step="0.001"
-            min="0"
-            value={item.grossWt !== undefined && item.grossWt !== null ? item.grossWt : ''}
-            {...getScaleProps(actualIndex, 'grossWt')}
-            onChange={(e) => {
-              handleItemChange(actualIndex, 'grossWt', e.target.value);
-            }}
-            placeholder="0.000"
-            suffix="G"
-            className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
-            decimalScale={3}
-          />
-        );
+      {
+        key: 'laborRate',
+        header: 'Labor Rate (G)',
+        render: (item, index) => {
+          if (isReadOnly) {
+            return (
+              <span className="font-mono text-sm text-[#4f4535] dark:text-slate-300">
+                {item.laborRate !== undefined &&
+                item.laborRate !== null &&
+                item.laborRate !== ''
+                  ? `${formatNumberThreeDecimals(Number(item.laborRate))} G`
+                  : '0 G'}
+              </span>
+            );
+          }
+          const actualIndex = formData.items.indexOf(item);
+          return (
+            <GenericInputField
+              type="text"
+              inputMode="decimal"
+              step="0.001"
+              min="0"
+              value={
+                item.laborRate !== undefined && item.laborRate !== null
+                  ? item.laborRate
+                  : ''
+              }
+              onChange={(e) =>
+                handleItemChange(actualIndex, 'laborRate', e.target.value)
+              }
+              placeholder="0.000"
+              suffix="G"
+              className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
+              decimalScale={3}
+            />
+          );
+        },
       },
-    },
-    {
-      key: 'srp',
-      header: 'SRP (G)',
-      render: (item, index) => {
-        const actualIndex = formData.items.indexOf(item);
-        return (
-          <GenericInputField
-            type="text"
-            inputMode="decimal"
-            step="0.001"
-            min="0"
-            value={item.srp !== undefined && item.srp !== null ? item.srp : ''}
-            onChange={(e) =>
-              handleItemChange(
-                actualIndex,
-                'srp',
-                e.target.value,
-              )
-            }
-            placeholder="0.000"
-            suffix="G"
-            className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
-            decimalScale={3}
-          />
-        );
-      },
-    },
-    {
-      key: 'fineWt',
-      header: 'Fine Wt (G)',
-      render: (item) => (
-        <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#d3c4af]/30 bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
-          <span className="font-mono font-bold text-[#785600] dark:text-amber-400">
-            {formatNumberThreeDecimals(item.fineWt)}
-          </span>
-          <span className="text-gray-500 text-[10px] dark:text-slate-400">
-            G
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: 'laborRate',
-      header: 'Labor Rate (G)',
-      render: (item, index) => {
-        const actualIndex = formData.items.indexOf(item);
-        return (
-          <GenericInputField
-            type="text"
-            inputMode="decimal"
-            step="0.001"
-            min="0"
-            value={item.laborRate !== undefined && item.laborRate !== null ? item.laborRate : ''}
-            onChange={(e) =>
-              handleItemChange(
-                actualIndex,
-                'laborRate',
-                e.target.value,
-              )
-            }
-            placeholder="0.000"
-            suffix="G"
-            className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
-            decimalScale={3}
-          />
-        );
-      },
-    },
-  ];
+    );
+
+    return cols;
+  }, [formData.items, isReadOnly, items, sizes]);
 
   if (isLoadingBill) {
     return (
@@ -1495,7 +1596,7 @@ const BillEdit: React.FC = () => {
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       <div className="px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8">
         {/* Header */}
-        <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+        <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate({ to: '/billing' })}
@@ -1505,44 +1606,78 @@ const BillEdit: React.FC = () => {
               <span className="text-sm font-medium">Back</span>
             </button>
             <PageHeader
-              title="Edit Bill"
-              subtitle="Update bill items and details"
+              title={isReadOnly ? 'View Bill' : 'Edit Bill'}
+              subtitle={
+                isReadOnly
+                  ? 'Completed bill details'
+                  : 'Update bill items and details'
+              }
             />
           </div>
+
+          {billNo && (
+            <div className="flex items-center gap-2 rounded-xl border border-[#785600]/20 bg-amber-50 px-4 py-2 dark:border-amber-900/40 dark:bg-amber-950/30">
+              <span className="text-xs font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                Bill No:
+              </span>
+              <span className="font-mono text-base font-bold text-[#785600] dark:text-amber-400">
+                {billNo}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Client & Date Section */}
+        {/* Client Section */}
         <div className="mb-4 rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-1">
             <div className="relative">
               <label className="mb-1.5 block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
-                Client <span className="text-red-500">*</span>
+                Client {isReadOnly ? '' : <span className="text-red-500">*</span>}
               </label>
 
-              <ClientSearch
-                clients={clients as any[]}
-                selectedClient={
-                  clients.find(
-                    (client: any) => client.id === formData.clientId,
-                  ) || null
-                }
-                onSelectClient={(client: any) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    clientId: client.id,
-                    clientName: client.fullName || client.fullname || '',
-                  }));
-                }}
-                onClearClient={() => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    clientId: '',
-                    clientName: '',
-                  }));
-                }}
-                isLoading={false}
-                onAddNewClient={() => setShowClientModal(true)}
-              />
+              {isReadOnly ? (
+                <div className="relative flex items-center justify-between rounded-lg bg-[#f4f4f2] py-3 pl-10 pr-3 dark:bg-slate-800 md:py-4 md:pl-12 md:pr-4">
+                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f4535] md:h-5 md:w-5" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white">
+                      {formData.clientName || 'N/A'}
+                      {clients.find((c: any) => c.id === formData.clientId)?.phoneNumber && (
+                        <> - {clients.find((c: any) => c.id === formData.clientId)?.phoneNumber}</>
+                      )}
+                    </p>
+                    {clients.find((c: any) => c.id === formData.clientId)?.address && (
+                      <p className="mt-1 truncate text-xs text-[#4f4535] dark:text-slate-400">
+                        {clients.find((c: any) => c.id === formData.clientId)?.address}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <ClientSearch
+                  clients={clients as any[]}
+                  selectedClient={
+                    clients.find(
+                      (client: any) => client.id === formData.clientId,
+                    ) || null
+                  }
+                  onSelectClient={(client: any) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      clientId: client.id,
+                      clientName: client.fullName || client.fullname || '',
+                    }));
+                  }}
+                  onClearClient={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      clientId: '',
+                      clientName: '',
+                    }));
+                  }}
+                  isLoading={false}
+                  onAddNewClient={() => setShowClientModal(true)}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -1553,9 +1688,11 @@ const BillEdit: React.FC = () => {
             <h3 className="text-sm font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-300">
               Items
             </h3>
-            <p className="mt-1 text-xs text-[#4f4535]/60 dark:text-slate-400">
-              Use + button to add more items, - button to remove
-            </p>
+            {!isReadOnly && (
+              <p className="mt-1 text-xs text-[#4f4535]/60 dark:text-slate-400">
+                Use + button to add more items, - button to remove
+              </p>
+            )}
           </div>
 
           <div className="w-full min-w-0 overflow-hidden [&_table]:w-full [&_table]:table-fixed [&_td]:px-1.5 [&_td]:py-1.5 [&_td]:text-xs [&_th]:px-1.5 [&_th]:py-2 [&_th]:text-[11px]">
@@ -1564,62 +1701,74 @@ const BillEdit: React.FC = () => {
               columns={columns}
               emptyMessage="No items added yet."
               isLoading={false}
-              renderActions={renderActions}
+              renderActions={!isReadOnly ? renderActions : undefined}
               showSrNo={true}
               srNoLabel="Sr No."
             />
           </div>
         </div>
 
-        {/* PAYMENT SUMMARY - Left Aligned with In-Card Editable Inputs */}
+        {/* PAYMENT SUMMARY */}
         <div className="mt-4 flex justify-end">
           <div className="w-full max-w-sm overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            {/* Total Fine Wt (Editable) */}
+            {/* Total Fine Wt */}
             <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-4 py-2.5 dark:border-slate-700">
               <span className="text-sm font-medium text-[#4f4535] dark:text-slate-300">
                 Total Fine Wt
               </span>
-              <div className="relative flex items-center">
-                <input
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  value={
-                    formData.totalFine !== undefined &&
-                      formData.totalFine !== null &&
-                      formData.totalFine !== ''
-                      ? formData.totalFine
-                      : ''
-                  }
-                  onChange={handleTotalFineChange}
-                  placeholder="0.000"
-                  className="font-mono w-28 rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                />
-                <span className="pointer-events-none absolute right-2.5 text-xs text-[#817563] dark:text-slate-400">
-                  G
+              {isReadOnly ? (
+                <span className="font-mono text-sm font-bold text-[#1a1c1b] dark:text-white">
+                  {formatNumberThreeDecimals(formData.totalFine)} G
                 </span>
-              </div>
+              ) : (
+                <div className="relative flex items-center">
+                  <input
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={
+                      formData.totalFine !== undefined &&
+                        formData.totalFine !== null &&
+                        formData.totalFine !== ''
+                        ? formData.totalFine
+                        : ''
+                    }
+                    onChange={handleTotalFineChange}
+                    placeholder="0.000"
+                    className="font-mono w-28 rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                  <span className="pointer-events-none absolute right-2.5 text-xs text-[#817563] dark:text-slate-400">
+                    G
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Advance (Editable) */}
+            {/* Advance */}
             <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-4 py-2.5 dark:border-slate-700">
               <span className="text-sm font-medium text-[#4f4535] dark:text-slate-300">
                 Advance
               </span>
-              <div className="relative flex items-center">
-                <input
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  value={formData.customerWeight || ''}
-                  onChange={handleCustomerWeightChange}
-                  placeholder="0.000"
-                  className="font-mono w-28 rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b]  focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400"
-                />
-                <span className="pointer-events-none absolute right-2.5 text-xs text-[#817563] dark:text-slate-400">
-                  G
+              {isReadOnly ? (
+                <span className="font-mono text-sm font-semibold text-[#1a1c1b] dark:text-white">
+                  {formatNumberThreeDecimals(Number(formData.customerWeight) || 0)} G
                 </span>
-              </div>
+              ) : (
+                <div className="relative flex items-center">
+                  <input
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={formData.customerWeight || ''}
+                    onChange={handleCustomerWeightChange}
+                    placeholder="0.000"
+                    className="font-mono w-28 rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400"
+                  />
+                  <span className="pointer-events-none absolute right-2.5 text-xs text-[#817563] dark:text-slate-400">
+                    G
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Due Balance (Client Due - Read Only) */}
@@ -1639,7 +1788,7 @@ const BillEdit: React.FC = () => {
               </span>
             </div>
 
-            {/* Remaining Balance (Calculated: Due Balance + Advance - Total Fine Wt) */}
+            {/* Remaining Balance */}
             <div className="flex items-center justify-between bg-[#f4f0e5] px-4 py-3 dark:bg-slate-800">
               <span className="text-sm font-bold text-[#1a1c1b] dark:text-white">
                 Remaining Balance
@@ -1651,37 +1800,39 @@ const BillEdit: React.FC = () => {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="sticky bottom-0 z-50 border-t border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-950">
-          <div className="flex flex-col justify-end gap-3 sm:flex-row">
-            <GenericButton
-              type="button"
-              onClick={handleSaveAsDraft}
-              disabled={isSubmitting || updateBill.isPending}
-              className="hover:!bg-gray-700 !bg-gradient-to-br from-[#d97706] to-[#92400e] !text-white"
-            >
-              {isSubmitting || updateBill.isPending ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <FileText className="h-5 w-5" />
-              )}
-              {isSubmitting || updateBill.isPending ? 'Saving...' : 'Save as Draft'}
-            </GenericButton>
+        {/* Action Buttons - Only displayed for DRAFT bills */}
+        {billType === 'DRAFT' && (
+          <div className="sticky bottom-0 z-50 border-t border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-950">
+            <div className="flex flex-col justify-end gap-3 sm:flex-row">
+              <GenericButton
+                type="button"
+                onClick={handleSaveAsDraft}
+                disabled={isSubmitting || updateBill.isPending}
+                className="hover:!bg-gray-700 !bg-gradient-to-br from-[#d97706] to-[#92400e] !text-white"
+              >
+                {isSubmitting || updateBill.isPending ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <FileText className="h-5 w-5" />
+                )}
+                {isSubmitting || updateBill.isPending ? 'Saving...' : 'Save as Draft'}
+              </GenericButton>
 
-            <GenericButton
-              type="button"
-              onClick={handleUpdateReceipt}
-              disabled={isSubmitting || updateBill.isPending}
-            >
-              {isSubmitting || updateBill.isPending ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Save className="h-5 w-5" />
-              )}
-              {isSubmitting || updateBill.isPending ? 'Updating...' : 'Update Bill'}
-            </GenericButton>
+              <GenericButton
+                type="button"
+                onClick={handleUpdateReceipt}
+                disabled={isSubmitting || updateBill.isPending}
+              >
+                {isSubmitting || updateBill.isPending ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Save className="h-5 w-5" />
+                )}
+                {isSubmitting || updateBill.isPending ? 'Updating...' : 'Update Bill'}
+              </GenericButton>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Insufficient Stock Modal */}

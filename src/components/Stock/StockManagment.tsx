@@ -101,24 +101,51 @@ const StockManagment: React.FC = () => {
     ];
   }, [sizes]);
 
-  // Purity options from stock data + standard purity options
-  const purityOptions = useMemo(() => {
-    const puritySet = new Set<string>(['100', '98', '93', '92', '91.6', '85', '75']);
-    stockData.forEach((stock: any) => {
-      if (stock.purity !== null && stock.purity !== undefined && stock.purity !== '') {
-        puritySet.add(String(stock.purity));
+  const selectedItemObj = items.find((i: any) => i.id === watchedItemId);
+  const isGold = selectedItemObj?.name?.trim().toLowerCase().includes('gold');
+
+  // Automatically update size, purity, and find matching stock when Item or Size changes
+  useEffect(() => {
+    if (!watchedItemId) {
+      setCurrentStock(0);
+      setRemainingStock(0);
+      setStockId('');
+      return;
+    }
+
+    if (isGold) {
+      setValue('sizeId', '');
+      setValue('purity', '100');
+    } else {
+      // Find matching stock to suggest purity
+      const matchingStock = stockData.find((s: any) => {
+        if (s.itemId !== watchedItemId) return false;
+        if (watchedSizeId) return s.sizeId === watchedSizeId;
+        return true;
+      });
+
+      if (
+        matchingStock &&
+        matchingStock.purity !== null &&
+        matchingStock.purity !== undefined &&
+        matchingStock.purity !== ''
+      ) {
+        setValue('purity', String(matchingStock.purity));
       }
-    });
-    return Array.from(puritySet).map((p) => ({label: `${p}%`, value: p}));
-  }, [stockData]);
+    }
+  }, [watchedItemId, watchedSizeId, isGold, stockData, setValue]);
 
   // Automatically find current stock when Item, Size, or Purity changes
   useEffect(() => {
     if (watchedItemId) {
       const matchingStock = stockData.find((s: any) => {
         if (s.itemId !== watchedItemId) return false;
-        const matchSize = watchedSizeId ? s.sizeId === watchedSizeId : (!s.sizeId || s.sizeId === null);
-        const matchPurity = watchedPurity ? String(s.purity) === String(watchedPurity) : true;
+        const matchSize = watchedSizeId
+          ? s.sizeId === watchedSizeId
+          : !s.sizeId || s.sizeId === null;
+        const matchPurity = watchedPurity
+          ? String(s.purity) === String(watchedPurity)
+          : true;
         return matchSize && matchPurity;
       });
 
@@ -150,13 +177,18 @@ const StockManagment: React.FC = () => {
   // Handle save
   const onSubmit = async (data: StockFormData) => {
     const stockQty = data.stockQty || 0;
-    const purity = data.purity || '';
+    const finalPurity = isGold ? '100' : data.purity || '';
+    const finalSizeId = isGold ? null : data.sizeId || null;
 
     // Check if matching stock exists
     const matchingStock = stockData.find((s: any) => {
       if (s.itemId !== data.itemId) return false;
-      const matchSize = data.sizeId ? s.sizeId === data.sizeId : (!s.sizeId || s.sizeId === null);
-      const matchPurity = purity ? String(s.purity) === String(purity) : true;
+      const matchSize = finalSizeId
+        ? s.sizeId === finalSizeId
+        : !s.sizeId || s.sizeId === null;
+      const matchPurity = finalPurity
+        ? String(s.purity) === String(finalPurity)
+        : true;
       return matchSize && matchPurity;
     });
 
@@ -179,8 +211,8 @@ const StockManagment: React.FC = () => {
       if (data.stockType === 'INWARD') {
         const payload: any = {
           itemId: data.itemId,
-          sizeId: data.sizeId || null,
-          purity: purity,
+          sizeId: finalSizeId,
+          purity: finalPurity,
           stockQty: stockQty,
           weight: currentStock + stockQty,
           type: 'INWARD',
@@ -195,9 +227,9 @@ const StockManagment: React.FC = () => {
           try {
             await createStock.mutateAsync({
               itemId: data.itemId,
-              sizeId: data.sizeId || '',
+              sizeId: finalSizeId || '',
               weight: stockQty,
-              purity: parseFloat(purity) || 0,
+              purity: parseFloat(finalPurity) || 0,
               type: 'INWARD',
               note: data.note || '',
               stockQty: stockQty,
@@ -218,8 +250,8 @@ const StockManagment: React.FC = () => {
           stockQty: stockQty,
           type: 'OUTWARD',
           note: data.note || '',
-          sizeId: data.sizeId || null,
-          purity: purity,
+          sizeId: finalSizeId,
+          purity: finalPurity,
         };
 
         await updateStock.mutateAsync({id: targetStockId, data: payload});
@@ -290,25 +322,55 @@ const StockManagment: React.FC = () => {
                   error={errors.itemId?.message}
                 />
 
-                {/* Size Dropdown - Select any size */}
-                <GenericDropdown
-                  name="sizeId"
-                  label="Size"
-                  options={sizeOptions}
-                  placeholder="Select Size (Optional)"
-                  control={control}
-                  error={errors.sizeId?.message}
-                />
+                {/* Size Dropdown - Hidden for GOLD */}
+                {!isGold && (
+                  <GenericDropdown
+                    name="sizeId"
+                    label="Size"
+                    options={sizeOptions}
+                    placeholder="Select Size (Optional)"
+                    control={control}
+                    error={errors.sizeId?.message}
+                  />
+                )}
 
-                {/* Purity Dropdown - Select any purity */}
-                <GenericDropdown
-                  name="purity"
-                  label="Purity (%)"
-                  options={purityOptions}
-                  placeholder="Select Purity (Optional)"
-                  control={control}
-                  error={errors.purity?.message}
-                />
+                {/* Purity Input Field (allows 3 decimals) - Hidden for GOLD */}
+                {!isGold && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-[#4f4535] dark:text-slate-400">
+                      Purity (%)
+                    </label>
+                    <input
+                      type="text"
+                      value={watchedPurity || ''}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9.]/g, '');
+                        const parts = val.split('.');
+                        let formatted =
+                          parts.length > 2
+                            ? `${parts[0]}.${parts.slice(1).join('')}`
+                            : val;
+                        if (
+                          formatted.includes('.') &&
+                          formatted.split('.')[1]?.length > 3
+                        ) {
+                          formatted = `${formatted.split('.')[0]}.${formatted.split('.')[1].slice(0, 3)}`;
+                        }
+                        setValue('purity', formatted, {
+                          shouldValidate: true,
+                          shouldDirty: true,
+                        });
+                      }}
+                      placeholder="e.g. 91.600"
+                      className="font-mono mt-1 w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-left text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    />
+                    {errors.purity && (
+                      <p className="mt-1 text-xs text-red-500">
+                        {errors.purity.message}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Stock Type Dropdown */}
                 <GenericDropdown

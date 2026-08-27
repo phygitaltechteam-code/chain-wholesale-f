@@ -108,14 +108,14 @@ const Sidebar = ({
       icon: <MdInventory2 size={22} />,
       roles: ['ADMIN'],
     },
+    // {
+    //   label: 'Client',
+    //   path: '/client/client',
+    //   icon: <MdGroups size={22} />,
+    //   roles: ['ADMIN'],
+    // },
     {
-      label: 'Client',
-      path: '/client/client',
-      icon: <MdGroups size={22} />,
-      roles: ['ADMIN'],
-    },
-    {
-      label: 'Settlement',
+      label: 'Client & Settlement',
       path: '/setlment/settlement',
       icon: <MdAccountBalance size={22} />,
       roles: ['ADMIN'],
