@@ -1,5 +1,5 @@
-import {api} from '@/utils/axios';
-import {useQuery} from '@tanstack/react-query';
+import { api } from '@/utils/axios';
+import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export const useGetClientReport = (id: string) => {
@@ -7,8 +7,9 @@ export const useGetClientReport = (id: string) => {
     queryKey: ['client report', id],
     queryFn: () => getclientreport(id),
     enabled: !!id,
-    staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: false,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
   });
 };
 
@@ -19,8 +20,8 @@ export const getclientreport = async (id: string) => {
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||
-        error?.message ||
-        'Failed to fetch settlements',
+      error?.message ||
+      'Failed to fetch settlements',
     );
   }
 };
@@ -30,8 +31,9 @@ export const useGetStockReport = (id: string) => {
     queryKey: ['stock report', id],
     queryFn: () => getstockreport(id),
     enabled: !!id,
-    staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: false,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
   });
 };
 
@@ -52,8 +54,9 @@ export const useGetManufacturingData = () => {
   return useQuery({
     queryKey: ['manufacturing report'],
     queryFn: getManufacturingData,
-    staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: false,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
   });
 };
 
@@ -64,8 +67,8 @@ const getManufacturingData = async () => {
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||
-        error?.message ||
-        'Failed to fetch settlements',
+      error?.message ||
+      'Failed to fetch settlements',
     );
   }
 };

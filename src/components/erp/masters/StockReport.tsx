@@ -61,7 +61,9 @@ interface ApiResponse {
 
 export default function StockReport() {
   const navigate = useNavigate();
-  const {d} = Route.useParams();
+  const routeParams = Route.useParams();
+  const rawParams = useParams({ strict: false }) as { d?: string; id?: string; $d?: string };
+  const d = routeParams?.d || rawParams?.d || rawParams?.id || rawParams?.$d || '';
   const [searchTerm, setSearchTerm] = useState('');
   const getDefaultWeekRange = () => {
     const now = new Date();
@@ -355,22 +357,19 @@ export default function StockReport() {
     `;
     document.body.appendChild(printContainer);
 
-    // Build the table rows
+    // Build the table rows matching ClientReport exactly
     const rows = filteredData
       .map((item, index) => {
         return `
           <tr>
-            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${index + 1}</td>
-            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:7.5px;color:#000;white-space:nowrap;">${item.dateTime}</td>
-            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${item.item}</td>
-            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${item.size}</td>
-            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${item.purity}</td>
-            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">
-              <span style="color:${item.wt > 0 ? '#16a34a' : item.wt < 0 ? '#dc2626' : '#000'};font-weight:bold;">
-                ${item.remark}
-              </span>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">${item.dateTime}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.item}${item.size ? ` (${item.size})` : ''}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.purity ? `${item.purity}%` : '-'}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
+              ${item.remark || '-'}
             </td>
-            <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:${item.wt > 0 ? '#16a34a' : item.wt < 0 ? '#dc2626' : '#000'};">
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:${item.wt > 0 ? '#16a34a' : item.wt < 0 ? '#dc2626' : '#000'};">
               ${item.wt > 0 ? '+' : ''}${formatNumber(item.wt)}
             </td>
           </tr>
@@ -417,12 +416,15 @@ export default function StockReport() {
       ? `${headerInfo.phoneFontSize}px`
       : '9px';
 
-    // Set the content with PDF Header
+    const fromDateStr = formatDateForDisplay(fromDate);
+    const toDateStr = formatDateForDisplay(toDate);
+
+    // Set the content with PDF Header matching ClientReport
     printContainer.innerHTML = `
       <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
         <!-- Header Section -->
         <div>
-          <!-- PDF Header - All in One Line -->
+          <!-- PDF Header -->
           <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
               <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
@@ -441,53 +443,49 @@ export default function StockReport() {
           <!-- Title and Date Range in one line -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
             <div style="flex:1;"></div>
-            <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
-              Stock Report
+            <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+              Stock Report.
             </h2>
-            <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
-              From: ${formatDateForDisplay(fromDate) || 'Start'} 
-              &nbsp;&nbsp; To: ${formatDateForDisplay(toDate) || 'End'}
+            <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
+              ${fromDateStr && toDateStr ? `From: ${fromDateStr} &nbsp; To: ${toDateStr}` : ''}
             </div>
           </div>
 
           <!-- Table -->
-          <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
             <thead>
               <tr style="background:#785600;color:white;font-weight:600;">
-                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Sr</th>
-                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Date & Time</th>
-                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Item</th>
-                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Size</th>
-                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Purity</th>
-                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">Remark</th>
-                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:7.5px;">WT (G)</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:5%;">Sr</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:18%;">Date & Time</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:25%;">Item (Size)</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:12%;">Purity</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:25%;">Remark</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:15%;">WT (G)</th>
               </tr>
             </thead>
             <tbody>
               ${rows}
             </tbody>
-   
+            <tfoot>
+              <tr style="background:#fef3c7;font-weight:bold;font-size:11px;">
+                <td colspan="5" style="border:1px solid #000;padding:2px 4px;text-align:right;color:#000;">TOTAL:</td>
+                <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;color:#000;">
+                  ${formatNumber(totalWt)}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
-
-     
       </div>
     `;
 
-    // Add print styles
+    // Add print styles matching ClientReport
     const style = document.createElement('style');
     style.textContent = `
       @page {
-        size: A4 portrait;
-        margin: 0;
+        margin: 3mm;
       }
       @media print {
-        html, body {
-          margin: 0;
-          padding: 0;
-          width: 210mm;
-          height: 297mm;
-        }
         body * {
           visibility: hidden;
         }
@@ -498,24 +496,18 @@ export default function StockReport() {
           position: fixed !important;
           left: 0 !important;
           top: 0 !important;
-          width: 210mm !important;
-          height: 297mm !important;
+          width: 100% !important;
+          height: 100% !important;
           background: white !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          overflow: hidden !important;
+          padding: 4px !important;
+          overflow: auto !important;
           z-index: 9999 !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
-        #print-container > div {
-          width: 210mm !important;
-          min-height: 297mm !important;
-          padding: 6mm 5mm !important;
-          box-sizing: border-box !important;
-        }
         #print-container table {
           width: 100% !important;
+          border-collapse: collapse !important;
         }
         #print-container tr {
           page-break-inside: avoid !important;
@@ -533,7 +525,7 @@ export default function StockReport() {
           print-color-adjust: exact !important;
         }
         #print-container tfoot tr {
-          background: #f4f4f2 !important;
+          background: #fef3c7 !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }

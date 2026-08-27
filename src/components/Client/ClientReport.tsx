@@ -85,7 +85,9 @@ interface ApiDataItem {
 export default function ClientReport() {
   const getpdfheaderdata = useGetHeader();
   const navigate = useNavigate();
-  const {id} = Route.useParams();
+  const routeParams = Route.useParams();
+  const rawParams = useParams({ strict: false }) as { id?: string; $id?: string };
+  const id = routeParams?.id || rawParams?.id || rawParams?.$id || '';
   const [searchTerm, setSearchTerm] = useState('');
   const [reportData, setReportData] = useState<ClientReportEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -151,7 +153,9 @@ export default function ClientReport() {
       (acc: Record<string, ApiDataItem[]>, item) => {
         const billKey = item.billNumber
           ? `BILL_${item.billNumber}`
-          : `NO_BILL_${item.id}`;
+          : item.receiptId
+            ? `RECEIPT_${item.receiptId}`
+            : `ENTRY_${item.id}`;
 
         if (!acc[billKey]) {
           acc[billKey] = [];
@@ -169,80 +173,47 @@ export default function ClientReport() {
 
     Object.entries(groupedData).forEach(([_, items]) => {
       groupId++;
-
-      const remarkGroups = items.reduce(
-        (
-          acc: Record<
-            string,
-            {
-              weight: number;
-              item: string;
-              size: string;
-              purity: string;
-              createdAt: string;
-              billNumber: string;
-            }
-          >,
-          item,
-        ) => {
-          const remark = item.remark || 'N/A';
-
-          if (!acc[remark]) {
-            acc[remark] = {
-              weight: 0,
-              item: item.item?.name || 'Unknown Item',
-              size: item.size?.size || 'N/A',
-              purity: item.purity !== null ? item.purity.toString() : 'N/A',
-              createdAt: item.createdAt,
-              billNumber: item.billNumber || 'N/A',
-            };
-          }
-
-          acc[remark].weight += item.weight || 0;
-
-          if (
-            new Date(item.createdAt).getTime() >
-            new Date(acc[remark].createdAt).getTime()
-          ) {
-            acc[remark].createdAt = item.createdAt;
-          }
-
-          return acc;
-        },
-        {},
-      );
-
-      const remarkEntries = Object.entries(remarkGroups);
-      const groupRowSpan = remarkEntries.length;
+      const groupRowSpan = items.length;
       const currentSrNo = srNo++;
+      const firstItem = items[0];
+      const date = new Date(firstItem.createdAt);
 
-      remarkEntries.forEach(([remark, group], index) => {
-        const date = new Date(group.createdAt);
+      const formattedDate = date.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
 
-        const formattedDate = date.toLocaleDateString('en-IN', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        });
+      const formattedTime = date.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
 
-        const formattedTime = date.toLocaleTimeString('en-IN', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-        });
+      const groupDateTime = `${formattedDate} ${formattedTime}`;
+      const groupBillNo = firstItem.billNumber || 'N/A';
 
+      items.forEach((item, index) => {
         const isFirstInBill = index === 0;
+        const itemName = item.item?.name || 'Unknown Item';
+        const isGold = itemName.trim().toLowerCase() === 'gold' || itemName.trim().toLowerCase().includes('gold');
+        const sizeValue = isGold ? '' : (item.size?.size || '');
+        const purityValue = isGold
+          ? '100'
+          : item.purity !== null && item.purity !== undefined
+            ? item.purity.toString()
+            : 'N/A';
 
         transformedData.push({
-          id: `group-${groupId}-${index}`,
+          id: item.id || `group-${groupId}-${index}`,
           srNo: currentSrNo,
-          dateTime: isFirstInBill ? `${formattedDate} ${formattedTime}` : '',
-          billNo: isFirstInBill ? group.billNumber : '',
-          item: group.item,
-          size: group.size,
-          purity: group.purity,
-          remark,
-          wt: group.weight,
+          dateTime: isFirstInBill ? groupDateTime : '',
+          billNo: isFirstInBill ? groupBillNo : '',
+          item: itemName,
+          size: sizeValue,
+          purity: purityValue,
+          remark: item.remark || 'N/A',
+          wt: item.weight || 0,
           groupId: `group-${groupId}`,
           isFirstInGroup: isFirstInBill,
           groupRowSpan,
@@ -393,17 +364,17 @@ export default function ClientReport() {
         rows += `
                 <tr>
                     ${entry.isFirstInGroup ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;vertical-align:middle;" rowspan="${entry.groupRowSpan}">${entry.srNo}</td>` : ''}
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+                    ${entry.isFirstInGroup ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;vertical-align:middle;" rowspan="${entry.groupRowSpan}">
                         ${entry.dateTime || ' '}
-                    </td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:${entry.billNo !== 'N/A' && entry.billNo !== '' ? 'bold' : 'normal'};">
+                    </td>` : ''}
+                    ${entry.isFirstInGroup ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;vertical-align:middle;font-weight:${entry.billNo !== 'N/A' && entry.billNo !== '' ? 'bold' : 'normal'};" rowspan="${entry.groupRowSpan}">
                         ${entry.billNo || ' '}
+                    </td>` : ''}
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
+                        ${entry.item}${entry.size ? ` (${entry.size})` : ''}
                     </td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-                        ${entry.item} (${entry.size})
-                    </td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-                        ${entry.purity !== 'N/A' ? `${entry.purity}%` : 'N/A'}
+                        ${entry.purity !== 'N/A' && entry.purity !== '' ? `${entry.purity}%` : 'N/A'}
                     </td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${entry.remark || 'N/A'}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:${entry.wt > 0 ? '#16a34a' : entry.wt < 0 ? '#dc2626' : '#000'};">
@@ -827,14 +798,16 @@ export default function ClientReport() {
                             <span className="font-medium text-[#1a1c1b] dark:text-white">
                               {entry.item}
                             </span>
-                            <span className="text-gray-500 dark:text-gray-400 text-xs">
-                              ({entry.size})
-                            </span>
+                            {entry.size ? (
+                              <span className="text-gray-500 dark:text-gray-400 text-xs">
+                                ({entry.size})
+                              </span>
+                            ) : null}
                           </div>
                         </td>
 
                         <td className="font-mono whitespace-nowrap px-3 py-3 text-sm text-[#1a1c1b] dark:text-white">
-                          {entry.purity !== 'N/A' ? `${entry.purity}%` : 'N/A'}
+                          {entry.purity !== 'N/A' && entry.purity !== '' ? `${entry.purity}%` : 'N/A'}
                         </td>
 
                         <td className="whitespace-nowrap px-3 py-3 text-sm">

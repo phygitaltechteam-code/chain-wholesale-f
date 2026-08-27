@@ -143,7 +143,7 @@ export const useCreateStock = () => {
     mutationFn: createStockApi,
 
     onSuccess: () => {
-      toast.success('Stock entry created successfully');
+      // toast.success('Stock entry created successfully');
 
       queryClient.invalidateQueries({
         queryKey: ['stock'],

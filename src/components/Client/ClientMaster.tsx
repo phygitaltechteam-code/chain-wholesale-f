@@ -202,7 +202,10 @@ const ClientMaster: React.FC = () => {
 
   // Handle row click - Navigate to client detail page
   const handleRowClick = (client: Client) => {
-    navigate({ to: '/client/clientreport/$id', params: { id: client.id } });
+    const targetId = client?.id || (client as any)?._id;
+    if (targetId) {
+      navigate({ to: '/client/clientreport/$id', params: { id: targetId } });
+    }
   };
 
   // Reset form
@@ -308,6 +311,13 @@ const ClientMaster: React.FC = () => {
         <div className="flex flex-col items-center justify-between gap-3 px-3 py-2 sm:flex-row sm:px-4 sm:py-3 md:px-6">
           {/* Left side - Back button and Title */}
           <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
+            <button
+              onClick={() => navigate({ to: '/setlment/settlement' })}
+              className="flex flex-shrink-0 items-center gap-1 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
+            >
+              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-xs font-medium sm:text-sm">Back</span>
+            </button>
             <div className="h-5 w-px flex-shrink-0 bg-[#d3c4af]/30 dark:bg-slate-600" />
             <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Client Master

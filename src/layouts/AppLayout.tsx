@@ -131,7 +131,7 @@ const AppLayoutContent: React.FC<{ children?: React.ReactNode }> = ({
         )}
 
         <main className="min-h-full">
-          {user?.role?.toUpperCase() !== 'SUPERADMIN' && <WorkflowGuide />}
+          {/* {user?.role?.toUpperCase() !== 'SUPERADMIN' && <WorkflowGuide />} */}
           <AdminExpiryModal />
           {children ?? <Outlet />}
         </main>

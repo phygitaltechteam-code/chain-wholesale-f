@@ -485,7 +485,7 @@ const Billing: React.FC = () => {
     printContainer.innerHTML = `
       <div style="
         width:210mm;
-        height:135mm;
+        height:140mm;
         margin:0 auto;
         background:#ffffff;
         font-family:Arial,Helvetica,sans-serif;
@@ -562,16 +562,13 @@ const Billing: React.FC = () => {
         <div style="
           display:flex;
           align-items:center;
-          justify-content:space-between;
+          justify-content:center;
           margin:0 0 3px;
         ">
-          <div style="width:25%;"></div>
-
           <h2 style="
-            width:50%;
             margin:0;
             text-align:center;
-            font-size:15px;
+            font-size:14px;
             font-weight:bold;
             letter-spacing:2px;
             color:#111111;
@@ -631,28 +628,28 @@ const Billing: React.FC = () => {
           </tbody>
         </table>
 
-        <!-- PAYMENT SUMMARY -->
+        <!-- PAYMENT SUMMARY (Compact) -->
         <div style="
           display:flex;
           justify-content:flex-end;
           margin-top:1px;
         ">
           <div style="
-            width:38%;
+            width:32%;
             border:1px solid #d6c08a;
-            border-radius:5px;
+            border-radius:4px;
             background:#fffdf7;
             overflow:hidden;
           ">
             <div style="
               display:flex;
               justify-content:space-between;
-              padding:3px 7px;
+              padding:2.5px 6px;
               border-bottom:1px dashed #dddddd;
-              font-size:10px;
+              font-size:9.5px;
             ">
               <span style="font-weight:bold;color:#666666;">Total Fine Wt</span>
-              <span style="font-family:monospace;font-weight:bold;">
+              <span style="font-family:monospace;font-weight:bold;color:#111111;">
                 ${formatNumberWithDecimals(totalFineWt)} G
               </span>
             </div>
@@ -660,12 +657,12 @@ const Billing: React.FC = () => {
             <div style="
               display:flex;
               justify-content:space-between;
-              padding:3px 7px;
+              padding:2.5px 6px;
               border-bottom:1px dashed #dddddd;
-              font-size:10px;
+              font-size:9.5px;
             ">
               <span style="font-weight:bold;color:#666666;">Receive</span>
-              <span style="font-family:monospace;font-weight:bold;">
+              <span style="font-family:monospace;font-weight:bold;color:#111111;">
                 ${formatNumberWithDecimals(receive)} G
               </span>
             </div>
@@ -673,12 +670,12 @@ const Billing: React.FC = () => {
             <div style="
               display:flex;
               justify-content:space-between;
-              padding:3px 7px;
+              padding:2.5px 6px;
               border-bottom:1px dashed #dddddd;
-              font-size:10px;
+              font-size:9.5px;
             ">
               <span style="font-weight:bold;color:#666666;">Pending</span>
-              <span style="font-family:monospace;font-weight:bold;">
+              <span style="font-family:monospace;font-weight:bold;color:#111111;">
                 ${formatNumberWithDecimals(pending)} G
               </span>
             </div>
@@ -686,9 +683,9 @@ const Billing: React.FC = () => {
             <div style="
               display:flex;
               justify-content:space-between;
-              padding:4px 7px;
+              padding:3px 6px;
               background:#f4f0e5;
-              font-size:10.5px;
+              font-size:10px;
             ">
               <span style="font-weight:bold;color:#111111;">Total</span>
               <span style="font-family:monospace;font-weight:bold;color:#785600;">
@@ -703,30 +700,25 @@ const Billing: React.FC = () => {
           display:flex;
           justify-content:space-between;
           align-items:flex-end;
-          margin:4px 0 0;
-          padding:4px 0 0;
+          margin-top:12px;
+          padding-top:3px;
           border-top:1px dashed #aaaaaa;
           font-size:9px;
           line-height:1;
           color:#444444;
         ">
-          <div style="
-            margin:0;
-            padding:0;
-          ">
+          <div>
             Contact For Support: 9511640351
           </div>
 
           <div style="
             width:120px;
-            margin:0;
-            padding:0;
             text-align:center;
           ">
             <div style="
               border-top:1px solid #555555;
               padding-top:2px;
-              margin:0;
+              font-weight:bold;
             ">
               Authorized Signature
             </div>
@@ -740,10 +732,15 @@ const Billing: React.FC = () => {
     style.textContent = `
       @page {
         size: A5 landscape;
-        margin: 0;
+        margin: 0mm !important;
       }
 
       @media print {
+        @page {
+          size: A5 landscape;
+          margin: 0mm !important;
+        }
+
         html,
         body {
           width: 210mm !important;
@@ -752,6 +749,8 @@ const Billing: React.FC = () => {
           padding: 0 !important;
           overflow: hidden !important;
           background: #ffffff !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
 
         body * {
@@ -781,9 +780,8 @@ const Billing: React.FC = () => {
         #print-container > div {
           width: 210mm !important;
           height: 148mm !important;
-          min-height: 148mm !important;
-          max-height: 148mm !important;
           box-sizing: border-box !important;
+          padding: 5mm 7mm !important;
           overflow: hidden !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
@@ -888,28 +886,59 @@ const Billing: React.FC = () => {
     const toStr = toDate.length > 0 ? formatDateStr(toDate[0]) : '';
 
     const rows = filteredGroups
-      .map(
-        (group, index) => `
-      <tr>
-        <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:9px;color:#000;">${index + 1}</td>
-        <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:8px;color:#000;">${group.dateTime}</td>
-        <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:9px;font-weight:bold;color:#000;">${group.billNo}</td>
-        <td style="border:1px solid #000;padding:3px 2px;font-size:9px;color:#000;">${group.clientName}</td>
-        <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:8px;color:#000;">${group.phoneNumber}</td>
-        <td style="border:1px solid #000;padding:3px 2px;font-size:9px;color:#000;white-space:pre-line;">${group.displayItems}</td>
-        <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:9px;color:#000;white-space:pre-line;">${group.displaySizes}</td>
-        <td style="border:1px solid #000;padding:3px 2px;text-align:center;font-size:9px;color:#000;white-space:pre-line;">${group.displayPurity}</td>
-        <td style="border:1px solid #000;padding:3px 2px;text-align:right;font-family:monospace;font-size:9px;color:#000;white-space:pre-line;">${group.displayFinWt}</td>
-        <td style="border:1px solid #000;padding:3px 2px;text-align:right;font-family:monospace;font-size:9px;color:#000;white-space:pre-line;">${group.displaySRP}</td>
-        <td style="border:1px solid #000;padding:3px 2px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberWithDecimals(group.receive)}</td>
-        <td style="border:1px solid #000;padding:3px 2px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberWithDecimals(group.pending)}</td>
-      </tr>
-    `,
-      )
+      .map((group, index) => {
+        const items = group.items && group.items.length > 0 ? group.items : [
+          {
+            item: group.displayItems || '-',
+            size: group.displaySizes || '-',
+            purity: Number(group.displayPurity) || 0,
+            finWt: group.totalFinWt || 0,
+            srp: group.totalSRP || 0,
+            grossWeight: 0,
+          },
+        ];
+
+        const rowCount = items.length;
+
+        return items
+          .map((item, itemIdx) => {
+            if (itemIdx === 0) {
+              return `
+              <tr>
+                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;vertical-align:middle;">${index + 1}</td>
+                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;vertical-align:middle;">${group.dateTime}</td>
+                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;font-weight:bold;color:#000;vertical-align:middle;">${group.billNo}</td>
+                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;font-size:11px;font-weight:600;color:#000;vertical-align:middle;">${group.clientName}</td>
+                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;vertical-align:middle;">${group.phoneNumber || '-'}</td>
+                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.item || '-'}${item.size ? ` (${item.size})` : ''}</td>
+                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.purity ? `${formatNumberWithDecimals(item.purity)}%` : '-'}</td>
+                <td style="border:1px solid #000;padding:1px 2px;text-align:right;font-family:monospace;font-size:11px;color:#000;font-weight:bold;">${item.finWt !== undefined && item.finWt !== null ? `${formatNumberWithDecimals(item.finWt)}` : '-'}</td>
+                <td style="border:1px solid #000;padding:1px 2px;text-align:right;font-family:monospace;font-size:11px;color:#000;">${item.srp !== undefined && item.srp !== null && Number(item.srp) > 0 ? `${formatNumberWith2Decimals(item.srp)}` : '-'}</td>
+                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;text-align:right;font-family:monospace;font-size:11px;color:#000;vertical-align:middle;">${formatNumberWithDecimals(group.receive)}</td>
+                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;text-align:right;font-family:monospace;font-size:11px;color:#000;vertical-align:middle;font-weight:bold;">${formatNumberWithDecimals(group.pending)}</td>
+              </tr>
+            `;
+            } else {
+              return `
+              <tr>
+                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.item || '-'}${item.size ? ` (${item.size})` : ''}</td>
+                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.purity ? `${formatNumberWithDecimals(item.purity)}%` : '-'}</td>
+                <td style="border:1px solid #000;padding:1px 2px;text-align:right;font-family:monospace;font-size:11px;color:#000;font-weight:bold;">${item.finWt !== undefined && item.finWt !== null ? `${formatNumberWithDecimals(item.finWt)}` : '-'}</td>
+                <td style="border:1px solid #000;padding:1px 2px;text-align:right;font-family:monospace;font-size:11px;color:#000;">${item.srp !== undefined && item.srp !== null && Number(item.srp) > 0 ? `${formatNumberWith2Decimals(item.srp)}` : '-'}</td>
+              </tr>
+            `;
+            }
+          })
+          .join('');
+      })
       .join('');
 
+    const totalFineAll = filteredGroups.reduce((s, g) => s + (g.totalFinWt || 0), 0);
+    const totalReceiveAll = filteredGroups.reduce((s, g) => s + (g.receive || 0), 0);
+    const totalPendingAll = filteredGroups.reduce((s, g) => s + (g.pending || 0), 0);
+
     printContainer.innerHTML = `
-      <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+      <div style="width:287mm;min-height:200mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
         <div>
           <!-- Header Section -->
           <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
@@ -926,44 +955,53 @@ const Billing: React.FC = () => {
           </div>
 
           <!-- Title and Date Range -->
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0 6px 0;padding:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
             <div style="flex:1;"></div>
-            <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">Billing History Report</h2>
-            <div style="flex:1;text-align:right;font-size:10px;color:#000;font-weight:bold;">
-              Date: ${fromStr} to ${toStr}
+            <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">Billing Report.</h2>
+            <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
+              ${fromStr && toStr ? `From: ${fromStr} &nbsp; To: ${toStr}` : ''}
             </div>
           </div>
 
           <!-- Table -->
-          <table style="width:100%;border-collapse:collapse;margin-top:2px;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
             <thead>
-              <tr style="background:#785600;color:white;font-size:10px;">
-                <th style="border:1px solid #785600;padding:4px 2px;text-align:center;">Sr</th>
-                <th style="border:1px solid #785600;padding:4px 2px;text-align:center;">Date & Time</th>
-                <th style="border:1px solid #785600;padding:4px 2px;text-align:center;">Bill No</th>
-                <th style="border:1px solid #785600;padding:4px 2px;text-align:left;">Client Name</th>
-                <th style="border:1px solid #785600;padding:4px 2px;text-align:center;">Phone</th>
-                <th style="border:1px solid #785600;padding:4px 2px;text-align:left;">Item</th>
-                <th style="border:1px solid #785600;padding:4px 2px;text-align:center;">Size</th>
-                <th style="border:1px solid #785600;padding:4px 2px;text-align:center;">Purity %</th>
-                <th style="border:1px solid #785600;padding:4px 2px;text-align:right;">Fine Wt</th>
-                <th style="border:1px solid #785600;padding:4px 2px;text-align:right;">SRP</th>
-                <th style="border:1px solid #785600;padding:4px 2px;text-align:right;">Receive</th>
-                <th style="border:1px solid #785600;padding:4px 2px;text-align:right;">Pending</th>
+              <tr style="background:#785600;color:white;font-weight:600;">
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:3%;">Sr</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:10%;">Date & Time</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:8%;">Bill No</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:16%;">Client Name</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:10%;">Phone</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:14%;">Item (Size)</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:7%;">Purity</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:8%;">Fine Wt</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:7%;">SRP</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:8%;">Receive</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:9%;">Pending</th>
               </tr>
             </thead>
             <tbody>
               ${rows}
             </tbody>
+            <tfoot>
+              <tr style="background:#fef3c7;font-weight:bold;font-size:11px;">
+                <td colspan="7" style="border:1px solid #000;padding:2px 4px;text-align:right;color:#000;">TOTAL:</td>
+                <td style="border:1px solid #000;padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberWithDecimals(totalFineAll)}</td>
+                <td style="border:1px solid #000;padding:2px 4px;text-align:right;color:#000;">-</td>
+                <td style="border:1px solid #000;padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberWithDecimals(totalReceiveAll)}</td>
+                <td style="border:1px solid #000;padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberWithDecimals(totalPendingAll)}</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
     `;
 
-    // Add print styles matching AddTar / CuttingDept exactly
+    // Add print styles matching ClientReport exactly
     const style = document.createElement('style');
     style.textContent = `
       @page {
+        size: A4 landscape;
         margin: 3mm;
       }
       @media print {
@@ -988,6 +1026,7 @@ const Billing: React.FC = () => {
         }
         #print-container table {
           width: 100% !important;
+          border-collapse: collapse !important;
         }
         #print-container tr {
           page-break-inside: avoid !important;
@@ -1001,6 +1040,11 @@ const Billing: React.FC = () => {
         #print-container thead tr th {
           background: #785600 !important;
           color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container tfoot tr {
+          background: #fef3c7 !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
@@ -1019,10 +1063,6 @@ const Billing: React.FC = () => {
         }
       }, 1000);
     }, 500);
-  };
-
-  const handleRowClick = (group: BillGroup) => {
-    navigate({ to: '/billiupdate/$id', params: { id: group.id } });
   };
 
   const handleDelete = (group: BillGroup) => {
@@ -1111,19 +1151,25 @@ const Billing: React.FC = () => {
     setShowManufacturingItemPicker(null);
   };
 
+  const handleRowClick = (item: BillGroup) => {
+    navigate({ to: `/billiupdate/${item.id}` });
+  };
+
   const renderActions = (item: BillGroup, index: number) => (
     <div className="flex items-center justify-center gap-1">
       {item.type === 'DRAFT' && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleSendToManufacturing(item);
-          }}
-          className="rounded-lg p-1.5 text-amber-600 transition-colors hover:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-400/20"
-          title="Start Manufacturing (Add Tar)"
-        >
-          <Factory className="h-4 w-4" />
-        </button>
+        <>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSendToManufacturing(item);
+            }}
+            className="rounded-lg p-1.5 text-amber-600 transition-colors hover:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-400/20"
+            title="Start Manufacturing (Add Tar)"
+          >
+            <Factory className="h-4 w-4" />
+          </button>
+        </>
       )}
       <button
         onClick={(e) => {

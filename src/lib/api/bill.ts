@@ -1,5 +1,5 @@
-import {api} from '@/utils/axios';
-import {useMutation, useQuery} from '@tanstack/react-query';
+import { api } from '@/utils/axios';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export const useGetQuantity = () => {
@@ -12,10 +12,14 @@ export const useGetQuantity = () => {
 };
 
 export const useBill = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: saveBillApi,
     onSuccess: () => {
       toast.success('Bill added successfully');
+      queryClient.invalidateQueries({ queryKey: ['bill'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-report'] });
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Insufficient stock');
@@ -42,6 +46,9 @@ export const useGetBill = () => {
   return useQuery({
     queryKey: ['bill'],
     queryFn: getbillAll,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
   });
 };
 
@@ -56,6 +63,7 @@ export const getbillAll = async () => {
     throw error;
   }
 };
+
 export const useGetBillByid = (id: string) => {
   return useQuery({
     queryKey: ['bill', id],
@@ -64,6 +72,9 @@ export const useGetBillByid = (id: string) => {
       return response.data;
     },
     enabled: !!id,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
   });
 };
 
@@ -71,10 +82,16 @@ const deleteBillApi = async (id: string) => {
   const response = await api.delete(`/admin/billing/${id}`);
   return response.data;
 };
+
 export const useDeleteBill = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteBillApi,
-    onSuccess: () => {},
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bill'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-report'] });
+    },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Insufficient stock');
     },
@@ -82,10 +99,14 @@ export const useDeleteBill = () => {
 };
 
 export const useBillUpdate = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateBillApi,
     onSuccess: () => {
       toast.success('Bill updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['bill'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-report'] });
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Insufficient stock');
@@ -93,7 +114,7 @@ export const useBillUpdate = () => {
   });
 };
 
-export const updateBillApi = async ({id, data}: {id: string; data: any}) => {
+export const updateBillApi = async ({ id, data }: { id: string; data: any }) => {
   const response = await api.put(`/admin/billing/${id}`, data);
   return response.data;
 };
