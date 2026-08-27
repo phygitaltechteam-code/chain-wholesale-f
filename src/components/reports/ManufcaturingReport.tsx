@@ -1,25 +1,27 @@
 import { useNavigate } from '@tanstack/react-router';
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { ArrowLeft, Search, Printer, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { ArrowLeft, Search, Printer, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useGetManufacturingData } from '@/lib/api/reportapi';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
 
-interface ManufacturingEntry {
+interface ManufacturingItem {
   id: string;
-  srNo: number;
   dateTime: string;
-  item: string;
-  size: string;
-  purity: number;
   weight: number;
   scrap: number;
   loss: number;
   currentWeight: number;
+  createdAt: string;
+}
+
+interface ManufacturingGroup {
   groupId: string;
-  isFirstInGroup: boolean;
-  groupRowSpan: number;
-  displaySrNo: string;
+  srNo: number;
+  item: string;
+  size: string;
+  purity: number;
+  items: ManufacturingItem[];
 }
 
 interface ApiResponse {
@@ -70,7 +72,7 @@ export default function ManufacturingReport() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const groupsPerPage = 10;
 
   const getDefaultWeekRange = () => {
     const now = new Date();
@@ -101,54 +103,72 @@ export default function ManufacturingReport() {
   } = useGetManufacturingData();
   const getpdfheaderdata = useGetHeader();
 
-  // Derive transformed data from manufacturingData
-  const reportData = useMemo<ManufacturingEntry[]>(() => {
+  // 1. Filter raw history by Date Range and group by Item + Size + Purity
+  const allGroups = useMemo<ManufacturingGroup[]>(() => {
     if (!manufacturingData) return [];
-    const responseData = manufacturingData as ApiResponse;
+    const responseData = manufacturingData as
+      | ApiResponse
+      | { data?: { history?: ApiDataItem[] }; history?: ApiDataItem[] };
 
-    if (!responseData?.history || !Array.isArray(responseData.history)) {
+    const historyList: ApiDataItem[] =
+      (responseData as any)?.data?.history ||
+      (responseData as any)?.history ||
+      (Array.isArray(responseData) ? responseData : []);
+
+    if (!Array.isArray(historyList) || historyList.length === 0) {
       return [];
     }
 
-    // Group by Item + Size + Purity combination
-    const groupedItems: { [key: string]: ApiDataItem[] } = {};
-    responseData.history.forEach((item: ApiDataItem) => {
+    // Filter by date range directly on createdAt
+    const filteredHistory = historyList.filter((item: ApiDataItem) => {
+      const createdAt = new Date(item.createdAt);
+      if (fromDate) {
+        const from = new Date(fromDate);
+        from.setHours(0, 0, 0, 0);
+        if (createdAt < from) return false;
+      }
+      if (toDate) {
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+        if (createdAt > to) return false;
+      }
+      return true;
+    });
+
+    // Group by exact Item + Size + Purity combination
+    const groupedMap: { [key: string]: { item: string; size: string; purity: number; items: ApiDataItem[] } } = {};
+
+    filteredHistory.forEach((item: ApiDataItem) => {
       const itemName = item.item?.name || 'Unknown Item';
       const sizeName = item.size?.size || 'N/A';
       const purityValue = item.purity || 0;
-      // Create a unique key from Item + Size + Purity
-      const groupKey = `${itemName}|${sizeName}|${purityValue}`;
-      
-      if (!groupedItems[groupKey]) {
-        groupedItems[groupKey] = [];
+      const groupKey = `${item.itemId || itemName}|${item.sizeId || sizeName}|${purityValue}`;
+
+      if (!groupedMap[groupKey]) {
+        groupedMap[groupKey] = {
+          item: itemName,
+          size: sizeName,
+          purity: purityValue,
+          items: [],
+        };
       }
-      groupedItems[groupKey].push(item);
+      groupedMap[groupKey].items.push(item);
     });
 
-    const transformedData: ManufacturingEntry[] = [];
+    const groups: ManufacturingGroup[] = [];
     let srNo = 1;
     let groupId = 0;
 
-    // Sort group keys by item name alphabetically
-    const sortedGroupKeys = Object.keys(groupedItems).sort();
-
-    sortedGroupKeys.forEach((groupKey) => {
-      const items = groupedItems[groupKey];
-      // Sort items by createdAt (newest first)
-      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
+    Object.keys(groupedMap).forEach((key) => {
+      const groupData = groupedMap[key];
       groupId++;
-      const groupRowSpan = items.length;
-      const currentSrNo = srNo++;
 
-      // Get the first item's details for the group
-      const firstItem = items[0];
-      const groupItemName = firstItem.item?.name || 'Unknown Item';
-      const groupSize = firstItem.size?.size || 'N/A';
-      const groupPurity = firstItem.purity || 0;
+      // Sort items within group by createdAt descending (newest first)
+      const sortedItems = [...groupData.items].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
 
-      items.forEach((item, index) => {
-        const isFirstInGroup = index === 0;
+      const items: ManufacturingItem[] = sortedItems.map((item) => {
         const date = new Date(item.createdAt);
         const formattedDate = !isNaN(date.getTime())
           ? date.toLocaleDateString('en-IN', {
@@ -165,96 +185,83 @@ export default function ManufacturingReport() {
             })
           : '';
 
-        transformedData.push({
+        return {
           id: item.id,
-          srNo: currentSrNo,
           dateTime: `${formattedDate} ${formattedTime}`.trim(),
-          item: groupItemName,
-          size: groupSize,
-          purity: groupPurity,
           weight: item.weight || 0,
           scrap: item.scrap || 0,
           loss: item.loss || 0,
           currentWeight: item.currentWeight || 0,
-          groupId: `group-${groupId}`,
-          isFirstInGroup,
-          groupRowSpan,
-          displaySrNo: isFirstInGroup ? currentSrNo.toString() : '',
-        });
+          createdAt: item.createdAt,
+        };
+      });
+
+      groups.push({
+        groupId: `group-${groupId}`,
+        srNo: srNo++,
+        item: groupData.item,
+        size: groupData.size,
+        purity: groupData.purity,
+        items,
       });
     });
 
-    return transformedData;
-  }, [manufacturingData]);
+    return groups;
+  }, [manufacturingData, fromDate, toDate]);
 
-  // Filter data based on search term and date range
-  const filteredData = useMemo(() => {
-    return reportData.filter((entry) => {
-      const matchesSearch =
-        searchTerm === '' ||
-        entry.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.purity.toString().includes(searchTerm) ||
-        entry.weight.toString().includes(searchTerm) ||
-        entry.currentWeight.toString().includes(searchTerm);
+  // 2. Search filter applied across groups
+  const filteredGroups = useMemo<ManufacturingGroup[]>(() => {
+    if (!searchTerm) return allGroups;
+    const query = searchTerm.toLowerCase();
 
-      let matchesDate = true;
+    return allGroups.filter((group) => {
+      const matchHeader =
+        group.item.toLowerCase().includes(query) ||
+        group.size.toLowerCase().includes(query) ||
+        group.purity.toString().includes(query) ||
+        group.srNo.toString().includes(query);
 
-      if (fromDate || toDate) {
-        const dateParts = entry.dateTime.split(' ')[0].split('/');
+      if (matchHeader) return true;
 
-        if (dateParts.length === 3) {
-          const entryDate = new Date(
-            Number(dateParts[2]),
-            Number(dateParts[1]) - 1,
-            Number(dateParts[0]),
-          );
-          entryDate.setHours(12, 0, 0, 0);
-
-          if (fromDate) {
-            const from = new Date(fromDate);
-            from.setHours(0, 0, 0, 0);
-            if (entryDate < from) {
-              matchesDate = false;
-            }
-          }
-
-          if (toDate && matchesDate) {
-            const to = new Date(toDate);
-            to.setHours(23, 59, 59, 999);
-            if (entryDate > to) {
-              matchesDate = false;
-            }
-          }
-        }
-      }
-
-      return matchesSearch && matchesDate;
+      return group.items.some(
+        (item) =>
+          item.dateTime.toLowerCase().includes(query) ||
+          item.weight.toString().includes(query) ||
+          item.scrap.toString().includes(query) ||
+          item.loss.toString().includes(query) ||
+          item.currentWeight.toString().includes(query),
+      );
     });
-  }, [reportData, searchTerm, fromDate, toDate]);
+  }, [allGroups, searchTerm]);
 
-  // Calculate filtered totals
+  // 3. Overall Totals for metrics cards
   const filteredTotals = useMemo(() => {
-    return filteredData.reduce(
-      (acc, entry) => ({
-        totalWeight: acc.totalWeight + entry.weight,
-        totalScrap: acc.totalScrap + entry.scrap,
-        totalLoss: acc.totalLoss + entry.loss,
-        currentWeight: acc.currentWeight + entry.currentWeight,
-      }),
-      { totalWeight: 0, totalScrap: 0, totalLoss: 0, currentWeight: 0 },
-    );
-  }, [filteredData]);
+    let totalWeight = 0;
+    let totalScrap = 0;
+    let totalLoss = 0;
+    let currentWeight = 0;
 
-  // Pagination
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return filteredData.slice(start, end);
-  }, [filteredData, currentPage]);
+    filteredGroups.forEach((group) => {
+      group.items.forEach((item) => {
+        totalWeight += item.weight;
+        totalScrap += item.scrap;
+        totalLoss += item.loss;
+        currentWeight += item.currentWeight;
+      });
+    });
 
-  // Reset to first page when filter changes
+    return { totalWeight, totalScrap, totalLoss, currentWeight };
+  }, [filteredGroups]);
+
+  // 4. Group-based Pagination (ensures no group is split across page breaks)
+  const totalPages = Math.ceil(filteredGroups.length / groupsPerPage);
+  const currentGroups = useMemo(() => {
+    const start = (currentPage - 1) * groupsPerPage;
+    const end = start + groupsPerPage;
+    return filteredGroups.slice(start, end);
+  }, [filteredGroups, currentPage, groupsPerPage]);
+
+  // Reset to first page when search or date filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, fromDate, toDate]);
@@ -305,7 +312,7 @@ export default function ManufacturingReport() {
   const toInitialDates = useMemo(() => (toDate ? [toDate] : []), [toDate]);
 
   const handlePrint = () => {
-    if (!filteredData || filteredData.length === 0) {
+    if (!filteredGroups || filteredGroups.length === 0) {
       return;
     }
 
@@ -322,24 +329,27 @@ export default function ManufacturingReport() {
     `;
     document.body.appendChild(printContainer);
 
-    const printGroupedData: { [key: string]: ManufacturingEntry[] } = {};
-    filteredData.forEach((entry) => {
-      if (!printGroupedData[entry.groupId]) {
-        printGroupedData[entry.groupId] = [];
-      }
-      printGroupedData[entry.groupId].push(entry);
-    });
-
     let rows = '';
-    Object.keys(printGroupedData).forEach((groupId) => {
-      const entries = printGroupedData[groupId];
-      entries.forEach((item, index) => {
+    filteredGroups.forEach((group) => {
+      group.items.forEach((item, index) => {
         const isFirst = index === 0;
         rows += `
           <tr>
-            ${isFirst ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${item.groupRowSpan}">${item.srNo}</td>` : ''}
-            ${isFirst ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${item.groupRowSpan}">${item.item} ${item.size !== 'N/A' ? `(${item.size})` : ''} ${item.purity > 0 ? `(${item.purity}%)` : ''}</td>` : ''}
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">${item.dateTime}</td>
+            ${
+              isFirst
+                ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${group.items.length}">${group.srNo}</td>`
+                : ''
+            }
+            ${
+              isFirst
+                ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${group.items.length}">
+                    ${group.item} ${group.size !== 'N/A' ? `(${group.size})` : ''} ${group.purity > 0 ? `(${group.purity}%)` : ''}
+                  </td>`
+                : ''
+            }
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+              ${item.dateTime}
+            </td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.scrap)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.loss)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.weight)}</td>
@@ -394,9 +404,11 @@ export default function ManufacturingReport() {
               <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
               <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
             </div>
+            
             <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
               ${description}
             </div>
+            
             <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
               ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
             </div>
@@ -408,16 +420,17 @@ export default function ManufacturingReport() {
             <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
               Manufacturing Report
             </h2>
-            ${fromDate || toDate
-        ? `
+            ${
+              fromDate || toDate
+                ? `
             <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
               ${fromDate ? `From: ${formatDateForDisplay(fromDate)}` : ''} 
               ${fromDate && toDate ? '&nbsp;&nbsp;' : ''}
               ${toDate ? `To: ${formatDateForDisplay(toDate)}` : ''}
             </div>
             `
-        : `<div style="flex:1;"></div>`
-      }
+                : `<div style="flex:1;"></div>`
+            }
           </div>
 
           <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
@@ -447,14 +460,14 @@ export default function ManufacturingReport() {
               <span>Powered by Matoshree Gold</span>
               <span>|</span>
               <span>Generated: ${new Date().toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      })} ${new Date().toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      })}</span>
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              })} ${new Date().toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+              })}</span>
             </div>
           </div>
         </div>
@@ -487,18 +500,11 @@ export default function ManufacturingReport() {
           width: 210mm !important;
           height: 297mm !important;
           background: white !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          overflow: hidden !important;
+          padding: 4px !important;
+          overflow: auto !important;
           z-index: 9999 !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
-        }
-        #print-container > div {
-          width: 210mm !important;
-          min-height: 297mm !important;
-          padding: 6mm 5mm !important;
-          box-sizing: border-box !important;
         }
         #print-container table {
           width: 100% !important;
@@ -536,31 +542,29 @@ export default function ManufacturingReport() {
     }, 500);
   };
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] dark:bg-slate-950">
         <div className="text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-[#785600]"></div>
           <p className="mt-4 text-[#785600] dark:text-amber-400">
-            Loading manufacturing report...
+            Loading manufacturing data...
           </p>
         </div>
       </div>
     );
   }
 
-  // Show error state
   if (isError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] dark:bg-slate-950">
         <div className="text-center">
-          <div className="mb-4 text-5xl text-red-500"></div>
+          <div className="mb-4 text-5xl text-red-500">⚠️</div>
           <h3 className="text-xl font-bold text-red-600 dark:text-red-400">
-            Error Loading Report
+            Error Loading Data
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Failed to fetch manufacturing report data.
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Failed to fetch manufacturing data.
           </p>
           <button
             onClick={() => refetch()}
@@ -648,6 +652,7 @@ export default function ManufacturingReport() {
               </span>
             </div>
           </div>
+
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
@@ -658,6 +663,7 @@ export default function ManufacturingReport() {
               </span>
             </div>
           </div>
+
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
@@ -668,6 +674,7 @@ export default function ManufacturingReport() {
               </span>
             </div>
           </div>
+
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
@@ -680,8 +687,8 @@ export default function ManufacturingReport() {
           </div>
         </div>
 
-        {/* Table with Grouping - Fixed alternating rows */}
-        {filteredData.length === 0 ? (
+        {/* Custom Table with Grouping (identical to Client Report layout) */}
+        {filteredGroups.length === 0 ? (
           <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="py-12 text-center text-[#4f4535] dark:text-slate-400">
               {searchTerm || fromDate || toDate
@@ -691,94 +698,128 @@ export default function ManufacturingReport() {
           </div>
         ) : (
           <>
-            <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div className="max-w-full overflow-x-auto">
-                <table className="w-full min-w-[800px] border-collapse md:min-w-0">
-                  <thead>
-                    <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-xs uppercase tracking-[0.15em] text-white">
-                      <th className="border border-[#785600] px-3 py-3 text-center font-semibold w-14">
-                        Sr No.
-                      </th>
-                      <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                        Item (Size) (Purity)
-                      </th>
-                      <th className="border border-[#785600] px-3 py-3 text-center font-semibold whitespace-nowrap">
-                        Date & Time
-                      </th>
-                      <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                        Scrap (G)
-                      </th>
-                      <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                        Loss (G)
-                      </th>
-                      <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                        Wt. (G)
-                      </th>
-                      <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                        Current Wt. (G)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedData.map((item, index) => {
-                      const isFirstRowOfGroup = item.isFirstInGroup;
-                      // Calculate row index for alternating colors
-                      const rowIndex = (currentPage - 1) * itemsPerPage + index;
-                      // Alternate row colors - white for even, gray for odd
-                      const rowColor = rowIndex % 2 === 0 
-                        ? 'bg-white dark:bg-slate-900' 
-                        : 'bg-gray-50 dark:bg-slate-800/60';
-
-                      return (
-                        <tr
-                          key={item.id}
-                          className={`${rowColor} hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50 transition-colors border-b border-[#f4f4f2] dark:border-slate-700`}
+            <div className="-mx-3 overflow-x-auto sm:-mx-4 md:mx-0">
+              <div className="inline-block min-w-full align-middle">
+                <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                  <table className="divide-gray-300 min-w-full divide-y dark:divide-slate-700">
+                    <thead className="bg-[#785600] dark:bg-[#5d4200]">
+                      <tr>
+                        <th
+                          scope="col"
+                          className="py-3 pl-4 pr-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
                         >
-                          {isFirstRowOfGroup ? (
-                            <td
-                              rowSpan={item.groupRowSpan}
-                              className="border-r border-[#f4f4f2] px-3 py-3 text-center align-middle text-sm font-bold text-black dark:border-slate-700 dark:text-white"
+                          Sr No.
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
+                          Item (Size) (Purity)
+                        </th>
+                        <th
+                          scope="col"
+                          className="whitespace-nowrap px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
+                          Date & Time
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
+                          Scrap (G)
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
+                          Loss (G)
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
+                          Wt. (G)
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
+                          Current Wt. (G)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
+                      {currentGroups.map((group, groupIndex) => {
+                        const isEvenGroup = groupIndex % 2 === 0;
+
+                        return group.items.map((item, itemIndex) => {
+                          const isFirstInGroup = itemIndex === 0;
+
+                          return (
+                            <tr
+                              key={item.id}
+                              className={`${
+                                isEvenGroup
+                                  ? 'bg-white dark:bg-slate-900'
+                                  : 'bg-gray-50 dark:bg-slate-800/50'
+                              } transition-colors hover:bg-[#f4f4f2]/60 dark:hover:bg-slate-800/80`}
                             >
-                              {item.srNo}
-                            </td>
-                          ) : null}
+                              {isFirstInGroup && (
+                                <td
+                                  rowSpan={group.items.length}
+                                  className="whitespace-nowrap border-r border-[#f4f4f2] py-3 pl-4 pr-3 text-center align-middle text-sm font-bold text-[#1a1c1b] dark:border-slate-700 dark:text-white"
+                                >
+                                  {group.srNo}
+                                </td>
+                              )}
 
-                          {isFirstRowOfGroup ? (
-                            <td
-                              rowSpan={item.groupRowSpan}
-                              className="border-r border-[#f4f4f2] px-3 py-3 text-center align-middle text-sm font-bold text-black dark:border-slate-700 dark:text-white"
-                            >
-                              {item.item} 
-                              {item.size !== 'N/A' ? ` (${item.size})` : ''}
-                              {item.purity > 0 ? ` (${item.purity}%)` : ''}
-                            </td>
-                          ) : null}
+                              {isFirstInGroup && (
+                                <td
+                                  rowSpan={group.items.length}
+                                  className="whitespace-nowrap border-r border-[#f4f4f2] px-3 py-3 text-center align-middle text-sm font-bold text-[#1a1c1b] dark:border-slate-700 dark:text-white"
+                                >
+                                  <div>{group.item}</div>
+                                  <div>
+                                    {group.size !== 'N/A' ? `(${group.size})` : ''}
+                                    {group.size !== 'N/A' && group.purity > 0 ? ' ' : ''}
+                                    {group.purity > 0 ? `(${group.purity}%)` : ''}
+                                  </div>
+                                </td>
+                              )}
 
-                          <td className="px-3 py-3 text-center text-sm text-black dark:text-white whitespace-nowrap">
-                            {item.dateTime}
-                          </td>
+                              <td className="whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                                <div>{item.dateTime.split(' ')[0]}</div>
+                                <div>
+                                  {item.dateTime.split(' ').slice(1).join(' ')}
+                                </div>
+                              </td>
 
-                          <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-white">
-                            {formatNumber(item.scrap)} G
-                          </td>
-                          <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-white">
-                            {formatNumber(item.loss)} G
-                          </td>
-                          <td className="font-mono px-3 py-3 text-center text-sm font-medium text-black dark:text-white">
-                            {formatNumber(item.weight)} G
-                          </td>
-                          <td className="font-mono px-3 py-3 text-center text-sm font-bold text-black dark:text-white">
-                            {formatNumber(item.currentWeight)} G
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                              <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                                {formatNumber(item.scrap)} G
+                              </td>
+
+                              <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                                {formatNumber(item.loss)} G
+                              </td>
+
+                              <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                                {formatNumber(item.weight)} G
+                              </td>
+
+                              <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                                {formatNumber(item.currentWeight)} G
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
-            {/* Pagination */}
+            {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="mt-4 flex items-center justify-between border-t border-[#d3c4af]/20 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
                 <div className="flex flex-1 justify-between sm:hidden">
@@ -800,11 +841,8 @@ export default function ManufacturingReport() {
                 <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm text-gray-700 dark:text-gray-300">
-                      Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                      <span className="font-medium">
-                        {Math.min(currentPage * itemsPerPage, filteredData.length)}
-                      </span>{' '}
-                      of <span className="font-medium">{filteredData.length}</span> results
+                      Showing page <span className="font-medium">{currentPage}</span> of{' '}
+                      <span className="font-medium">{totalPages}</span> ({filteredGroups.length} total item groups)
                     </p>
                   </div>
                   <div>

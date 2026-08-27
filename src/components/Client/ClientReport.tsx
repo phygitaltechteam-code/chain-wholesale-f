@@ -727,10 +727,7 @@ export default function ClientReport() {
                             className="whitespace-nowrap border-r border-[#f4f4f2] px-3 py-3 align-middle text-sm dark:border-slate-700"
                           >
                             <span
-                              className={`font-medium ${entry.billNo !== 'N/A' && entry.billNo !== ''
-                                ? 'text-[#785600] dark:text-amber-400'
-                                : 'text-gray-400'
-                                }`}
+                              className='font-bold text-base text-black dark:text-[#785600]'
                             >
                               {entry.billNo || 'N/A'}
                             </span>
