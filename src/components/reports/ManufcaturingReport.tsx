@@ -1,26 +1,27 @@
-import {useNavigate} from '@tanstack/react-router';
-import {useState, useRef, useEffect, useMemo} from 'react';
-import {ArrowLeft, Search, Printer, Calendar} from 'lucide-react';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
-import {useReactToPrint} from 'react-to-print';
-import PDFHeader from '@/components/Forms/Common/PDFHeader';
-import {useGetManufacturingData} from '@/lib/api/reportapi';
-import GenericButton from '../Forms/Buttons/GenericButton';
-import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
+import { useNavigate } from '@tanstack/react-router';
+import { useState, useEffect, useMemo } from 'react';
+import { ArrowLeft, Search, Printer, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useGetManufacturingData } from '@/lib/api/reportapi';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
-import {useGetHeader} from '@/lib/api/headerapi';
+import { useGetHeader } from '@/lib/api/headerapi';
 
-interface ManufacturingEntry {
+interface ManufacturingItem {
   id: string;
-  srNo: number;
   dateTime: string;
-  item: string;
-  size: string;
-  purity: number;
   weight: number;
   scrap: number;
   loss: number;
   currentWeight: number;
+  createdAt: string;
+}
+
+interface ManufacturingGroup {
+  groupId: string;
+  srNo: number;
+  item: string;
+  size: string;
+  purity: number;
+  items: ManufacturingItem[];
 }
 
 interface ApiResponse {
@@ -70,6 +71,9 @@ interface ApiDataItem {
 export default function ManufacturingReport() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const groupsPerPage = 10;
+
   const getDefaultWeekRange = () => {
     const now = new Date();
     const day = now.getDay();
@@ -82,7 +86,7 @@ export default function ManufacturingReport() {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return {monday, sunday};
+    return { monday, sunday };
   };
 
   const [fromDate, setFromDate] = useState<Date | null>(
@@ -91,7 +95,6 @@ export default function ManufacturingReport() {
   const [toDate, setToDate] = useState<Date | null>(
     () => getDefaultWeekRange().sunday,
   );
-  const printRef = useRef<HTMLDivElement>(null);
   const {
     data: manufacturingData,
     isLoading,
@@ -100,122 +103,174 @@ export default function ManufacturingReport() {
   } = useGetManufacturingData();
   const getpdfheaderdata = useGetHeader();
 
-  // Derive transformed data from manufacturingData using useMemo (no state loops)
-  const reportData = useMemo<ManufacturingEntry[]>(() => {
+  // 1. Filter raw history by Date Range and group by Item + Size + Purity
+  const allGroups = useMemo<ManufacturingGroup[]>(() => {
     if (!manufacturingData) return [];
-    const responseData = manufacturingData as ApiResponse;
+    const responseData = manufacturingData as
+      | ApiResponse
+      | { data?: { history?: ApiDataItem[] }; history?: ApiDataItem[] };
 
-    if (!responseData?.history || !Array.isArray(responseData.history)) {
+    const historyList: ApiDataItem[] =
+      (responseData as any)?.data?.history ||
+      (responseData as any)?.history ||
+      (Array.isArray(responseData) ? responseData : []);
+
+    if (!Array.isArray(historyList) || historyList.length === 0) {
       return [];
     }
 
-    return responseData.history.map((item: ApiDataItem, index: number) => {
-      const date = new Date(item.createdAt);
-      const formattedDate = !isNaN(date.getTime())
-        ? date.toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          })
-        : '';
-      const formattedTime = !isNaN(date.getTime())
-        ? date.toLocaleTimeString('en-IN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-          })
-        : '';
-
-      return {
-        id: item.id,
-        srNo: index + 1,
-        dateTime: `${formattedDate} ${formattedTime}`.trim(),
-        item: item.item?.name || 'Unknown Item',
-        size: item.size?.size || 'N/A',
-        purity: item.purity || 0,
-        weight: item.weight || 0,
-        scrap: item.scrap || 0,
-        loss: item.loss || 0,
-        currentWeight: item.currentWeight || 0,
-      };
-    });
-  }, [manufacturingData]);
-
-  // Filter data based on search term and date range
-  const filteredData = useMemo(() => {
-    return reportData.filter((entry) => {
-      // Search filter
-      const matchesSearch =
-        searchTerm === '' ||
-        entry.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.purity.toString().includes(searchTerm) ||
-        entry.weight.toString().includes(searchTerm) ||
-        entry.currentWeight.toString().includes(searchTerm);
-
-      // Date range filter
-      let matchesDate = true;
-
-      if (fromDate || toDate) {
-        const dateParts = entry.dateTime.split(' ')[0].split('/');
-
-        if (dateParts.length === 3) {
-          const entryDate = new Date(
-            Number(dateParts[2]),
-            Number(dateParts[1]) - 1,
-            Number(dateParts[0]),
-          );
-          entryDate.setHours(12, 0, 0, 0);
-
-          if (fromDate) {
-            const from = new Date(fromDate);
-            from.setHours(0, 0, 0, 0);
-
-            if (entryDate < from) {
-              matchesDate = false;
-            }
-          }
-
-          if (toDate && matchesDate) {
-            const to = new Date(toDate);
-            to.setHours(23, 59, 59, 999);
-
-            if (entryDate > to) {
-              matchesDate = false;
-            }
-          }
-        }
+    // Filter by date range directly on createdAt
+    const filteredHistory = historyList.filter((item: ApiDataItem) => {
+      const createdAt = new Date(item.createdAt);
+      if (fromDate) {
+        const from = new Date(fromDate);
+        from.setHours(0, 0, 0, 0);
+        if (createdAt < from) return false;
       }
-
-      return matchesSearch && matchesDate;
+      if (toDate) {
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+        if (createdAt > to) return false;
+      }
+      return true;
     });
-  }, [reportData, searchTerm, fromDate, toDate]);
 
-  // Calculate filtered totals
+    // Group by exact Item + Size + Purity combination
+    const groupedMap: { [key: string]: { item: string; size: string; purity: number; items: ApiDataItem[] } } = {};
+
+    filteredHistory.forEach((item: ApiDataItem) => {
+      const itemName = item.item?.name || 'Unknown Item';
+      const sizeName = item.size?.size || 'N/A';
+      const purityValue = item.purity || 0;
+      const groupKey = `${item.itemId || itemName}|${item.sizeId || sizeName}|${purityValue}`;
+
+      if (!groupedMap[groupKey]) {
+        groupedMap[groupKey] = {
+          item: itemName,
+          size: sizeName,
+          purity: purityValue,
+          items: [],
+        };
+      }
+      groupedMap[groupKey].items.push(item);
+    });
+
+    const groups: ManufacturingGroup[] = [];
+    let srNo = 1;
+    let groupId = 0;
+
+    Object.keys(groupedMap).forEach((key) => {
+      const groupData = groupedMap[key];
+      groupId++;
+
+      // Sort items within group by createdAt descending (newest first)
+      const sortedItems = [...groupData.items].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+
+      const items: ManufacturingItem[] = sortedItems.map((item) => {
+        const date = new Date(item.createdAt);
+        const formattedDate = !isNaN(date.getTime())
+          ? date.toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+            })
+          : '';
+        const formattedTime = !isNaN(date.getTime())
+          ? date.toLocaleTimeString('en-IN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            })
+          : '';
+
+        return {
+          id: item.id,
+          dateTime: `${formattedDate} ${formattedTime}`.trim(),
+          weight: item.weight || 0,
+          scrap: item.scrap || 0,
+          loss: item.loss || 0,
+          currentWeight: item.currentWeight || 0,
+          createdAt: item.createdAt,
+        };
+      });
+
+      groups.push({
+        groupId: `group-${groupId}`,
+        srNo: srNo++,
+        item: groupData.item,
+        size: groupData.size,
+        purity: groupData.purity,
+        items,
+      });
+    });
+
+    return groups;
+  }, [manufacturingData, fromDate, toDate]);
+
+  // 2. Search filter applied across groups
+  const filteredGroups = useMemo<ManufacturingGroup[]>(() => {
+    if (!searchTerm) return allGroups;
+    const query = searchTerm.toLowerCase();
+
+    return allGroups.filter((group) => {
+      const matchHeader =
+        group.item.toLowerCase().includes(query) ||
+        group.size.toLowerCase().includes(query) ||
+        group.purity.toString().includes(query) ||
+        group.srNo.toString().includes(query);
+
+      if (matchHeader) return true;
+
+      return group.items.some(
+        (item) =>
+          item.dateTime.toLowerCase().includes(query) ||
+          item.weight.toString().includes(query) ||
+          item.scrap.toString().includes(query) ||
+          item.loss.toString().includes(query) ||
+          item.currentWeight.toString().includes(query),
+      );
+    });
+  }, [allGroups, searchTerm]);
+
+  // 3. Overall Totals for metrics cards
   const filteredTotals = useMemo(() => {
-    return filteredData.reduce(
-      (acc, entry) => ({
-        totalWeight: acc.totalWeight + entry.weight,
-        totalScrap: acc.totalScrap + entry.scrap,
-        totalLoss: acc.totalLoss + entry.loss,
-        currentWeight: acc.currentWeight + entry.currentWeight,
-      }),
-      {totalWeight: 0, totalScrap: 0, totalLoss: 0, currentWeight: 0},
-    );
-  }, [filteredData]);
+    let totalWeight = 0;
+    let totalScrap = 0;
+    let totalLoss = 0;
+    let currentWeight = 0;
+
+    filteredGroups.forEach((group) => {
+      group.items.forEach((item) => {
+        totalWeight += item.weight;
+        totalScrap += item.scrap;
+        totalLoss += item.loss;
+        currentWeight += item.currentWeight;
+      });
+    });
+
+    return { totalWeight, totalScrap, totalLoss, currentWeight };
+  }, [filteredGroups]);
+
+  // 4. Group-based Pagination (ensures no group is split across page breaks)
+  const totalPages = Math.ceil(filteredGroups.length / groupsPerPage);
+  const currentGroups = useMemo(() => {
+    const start = (currentPage - 1) * groupsPerPage;
+    const end = start + groupsPerPage;
+    return filteredGroups.slice(start, end);
+  }, [filteredGroups, currentPage, groupsPerPage]);
+
+  // Reset to first page when search or date filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, fromDate, toDate]);
 
   // Format number with 3 decimals
   const formatNumber = (value: number) => {
     if (value === 0 || !value) return '0';
     const str = value.toFixed(3);
     return str.replace(/\.?0+$/, '');
-  };
-
-  // Reset to current Monday -> Sunday
-  const handleResetDates = () => {
-    const {monday, sunday} = getCurrentWeekRange();
-    setFromDate(monday);
-    setToDate(sunday);
   };
 
   // Format date for display
@@ -257,11 +312,10 @@ export default function ManufacturingReport() {
   const toInitialDates = useMemo(() => (toDate ? [toDate] : []), [toDate]);
 
   const handlePrint = () => {
-    if (!filteredData || filteredData.length === 0) {
+    if (!filteredGroups || filteredGroups.length === 0) {
       return;
     }
 
-    // Create a hidden div for printing
     const printContainer = document.createElement('div');
     printContainer.id = 'print-container';
     printContainer.style.cssText = `
@@ -275,26 +329,35 @@ export default function ManufacturingReport() {
     `;
     document.body.appendChild(printContainer);
 
-    // Build the table rows - Compact with minimum padding
-    const rows = filteredData
-      .map((item, index) => {
-        return `
+    let rows = '';
+    filteredGroups.forEach((group) => {
+      group.items.forEach((item, index) => {
+        const isFirst = index === 0;
+        rows += `
           <tr>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
+            ${
+              isFirst
+                ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${group.items.length}">${group.srNo}</td>`
+                : ''
+            }
+            ${
+              isFirst
+                ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${group.items.length}">
+                    ${group.item} ${group.size !== 'N/A' ? `(${group.size})` : ''} ${group.purity > 0 ? `(${group.purity}%)` : ''}
+                  </td>`
+                : ''
+            }
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
               ${item.dateTime}
             </td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.item}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.size}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.purity}%</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.weight)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.scrap)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.loss)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.weight)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.currentWeight)}</td>
           </tr>
         `;
-      })
-      .join('');
+      });
+    });
 
     const headerInfo =
       getpdfheaderdata?.data?.data ||
@@ -332,33 +395,26 @@ export default function ManufacturingReport() {
       ? `${headerInfo.phoneFontSize}px`
       : '9px';
 
-    // Set the content with PDF Header - Minimal padding
     printContainer.innerHTML = `
      <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
-        <!-- Header Section -->
         <div>
-          <!-- PDF Header -->
           <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-            <!-- Invocation and Factory Name Row -->
             <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
               <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
               <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
               <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
             </div>
             
-            <!-- Description -->
             <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
               ${description}
             </div>
             
-            <!-- Proprietor and Phone -->
             <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
               ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
             </div>
             <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
           </div>
 
-          <!-- Report Title and Date Range -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
             <div style="flex:1;"></div>
             <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
@@ -377,18 +433,15 @@ export default function ManufacturingReport() {
             }
           </div>
 
-          <!-- Data Table - Compact -->
           <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
             <thead>
               <tr style="background:#785600;color:white;font-weight:600;">
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Sr</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Item (Size) (Purity)</th>
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;white-space:nowrap;">Date & Time</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Item</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Size</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Purity</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Wt(g)</th>
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Scrap</th>
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Loss</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Wt(g)</th>
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Current Wt</th>
               </tr>
             </thead>
@@ -398,7 +451,6 @@ export default function ManufacturingReport() {
           </table>
         </div>
 
-        <!-- Footer Section - Always at Bottom -->
         <div style="width:100%;margin-top:auto;padding-top:4px;">
           <div style="border-top:1px solid #785600;padding-top:2px;text-align:center;">
             <p style="margin:0;font-size:7px;color:#000;">
@@ -422,7 +474,6 @@ export default function ManufacturingReport() {
       </div>
     `;
 
-    // Add print styles
     const style = document.createElement('style');
     style.textContent = `
       @page {
@@ -449,18 +500,11 @@ export default function ManufacturingReport() {
           width: 210mm !important;
           height: 297mm !important;
           background: white !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          overflow: hidden !important;
+          padding: 4px !important;
+          overflow: auto !important;
           z-index: 9999 !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
-        }
-        #print-container > div {
-          width: 210mm !important;
-          min-height: 297mm !important;
-          padding: 6mm 5mm !important;
-          box-sizing: border-box !important;
         }
         #print-container table {
           width: 100% !important;
@@ -484,11 +528,9 @@ export default function ManufacturingReport() {
     `;
     document.head.appendChild(style);
 
-    // Trigger print
     setTimeout(() => {
       window.print();
 
-      // Clean up after print
       setTimeout(() => {
         if (document.body.contains(printContainer)) {
           document.body.removeChild(printContainer);
@@ -500,31 +542,29 @@ export default function ManufacturingReport() {
     }, 500);
   };
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] dark:bg-slate-950">
         <div className="text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-[#785600]"></div>
           <p className="mt-4 text-[#785600] dark:text-amber-400">
-            Loading manufacturing report...
+            Loading manufacturing data...
           </p>
         </div>
       </div>
     );
   }
 
-  // Show error state
   if (isError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] dark:bg-slate-950">
         <div className="text-center">
-          <div className="mb-4 text-5xl text-red-500"></div>
+          <div className="mb-4 text-5xl text-red-500">⚠️</div>
           <h3 className="text-xl font-bold text-red-600 dark:text-red-400">
-            Error Loading Report
+            Error Loading Data
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Failed to fetch manufacturing report data.
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Failed to fetch manufacturing data.
           </p>
           <button
             onClick={() => refetch()}
@@ -543,15 +583,20 @@ export default function ManufacturingReport() {
       <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
         <div className="flex flex-col items-center justify-between gap-3 px-3 py-2 sm:flex-row sm:px-4 sm:py-3 md:px-6">
           <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
+            <button
+              onClick={() => navigate({ to: '/reports/manufacturing' })}
+              className="inline-flex items-center justify-center rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
+              title="Go Back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
             <div className="h-5 w-px flex-shrink-0 bg-[#d3c4af]/30 dark:bg-slate-600" />
             <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Manufacturing Report
             </h2>
           </div>
 
-          {/* Right side - Search, Date Pickers and Print Button */}
           <div className="flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
-            {/* Search Bar */}
             <div className="relative w-full sm:w-48">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
               <input
@@ -563,7 +608,6 @@ export default function ManufacturingReport() {
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {/* From Date - Defaults to Monday */}
               <GenericWeeklyDatePicker
                 id="from-date-box"
                 placeholder="DD/MM/YYYY"
@@ -573,7 +617,6 @@ export default function ManufacturingReport() {
                 className="w-32 sm:w-36 md:w-40"
               />
 
-              {/* To Date - Defaults to Sunday */}
               <GenericWeeklyDatePicker
                 id="to-date-box"
                 placeholder="DD/MM/YYYY"
@@ -584,7 +627,6 @@ export default function ManufacturingReport() {
               />
             </div>
 
-            {/* Print Button */}
             <button
               onClick={() => handlePrint()}
               className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5d4200]"
@@ -598,52 +640,55 @@ export default function ManufacturingReport() {
       </div>
 
       <div className="px-3 py-4 sm:px-4 md:px-6">
-        {/* Summary Cards - Using filtered totals */}
+        {/* Summary Cards */}
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Total Weight
               </span>
-              <span className="text-lg font-bold text-black dark:text-amber-400">
+              <span className="text-lg font-bold text-black dark:text-white">
                 {formatNumber(filteredTotals.totalWeight)} G
               </span>
             </div>
           </div>
+
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Total Scrap
               </span>
-              <span className="text-lg font-bold text-black dark:text-blue-400">
+              <span className="text-lg font-bold text-black dark:text-white">
                 {formatNumber(filteredTotals.totalScrap)} G
               </span>
             </div>
           </div>
+
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Total Loss
               </span>
-              <span className="text-lg font-bold text-black dark:text-red-400">
+              <span className="text-lg font-bold text-black dark:text-white">
                 {formatNumber(filteredTotals.totalLoss)} G
               </span>
             </div>
           </div>
+
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Current Weight
               </span>
-              <span className="text-lg font-bold text-black dark:text-green-400">
+              <span className="text-lg font-bold text-black dark:text-white">
                 {formatNumber(filteredTotals.currentWeight)} G
               </span>
             </div>
           </div>
         </div>
 
-        {/* Table Rendering */}
-        {filteredData.length === 0 ? (
+        {/* Custom Table with Grouping (identical to Client Report layout) */}
+        {filteredGroups.length === 0 ? (
           <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="py-12 text-center text-[#4f4535] dark:text-slate-400">
               {searchTerm || fromDate || toDate
@@ -652,73 +697,203 @@ export default function ManufacturingReport() {
             </div>
           </div>
         ) : (
-          <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <div className="max-w-full overflow-x-auto">
-              <table className="w-full min-w-[800px] border-collapse md:min-w-0">
-                <thead>
-                  <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-xs uppercase tracking-[0.15em] text-white">
-                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                      Sr No.
-                    </th>
-                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                      Date & Time
-                    </th>
-                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                      Item (Size) (Purity)
-                    </th>
-                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                      Scrap
-                    </th>
-                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                      Loss
-                    </th>
-                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                      Wt. (G)
-                    </th>
-                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                      Current Wt. (G)
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
-                  {filteredData.map((item, index) => (
-                    <tr
-                      key={item.id}
-                      className={`group transition-colors ${
-                        index % 2 === 0
-                          ? 'bg-white dark:bg-slate-900'
-                          : 'bg-[#fafaf8] dark:bg-slate-900/80'
-                      } hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50`}
-                    >
-                      <td className="px-3 py-3 text-center text-sm text-black dark:text-white">
-                        {item.srNo}
-                      </td>
-                      <td className="px-3 py-3 text-center text-sm text-black dark:text-white">
-                        <div>{item.dateTime.split(' ')[0]}</div>
-                        <div>{item.dateTime.split(' ').slice(1).join(' ')}</div>
-                      </td>
-                      <td className="px-3 py-3 text-center text-sm font-medium text-black dark:text-white">
-                        {item.item} ({item.size}){' '}
-                        {item.purity > 0 && `(${item.purity}%)`}
-                      </td>
-                      <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-blue-400">
-                        {formatNumber(item.scrap)} G
-                      </td>
-                      <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-red-400">
-                        {formatNumber(item.loss)} G
-                      </td>
-                      <td className="font-mono px-3 py-3 text-center text-sm font-bold text-black dark:text-amber-400">
-                        {formatNumber(item.weight)} G
-                      </td>
-                      <td className="font-mono px-3 py-3 text-center text-sm font-bold text-black dark:text-green-400">
-                        {formatNumber(item.currentWeight)} G
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <>
+            <div className="-mx-3 overflow-x-auto sm:-mx-4 md:mx-0">
+              <div className="inline-block min-w-full align-middle">
+                <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                  <table className="divide-gray-300 min-w-full divide-y dark:divide-slate-700">
+                    <thead className="bg-[#785600] dark:bg-[#5d4200]">
+                      <tr>
+                        <th
+                          scope="col"
+                          className="py-3 pl-4 pr-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
+                          Sr No.
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
+                          Item (Size) (Purity)
+                        </th>
+                        <th
+                          scope="col"
+                          className="whitespace-nowrap px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
+                          Date & Time
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
+                          Scrap (G)
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
+                          Loss (G)
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
+                          Wt. (G)
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
+                          Current Wt. (G)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
+                      {currentGroups.map((group, groupIndex) => {
+                        const isEvenGroup = groupIndex % 2 === 0;
+
+                        return group.items.map((item, itemIndex) => {
+                          const isFirstInGroup = itemIndex === 0;
+
+                          return (
+                            <tr
+                              key={item.id}
+                              className={`${
+                                isEvenGroup
+                                  ? 'bg-white dark:bg-slate-900'
+                                  : 'bg-gray-50 dark:bg-slate-800/50'
+                              } transition-colors hover:bg-[#f4f4f2]/60 dark:hover:bg-slate-800/80`}
+                            >
+                              {isFirstInGroup && (
+                                <td
+                                  rowSpan={group.items.length}
+                                  className="whitespace-nowrap border-r border-[#f4f4f2] py-3 pl-4 pr-3 text-center align-middle text-sm font-bold text-[#1a1c1b] dark:border-slate-700 dark:text-white"
+                                >
+                                  {group.srNo}
+                                </td>
+                              )}
+
+                              {isFirstInGroup && (
+                                <td
+                                  rowSpan={group.items.length}
+                                  className="whitespace-nowrap border-r border-[#f4f4f2] px-3 py-3 text-center align-middle text-sm font-bold text-[#1a1c1b] dark:border-slate-700 dark:text-white"
+                                >
+                                  <div>{group.item}</div>
+                                  <div>
+                                    {group.size !== 'N/A' ? `(${group.size})` : ''}
+                                    {group.size !== 'N/A' && group.purity > 0 ? ' ' : ''}
+                                    {group.purity > 0 ? `(${group.purity}%)` : ''}
+                                  </div>
+                                </td>
+                              )}
+
+                              <td className="whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                                <div>{item.dateTime.split(' ')[0]}</div>
+                                <div>
+                                  {item.dateTime.split(' ').slice(1).join(' ')}
+                                </div>
+                              </td>
+
+                              <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                                {formatNumber(item.scrap)} G
+                              </td>
+
+                              <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                                {formatNumber(item.loss)} G
+                              </td>
+
+                              <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                                {formatNumber(item.weight)} G
+                              </td>
+
+                              <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                                {formatNumber(item.currentWeight)} G
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-between border-t border-[#d3c4af]/20 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex flex-1 justify-between sm:hidden">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      Showing page <span className="font-medium">{currentPage}</span> of{' '}
+                      <span className="font-medium">{totalPages}</span> ({filteredGroups.length} total item groups)
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-slate-600 dark:hover:bg-slate-700"
+                      >
+                        <span className="sr-only">Previous</span>
+                        <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                      {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 10) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage > totalPages - 5) {
+                          pageNum = totalPages - 9 + i;
+                        } else {
+                          pageNum = currentPage - 5 + i;
+                        }
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                              pageNum === currentPage
+                                ? 'z-10 bg-[#785600] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#785600]'
+                                : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:text-gray-300 dark:ring-slate-600 dark:hover:bg-slate-700'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-slate-600 dark:hover:bg-slate-700"
+                      >
+                        <span className="sr-only">Next</span>
+                        <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

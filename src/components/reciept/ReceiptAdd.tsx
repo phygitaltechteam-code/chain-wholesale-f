@@ -530,8 +530,7 @@ const ReceiptAdd: React.FC = () => {
     position: fixed;
     left: -9999px;
     top: 0;
-    width: 210mm;
-    height: 140mm;
+    width: 100%;
     background: white;
     padding: 0;
     z-index: 9999;
@@ -563,17 +562,16 @@ const ReceiptAdd: React.FC = () => {
 
     // Build items table rows
     let itemsRows = '';
-    formData.items.forEach((item, index) => {
+    formData.items.forEach((item) => {
       itemsRows += `
       <tr>
-        <td style="border:1px solid #222;padding:3px 4px;text-align:center;font-size:9px;color:#000;">${index + 1}</td>
-        <td style="border:1px solid #222;padding:3px 4px;font-size:9px;color:#000;">${item.item || '-'}</td>
-        <td style="border:1px solid #222;padding:3px 4px;font-size:9px;color:#000;">${item.size || '-'}</td>
-        <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberThreeDecimals(item.purity)}</td>
-        <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-weight:bold;font-size:9px;color:#000;">${formatNumberThreeDecimals(item.fineWt)}</td>
-        <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberThreeDecimals(item.grossWt)}</td>
-        <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberThreeDecimals(item.srp)}</td>
-        <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberThreeDecimals(item.laborRate)}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-size:10px;color:#000;">${item.item || '-'}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-size:10px;color:#000;">${item.size || '-'}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.purity)}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.grossWt)}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.srp)}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-weight:bold;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.fineWt)}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.laborRate)}</td>
       </tr>
     `;
     });
@@ -606,25 +604,24 @@ const ReceiptAdd: React.FC = () => {
       : '18px';
     const descriptionFontSize = headerInfo.descriptionFontSize
       ? `${headerInfo.descriptionFontSize}px`
-      : '9px';
+      : '10px';
     const proprietorFontSize = headerInfo.proprietorFontSize
       ? `${headerInfo.proprietorFontSize}px`
-      : '9px';
+      : '10px';
     const phoneFontSize = headerInfo.phoneFontSize
       ? `${headerInfo.phoneFontSize}px`
-      : '9px';
+      : '10px';
 
     printContainer.innerHTML = `
     <div style="
-      width:210mm;
-      height:140mm;
+      width:100%;
+      max-width:100%;
       margin:0 auto;
       background:#ffffff;
       font-family:Arial,Helvetica,sans-serif;
-      padding:4mm 6mm;
+      padding:2mm 4mm;
       box-sizing:border-box;
       color:#111111;
-      overflow:hidden;
     ">
 
       <!-- HEADER -->
@@ -637,7 +634,7 @@ const ReceiptAdd: React.FC = () => {
           padding:0;
         ">
           <span style="
-            font-size:10px;
+            font-size:11px;
             font-weight:bold;
             color:${invocationColor};
             white-space:nowrap;
@@ -656,7 +653,7 @@ const ReceiptAdd: React.FC = () => {
           </span>
 
           <span style="
-            font-size:10px;
+            font-size:11px;
             font-weight:bold;
             color:${invocationColor};
             white-space:nowrap;
@@ -666,7 +663,7 @@ const ReceiptAdd: React.FC = () => {
         </div>
 
         <div style="
-          margin:2px 0 0;
+          margin:3px 0 0;
           font-size:${descriptionFontSize};
           font-weight:bold;
           color:${descriptionColor};
@@ -676,7 +673,7 @@ const ReceiptAdd: React.FC = () => {
         </div>
 
         <div style="
-          margin:2px 0 0;
+          margin:3px 0 0;
           font-size:${proprietorFontSize};
           font-weight:bold;
           color:${proprietorColor};
@@ -687,7 +684,7 @@ const ReceiptAdd: React.FC = () => {
 
         <div style="
           border-bottom:2px solid ${factoryNameColor};
-          margin:2px 0 3px;
+          margin:4px 0 6px;
         "></div>
       </div>
 
@@ -696,12 +693,12 @@ const ReceiptAdd: React.FC = () => {
         display:flex;
         align-items:center;
         justify-content:center;
-        margin:0 0 3px;
+        margin:0 0 4px;
       ">
         <h2 style="
           margin:0;
           text-align:center;
-          font-size:14px;
+          font-size:15px;
           font-weight:bold;
           letter-spacing:2px;
           color:#111111;
@@ -715,15 +712,15 @@ const ReceiptAdd: React.FC = () => {
         display:flex;
         justify-content:space-between;
         align-items:center;
-        margin:0 0 4px;
-        padding:0 1px;
-        font-size:10px;
+        margin:0 0 6px;
+        padding:0 2px;
+        font-size:11px;
         line-height:1.3;
       ">
         <div>
           <span style="font-weight:bold;">Client:</span>
-          ${formData.clientName}
-          <span style="margin-left:14px;font-weight:bold;">Phone:</span>
+          ${client?.name || 'N/A'}
+          <span style="margin-left:16px;font-weight:bold;">Phone:</span>
           ${phoneNumber}
         </div>
 
@@ -738,21 +735,20 @@ const ReceiptAdd: React.FC = () => {
         width:100%;
         border-collapse:collapse;
         font-size:10px;
-        margin:0 0 3px;
+        margin:0 0 6px;
       ">
         <thead>
           <tr style="
             background:#785600;
             color:#ffffff;
           ">
-            <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Sr</th>
-            <th style="border:1px solid #785600;padding:3px 4px;text-align:left;font-size:8px;">Item</th>
-            <th style="border:1px solid #785600;padding:3px 4px;text-align:left;font-size:8px;">Size</th>
-            <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Purity %</th>
-            <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Fine Wt (G)</th>
-            <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Gross Wt (G)</th>
-            <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">SRP (G)</th>
-            <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Labor (G)</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Item</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Size</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Purity (%)</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Gross Wt (G)</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">SRP (G)</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Fine Wt (G)</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Labor Rate (G)</th>
           </tr>
         </thead>
 
@@ -761,14 +757,15 @@ const ReceiptAdd: React.FC = () => {
         </tbody>
       </table>
 
-      <!-- PAYMENT SUMMARY (Compact) -->
+      <!-- PAYMENT SUMMARY -->
       <div style="
         display:flex;
         justify-content:flex-end;
-        margin-top:1px;
+        margin-top:2px;
       ">
         <div style="
-          width:32%;
+          width:35%;
+          min-width:180px;
           border:1px solid #d6c08a;
           border-radius:4px;
           background:#fffdf7;
@@ -777,9 +774,9 @@ const ReceiptAdd: React.FC = () => {
           <div style="
             display:flex;
             justify-content:space-between;
-            padding:2.5px 6px;
+            padding:3px 8px;
             border-bottom:1px dashed #dddddd;
-            font-size:9.5px;
+            font-size:10px;
           ">
             <span style="font-weight:bold;color:#666666;">Total Fine Wt</span>
             <span style="font-family:monospace;font-weight:bold;color:#111111;">
@@ -790,11 +787,11 @@ const ReceiptAdd: React.FC = () => {
           <div style="
             display:flex;
             justify-content:space-between;
-            padding:2.5px 6px;
+            padding:3px 8px;
             border-bottom:1px dashed #dddddd;
-            font-size:9.5px;
+            font-size:10px;
           ">
-            <span style="font-weight:bold;color:#666666;">Advance</span>
+            <span style="font-weight:bold;color:#666666;">Receive</span>
             <span style="font-family:monospace;font-weight:bold;color:#111111;">
               ${formatNumberThreeDecimals(receive)} G
             </span>
@@ -803,9 +800,9 @@ const ReceiptAdd: React.FC = () => {
           <div style="
             display:flex;
             justify-content:space-between;
-            padding:2.5px 6px;
+            padding:3px 8px;
             border-bottom:1px dashed #dddddd;
-            font-size:9.5px;
+            font-size:10px;
           ">
             <span style="font-weight:bold;color:#666666;">Pending</span>
             <span style="font-family:monospace;font-weight:bold;color:#111111;">
@@ -816,9 +813,9 @@ const ReceiptAdd: React.FC = () => {
           <div style="
             display:flex;
             justify-content:space-between;
-            padding:3px 6px;
+            padding:4px 8px;
             background:#f4f0e5;
-            font-size:10px;
+            font-size:11px;
           ">
             <span style="font-weight:bold;color:#111111;">Total</span>
             <span style="font-family:monospace;font-weight:bold;color:#785600;">
@@ -832,29 +829,16 @@ const ReceiptAdd: React.FC = () => {
       <div style="
         display:flex;
         justify-content:space-between;
-        align-items:flex-end;
-        margin-top:12px;
-        padding-top:3px;
+        align-items:center;
+        margin-top:16px;
+        padding-top:4px;
         border-top:1px dashed #aaaaaa;
-        font-size:9px;
+        font-size:10px;
         line-height:1;
         color:#444444;
       ">
         <div>
           Contact For Support: 9511640351
-        </div>
-
-        <div style="
-          width:120px;
-          text-align:center;
-        ">
-          <div style="
-            border-top:1px solid #555555;
-            padding-top:2px;
-            font-weight:bold;
-          ">
-            Authorized Signature
-          </div>
         </div>
       </div>
 
@@ -864,23 +848,22 @@ const ReceiptAdd: React.FC = () => {
     const style = document.createElement('style');
     style.textContent = `
     @page {
-      size: A5 landscape;
-      margin: 0mm !important;
+      size: portrait;
+      margin: 4mm !important;
     }
 
     @media print {
       @page {
-        size: A5 landscape;
-        margin: 0mm !important;
+        size: portrait;
+        margin: 4mm !important;
       }
 
       html,
       body {
-        width: 210mm !important;
-        height: 148mm !important;
+        width: 100% !important;
+        height: auto !important;
         margin: 0 !important;
         padding: 0 !important;
-        overflow: hidden !important;
         background: #ffffff !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
@@ -896,26 +879,24 @@ const ReceiptAdd: React.FC = () => {
       }
 
       #print-container {
-        position: fixed !important;
+        position: absolute !important;
         left: 0 !important;
         top: 0 !important;
-        width: 210mm !important;
-        height: 148mm !important;
+        width: 100% !important;
+        height: auto !important;
         margin: 0 !important;
         padding: 0 !important;
         background: #ffffff !important;
-        overflow: hidden !important;
         z-index: 999999 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
 
       #print-container > div {
-        width: 210mm !important;
-        height: 148mm !important;
+        width: 100% !important;
+        height: auto !important;
         box-sizing: border-box !important;
-        padding: 5mm 7mm !important;
-        overflow: hidden !important;
+        padding: 2mm 4mm !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }

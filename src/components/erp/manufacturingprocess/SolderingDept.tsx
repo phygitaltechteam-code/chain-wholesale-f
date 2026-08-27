@@ -896,10 +896,13 @@ const SolderingDept: React.FC = () => {
           selectedTab: 'joint',
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving soldering:', error);
-
-      toast.error('Failed to save soldering entry');
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to save soldering entry';
+      toast.error(errorMessage);
 
       setIsLoading(false);
       setShowConfirmModal(false);
@@ -976,10 +979,13 @@ const SolderingDept: React.FC = () => {
           selectedTab: 'cutting',
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving soldering:', error);
-
-      toast.error('Failed to save soldering entry');
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to save soldering entry';
+      toast.error(errorMessage);
 
       setIsLoading(false);
       setShowConfirmModal(false);
@@ -1061,12 +1067,9 @@ const SolderingDept: React.FC = () => {
       key: 'purity',
       header: 'Purity % (टंच)',
       render: (item) => (
-        <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap rounded-md border border-[#d3c4af]/30 bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
-          <span className="font-mono font-bold text-black dark:text-white">
-            {formatNumberDisplay(item.purity)}
-          </span>
-          <span className="text-gray-500 text-[10px] dark:text-slate-400">
-            %
+        <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap  bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.purity)}%
           </span>
         </div>
       ),
@@ -1376,7 +1379,7 @@ const SolderingDept: React.FC = () => {
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
                 Are you sure you want to save this soldering entry and go to the{' '}
                 <strong className="text-[#785600] dark:text-amber-400">
-                  {actionType === 'joint' ? 'Joint (जॉइंट)' : 'Cutting (कटिंग)'}
+                  {actionType === 'joint' ? 'Joint' : 'Cutting'}
                 </strong>{' '}
                 department?
               </p>
@@ -1390,7 +1393,7 @@ const SolderingDept: React.FC = () => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel (रद्द करा)
+                  Cancel
                 </button>
 
                 <button

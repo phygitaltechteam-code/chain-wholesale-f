@@ -36,9 +36,11 @@ const getRestoreFile = async (formData: FormData) => {
   }
 };
 
-export const deleteDatabase = async () => {
+export const deleteDatabase = async (password: string) => {
   try {
-    const response = await api.delete('/admin/backup/delete');
+    const response = await api.delete('/admin/backup/delete', {
+      data: { password },
+    });
     return response.data;
   } catch (error: any) {
     throw new Error(
@@ -65,7 +67,7 @@ export const useRestore = (queryClient: any) => {
 
 export const useDeleteDatabase = (queryClient?: any) => {
   return useMutation({
-    mutationFn: deleteDatabase,
+    mutationFn: (password: string) => deleteDatabase(password),
     onSuccess: () => {
       if (queryClient) {
         queryClient.invalidateQueries();

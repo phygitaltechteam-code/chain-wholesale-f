@@ -1,5 +1,14 @@
 import React, { useRef, useState } from 'react';
-import { Download, Upload, Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import {
+  Download,
+  Upload,
+  Loader2,
+  Trash2,
+  AlertTriangle,
+  Lock,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -18,6 +27,9 @@ const BackupAndRestorePage = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   const restore = useRestore(queryClient);
   const deleteDbMutation = useDeleteDatabase(queryClient);
@@ -115,7 +127,7 @@ const BackupAndRestorePage = () => {
 
     const confirmed = window.confirm(
       'This will overwrite all existing database data.\n\n' +
-        'Are you sure you want to restore this backup?',
+      'Are you sure you want to restore this backup?',
     );
 
     if (!confirmed) {
@@ -159,19 +171,29 @@ const BackupAndRestorePage = () => {
    * DELETE DATABASE
    * ============================================
    */
-  const handleDeleteDatabase = async () => {
+  const handleDeleteDatabase = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!deletePassword.trim()) {
+      setPasswordError('Please enter password to confirm deletion');
+      toast.error('Password is required');
+      return;
+    }
+
     try {
       toast.loading('Deleting database records...', {
         id: 'database-delete',
       });
 
-      await deleteDbMutation.mutateAsync();
+      await deleteDbMutation.mutateAsync(deletePassword.trim());
 
       toast.success('Database records deleted successfully', {
         id: 'database-delete',
       });
 
       setShowDeleteConfirmModal(false);
+      setDeletePassword('');
+      setPasswordError('');
       await queryClient.invalidateQueries();
     } catch (error: any) {
       console.error('========== DELETE DATABASE ERROR ==========', error);
@@ -179,6 +201,13 @@ const BackupAndRestorePage = () => {
         id: 'database-delete',
       });
     }
+  };
+
+  const handleOpenDeleteModal = () => {
+    setDeletePassword('');
+    setPasswordError('');
+    setShowPassword(false);
+    setShowDeleteConfirmModal(true);
   };
 
   return (
@@ -257,11 +286,10 @@ const BackupAndRestorePage = () => {
               type="button"
               onClick={handleRestore}
               disabled={!selectedFile || restore.isPending || isUploading}
-              className={`w-full !whitespace-nowrap !px-6 ${
-                !selectedFile || restore.isPending || isUploading
-                  ? '!cursor-not-allowed !bg-gray-300 !text-gray-500 dark:!bg-slate-800 dark:!text-slate-600'
-                  : '!bg-emerald-600 !text-white hover:!bg-emerald-700'
-              }`}
+              className={`w-full !whitespace-nowrap !px-6 ${!selectedFile || restore.isPending || isUploading
+                ? '!cursor-not-allowed !bg-gray-300 !text-gray-500 dark:!bg-slate-800 dark:!text-slate-600'
+                : '!bg-emerald-600 !text-white hover:!bg-emerald-700'
+                }`}
             >
               {restore.isPending || isUploading ? (
                 <>
@@ -293,7 +321,7 @@ const BackupAndRestorePage = () => {
 
             <button
               type="button"
-              onClick={() => setShowDeleteConfirmModal(true)}
+              onClick={handleOpenDeleteModal}
               disabled={deleteDbMutation.isPending}
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-red-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -312,38 +340,96 @@ const BackupAndRestorePage = () => {
           </div>
         </div>
 
-        {/* Delete Confirmation Modal (Simple popup without top icon & Hindi in brackets) */}
+        {/* Delete Confirmation Modal with Password Input */}
         {showDeleteConfirmModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
-              <div className="p-6">
-                <h3 className="mb-2 text-center text-lg font-bold text-red-600 dark:text-red-400">
-                  Confirm Database Deletion (डेटाबेस डिलीट करा)
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
+              {/* Header */}
+              <div className="bg-red-50 p-6 text-center dark:bg-red-950/30">
+                <h3 className="text-lg font-bold text-red-600 dark:text-red-400">
+                  Confirm Database Deletion
                 </h3>
-                <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
-                  Are you sure you want to permanently delete all database data? This action cannot be reversed.
+                <p className="mt-1 text-xs text-[#4f4535] dark:text-slate-400">
+                  Are you sure you want to permanently delete all database records?
                   <br />
-                  <span className="mt-2 block font-medium text-red-600 dark:text-red-400">
-                    (सर्व डेटा नष्ट केला जाईल, कृपया खात्री करा.)
-                  </span>
                 </p>
-                <div className="mt-6 flex justify-center gap-3">
+              </div>
+
+              {/* Form Body */}
+              <form onSubmit={handleDeleteDatabase} className="p-6">
+                <div className="mb-4">
+                  <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                    Enter Admin Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                      <Lock className="h-4 w-4 text-[#817563]" />
+                    </div>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={deletePassword}
+                      onChange={(e) => {
+                        setDeletePassword(e.target.value);
+                        if (passwordError) setPasswordError('');
+                      }}
+                      placeholder="Enter password"
+                      autoFocus
+                      className={`w-full rounded-lg border py-2.5 pl-9 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${passwordError
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                        : 'border-[#d3c4af]/40 focus:border-red-600 focus:ring-red-600/10 dark:border-slate-700'
+                        }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#817563] hover:text-[#1a1c1b] dark:hover:text-white"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {passwordError && (
+                    <p className="mt-1 text-xs font-medium text-red-500">
+                      {passwordError}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
                   <button
-                    onClick={() => setShowDeleteConfirmModal(false)}
+                    type="button"
+                    onClick={() => {
+                      setShowDeleteConfirmModal(false);
+                      setDeletePassword('');
+                      setPasswordError('');
+                    }}
                     disabled={deleteDbMutation.isPending}
-                    className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
                   >
-                    Cancel (रद्द करा)
+                    Cancel
                   </button>
                   <button
-                    onClick={handleDeleteDatabase}
-                    disabled={deleteDbMutation.isPending}
-                    className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-red-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    type="submit"
+                    disabled={deleteDbMutation.isPending || !deletePassword.trim()}
+                    className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-md transition-all hover:bg-red-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {deleteDbMutation.isPending ? 'Deleting...' : 'Delete Database (डिलीट करा)'}
+                    {deleteDbMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4" />
+                        <span>Delete Database</span>
+                      </>
+                    )}
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         )}
@@ -353,4 +439,3 @@ const BackupAndRestorePage = () => {
 };
 
 export default BackupAndRestorePage;
-

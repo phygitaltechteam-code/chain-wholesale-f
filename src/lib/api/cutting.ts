@@ -44,11 +44,11 @@ export const submitCuttingApi = async ({id, data}: {id: string; data: any}) => {
   try {
     const response = await api.put(`/admin/cutting/${id}`, data);
     return response.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to submit cutting');
-    }
-    throw error;
+  } catch (error: any) {
+    const message = error?.response?.data?.message || error?.message || 'Failed to submit cutting';
+    const err = new Error(message);
+    (err as any).response = error?.response;
+    throw err;
   }
 };
 
@@ -62,11 +62,11 @@ export const submitMoveCuttingApi = async ({
   try {
     const response = await api.put(`/admin/soldering/cutting/${id}`, data);
     return response.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to submit cutting');
-    }
-    throw error;
+  } catch (error: any) {
+    const message = error?.response?.data?.message || error?.message || 'Failed to submit cutting';
+    const err = new Error(message);
+    (err as any).response = error?.response;
+    throw err;
   }
 };
 
@@ -74,11 +74,11 @@ export const getKundaApi = async () => {
   try {
     const response = await api.get('/admin/kunda');
     return response.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to fetch S Kunda entries');
-    }
-    throw error;
+  } catch (error: any) {
+    const message = error?.response?.data?.message || error?.message || 'Failed to fetch S Kunda entries';
+    const err = new Error(message);
+    (err as any).response = error?.response;
+    throw err;
   }
 };
 
@@ -86,11 +86,11 @@ export const getKundaHistoryApi = async () => {
   try {
     const response = await api.get('/admin/kunda/history');
     return response.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to fetch S Kunda history');
-    }
-    throw error;
+  } catch (error: any) {
+    const message = error?.response?.data?.message || error?.message || 'Failed to fetch S Kunda history';
+    const err = new Error(message);
+    (err as any).response = error?.response;
+    throw err;
   }
 };
 
@@ -98,11 +98,11 @@ export const submitKundaApi = async ({id, data}: {id: string; data: any}) => {
   try {
     const response = await api.put(`/admin/kunda/${id}`, data);
     return response.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to submit S Kunda');
-    }
-    throw error;
+  } catch (error: any) {
+    const message = error?.response?.data?.message || error?.message || 'Failed to submit S Kunda';
+    const err = new Error(message);
+    (err as any).response = error?.response;
+    throw err;
   }
 };
 
@@ -116,11 +116,11 @@ export const submitMoveKundaApi = async ({
   try {
     const response = await api.put(`/admin/cutting/kunda/${id}`, data);
     return response.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to move to S Kunda');
-    }
-    throw error;
+  } catch (error: any) {
+    const message = error?.response?.data?.message || error?.message || 'Failed to move to S Kunda';
+    const err = new Error(message);
+    (err as any).response = error?.response;
+    throw err;
   }
 };
 

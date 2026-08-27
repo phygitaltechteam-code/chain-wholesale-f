@@ -1,18 +1,18 @@
-import React, {useState, useEffect, useMemo} from 'react';
-import {Save, ArrowLeft} from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Save, ArrowLeft } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import GenericDropdown from '@/components/Forms/DropDown/GenericDropDown';
-import {useGetItems} from '@/lib/api/items';
-import {useGetSizes} from '@/lib/api/sizes';
-import {useGetAllStock, useUpdateStock} from '@/lib/api/stockmanagement';
-import {useCreateStock} from '@/lib/api/stock';
-import {useScaleFocus} from '@/lib/hooks/useScaleFocus';
-import {z} from 'zod';
-import {useForm, FormProvider} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import { useGetItems } from '@/lib/api/items';
+import { useGetSizes } from '@/lib/api/sizes';
+import { useGetAllStock, useUpdateStock } from '@/lib/api/stockmanagement';
+import { useCreateStock } from '@/lib/api/stock';
+import { useScaleFocus } from '@/lib/hooks/useScaleFocus';
+import { z } from 'zod';
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 // Schema for validation
 const StockSchema = z.object({
@@ -31,9 +31,9 @@ const StockManagment: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch data from API
-  const {data: items = []} = useGetItems();
-  const {data: sizes = []} = useGetSizes();
-  const {data: stockData = [], refetch: refetchStock} = useGetAllStock();
+  const { data: items = [] } = useGetItems();
+  const { data: sizes = [] } = useGetSizes();
+  const { data: stockData = [], refetch: refetchStock } = useGetAllStock();
   const updateStock = useUpdateStock();
   const createStock = useCreateStock();
 
@@ -61,7 +61,7 @@ const StockManagment: React.FC = () => {
     handleSubmit,
     reset,
     control,
-    formState: {errors},
+    formState: { errors },
   } = methods;
 
   // Watch all form values
@@ -73,13 +73,13 @@ const StockManagment: React.FC = () => {
 
   // Weighing Scale focus hook
   const scaleFocus = useScaleFocus((weight) => {
-    setValue('stockQty', weight, {shouldValidate: true, shouldDirty: true});
+    setValue('stockQty', weight, { shouldValidate: true, shouldDirty: true });
   });
 
   // Stock type options
   const stockTypeOptions = [
-    {label: 'Add Stock (INWARD)', value: 'INWARD'},
-    {label: 'Less Stock (OUTWARD)', value: 'OUTWARD'},
+    { label: 'Add Stock (INWARD)', value: 'INWARD' },
+    { label: 'Less Stock (OUTWARD)', value: 'OUTWARD' },
   ];
 
   // Get item options - all items available
@@ -93,7 +93,7 @@ const StockManagment: React.FC = () => {
   // Get size options - all sizes available
   const sizeOptions = useMemo(() => {
     return [
-      {label: 'None / No Size', value: ''},
+      { label: 'None / No Size', value: '' },
       ...sizes.map((s: any) => ({
         label: s.size,
         value: s.id,
@@ -104,7 +104,7 @@ const StockManagment: React.FC = () => {
   const selectedItemObj = items.find((i: any) => i.id === watchedItemId);
   const isGold = selectedItemObj?.name?.trim().toLowerCase().includes('gold');
 
-  // Automatically update size, purity, and find matching stock when Item or Size changes
+  // Clear size and purity when Gold is selected (do not auto-populate purity for items)
   useEffect(() => {
     if (!watchedItemId) {
       setCurrentStock(0);
@@ -115,25 +115,9 @@ const StockManagment: React.FC = () => {
 
     if (isGold) {
       setValue('sizeId', '');
-      setValue('purity', '100');
-    } else {
-      // Find matching stock to suggest purity
-      const matchingStock = stockData.find((s: any) => {
-        if (s.itemId !== watchedItemId) return false;
-        if (watchedSizeId) return s.sizeId === watchedSizeId;
-        return true;
-      });
-
-      if (
-        matchingStock &&
-        matchingStock.purity !== null &&
-        matchingStock.purity !== undefined &&
-        matchingStock.purity !== ''
-      ) {
-        setValue('purity', String(matchingStock.purity));
-      }
+      setValue('purity', '');
     }
-  }, [watchedItemId, watchedSizeId, isGold, stockData, setValue]);
+  }, [watchedItemId, isGold, setValue]);
 
   // Automatically find current stock when Item, Size, or Purity changes
   useEffect(() => {
@@ -177,8 +161,8 @@ const StockManagment: React.FC = () => {
   // Handle save
   const onSubmit = async (data: StockFormData) => {
     const stockQty = data.stockQty || 0;
-    const finalPurity = isGold ? '100' : data.purity || '';
     const finalSizeId = isGold ? null : data.sizeId || null;
+    const finalPurity = isGold ? null : data.purity ? parseFloat(data.purity) : null;
 
     // Check if matching stock exists
     const matchingStock = stockData.find((s: any) => {
@@ -186,8 +170,8 @@ const StockManagment: React.FC = () => {
       const matchSize = finalSizeId
         ? s.sizeId === finalSizeId
         : !s.sizeId || s.sizeId === null;
-      const matchPurity = finalPurity
-        ? String(s.purity) === String(finalPurity)
+      const matchPurity = finalPurity !== null
+        ? Number(s.purity) === Number(finalPurity)
         : true;
       return matchSize && matchPurity;
     });
@@ -221,21 +205,21 @@ const StockManagment: React.FC = () => {
 
         if (targetStockId) {
           payload.id = targetStockId;
-          await updateStock.mutateAsync({id: targetStockId, data: payload});
+          await updateStock.mutateAsync({ id: targetStockId, data: payload });
         } else {
           // If no existing stock record, create new entry
           try {
             await createStock.mutateAsync({
               itemId: data.itemId,
               sizeId: finalSizeId || '',
+              purity: finalPurity || 0,
               weight: stockQty,
-              purity: parseFloat(finalPurity) || 0,
               type: 'INWARD',
               note: data.note || '',
               stockQty: stockQty,
             });
           } catch {
-            await updateStock.mutateAsync({id: data.itemId, data: payload});
+            await updateStock.mutateAsync({ id: data.itemId, data: payload });
           }
         }
 
@@ -254,7 +238,7 @@ const StockManagment: React.FC = () => {
           purity: finalPurity,
         };
 
-        await updateStock.mutateAsync({id: targetStockId, data: payload});
+        await updateStock.mutateAsync({ id: targetStockId, data: payload });
         toast.success('Stock reduced successfully!');
       }
 
@@ -272,7 +256,7 @@ const StockManagment: React.FC = () => {
       setStockId('');
       setIsLoading(false);
 
-      navigate({to: '/Stocks/stockpage'});
+      navigate({ to: '/Stocks/stockpage' });
     } catch (error) {
       console.error('Error saving stock:', error);
       toast.error('Failed to save stock entry');
@@ -287,7 +271,7 @@ const StockManagment: React.FC = () => {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <button
-              onClick={() => navigate({to: '/Stocks/stockpage'})}
+              onClick={() => navigate({ to: '/Stocks/stockpage' })}
               className="flex flex-shrink-0 items-center gap-1 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -425,11 +409,10 @@ const StockManagment: React.FC = () => {
                       Total Stock
                     </label>
                     <div
-                      className={`mt-1 rounded-lg px-3 py-2 text-left text-sm font-semibold ${
-                        remainingStock < 0
-                          ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                          : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                      }`}
+                      className={`mt-1 rounded-lg px-3 py-2 text-left text-sm font-semibold ${remainingStock < 0
+                        ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                        : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                        }`}
                     >
                       {remainingStock.toFixed(3)} G
                     </div>

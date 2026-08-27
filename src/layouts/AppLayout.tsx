@@ -34,11 +34,15 @@ const AppLayoutContent: React.FC<{ children?: React.ReactNode }> = ({
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  // Load sidebar state from localStorage
+  // Sync sidebar state from localStorage
   useEffect(() => {
-    const savedState = localStorage.getItem('sidebar-collapsed');
-    if (savedState !== null) {
-      setSidebarCollapsed(savedState === 'true');
+    try {
+      const saved = localStorage.getItem('sidebar-collapsed');
+      if (saved !== null) {
+        setSidebarCollapsed(saved === 'true');
+      }
+    } catch {
+      // ignore
     }
   }, []);
 
