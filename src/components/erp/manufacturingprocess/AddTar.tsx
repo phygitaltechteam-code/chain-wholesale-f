@@ -1841,7 +1841,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                 Are you sure you want to save this tar entry? This will move to
                 the{' '}
                 <strong className="text-[#785600] dark:text-amber-400">
-                  Box Department (बॉक्स विभाग)
+                  Box Department
                 </strong>
                 .
               </p>
@@ -1853,14 +1853,14 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel (रद्द करा)
+                  Cancel 
                 </button>
                 <GenericButton
                   onClick={confirmSave}
                   disabled={isLoading}
                   variant="primary"
                 >
-                  {isLoading ? 'Saving...' : 'Confirm & Continue (पुष्टी करा)'}
+                  {isLoading ? 'Saving...' : 'Confirm & Continue'}
                 </GenericButton>
               </div>
             </div>
@@ -1897,7 +1897,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                 onClick={() => setShowStockErrorModal(false)}
                 className="rounded-lg bg-[#785600] px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity hover:opacity-90 dark:bg-amber-600"
               >
-                OK (समजले)
+                OK
               </button>
             </div>
           </div>

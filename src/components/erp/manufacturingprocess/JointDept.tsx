@@ -1133,7 +1133,7 @@ const JointDept: React.FC = () => {
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
                 Are you sure you want to save this joint entry and proceed to{' '}
                 <strong className="text-[#785600] dark:text-amber-400">
-                  Cutting (कटिंग)
+                  Cutting
                 </strong>
                 ?
               </p>
@@ -1145,7 +1145,7 @@ const JointDept: React.FC = () => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel (रद्द करा)
+                  Cancel 
                 </button>
                 <button
                   onClick={confirmSave}

@@ -1193,12 +1193,12 @@ const CuttingDept: React.FC = () => {
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
               <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
-                Confirm Action (पुष्टी करा)
+                Confirm Action
               </h3>
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
                 Are you sure you want to save this cutting entry and send it to{' '}
                 <strong className="text-[#785600] dark:text-amber-400">
-                  {actionType === 'stock' ? 'Stock (स्टॉक)' : 'S Kunda (एस कुंदा)'}
+                  {actionType === 'stock' ? 'Stock' : 'S Kunda'}
                 </strong>
                 ?
               </p>
@@ -1211,7 +1211,7 @@ const CuttingDept: React.FC = () => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel (रद्द करा)
+                  Cancel 
                 </button>
                 <button
                   onClick={

@@ -1116,7 +1116,7 @@ const BoxDept: React.FC = () => {
                 Are you sure you want to save this box entry? This will move to
                 the{' '}
                 <strong className="text-[#785600] dark:text-amber-400">
-                  Soldering Department (सोल्डरिंग विभाग)
+                  Soldering Department
                 </strong>
                 .
               </p>
@@ -1128,7 +1128,7 @@ const BoxDept: React.FC = () => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel (रद्द करा)
+                  Cancel
                 </button>
                 <button
                   onClick={confirmSave}

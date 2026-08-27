@@ -1184,12 +1184,12 @@ const SKundaDept: React.FC = () => {
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
               <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
-                Confirm Move To Stock (स्टॉकमध्ये पाठवा)
+                Confirm Move To Stock
               </h3>
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
                 Are you sure you want to move this S Kunda entry to{' '}
                 <strong className="text-[#785600] dark:text-amber-400">
-                  Stock (स्टॉक)
+                  Stock
                 </strong>
                 ?
               </p>
@@ -1201,14 +1201,14 @@ const SKundaDept: React.FC = () => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel (रद्द करा)
+                  Cancel
                 </button>
                 <button
                   onClick={confirmStock}
                   disabled={isLoading}
                   className="rounded-lg bg-[#785600] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#5d4200] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isLoading ? 'Moving...' : 'Confirm Stock (स्टॉक करा)'}
+                  {isLoading ? 'Moving...' : 'Confirm Stock'}
                 </button>
               </div>
             </div>
