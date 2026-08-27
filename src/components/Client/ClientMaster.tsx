@@ -224,14 +224,19 @@ const ClientMaster: React.FC = () => {
   };
 
   // Format number
-  const formatNumber = (value: number) => {
-    if (value === 0 || !value) return '0';
-    const str = value.toString();
-    if (str.includes('.')) {
-      return str.replace(/\.?0+$/, '');
-    }
-    return str;
+  const formatNumber = (
+    value: number | string | null | undefined,
+    maxDecimals: number = 3,
+  ): string => {
+    if (value === null || value === undefined || value === '') return '-';
+    const num = typeof value === 'number' ? value : parseFloat(String(value));
+    if (isNaN(num)) return '-';
+    if (num === 0) return '0';
+
+    const fixed = num.toFixed(maxDecimals);
+    return parseFloat(fixed).toString();
   };
+
 
   // Table columns
   const columns: Column<Client>[] = [

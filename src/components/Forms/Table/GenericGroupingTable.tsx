@@ -40,7 +40,7 @@ const GroupedGenericTable = <T extends Record<string, any>>({
   data,
   columns,
   groupBy,
-  itemsPerPage = 5,
+  itemsPerPage = 15,
   searchAble,
   title,
   action,

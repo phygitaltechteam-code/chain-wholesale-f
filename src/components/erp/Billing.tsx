@@ -53,6 +53,7 @@ interface ReceiptData {
   id: string;
   clientID: string;
   receiptDate: string;
+  billNumber?: string;
   totalWeight: number;
   customerWeight: number;
   remainingWeight: number;
@@ -236,15 +237,23 @@ const Billing: React.FC = () => {
     if (billData && Array.isArray(billData)) {
       const groups: BillGroup[] = billData.map(
         (receipt: ReceiptData, index: number) => {
-          const dateObj = new Date(receipt.receiptDate || receipt.createdAt);
-          const formattedDate = dateObj.toLocaleString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-          });
+          const rawDate = receipt.createdAt || receipt.receiptDate;
+          let formattedDate = '-';
+          if (rawDate) {
+            const dateObj = new Date(rawDate);
+            if (!isNaN(dateObj.getTime())) {
+              const day = String(dateObj.getDate()).padStart(2, '0');
+              const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+              const year = dateObj.getFullYear();
+              let hours = dateObj.getHours();
+              const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+              const ampm = hours >= 12 ? 'pm' : 'am';
+              hours = hours % 12;
+              hours = hours ? hours : 12;
+              const formattedHours = String(hours).padStart(2, '0');
+              formattedDate = `${day}/${month}/${year} ${formattedHours}:${minutes} ${ampm}`;
+            }
+          }
 
           // Map all items
           const items =
@@ -276,19 +285,24 @@ const Billing: React.FC = () => {
             .map((i) => formatNumberWithDecimals(i.srp))
             .join('\n');
 
+          const billNumber =
+            receipt.billNumber ||
+            (receipt as any).billNo ||
+            `BILL-${String(index + 1).padStart(4, '0')}`;
+
           return {
             id: receipt.id,
             srNo: index + 1,
             dateTime: formattedDate,
-            billNo: `BILL-${String(index + 1).padStart(4, '0')}`,
+            billNo: billNumber,
             clientName: receipt.client?.fullName || 'N/A',
             phoneNumber: receipt.client?.phoneNumber || 'N/A',
             receive: receipt.customerWeight || 0,
             pending: receipt.remainingWeight || 0,
             type:
-              receipt.type ||
+              (receipt.type as 'DRAFT' | 'BILL') ||
               (receipt.remainingWeight === 0 ? 'BILL' : 'DRAFT'),
-            createdAt: receipt.receiptDate || receipt.createdAt,
+            createdAt: receipt.createdAt || receipt.receiptDate,
             items: items,
             displayItems: displayItems,
             displaySizes: displaySizes,
@@ -412,11 +426,12 @@ const Billing: React.FC = () => {
     const totalLabor = 0;
     const totalAmount = totalSRP + totalLabor;
     const receive = group.receive || 0;
-    const pending = group.pending || 0;
+    const total = group.pending || 0;
+    const pending =
+      Math.round(Math.abs(total + receive - totalFineWt) * 1000) / 1000;
 
     let itemsRows = '';
     group.items.forEach((item, index) => {
-      const itemAmount = item.srp || 0;
       itemsRows += `
         <tr>
           <td style="border:1px solid #222;padding:3px 4px;text-align:center;font-size:9px;color:#000;">${index + 1}</td>
@@ -427,7 +442,6 @@ const Billing: React.FC = () => {
           <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberWithDecimals(item.grossWeight)}</td>
           <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberWith2Decimals(item.srp)}</td>
           <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">0.00</td>
-          <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-weight:bold;font-size:9px;color:#000;">₹${formatNumberWith2Decimals(itemAmount)}</td>
         </tr>
       `;
     });
@@ -609,7 +623,6 @@ const Billing: React.FC = () => {
               <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Gross Wt (G)</th>
               <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">SRP (G)</th>
               <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Labor (G)</th>
-              <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Amount</th>
             </tr>
           </thead>
 
@@ -675,11 +688,11 @@ const Billing: React.FC = () => {
               justify-content:space-between;
               padding:4px 7px;
               background:#f4f0e5;
-              font-size:11px;
+              font-size:10.5px;
             ">
-              <span style="font-weight:bold;">Total Amount</span>
-              <span style="font-family:monospace;font-weight:bold;">
-                ₹${formatNumberWith2Decimals(totalAmount)}
+              <span style="font-weight:bold;color:#111111;">Total</span>
+              <span style="font-family:monospace;font-weight:bold;color:#785600;">
+                ${formatNumberWithDecimals(total)} G
               </span>
             </div>
           </div>
@@ -1576,8 +1589,8 @@ const Billing: React.FC = () => {
                         }}
                         placeholder="e.g. XXXX-XXXX-XXXX-XXXX"
                         className={`font-mono w-full rounded-lg border px-3.5 py-2.5 text-xs uppercase text-[#1a1c1b] placeholder:text-[#817563] focus:outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${keyError
-                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                            : 'border-[#d3c4af]/40 focus:border-[#785600] focus:ring-[#785600]/10 dark:border-slate-700'
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                          : 'border-[#d3c4af]/40 focus:border-[#785600] focus:ring-[#785600]/10 dark:border-slate-700'
                           }`}
                       />
                     </div>

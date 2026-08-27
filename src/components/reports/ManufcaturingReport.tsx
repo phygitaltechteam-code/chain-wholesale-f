@@ -1,5 +1,5 @@
 import {useNavigate} from '@tanstack/react-router';
-import {useState, useRef, useEffect} from 'react';
+import {useState, useRef, useEffect, useMemo} from 'react';
 import {ArrowLeft, Search, Printer, Calendar} from 'lucide-react';
 import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import {useReactToPrint} from 'react-to-print';
@@ -99,125 +99,110 @@ export default function ManufacturingReport() {
     refetch,
   } = useGetManufacturingData();
   const getpdfheaderdata = useGetHeader();
-  // State for transformed data
-  const [reportData, setReportData] = useState<ManufacturingEntry[]>([]);
-  const [totals, setTotals] = useState({
-    totalWeight: 0,
-    totalScrap: 0,
-    totalLoss: 0,
-    currentWeight: 0,
-  });
-  const [loading, setLoading] = useState(true);
 
-  // Transform API data to match our table structure
-  useEffect(() => {
-    if (manufacturingData) {
-      const responseData = manufacturingData as ApiResponse;
+  // Derive transformed data from manufacturingData using useMemo (no state loops)
+  const reportData = useMemo<ManufacturingEntry[]>(() => {
+    if (!manufacturingData) return [];
+    const responseData = manufacturingData as ApiResponse;
 
-      if (responseData?.history && Array.isArray(responseData.history)) {
-        // Set totals
-        if (responseData.totals) {
-          setTotals({
-            totalWeight: responseData.totals.totalWeight || 0,
-            totalScrap: responseData.totals.totalScrap || 0,
-            totalLoss: responseData.totals.totalLoss || 0,
-            currentWeight: responseData.totals.currentWeight || 0,
-          });
-        }
-
-        // Transform history data
-        const transformedData: ManufacturingEntry[] = responseData.history.map(
-          (item: ApiDataItem, index: number) => {
-            const date = new Date(item.createdAt);
-            const formattedDate = date.toLocaleDateString('en-IN', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-            });
-            const formattedTime = date.toLocaleTimeString('en-IN', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true,
-            });
-
-            return {
-              id: item.id,
-              srNo: index + 1,
-              dateTime: `${formattedDate} ${formattedTime}`,
-              item: item.item?.name || 'Unknown Item',
-              size: item.size?.size || 'N/A',
-              purity: item.purity || 0,
-              weight: item.weight || 0,
-              scrap: item.scrap || 0,
-              loss: item.loss || 0,
-              currentWeight: item.currentWeight || 0,
-            };
-          },
-        );
-        setReportData(transformedData);
-      }
-      setLoading(false);
+    if (!responseData?.history || !Array.isArray(responseData.history)) {
+      return [];
     }
+
+    return responseData.history.map((item: ApiDataItem, index: number) => {
+      const date = new Date(item.createdAt);
+      const formattedDate = !isNaN(date.getTime())
+        ? date.toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          })
+        : '';
+      const formattedTime = !isNaN(date.getTime())
+        ? date.toLocaleTimeString('en-IN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+          })
+        : '';
+
+      return {
+        id: item.id,
+        srNo: index + 1,
+        dateTime: `${formattedDate} ${formattedTime}`.trim(),
+        item: item.item?.name || 'Unknown Item',
+        size: item.size?.size || 'N/A',
+        purity: item.purity || 0,
+        weight: item.weight || 0,
+        scrap: item.scrap || 0,
+        loss: item.loss || 0,
+        currentWeight: item.currentWeight || 0,
+      };
+    });
   }, [manufacturingData]);
 
   // Filter data based on search term and date range
-  const filteredData = reportData.filter((entry) => {
-    // Search filter
-    const matchesSearch =
-      searchTerm === '' ||
-      entry.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.purity.toString().includes(searchTerm) ||
-      entry.weight.toString().includes(searchTerm) ||
-      entry.currentWeight.toString().includes(searchTerm);
+  const filteredData = useMemo(() => {
+    return reportData.filter((entry) => {
+      // Search filter
+      const matchesSearch =
+        searchTerm === '' ||
+        entry.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.purity.toString().includes(searchTerm) ||
+        entry.weight.toString().includes(searchTerm) ||
+        entry.currentWeight.toString().includes(searchTerm);
 
-    // Date range filter
-    let matchesDate = true;
+      // Date range filter
+      let matchesDate = true;
 
-    if (fromDate || toDate) {
-      const dateParts = entry.dateTime.split(' ')[0].split('/');
+      if (fromDate || toDate) {
+        const dateParts = entry.dateTime.split(' ')[0].split('/');
 
-      if (dateParts.length === 3) {
-        const entryDate = new Date(
-          Number(dateParts[2]),
-          Number(dateParts[1]) - 1,
-          Number(dateParts[0]),
-        );
-        entryDate.setHours(12, 0, 0, 0);
+        if (dateParts.length === 3) {
+          const entryDate = new Date(
+            Number(dateParts[2]),
+            Number(dateParts[1]) - 1,
+            Number(dateParts[0]),
+          );
+          entryDate.setHours(12, 0, 0, 0);
 
-        if (fromDate) {
-          const from = new Date(fromDate);
-          from.setHours(0, 0, 0, 0);
+          if (fromDate) {
+            const from = new Date(fromDate);
+            from.setHours(0, 0, 0, 0);
 
-          if (entryDate < from) {
-            matchesDate = false;
+            if (entryDate < from) {
+              matchesDate = false;
+            }
           }
-        }
 
-        if (toDate && matchesDate) {
-          const to = new Date(toDate);
-          to.setHours(23, 59, 59, 999);
+          if (toDate && matchesDate) {
+            const to = new Date(toDate);
+            to.setHours(23, 59, 59, 999);
 
-          if (entryDate > to) {
-            matchesDate = false;
+            if (entryDate > to) {
+              matchesDate = false;
+            }
           }
         }
       }
-    }
 
-    return matchesSearch && matchesDate;
-  });
+      return matchesSearch && matchesDate;
+    });
+  }, [reportData, searchTerm, fromDate, toDate]);
 
   // Calculate filtered totals
-  const filteredTotals = filteredData.reduce(
-    (acc, entry) => ({
-      totalWeight: acc.totalWeight + entry.weight,
-      totalScrap: acc.totalScrap + entry.scrap,
-      totalLoss: acc.totalLoss + entry.loss,
-      currentWeight: acc.currentWeight + entry.currentWeight,
-    }),
-    {totalWeight: 0, totalScrap: 0, totalLoss: 0, currentWeight: 0},
-  );
+  const filteredTotals = useMemo(() => {
+    return filteredData.reduce(
+      (acc, entry) => ({
+        totalWeight: acc.totalWeight + entry.weight,
+        totalScrap: acc.totalScrap + entry.scrap,
+        totalLoss: acc.totalLoss + entry.loss,
+        currentWeight: acc.currentWeight + entry.currentWeight,
+      }),
+      {totalWeight: 0, totalScrap: 0, totalLoss: 0, currentWeight: 0},
+    );
+  }, [filteredData]);
 
   // Format number with 3 decimals
   const formatNumber = (value: number) => {
@@ -265,105 +250,11 @@ export default function ManufacturingReport() {
     }
   };
 
-  // Custom Table with proper column structure
-  const CustomTable = () => {
-    if (filteredData.length === 0) {
-      return (
-        <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <div className="py-12 text-center text-[#4f4535] dark:text-slate-400">
-            {searchTerm || fromDate || toDate
-              ? 'No manufacturing entries found matching your filters.'
-              : 'No manufacturing entries found.'}
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <div className="max-w-full overflow-x-auto">
-          <table className="w-full min-w-[800px] border-collapse md:min-w-0">
-            <thead>
-              <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-xs uppercase tracking-[0.15em] text-white">
-                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                  Sr No.
-                </th>
-                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                  Date & Time
-                </th>
-                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                  Item (Size) (Purity)
-                </th>
-                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                  Scrap
-                </th>
-                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                  Loss
-                </th>
-                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                  Wt. (G)
-                </th>
-                <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                  Current Wt. (G)
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
-              {filteredData.map((item, index) => (
-                <tr
-                  key={item.id}
-                  className={`group transition-colors ${index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-[#fafaf8] dark:bg-slate-900/80'} hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50`}
-                >
-                  <td className="px-3 py-3 text-center text-sm text-black dark:text-white">
-                    {item.srNo}
-                  </td>
-                  <td className="px-3 py-3 text-center text-sm text-black dark:text-white">
-                    <div>{item.dateTime.split(' ')[0]}</div>
-                    <div>{item.dateTime.split(' ').slice(1).join(' ')}</div>
-                  </td>
-                  <td className="px-3 py-3 text-center text-sm font-medium text-black dark:text-white">
-                    {item.item} ({item.size}){' '}
-                    {item.purity > 0 && `(${item.purity}%)`}
-                  </td>
-                  <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-blue-400">
-                    {formatNumber(item.scrap)} G
-                  </td>
-                  <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-red-400">
-                    {formatNumber(item.loss)} G
-                  </td>
-                  <td className="font-mono px-3 py-3 text-center text-sm font-bold text-black dark:text-amber-400">
-                    {formatNumber(item.weight)} G
-                  </td>
-                  <td className="font-mono px-3 py-3 text-center text-sm font-bold text-black dark:text-green-400">
-                    {formatNumber(item.currentWeight)} G
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            {/* <tfoot>
-              <tr className="bg-gray-100 font-bold dark:bg-slate-800">
-                <td colSpan={3} className="px-3 py-3 text-right text-sm text-black dark:text-white">
-                  Total:
-                </td>
-                <td className="px-3 py-3 text-center text-sm font-mono text-black dark:text-blue-400">
-                  {formatNumber(filteredTotals.totalScrap)}
-                </td>
-                <td className="px-3 py-3 text-center text-sm font-mono text-black dark:text-red-400">
-                  {formatNumber(filteredTotals.totalLoss)}
-                </td>
-                <td className="px-3 py-3 text-center text-sm font-mono font-bold text-black dark:text-amber-400">
-                  {formatNumber(filteredTotals.totalWeight)}
-                </td>
-                <td className="px-3 py-3 text-center text-sm font-mono font-bold text-black dark:text-green-400">
-                  {formatNumber(filteredTotals.currentWeight)}
-                </td>
-              </tr>
-            </tfoot> */}
-          </table>
-        </div>
-      </div>
-    );
-  };
+  const fromInitialDates = useMemo(
+    () => (fromDate ? [fromDate] : []),
+    [fromDate],
+  );
+  const toInitialDates = useMemo(() => (toDate ? [toDate] : []), [toDate]);
 
   const handlePrint = () => {
     if (!filteredData || filteredData.length === 0) {
@@ -448,60 +339,86 @@ export default function ManufacturingReport() {
         <div>
           <!-- PDF Header -->
           <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+            <!-- Invocation and Factory Name Row -->
             <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
               <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
               <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
               <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
             </div>
+            
+            <!-- Description -->
             <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
               ${description}
             </div>
+            
+            <!-- Proprietor and Phone -->
             <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
               ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
             </div>
             <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
           </div>
 
-<!-- Title and Date Range in one line -->
-<div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
-  <div style="flex:1;"></div>
-  <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
-    Manufacturing Report
-  </h2>
-  ${
-    fromDate || toDate
-      ? `
-    <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
-      From: ${formatDateForDisplay(fromDate) || 'Start'} &nbsp; To: ${formatDateForDisplay(toDate) || 'End'}
-    </div>
-  `
-      : `
-    <div style="flex:1;"></div>
-  `
-  }
-</div>
-        
+          <!-- Report Title and Date Range -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
+            <div style="flex:1;"></div>
+            <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+              Manufacturing Report
+            </h2>
+            ${
+              fromDate || toDate
+                ? `
+            <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
+              ${fromDate ? `From: ${formatDateForDisplay(fromDate)}` : ''} 
+              ${fromDate && toDate ? '&nbsp;&nbsp;' : ''}
+              ${toDate ? `To: ${formatDateForDisplay(toDate)}` : ''}
+            </div>
+            `
+                : `<div style="flex:1;"></div>`
+            }
+          </div>
 
-        <!-- Table -->
-        <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
-          <thead>
-            <tr style="background:#785600;color:white;font-weight:600;">
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Weight</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Current Wt.</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-        
-        </table>
+          <!-- Data Table - Compact -->
+          <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
+            <thead>
+              <tr style="background:#785600;color:white;font-weight:600;">
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Sr</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;white-space:nowrap;">Date & Time</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Item</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Size</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Purity</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Wt(g)</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Scrap</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Loss</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Current Wt</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer Section - Always at Bottom -->
+        <div style="width:100%;margin-top:auto;padding-top:4px;">
+          <div style="border-top:1px solid #785600;padding-top:2px;text-align:center;">
+            <p style="margin:0;font-size:7px;color:#000;">
+              This is a computer generated report
+            </p>
+            <div style="margin-top:1px;font-size:6.5px;color:#000;display:flex;justify-content:center;gap:10px;">
+              <span>Powered by Matoshree Gold</span>
+              <span>|</span>
+              <span>Generated: ${new Date().toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              })} ${new Date().toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+              })}</span>
+            </div>
+          </div>
+        </div>
       </div>
     `;
 
@@ -509,9 +426,16 @@ export default function ManufacturingReport() {
     const style = document.createElement('style');
     style.textContent = `
       @page {
-        margin: 3mm;
+        size: A4 portrait;
+        margin: 0;
       }
       @media print {
+        html, body {
+          margin: 0;
+          padding: 0;
+          width: 210mm;
+          height: 297mm;
+        }
         body * {
           visibility: hidden;
         }
@@ -522,14 +446,21 @@ export default function ManufacturingReport() {
           position: fixed !important;
           left: 0 !important;
           top: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
+          width: 210mm !important;
+          height: 297mm !important;
           background: white !important;
-          padding: 4px !important;
-          overflow: auto !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          overflow: hidden !important;
           z-index: 9999 !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
+        }
+        #print-container > div {
+          width: 210mm !important;
+          min-height: 297mm !important;
+          padding: 6mm 5mm !important;
+          box-sizing: border-box !important;
         }
         #print-container table {
           width: 100% !important;
@@ -569,108 +500,8 @@ export default function ManufacturingReport() {
     }, 500);
   };
 
-  // Print Preview Component
-  const PrintPreview = () => (
-    <div
-      className="font-sans mx-auto max-w-full bg-white p-6"
-      ref={printRef}
-      id="report-print"
-      style={{width: '297mm', minHeight: '210mm'}}
-    >
-      <PDFHeader />
-      <div className="my-3 border-b-2 border-[#c43d5c]" />
-
-      <div className="mb-4 text-center">
-        <h2 className="text-gray-800 text-lg font-bold">
-          Manufacturing Report
-        </h2>
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <p className="text-gray-500 text-xs">
-            Generated: {new Date().toLocaleString()}
-          </p>
-          {(fromDate || toDate) && (
-            <p className="text-gray-500 text-xs">
-              From: {formatDateForDisplay(fromDate) || 'Start'} &nbsp; To:{' '}
-              {formatDateForDisplay(toDate) || 'End'}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <table className="w-full border-collapse text-xs">
-        <thead>
-          <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-white">
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
-              Sr
-            </th>
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
-              Date & Time
-            </th>
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
-              Item (Size) (Purity)
-            </th>
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
-              Scrap
-            </th>
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
-              Loss
-            </th>
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
-              Wt. (G)
-            </th>
-            <th className="border border-[#785600] px-2 py-1.5 text-center font-semibold">
-              Current Wt. (G)
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredData.map((entry, index) => (
-            <tr
-              key={entry.id}
-              className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
-            >
-              <td className="border-gray-300 border px-2 py-1.5 text-center">
-                {entry.srNo}
-              </td>
-              <td className="border-gray-300 border px-2 py-1.5 text-center">
-                {entry.dateTime}
-              </td>
-              <td className="border-gray-300 border px-2 py-1.5 text-center">
-                {entry.item} ({entry.size}){' '}
-                {entry.purity > 0 && `(${entry.purity}%)`}
-              </td>
-              <td className="border-gray-300 font-mono border px-2 py-1.5 text-center">
-                {formatNumber(entry.scrap)}
-              </td>
-              <td className="border-gray-300 font-mono border px-2 py-1.5 text-center">
-                {formatNumber(entry.loss)}
-              </td>
-              <td className="border-gray-300 font-mono border px-2 py-1.5 text-center">
-                {formatNumber(entry.weight)}
-              </td>
-              <td className="border-gray-300 font-mono border px-2 py-1.5 text-center">
-                {formatNumber(entry.currentWeight)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="mt-3 border-t-2 border-[#785600] pt-2 text-center">
-        <p className="text-gray-500 text-xs">
-          This is a system-generated report
-        </p>
-        <div className="text-gray-400 mt-0.5 flex justify-center gap-3 text-[10px]">
-          <span>Powered by Matoshree Gold</span>
-          <span>|</span>
-          <span>Generated: {new Date().toLocaleString()}</span>
-        </div>
-      </div>
-    </div>
-  );
-
   // Show loading state
-  if (isLoading || loading) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] dark:bg-slate-950">
         <div className="text-center">
@@ -737,7 +568,7 @@ export default function ManufacturingReport() {
                 id="from-date-box"
                 placeholder="DD/MM/YYYY"
                 mode="from"
-                initialDates={fromDate ? [fromDate] : []}
+                initialDates={fromInitialDates}
                 onDateChange={handleFromDateChange}
                 className="w-32 sm:w-36 md:w-40"
               />
@@ -747,7 +578,7 @@ export default function ManufacturingReport() {
                 id="to-date-box"
                 placeholder="DD/MM/YYYY"
                 mode="to"
-                initialDates={toDate ? [toDate] : []}
+                initialDates={toInitialDates}
                 onDateChange={handleToDateChange}
                 className="w-32 sm:w-36 md:w-40"
               />
@@ -811,13 +642,84 @@ export default function ManufacturingReport() {
           </div>
         </div>
 
-        {/* Custom Table with proper column structure */}
-        <CustomTable />
-      </div>
-
-      {/* Hidden Print Component */}
-      <div className="hidden">
-        <PrintPreview />
+        {/* Table Rendering */}
+        {filteredData.length === 0 ? (
+          <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <div className="py-12 text-center text-[#4f4535] dark:text-slate-400">
+              {searchTerm || fromDate || toDate
+                ? 'No manufacturing entries found matching your filters.'
+                : 'No manufacturing entries found.'}
+            </div>
+          </div>
+        ) : (
+          <div className="border border-[#d3c4af]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <div className="max-w-full overflow-x-auto">
+              <table className="w-full min-w-[800px] border-collapse md:min-w-0">
+                <thead>
+                  <tr className="bg-gradient-to-r from-[#785600] to-[#986d00] text-xs uppercase tracking-[0.15em] text-white">
+                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                      Sr No.
+                    </th>
+                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                      Date & Time
+                    </th>
+                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                      Item (Size) (Purity)
+                    </th>
+                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                      Scrap
+                    </th>
+                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                      Loss
+                    </th>
+                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                      Wt. (G)
+                    </th>
+                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                      Current Wt. (G)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
+                  {filteredData.map((item, index) => (
+                    <tr
+                      key={item.id}
+                      className={`group transition-colors ${
+                        index % 2 === 0
+                          ? 'bg-white dark:bg-slate-900'
+                          : 'bg-[#fafaf8] dark:bg-slate-900/80'
+                      } hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50`}
+                    >
+                      <td className="px-3 py-3 text-center text-sm text-black dark:text-white">
+                        {item.srNo}
+                      </td>
+                      <td className="px-3 py-3 text-center text-sm text-black dark:text-white">
+                        <div>{item.dateTime.split(' ')[0]}</div>
+                        <div>{item.dateTime.split(' ').slice(1).join(' ')}</div>
+                      </td>
+                      <td className="px-3 py-3 text-center text-sm font-medium text-black dark:text-white">
+                        {item.item} ({item.size}){' '}
+                        {item.purity > 0 && `(${item.purity}%)`}
+                      </td>
+                      <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-blue-400">
+                        {formatNumber(item.scrap)} G
+                      </td>
+                      <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-red-400">
+                        {formatNumber(item.loss)} G
+                      </td>
+                      <td className="font-mono px-3 py-3 text-center text-sm font-bold text-black dark:text-amber-400">
+                        {formatNumber(item.weight)} G
+                      </td>
+                      <td className="font-mono px-3 py-3 text-center text-sm font-bold text-black dark:text-green-400">
+                        {formatNumber(item.currentWeight)} G
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

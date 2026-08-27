@@ -605,23 +605,23 @@ const Settlement: React.FC = () => {
   // ======================================================
 
   const handleSettle = (entry: SettlementEntry) => {
-    const amount = Math.abs(Number(entry.goldBalance || 0));
+    const balance = Number(entry.goldBalance || 0);
 
     setSettlementDetail({
       clientName: entry.clientName,
       phoneNumber: entry.phoneNumber,
       address: entry.address || '',
-      pendingBalance: amount,
+      pendingBalance: balance,
       totalBills: entry.totalBills || 0,
-      settlementAmount: amount,
-      settlementType: entry.goldBalance > 0 ? 'receive' : 'give',
+      settlementAmount: 0,
+      settlementType: 'receive',
       date: new Date().toISOString().split('T')[0],
       clientId: entry.clientId,
       openingBalance: entry.openingBalance || 0,
       due: entry.due || null,
     });
 
-    setLocalAmount(amount > 0 ? amount.toString() : '');
+    setLocalAmount('');
     setShowSettleModal(true);
   };
 
@@ -661,18 +661,6 @@ const Settlement: React.FC = () => {
 
     if (!settlementDetail.clientId) {
       toast.error('Client ID is missing');
-      return;
-    }
-
-    if (
-      settlementDetail.settlementType === 'receive' &&
-      amount > settlementDetail.pendingBalance
-    ) {
-      toast.error(
-        `Settlement amount cannot exceed pending balance of ${formatNumber(
-          settlementDetail.pendingBalance,
-        )}g`,
-      );
       return;
     }
 
@@ -1000,7 +988,7 @@ const Settlement: React.FC = () => {
                 }`}
               >
                 <Minus className="h-4 w-4" />
-                Receive
+                Receive (-)
               </button>
               <button
                 type="button"
@@ -1021,7 +1009,7 @@ const Settlement: React.FC = () => {
                 }`}
               >
                 <Plus className="h-4 w-4" />
-                Give
+                Give (+)
               </button>
             </div>
 
@@ -1069,16 +1057,7 @@ const Settlement: React.FC = () => {
                     }));
                     return;
                   }
-                  let finalAmount = amount;
-                  if (settlementDetail.settlementType === 'receive') {
-                    finalAmount = Math.min(
-                      Math.max(amount, 0),
-                      settlementDetail.pendingBalance,
-                    );
-                  } else {
-                    finalAmount = Math.max(amount, 0);
-                  }
-                  finalAmount = Number(finalAmount.toFixed(3));
+                  const finalAmount = Number(Math.max(amount, 0).toFixed(3));
                   setSettlementDetail((prev) => ({
                     ...prev,
                     settlementAmount: finalAmount,
@@ -1099,23 +1078,28 @@ const Settlement: React.FC = () => {
                     closeSettlementModal();
                   }
                 }}
-                placeholder={
-                  settlementDetail.settlementType === 'receive'
-                    ? `Max ${formatNumber(settlementDetail.pendingBalance)}g`
-                    : 'Enter amount (g)'
-                }
+                placeholder="Enter amount (g)"
                 suffix="G"
               />
             </div>
 
-            {/* REMAINING BALANCE */}
+            {/* REMAINING / NEW BALANCE */}
             {settlementDetail.settlementAmount > 0 && (
-              <div className="mb-4 rounded-lg border border-[#d3c4af]/20 bg-[#f9f9f7] px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50">
+              <div className="mb-4 rounded-lg border border-[#d3c4af]/20 bg-[#f9f9f7] px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/50">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
-                    Remaining Balance:
+                    New Due Balance:
                   </span>
-                  <span className="text-sm font-bold text-[#1a1c1b] dark:text-white">
+                  <span className="text-sm font-bold text-[#785600] dark:text-amber-400">
+                    {formatNumber(remainingBalance)} g
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center justify-between text-[11px] text-[#817563] dark:text-slate-400">
+                  <span>Calculation:</span>
+                  <span className="font-mono">
+                    {formatNumber(settlementDetail.pendingBalance)} g{' '}
+                    {settlementDetail.settlementType === 'receive' ? '-' : '+'}{' '}
+                    {formatNumber(settlementDetail.settlementAmount)} g ={' '}
                     {formatNumber(remainingBalance)} g
                   </span>
                 </div>
@@ -1192,7 +1176,7 @@ const Settlement: React.FC = () => {
               </p>
             </div>
 
-            <div className="mb-5 space-y-2 rounded-lg border border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-800/50">
+            <div className="mb-5 space-y-2.5 rounded-lg border border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-800/50">
               <div className="flex justify-between text-sm">
                 <span className="text-[#4f4535] dark:text-slate-400">
                   Client:
@@ -1203,17 +1187,33 @@ const Settlement: React.FC = () => {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-[#4f4535] dark:text-slate-400">
-                  Amount:
+                  Current Due:
                 </span>
-                <span className="font-bold text-[#1a1c1b] dark:text-white">
-                  {signedAmount} g
+                <span className="font-medium text-[#1a1c1b] dark:text-white">
+                  {formatNumber(settlementDetail.pendingBalance)} g
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-[#4f4535] dark:text-slate-400">
-                  New Balance:
+                  Action:
                 </span>
-                <span className="font-bold text-[#1a1c1b] dark:text-white">
+                <span
+                  className={`font-semibold ${
+                    settlementDetail.settlementType === 'receive'
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-amber-600 dark:text-amber-400'
+                  }`}
+                >
+                  {settlementDetail.settlementType === 'receive'
+                    ? `Receive (-${formatNumber(settlementDetail.settlementAmount)} g)`
+                    : `Give (+${formatNumber(settlementDetail.settlementAmount)} g)`}
+                </span>
+              </div>
+              <div className="border-t border-[#d3c4af]/20 pt-2 dark:border-slate-700 flex justify-between text-sm">
+                <span className="font-semibold text-[#4f4535] dark:text-slate-300">
+                  New Due Balance:
+                </span>
+                <span className="font-bold text-[#785600] dark:text-amber-400">
                   {formatNumber(newBalance)} g
                 </span>
               </div>

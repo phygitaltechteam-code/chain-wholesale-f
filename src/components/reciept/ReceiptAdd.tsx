@@ -515,7 +515,7 @@ const ReceiptAdd: React.FC = () => {
     const dueBalance = getClientDueBalance(client);
     const advance = Number(formData.customerWeight) || 0;
     const issue = Number(formData.totalFine) || 0;
-    const remaining = dueBalance + advance - issue;
+    const remaining = dueBalance - advance + issue;
     return Math.round(Math.abs(remaining) * 1000) / 1000;
   };
 
@@ -564,12 +564,12 @@ const ReceiptAdd: React.FC = () => {
     const totalLabor = calculateTotalLabor();
     const totalAmount = totalSRP + totalLabor;
     const receive = formData.customerWeight || 0;
-    const pending = calculateRemainingWeight();
+    const pending = getClientDueBalance(client);
+    const total = calculateRemainingWeight();
 
     // Build items table rows
     let itemsRows = '';
     formData.items.forEach((item, index) => {
-      const itemAmount = (item.srp || 0) + (item.laborRate || 0);
       itemsRows += `
       <tr>
         <td style="border:1px solid #222;padding:3px 4px;text-align:center;font-size:9px;color:#000;">${index + 1}</td>
@@ -580,7 +580,6 @@ const ReceiptAdd: React.FC = () => {
         <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberThreeDecimals(item.grossWt)}</td>
         <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberThreeDecimals(item.srp)}</td>
         <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-size:9px;color:#000;">${formatNumberThreeDecimals(item.laborRate)}</td>
-        <td style="border:1px solid #222;padding:3px 4px;text-align:right;font-family:monospace;font-weight:bold;font-size:9px;color:#000;">₹${formatNumberWith2Decimals(itemAmount)}</td>
       </tr>
     `;
     });
@@ -763,7 +762,6 @@ const ReceiptAdd: React.FC = () => {
             <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Gross Wt (G)</th>
             <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">SRP (G)</th>
             <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Labor (G)</th>
-            <th style="border:1px solid #785600;padding:3px 4px;text-align:right;font-size:8px;">Amount</th>
           </tr>
         </thead>
 
@@ -829,11 +827,11 @@ const ReceiptAdd: React.FC = () => {
             justify-content:space-between;
             padding:4px 7px;
             background:#f4f0e5;
-            font-size:11px;
+            font-size:10.5px;
           ">
-            <span style="font-weight:bold;">Total Amount</span>
-            <span style="font-family:monospace;font-weight:bold;">
-              ₹${formatNumberWith2Decimals(totalAmount)}
+            <span style="font-weight:bold;color:#111111;">Total</span>
+            <span style="font-family:monospace;font-weight:bold;color:#785600;">
+              ${formatNumberThreeDecimals(total)} G
             </span>
           </div>
         </div>
@@ -1189,31 +1187,20 @@ const ReceiptAdd: React.FC = () => {
     {
       key: 'availableQty',
       header: 'Available Qty',
-      render: (item, index) => {
-        const actualIndex = formData.items.indexOf(item);
-        return (
-          <div className="relative w-full">
-            <GenericInputField
-              type="text"
-              inputMode="decimal"
-              step="0.001"
-              min="0"
-              value={item.availableQty !== undefined && item.availableQty !== null ? item.availableQty : ''}
-              onChange={(e) =>
-                handleItemChange(
-                  actualIndex,
-                  'availableQty',
-                  e.target.value,
-                )
-              }
-              placeholder="0.000"
-              suffix="G"
-              className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
-              decimalScale={3}
-            />
-          </div>
-        );
-      },
+      render: (item) => (
+        <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#d3c4af]/30 bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+          <span className="font-mono font-bold text-black dark:text-white">
+            {item.availableQty !== undefined &&
+            item.availableQty !== null &&
+            item.availableQty !== ''
+              ? formatNumberThreeDecimals(Number(item.availableQty))
+              : '0'}
+          </span>
+          <span className="text-gray-500 text-[10px] dark:text-slate-400">
+            G
+          </span>
+        </div>
+      ),
     },
     {
       key: 'grossWt',
@@ -1270,7 +1257,7 @@ const ReceiptAdd: React.FC = () => {
       key: 'fineWt',
       header: 'Fine Wt (G)',
       render: (item) => (
-        <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+        <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#d3c4af]/30 bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
           <span className="font-mono font-bold text-[#785600] dark:text-amber-400">
             {formatNumberThreeDecimals(item.fineWt)}
           </span>
