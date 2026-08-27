@@ -706,38 +706,16 @@ const SKundaDept: React.FC = () => {
     {
       key: 'purity',
       header: 'Purity (%)',
-      render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <div className="relative inline-block">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={
-                  item.purityRaw !== undefined
-                    ? item.purityRaw
-                    : item.purity === 0
-                      ? ''
-                      : item.purity
-                }
-                onChange={(e) =>
-                  handleInlineChange(index, 'purity', e.target.value)
-                }
-                placeholder="e.g., 98"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-              />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                %
-              </span>
-            </div>
-          );
-        }
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.purity)}%
+      render: (item) => (
+        <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap rounded-md border border-[#d3c4af]/30 bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+          <span className="font-mono font-bold text-black dark:text-white">
+            {formatNumberDisplay(item.purity)}
           </span>
-        );
-      },
+          <span className="text-gray-500 text-[10px] dark:text-slate-400">
+            %
+          </span>
+        </div>
+      ),
     },
     {
       key: 'chainGiven',

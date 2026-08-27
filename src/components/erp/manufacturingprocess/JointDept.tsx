@@ -714,7 +714,15 @@ const JointDept: React.FC = () => {
     }
   }, [saveIndex, jointEntries, submitJoint, navigate, refetch]);
 
+  // A row is edited only when the user has entered a value.
+  const hasEditableValues = (entry: JointEntry): boolean => {
+    return Boolean(entry.isDirty);
+  };
 
+  // Action column is shown only when at least one unsaved row is edited.
+  const showActionColumn = jointEntries.some(
+    (entry) => !entry.isSaved && Boolean(entry.isDirty),
+  );
 
   // Define columns for GenericTable
   const columns: Column<JointEntry>[] = [
@@ -763,38 +771,16 @@ const JointDept: React.FC = () => {
     {
       key: 'purity',
       header: 'Purity (%)',
-      render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <div className="relative inline-block">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={
-                  item.purityRaw !== undefined
-                    ? item.purityRaw
-                    : item.purity === 0
-                      ? ''
-                      : item.purity
-                }
-                onChange={(e) =>
-                  handleInlineChange(index, 'purity', e.target.value)
-                }
-                placeholder="e.g., 98"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-              />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                %
-              </span>
-            </div>
-          );
-        }
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.purity)} %
+      render: (item) => (
+        <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap rounded-md border border-[#d3c4af]/30 bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+          <span className="font-mono font-bold text-black dark:text-white">
+            {formatNumberDisplay(item.purity)}
           </span>
-        );
-      },
+          <span className="text-gray-500 text-[10px] dark:text-slate-400">
+            %
+          </span>
+        </div>
+      ),
     },
     {
       key: 'chainWeight',
@@ -878,7 +864,15 @@ const JointDept: React.FC = () => {
         );
       },
     },
-
+    {
+      key: 'loss',
+      header: 'Loss (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.loss)} G
+        </span>
+      ),
+    },
     {
       key: 'scrap',
       header: 'Scrap (स्क्रॅप)',
@@ -916,30 +910,34 @@ const JointDept: React.FC = () => {
         );
       },
     },
-    {
-      key: 'actions',
-      header: 'Action',
-      render: (item: JointEntry, index: number) => {
-        if (item.isSaved) {
-          return null;
-        }
+    ...(showActionColumn
+      ? [
+          {
+            key: 'actions',
+            header: 'Action',
+            render: (item: JointEntry, index: number) => {
+              if (item.isSaved || !hasEditableValues(item)) {
+                return null;
+              }
 
-        return (
-          <div className="flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => handleSaveClick(index)}
-              disabled={isLoading || isSubmitting}
-              className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-              title="Proceed to Cutting"
-            >
-              <Save className="h-3.5 w-3.5" />
-              <span>Cutting</span>
-            </button>
-          </div>
-        );
-      },
-    },
+              return (
+                <div className="flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveClick(index)}
+                    disabled={isLoading || isSubmitting}
+                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Proceed to Cutting"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    <span>Cutting</span>
+                  </button>
+                </div>
+              );
+            },
+          } as Column<JointEntry>,
+        ]
+      : []),
   ];
 
   const isSubmitting = submitJoint.isPending;

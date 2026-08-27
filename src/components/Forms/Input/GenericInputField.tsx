@@ -175,7 +175,9 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
         const numValue = parseFloat(e.target.value);
 
         if (!isNaN(numValue)) {
-          const rounded = numValue.toFixed(decimalScale!);
+          const rounded = parseFloat(
+            numValue.toFixed(decimalScale!),
+          ).toString();
           e.target.value = rounded;
 
           if (onChange) {

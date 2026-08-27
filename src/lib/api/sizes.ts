@@ -23,11 +23,10 @@ const createSizeApi = async (data: SizeFormData) => {
   try {
     const response = await api.post('/admin/size', data);
     return response.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to add size');
-    }
-    throw error;
+  } catch (error: any) {
+    const message =
+      error?.response?.data?.message || error?.message || 'Failed to add size';
+    throw new Error(message);
   }
 };
 
@@ -35,11 +34,10 @@ const getSizesApi = async () => {
   try {
     const response = await api.get('/admin/size');
     return response.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to fetch sizes');
-    }
-    throw error;
+  } catch (error: any) {
+    const message =
+      error?.response?.data?.message || error?.message || 'Failed to fetch sizes';
+    throw new Error(message);
   }
 };
 
@@ -47,11 +45,12 @@ const updateSizeApi = async ({id, data}: {id: string; data: SizeFormData}) => {
   try {
     const response = await api.put(`/admin/size/${id}`, data);
     return response.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message || `Failed to update size with ID: ${id}`);
-    }
-    throw error;
+  } catch (error: any) {
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      `Failed to update size with ID: ${id}`;
+    throw new Error(message);
   }
 };
 
@@ -59,11 +58,12 @@ const deleteSizeApi = async (id: string) => {
   try {
     await api.delete(`/admin/size/${id}`);
     return {success: true};
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message || `Failed to delete size with ID: ${id}`);
-    }
-    throw error;
+  } catch (error: any) {
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      `Failed to delete size with ID: ${id}`;
+    throw new Error(message);
   }
 };
 
@@ -90,8 +90,10 @@ export const useCreateSize = () => {
       });
     },
 
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to add size');
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message || error?.message || 'Failed to add size';
+      toast.error(message);
     },
   });
 };
@@ -110,8 +112,10 @@ export const useUpdateSize = () => {
       });
     },
 
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update size');
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message || error?.message || 'Failed to update size';
+      toast.error(message);
     },
   });
 };
@@ -136,8 +140,10 @@ export const useDeleteSize = () => {
       });
     },
 
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete size');
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message || error?.message || 'Failed to delete size';
+      toast.error(message);
     },
   });
 };

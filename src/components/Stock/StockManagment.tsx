@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {Save, ArrowLeft} from 'lucide-react';
 import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
@@ -8,6 +8,7 @@ import GenericDropdown from '@/components/Forms/DropDown/GenericDropDown';
 import {useGetItems} from '@/lib/api/items';
 import {useGetSizes} from '@/lib/api/sizes';
 import {useGetAllStock, useUpdateStock} from '@/lib/api/stockmanagement';
+import {useCreateStock} from '@/lib/api/stock';
 import {useScaleFocus} from '@/lib/hooks/useScaleFocus';
 import {z} from 'zod';
 import {useForm, FormProvider} from 'react-hook-form';
@@ -34,12 +35,12 @@ const StockManagment: React.FC = () => {
   const {data: sizes = []} = useGetSizes();
   const {data: stockData = [], refetch: refetchStock} = useGetAllStock();
   const updateStock = useUpdateStock();
+  const createStock = useCreateStock();
 
   // Form state
   const [currentStock, setCurrentStock] = useState<number>(0);
   const [remainingStock, setRemainingStock] = useState<number>(0);
   const [stockId, setStockId] = useState<string>('');
-  const [isGoldSelected, setIsGoldSelected] = useState<boolean>(false);
 
   // React Hook Form
   const methods = useForm<StockFormData>({
@@ -81,173 +82,62 @@ const StockManagment: React.FC = () => {
     {label: 'Less Stock (OUTWARD)', value: 'OUTWARD'},
   ];
 
-  // Get item options
-  const itemOptions = items.map((item: any) => ({
-    label: item.name,
-    value: item.id,
-  }));
+  // Get item options - all items available
+  const itemOptions = useMemo(() => {
+    return items.map((item: any) => ({
+      label: item.name,
+      value: item.id,
+    }));
+  }, [items]);
 
-  // Purity options from stock data
-  const getPurityOptions = () => {
-    const puritySet = new Set<string>();
+  // Get size options - all sizes available
+  const sizeOptions = useMemo(() => {
+    return [
+      {label: 'None / No Size', value: ''},
+      ...sizes.map((s: any) => ({
+        label: s.size,
+        value: s.id,
+      })),
+    ];
+  }, [sizes]);
+
+  // Purity options from stock data + standard purity options
+  const purityOptions = useMemo(() => {
+    const puritySet = new Set<string>(['100', '98', '93', '92', '91.6', '85', '75']);
     stockData.forEach((stock: any) => {
-      if (stock.purity) {
+      if (stock.purity !== null && stock.purity !== undefined && stock.purity !== '') {
         puritySet.add(String(stock.purity));
       }
     });
-    return Array.from(puritySet).map((p) => ({label: p, value: p}));
-  };
+    return Array.from(puritySet).map((p) => ({label: `${p}%`, value: p}));
+  }, [stockData]);
 
-  // Get size options for selected item (excluding null sizes)
-  const getSizeOptions = (itemId: string) => {
-    if (!itemId) return [];
-    const availableSizeIds = stockData
-      .filter(
-        (st: any) => st.itemId === itemId && st.sizeId !== null && st.sizeId,
-      )
-      .map((st: any) => st.sizeId);
-    return sizes
-      .filter((s: any) => availableSizeIds.includes(s.id))
-      .map((s: any) => ({label: s.size, value: s.id}));
-  };
-
-  // Get stock for a specific item (any size/purity combination)
-  const getStockForItem = (itemId: string) => {
-    return stockData.find((s: any) => s.itemId === itemId);
-  };
-
-  // Get current stock for a specific item, size, and purity
-  const getCurrentStockValue = (
-    itemId: string,
-    sizeId: string | null,
-    purity: string,
-  ): number => {
-    const stock = stockData.find(
-      (s: any) =>
-        s.itemId === itemId &&
-        (sizeId ? s.sizeId === sizeId : s.sizeId === null) &&
-        (purity
-          ? String(s.purity) === purity
-          : s.purity === null || s.purity === undefined),
-    );
-    return stock?.weight || 0;
-  };
-
-  // Get stock ID for a specific item, size, and purity
-  const getStockIdValue = (
-    itemId: string,
-    sizeId: string | null,
-    purity: string,
-  ): string => {
-    const stock = stockData.find(
-      (s: any) =>
-        s.itemId === itemId &&
-        (sizeId ? s.sizeId === sizeId : s.sizeId === null) &&
-        (purity
-          ? String(s.purity) === purity
-          : s.purity === null || s.purity === undefined),
-    );
-    return stock?.id || '';
-  };
-
-  // Get purity values for selected item and size
-  const getPurityValues = (itemId: string, sizeId: string | null): string[] => {
-    const stocks = stockData.filter(
-      (s: any) =>
-        s.itemId === itemId && s.sizeId === sizeId && s.purity !== null,
-    );
-    return stocks.map((s: any) => String(s.purity));
-  };
-
-  // Get all stock entries for an item (for auto-selecting when only one exists)
-  const getStocksForItem = (itemId: string) => {
-    return stockData.filter((s: any) => s.itemId === itemId);
-  };
-
-  // Check if selected item is Gold and get its stock
+  // Automatically find current stock when Item, Size, or Purity changes
   useEffect(() => {
     if (watchedItemId) {
-      const selectedItem = items.find((i: any) => i.id === watchedItemId);
-      const isGold = selectedItem?.name?.toLowerCase() === 'gold';
-      setIsGoldSelected(isGold);
+      const matchingStock = stockData.find((s: any) => {
+        if (s.itemId !== watchedItemId) return false;
+        const matchSize = watchedSizeId ? s.sizeId === watchedSizeId : (!s.sizeId || s.sizeId === null);
+        const matchPurity = watchedPurity ? String(s.purity) === String(watchedPurity) : true;
+        return matchSize && matchPurity;
+      });
 
-      if (isGold) {
-        // For Gold, find stock with null sizeId
-        const goldStock = stockData.find(
-          (s: any) => s.itemId === watchedItemId && s.sizeId === null,
-        );
-        if (goldStock) {
-          setStockId(goldStock.id);
-          setCurrentStock(goldStock.weight || 0);
-          setRemainingStock(goldStock.weight || 0);
-          if (goldStock.purity !== null && goldStock.purity !== undefined) {
-            setValue('purity', String(goldStock.purity));
-          } else {
-            setValue('purity', '100');
-          }
-        } else {
-          setCurrentStock(0);
-          setRemainingStock(0);
-          setStockId('');
-        }
-        setValue('sizeId', '');
+      if (matchingStock) {
+        const wt = Number(matchingStock.weight || 0);
+        setCurrentStock(wt);
+        setStockId(matchingStock.id || '');
       } else {
-        // For non-gold items, check if there's only one stock entry
-        const itemStocks = getStocksForItem(watchedItemId);
-        if (itemStocks.length === 1) {
-          const stock = itemStocks[0];
-          setStockId(stock.id);
-          setCurrentStock(stock.weight || 0);
-          setRemainingStock(stock.weight || 0);
-          if (stock.sizeId) {
-            setValue('sizeId', stock.sizeId);
-          }
-          if (stock.purity !== null && stock.purity !== undefined) {
-            setValue('purity', String(stock.purity));
-          }
-        } else if (itemStocks.length > 1) {
-          // Multiple stocks, reset and let user select
-          setCurrentStock(0);
-          setRemainingStock(0);
-          setStockId('');
-          setValue('sizeId', '');
-          setValue('purity', '');
-        } else {
-          // No stock found
-          setCurrentStock(0);
-          setRemainingStock(0);
-          setStockId('');
-          setValue('sizeId', '');
-          setValue('purity', '');
-        }
+        setCurrentStock(0);
+        setStockId('');
       }
     } else {
       setCurrentStock(0);
       setRemainingStock(0);
       setStockId('');
-      setIsGoldSelected(false);
     }
-  }, [watchedItemId, stockData, items]);
+  }, [watchedItemId, watchedSizeId, watchedPurity, stockData]);
 
-  // Update current stock when size or purity changes (for non-gold with multiple stocks)
-  useEffect(() => {
-    if (watchedItemId && !isGoldSelected && watchedSizeId) {
-      const stock = getCurrentStockValue(
-        watchedItemId,
-        watchedSizeId,
-        watchedPurity,
-      );
-      if (stock > 0) {
-        setCurrentStock(stock);
-        setRemainingStock(stock);
-        setStockId(
-          getStockIdValue(watchedItemId, watchedSizeId, watchedPurity),
-        );
-      }
-    }
-  }, [watchedSizeId, watchedPurity, watchedItemId, stockData, isGoldSelected]);
-
-  // Calculate remaining stock when quantity changes
+  // Calculate remaining/total stock when quantity changes
   useEffect(() => {
     const qty = parseFloat(String(watchedStockQty)) || 0;
     if (watchedStockType === 'INWARD') {
@@ -257,88 +147,97 @@ const StockManagment: React.FC = () => {
     }
   }, [watchedStockQty, watchedStockType, currentStock]);
 
-  // Handle item change
-  const handleItemChange = (value: string) => {
-    setValue('itemId', value);
-    setValue('sizeId', '');
-    setValue('purity', '');
-    setCurrentStock(0);
-    setRemainingStock(0);
-    setStockId('');
-    setIsGoldSelected(false);
-  };
-
-  // Handle size change
-  const handleSizeChange = (value: string) => {
-    setValue('sizeId', value);
-    setValue('purity', '');
-
-    // Auto-select purity if only one purity exists
-    if (watchedItemId && value) {
-      const purityValues = getPurityValues(watchedItemId, value);
-      if (purityValues.length === 1) {
-        setValue('purity', purityValues[0]);
-      }
-    }
-  };
-
   // Handle save
   const onSubmit = async (data: StockFormData) => {
     const stockQty = data.stockQty || 0;
     const purity = data.purity || '';
 
-    if (!stockId) {
-      toast.error('No stock found for selected item');
-      return;
-    }
+    // Check if matching stock exists
+    const matchingStock = stockData.find((s: any) => {
+      if (s.itemId !== data.itemId) return false;
+      const matchSize = data.sizeId ? s.sizeId === data.sizeId : (!s.sizeId || s.sizeId === null);
+      const matchPurity = purity ? String(s.purity) === String(purity) : true;
+      return matchSize && matchPurity;
+    });
 
-    const currentStockValue = currentStock;
-    let newStock = currentStockValue;
+    const targetStockId = stockId || matchingStock?.id;
 
-    if (data.stockType === 'INWARD') {
-      newStock = currentStockValue + stockQty;
-    } else {
-      if (stockQty > currentStockValue) {
-        toast.error(
-          `Insufficient stock! Current stock: ${currentStockValue} G`,
-        );
+    if (data.stockType === 'OUTWARD') {
+      if (!targetStockId) {
+        toast.error('No existing stock found for selected item to reduce');
         return;
       }
-      newStock = currentStockValue - stockQty;
+      if (stockQty > currentStock) {
+        toast.error(`Insufficient stock! Current stock: ${currentStock} G`);
+        return;
+      }
     }
 
     setIsLoading(true);
 
     try {
-      const payload: any = {
-        id: stockId,
-        itemId: data.itemId,
-        weight: newStock,
-        note: data.note || '',
-        stockQty: stockQty,
-        type: data.stockType,
-      };
+      if (data.stockType === 'INWARD') {
+        const payload: any = {
+          itemId: data.itemId,
+          sizeId: data.sizeId || null,
+          purity: purity,
+          stockQty: stockQty,
+          weight: currentStock + stockQty,
+          type: 'INWARD',
+          note: data.note || '',
+        };
 
-      if (isGoldSelected) {
-        payload.sizeId = null;
+        if (targetStockId) {
+          payload.id = targetStockId;
+          await updateStock.mutateAsync({id: targetStockId, data: payload});
+        } else {
+          // If no existing stock record, create new entry
+          try {
+            await createStock.mutateAsync({
+              itemId: data.itemId,
+              sizeId: data.sizeId || '',
+              weight: stockQty,
+              purity: parseFloat(purity) || 0,
+              type: 'INWARD',
+              note: data.note || '',
+              stockQty: stockQty,
+            });
+          } catch {
+            await updateStock.mutateAsync({id: data.itemId, data: payload});
+          }
+        }
+
+        toast.success('Stock added successfully!');
       } else {
-        payload.sizeId = data.sizeId || '';
-        payload.purity = purity;
+        // OUTWARD
+        const newStock = Math.max(0, currentStock - stockQty);
+        const payload: any = {
+          id: targetStockId,
+          itemId: data.itemId,
+          weight: newStock,
+          stockQty: stockQty,
+          type: 'OUTWARD',
+          note: data.note || '',
+          sizeId: data.sizeId || null,
+          purity: purity,
+        };
+
+        await updateStock.mutateAsync({id: targetStockId, data: payload});
+        toast.success('Stock reduced successfully!');
       }
 
-      console.log('Saving payload:', payload);
-
-      await updateStock.mutateAsync({id: stockId, data: payload});
-      toast.success(
-        `Stock ${data.stockType === 'INWARD' ? 'added' : 'reduced'} successfully!`,
-      );
-
       await refetchStock();
-      reset();
+      reset({
+        itemId: '',
+        sizeId: '',
+        purity: '',
+        stockQty: 0,
+        stockType: 'INWARD',
+        note: '',
+      });
       setCurrentStock(0);
       setRemainingStock(0);
       setStockId('');
-      setIsGoldSelected(false);
       setIsLoading(false);
 
       navigate({to: '/Stocks/stockpage'});
@@ -347,13 +246,6 @@ const StockManagment: React.FC = () => {
       toast.error('Failed to save stock entry');
       setIsLoading(false);
     }
-  };
-
-  // Get purity options based on selected item and size
-  const getFilteredPurityOptions = () => {
-    if (!watchedItemId) return [];
-    const purityValues = getPurityValues(watchedItemId, watchedSizeId || null);
-    return purityValues.map((p) => ({label: p, value: p}));
   };
 
   return (
@@ -382,13 +274,12 @@ const StockManagment: React.FC = () => {
             {watchedStockType === 'INWARD'
               ? 'Add Stock (INWARD)'
               : 'Less Stock (OUTWARD)'}
-            {isGoldSelected && ' - Gold'}
           </h3>
 
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {/* Item Dropdown */}
+                {/* Item Dropdown - Select any item */}
                 <GenericDropdown
                   name="itemId"
                   label="Item"
@@ -397,37 +288,27 @@ const StockManagment: React.FC = () => {
                   control={control}
                   required
                   error={errors.itemId?.message}
-                  onChange={(value) => handleItemChange(value)}
                 />
 
-                {/* Size Dropdown - Hidden for Gold */}
-                {!isGoldSelected && (
-                  <GenericDropdown
-                    name="sizeId"
-                    label="Size"
-                    options={getSizeOptions(watchedItemId)}
-                    placeholder="Select Size"
-                    control={control}
-                    required
-                    error={errors.sizeId?.message}
-                    disabled={!watchedItemId}
-                    onChange={(value) => handleSizeChange(value)}
-                  />
-                )}
+                {/* Size Dropdown - Select any size */}
+                <GenericDropdown
+                  name="sizeId"
+                  label="Size"
+                  options={sizeOptions}
+                  placeholder="Select Size (Optional)"
+                  control={control}
+                  error={errors.sizeId?.message}
+                />
 
-                {/* Purity Dropdown - Hidden for Gold */}
-                {!isGoldSelected && (
-                  <GenericDropdown
-                    name="purity"
-                    label="Purity (%)"
-                    options={getFilteredPurityOptions()}
-                    placeholder="Select Purity"
-                    control={control}
-                    required
-                    error={errors.purity?.message}
-                    disabled={!watchedItemId || !watchedSizeId}
-                  />
-                )}
+                {/* Purity Dropdown - Select any purity */}
+                <GenericDropdown
+                  name="purity"
+                  label="Purity (%)"
+                  options={purityOptions}
+                  placeholder="Select Purity (Optional)"
+                  control={control}
+                  error={errors.purity?.message}
+                />
 
                 {/* Stock Type Dropdown */}
                 <GenericDropdown
@@ -452,7 +333,10 @@ const StockManagment: React.FC = () => {
                     onBlur={scaleFocus.onBlur}
                     onChange={(e) => {
                       const value = e.target.value.replace(/[^0-9.]/g, '');
-                      setValue('stockQty', parseFloat(value) || 0);
+                      setValue('stockQty', parseFloat(value) || 0, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      });
                     }}
                     placeholder="0.000"
                     className="font-mono mt-1 w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-left text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -464,7 +348,7 @@ const StockManagment: React.FC = () => {
                   )}
                 </div>
 
-                {/* Current & Remaining Stock */}
+                {/* Current & Total Stock */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="mb-1 block text-xs font-medium text-[#4f4535] dark:text-slate-400">
@@ -473,11 +357,6 @@ const StockManagment: React.FC = () => {
                     <div className="bg-gray-100 mt-1 rounded-lg px-3 py-2 text-left text-sm font-semibold text-[#785600] dark:bg-slate-800 dark:text-amber-400">
                       {currentStock.toFixed(3)} G
                     </div>
-                    {isGoldSelected && (
-                      <p className="mt-0.5 text-[10px] text-[#785600] dark:text-amber-400/70">
-                        Gold Stock
-                      </p>
-                    )}
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-[#4f4535] dark:text-slate-400">
@@ -499,7 +378,7 @@ const StockManagment: React.FC = () => {
                 <div className="md:col-span-2">
                   <GenericInputField
                     name="note"
-                    label="Note"
+                    label="Note (Optional)"
                     type="text"
                     placeholder="Add a note (optional)"
                     onChange={(e) => setValue('note', e.target.value)}

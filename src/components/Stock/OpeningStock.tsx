@@ -173,10 +173,12 @@ const OpeningStock: React.FC = () => {
   };
 
   // Handle row edit toggle
-  const handleRowEdit = (index: number) => {
+  const handleRowEdit = (indexOrId: number | string) => {
     setOpeningEntries((prev) =>
       prev.map((entry, i) => {
-        if (i === index) {
+        const isMatch =
+          typeof indexOrId === 'number' ? i === indexOrId : entry.id === indexOrId;
+        if (isMatch) {
           return {
             ...entry,
             isEditing: !entry.isEditing,
@@ -191,13 +193,15 @@ const OpeningStock: React.FC = () => {
 
   // Handle inline field change
   const handleInlineChange = (
-    index: number,
+    indexOrId: number | string,
     field: 'item' | 'size' | 'purity' | 'grams' | 'itemId' | 'sizeId',
     value: string,
   ) => {
     setOpeningEntries((prev) =>
       prev.map((entry, i) => {
-        if (i === index) {
+        const isMatch =
+          typeof indexOrId === 'number' ? i === indexOrId : entry.id === indexOrId;
+        if (isMatch) {
           const updated = {...entry};
 
           if (field === 'item') {
@@ -276,8 +280,13 @@ const OpeningStock: React.FC = () => {
   };
 
   // Handle row save - Create or Update
-  const handleRowSave = async (index: number) => {
-    const entry = openingEntries[index];
+  const handleRowSave = async (indexOrId: number | string) => {
+    const entry =
+      typeof indexOrId === 'number'
+        ? openingEntries[indexOrId]
+        : openingEntries.find((e) => e.id === indexOrId);
+
+    if (!entry) return;
 
     // Validate using Zod schema (skips validation for gold row)
     if (!validateEntry(entry)) {
@@ -307,16 +316,14 @@ const OpeningStock: React.FC = () => {
     try {
       if (entry.isSaved) {
         await updateStock.mutateAsync({id: entry.id, data: stockDataPayload});
-        // toast.success('Opening stock updated successfully!');
       } else {
         const result = await createStock.mutateAsync(stockDataPayload);
         entry.id = result.id;
-        // toast.success('Opening stock saved successfully!');
       }
 
       setOpeningEntries((prev) =>
-        prev.map((s, i) => {
-          if (i === index) {
+        prev.map((s) => {
+          if (s.id === entry.id) {
             return {
               ...s,
               isEditing: false,
@@ -332,15 +339,20 @@ const OpeningStock: React.FC = () => {
       );
 
       await refetch();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving opening stock:', error);
-      toast.error('Failed to save opening stock');
+      toast.error(error?.response?.data?.message || 'Failed to save opening stock');
     }
   };
 
   // Handle delete
-  const handleDelete = async (index: number) => {
-    const entry = openingEntries[index];
+  const handleDelete = async (indexOrId: number | string) => {
+    const entry =
+      typeof indexOrId === 'number'
+        ? openingEntries[indexOrId]
+        : openingEntries.find((e) => e.id === indexOrId);
+
+    if (!entry) return;
 
     if (
       !window.confirm(
@@ -358,25 +370,25 @@ const OpeningStock: React.FC = () => {
       // Remove the deleted row immediately from the local table.
       setOpeningEntries((prev) =>
         prev
-          .filter((_, i) => i !== index)
-          .map((entry, i) => ({
-            ...entry,
+          .filter((e) => e.id !== entry.id)
+          .map((e, i) => ({
+            ...e,
             srNo: i + 1,
           })),
       );
 
       // React Query invalidation in useDeleteStock refreshes the server data.
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting opening stock:', error);
-      toast.error('Failed to delete opening stock');
+      toast.error(error?.response?.data?.message || 'Failed to delete opening stock');
     }
   };
 
-  // Handle add new row
+  // Handle add new row (prepends to the beginning so it shows first)
   const handleAddRow = () => {
     const newEntry: OpeningStockEntry = {
       id: `opening-${Date.now()}`,
-      srNo: openingEntries.length + 1,
+      srNo: 1,
       item: '',
       size: '',
       purity: 0,
@@ -389,7 +401,12 @@ const OpeningStock: React.FC = () => {
       sizeId: '',
       isGoldRow: false,
     };
-    setOpeningEntries((prev) => [...prev, newEntry]);
+    setOpeningEntries((prev) =>
+      [newEntry, ...prev].map((entry, idx) => ({
+        ...entry,
+        srNo: idx + 1,
+      })),
+    );
   };
 
   // Check if a row is the gold row
@@ -398,36 +415,43 @@ const OpeningStock: React.FC = () => {
   };
 
   // Custom action renderer for GenericTable with matching theme
-  const renderActions = (item: OpeningStockEntry, index: number) => {
-    // Show Save and Delete for unsaved/new rows OR when in editing mode
-    if (item.isEditing || !item.isSaved) {
+  const renderActions = (item: OpeningStockEntry) => {
+    // When a row is newly added and not saved yet: only show Save option (no delete option)
+    if (!item.isSaved) {
       return (
         <div className="flex">
           <button
-            onClick={() => handleRowSave(index)}
+            onClick={() => handleRowSave(item.id)}
             disabled={createStock.isPending || updateStock.isPending}
             className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
             title="Save"
           >
             <Save className="h-4 w-4" />
           </button>
-          <button
-            onClick={() => handleDelete(index)}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-            title="Delete"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
         </div>
       );
     }
 
-    // For gold row (saved), only show Edit button (no Delete)
+    // For gold row (saved), only show Edit button when not editing, Save button when editing
     if (isGoldRow(item)) {
+      if (item.isEditing) {
+        return (
+          <div className="flex">
+            <button
+              onClick={() => handleRowSave(item.id)}
+              disabled={createStock.isPending || updateStock.isPending}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
+              title="Save"
+            >
+              <Save className="h-4 w-4" />
+            </button>
+          </div>
+        );
+      }
       return (
         <div className="flex">
           <button
-            onClick={() => handleRowEdit(index)}
+            onClick={() => handleRowEdit(item.id)}
             className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
             title="Edit"
           >
@@ -437,18 +461,41 @@ const OpeningStock: React.FC = () => {
       );
     }
 
+    // When editing an already saved non-gold row:
+    if (item.isEditing) {
+      return (
+        <div className="flex">
+          <button
+            onClick={() => handleRowSave(item.id)}
+            disabled={createStock.isPending || updateStock.isPending}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
+            title="Save"
+          >
+            <Save className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => handleDelete(item.id)}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
+            title="Delete"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      );
+    }
+
     // Show Edit and Delete for saved rows (non-gold)
     return (
       <div className="flex">
         <button
-          onClick={() => handleRowEdit(index)}
+          onClick={() => handleRowEdit(item.id)}
           className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
           title="Edit"
         >
           <Edit className="h-4 w-4" />
         </button>
         <button
-          onClick={() => handleDelete(index)}
+          onClick={() => handleDelete(item.id)}
           className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
           title="Delete"
         >
@@ -478,7 +525,7 @@ const OpeningStock: React.FC = () => {
             <select
               value={item.itemId || ''}
               onChange={(e) =>
-                handleInlineChange(index, 'itemId', e.target.value)
+                handleInlineChange(item.id, 'itemId', e.target.value)
               }
               className="w-28 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             >
@@ -513,7 +560,7 @@ const OpeningStock: React.FC = () => {
             <select
               value={item.sizeId || ''}
               onChange={(e) =>
-                handleInlineChange(index, 'sizeId', e.target.value)
+                handleInlineChange(item.id, 'sizeId', e.target.value)
               }
               className="w-28 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
             >
@@ -550,7 +597,7 @@ const OpeningStock: React.FC = () => {
                 }
                 {...getScaleProps(index, 'grams')}
                 onChange={(e) =>
-                  handleInlineChange(index, 'grams', e.target.value)
+                  handleInlineChange(item.id, 'grams', e.target.value)
                 }
                 placeholder="0.000"
                 className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
@@ -593,7 +640,7 @@ const OpeningStock: React.FC = () => {
                       : ''
                 }
                 onChange={(e) =>
-                  handleInlineChange(index, 'purity', e.target.value)
+                  handleInlineChange(item.id, 'purity', e.target.value)
                 }
                 placeholder="e.g., 98"
                 className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
@@ -664,7 +711,7 @@ const OpeningStock: React.FC = () => {
           <GenericTable
             data={filteredData}
             columns={columns}
-            onSave={(item, index) => handleRowSave(index)}
+            onSave={(item) => handleRowSave(item.id)}
             emptyMessage="No opening stock entries found. Click 'Add Row' to create one."
             isLoading={isSubmitting}
             renderActions={renderActions}

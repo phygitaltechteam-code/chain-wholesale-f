@@ -1,6 +1,16 @@
 // components/Common/GenericTable.tsx
-import React, {useState, useEffect, useMemo} from 'react';
-import {Edit, Trash2, Save, X, Search} from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Edit,
+  Trash2,
+  Save,
+  X,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from 'lucide-react';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 
 export interface Column<T> {
@@ -9,7 +19,7 @@ export interface Column<T> {
   render?: (item: T, index: number) => React.ReactNode;
   editable?: boolean;
   inputType?: 'text' | 'number' | 'select';
-  options?: {value: string; label: string}[];
+  options?: { value: string; label: string }[];
   className?: string;
   align?: 'left' | 'right' | 'center';
   width?: string;
@@ -18,7 +28,7 @@ export interface Column<T> {
 export interface GenericTableProps<T> {
   data: T[];
   columns: Column<T>[];
-  onSave: (item: T, index: number) => void;
+  onSave?: (item: T, index: number) => void;
   onEdit?: (item: T, index: number) => void;
   onDelete?: (item: T, index: number) => void;
   onAdd?: () => void;
@@ -42,9 +52,26 @@ export interface GenericTableProps<T> {
   evenRowColor?: string;
   oddRowColor?: string;
   selectedRowColor?: string;
+  pagination?: boolean;
+  pageSize?: number;
+  itemsPerPage?: number;
+  showPagination?: boolean;
 }
 
-export function GenericTable<T extends {id: string | number}>({
+const getPageNumbers = (current: number, total: number) => {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  if (current <= 4) {
+    return [1, 2, 3, 4, 5, '...', total];
+  }
+  if (current >= total - 3) {
+    return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+  }
+  return [1, '...', current - 1, current, current + 1, '...', total];
+};
+
+export function GenericTable<T extends { id?: string | number }>({
   data,
   columns,
   onSave,
@@ -71,12 +98,20 @@ export function GenericTable<T extends {id: string | number}>({
   evenRowColor = 'bg-white dark:bg-slate-900',
   oddRowColor = 'bg-[#f8f6f4] dark:bg-slate-800/60',
   selectedRowColor = 'bg-[#785600]/5 dark:bg-amber-900/10',
+  pagination = true,
+  pageSize = 15,
+  itemsPerPage,
+  showPagination = true,
 }: GenericTableProps<T>) {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<T>>({});
   const [tableData, setTableData] = useState<T[]>(data);
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const effectivePageSize = itemsPerPage || pageSize || 15;
+  const isPaginationEnabled = pagination !== false && showPagination !== false;
 
   // Update tableData only when inline edit mode is active and data changes
   useEffect(() => {
@@ -85,12 +120,17 @@ export function GenericTable<T extends {id: string | number}>({
     }
   }, [data, enableInlineEdit]);
 
+  // Reset pagination when search term or data count changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, data.length]);
+
   const sourceData = enableInlineEdit ? tableData : data;
 
   const handleEdit = (item: T, index: number) => {
     if (enableInlineEdit) {
       setEditingIndex(index);
-      setEditData({...item});
+      setEditData({ ...item });
     }
     if (onEdit) onEdit(item, index);
   };
@@ -101,14 +141,14 @@ export function GenericTable<T extends {id: string | number}>({
   };
 
   const handleSave = (item: T, index: number) => {
-    const updatedItem = {...item, ...editData};
-    onSave(updatedItem, index);
+    const updatedItem = { ...item, ...editData };
+    if (onSave) onSave(updatedItem, index);
     setEditingIndex(null);
     setEditData({});
   };
 
   const handleFieldChange = (key: string, value: any) => {
-    setEditData((prev) => ({...prev, [key]: value}));
+    setEditData((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleRowClick = (item: T, index: number) => {
@@ -133,6 +173,22 @@ export function GenericTable<T extends {id: string | number}>({
     }
     return sourceData;
   }, [sourceData, searchFields, searchTerm]);
+
+  const totalItems = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / effectivePageSize));
+
+  // Ensure current page is within valid range
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedData = useMemo(() => {
+    if (!isPaginationEnabled) return filteredData;
+    const start = (currentPage - 1) * effectivePageSize;
+    return filteredData.slice(start, start + effectivePageSize);
+  }, [filteredData, currentPage, effectivePageSize, isPaginationEnabled]);
 
   const getValue = (item: T, key: string | keyof T) => {
     if (typeof key === 'string' && key.includes('.')) {
@@ -167,20 +223,25 @@ export function GenericTable<T extends {id: string | number}>({
   // Get all columns including SR No if enabled
   const allColumns = showSrNo
     ? [
-        {
-          key: '__srNo' as keyof T,
-          header: srNoLabel,
-          align: 'center' as const,
-          width: '60px',
-          className: 'text-center font-semibold text-white dark:text-[#986d00]',
-          render: (_: T, index: number) => (
+      {
+        key: '__srNo' as keyof T,
+        header: srNoLabel,
+        align: 'center' as const,
+        width: '60px',
+        className: 'text-center font-semibold text-white dark:text-[#986d00]',
+        render: (_: T, pageIndex: number) => {
+          const actualSr = isPaginationEnabled
+            ? (currentPage - 1) * effectivePageSize + pageIndex + 1
+            : pageIndex + 1;
+          return (
             <span className="text-xs font-semibold text-[#1a1c1b] dark:text-[#986d00] sm:text-sm">
-              {index + 1}
+              {actualSr}
             </span>
-          ),
+          );
         },
-        ...columns,
-      ]
+      },
+      ...columns,
+    ]
     : columns;
 
   const getColumnAlign = (column: Column<T>) => {
@@ -264,7 +325,7 @@ export function GenericTable<T extends {id: string | number}>({
                     <th
                       key={idx}
                       className={`px-3 py-3 text-center font-semibold lg:px-4 ${column.className || ''}`}
-                      style={{width: column.width}}
+                      style={{ width: column.width }}
                     >
                       {column.header}
                     </th>
@@ -277,7 +338,7 @@ export function GenericTable<T extends {id: string | number}>({
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
-                {filteredData.length === 0 ? (
+                {paginatedData.length === 0 ? (
                   <tr>
                     <td
                       colSpan={allColumns.length + (showActionsColumn ? 1 : 0)}
@@ -287,20 +348,23 @@ export function GenericTable<T extends {id: string | number}>({
                     </td>
                   </tr>
                 ) : (
-                  filteredData.map((item, index) => {
-                    const isItemEditing = isEditing(index);
-                    const rowColor = getRowColor(item, index);
-                    const textColor = getRowTextColorClass(item, index);
+                  paginatedData.map((item, pageIndex) => {
+                    const actualIndex = isPaginationEnabled
+                      ? (currentPage - 1) * effectivePageSize + pageIndex
+                      : pageIndex;
+                    const isItemEditing = isEditing(actualIndex);
+                    const rowColor = getRowColor(item, actualIndex);
+                    const textColor = getRowTextColorClass(item, actualIndex);
                     const isClickable = !!onRowClick;
 
                     return (
                       <tr
-                        key={item.id || index}
+                        key={item.id || actualIndex}
                         className={`group transition-colors duration-150 ${rowColor} ${hoverColor} ${isClickable ? 'cursor-pointer' : ''} ${isItemEditing ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}
-                        onClick={() => handleRowClick(item, index)}
+                        onClick={() => handleRowClick(item, actualIndex)}
                       >
                         {allColumns.map((column, colIdx) => {
-                          const value = getCellValue(item, column, index);
+                          const value = getCellValue(item, column, actualIndex);
                           const isEditable = column.editable && isItemEditing;
                           const align = getColumnAlign(column);
 
@@ -308,11 +372,11 @@ export function GenericTable<T extends {id: string | number}>({
                             <td
                               key={colIdx}
                               className={`px-3 py-3 text-sm lg:px-4 ${textColor} ${column.className || ''}`}
-                              style={{textAlign: align}}
+                              style={{ textAlign: align }}
                             >
                               {isEditable ? (
                                 column.inputType === 'select' &&
-                                column.options ? (
+                                  column.options ? (
                                   <select
                                     value={
                                       (editData[
@@ -353,7 +417,7 @@ export function GenericTable<T extends {id: string | number}>({
                                       )
                                     }
                                     className="w-full rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                                    placeholder={`Enter ${column.header.toLowerCase()}`}
+                                    placeholder={`Enter ${typeof column.header === 'string' ? column.header.toLowerCase() : 'value'}`}
                                   />
                                 )
                               ) : (
@@ -369,13 +433,15 @@ export function GenericTable<T extends {id: string | number}>({
                             {isItemEditing ? (
                               <div className="flex items-center justify-center gap-2">
                                 <button
-                                  onClick={() => handleSave(item, index)}
+                                  type="button"
+                                  onClick={() => handleSave(item, actualIndex)}
                                   className="rounded-lg bg-emerald-600 p-1.5 text-white transition-colors hover:bg-emerald-700"
                                   title="Save"
                                 >
                                   <Save className="h-4 w-4" />
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={handleCancelEdit}
                                   className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
                                   title="Cancel"
@@ -386,14 +452,15 @@ export function GenericTable<T extends {id: string | number}>({
                             ) : (
                               <div className="flex items-center justify-center gap-2">
                                 {renderActions ? (
-                                  renderActions(item, index)
+                                  renderActions(item, actualIndex)
                                 ) : (
                                   <>
                                     {showEdit && onEdit && (
                                       <button
+                                        type="button"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleEdit(item, index);
+                                          handleEdit(item, actualIndex);
                                         }}
                                         className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
                                         title="Edit"
@@ -403,9 +470,10 @@ export function GenericTable<T extends {id: string | number}>({
                                     )}
                                     {showDelete && onDelete && (
                                       <button
+                                        type="button"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          onDelete(item, index);
+                                          onDelete(item, actualIndex);
                                         }}
                                         className="rounded-lg p-1.5 text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
                                         title="Delete"
@@ -414,7 +482,7 @@ export function GenericTable<T extends {id: string | number}>({
                                       </button>
                                     )}
                                     {customActions &&
-                                      customActions(item, index)}
+                                      customActions(item, actualIndex)}
                                   </>
                                 )}
                               </div>
@@ -430,12 +498,97 @@ export function GenericTable<T extends {id: string | number}>({
           </div>
         </div>
 
-        {/* Footer */}
-        {tableData.length > 0 && (
-          <div className="mt-3 text-xs text-[#4f4535] dark:text-slate-400">
-            Showing {filteredData.length} of {tableData.length} entries
+        {/* Footer & Pagination */}
+        <div className="mt-4 flex flex-col items-center justify-between gap-3 text-xs text-[#4f4535] dark:text-slate-400 sm:flex-row">
+          <div>
+            {totalItems > 0 ? (
+              isPaginationEnabled ? (
+                <span>
+                  Showing{' '}
+                  <strong className="font-semibold text-[#1a1c1b] dark:text-white">
+                    {(currentPage - 1) * effectivePageSize + 1}
+                  </strong>{' '}
+                  to{' '}
+                  <strong className="font-semibold text-[#1a1c1b] dark:text-white">
+                    {Math.min(currentPage * effectivePageSize, totalItems)}
+                  </strong>{' '}
+
+                </span>
+              ) : (
+                <span>
+                  Showing {filteredData.length} of {tableData.length} entries
+                </span>
+              )
+            ) : null}
           </div>
-        )}
+
+          {isPaginationEnabled && totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-[#d3c4af]/30 bg-white text-[#785600] transition-colors hover:bg-[#785600]/10 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400 dark:hover:bg-slate-700"
+                title="First Page"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-[#d3c4af]/30 bg-white text-[#785600] transition-colors hover:bg-[#785600]/10 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400 dark:hover:bg-slate-700"
+                title="Previous Page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              {getPageNumbers(currentPage, totalPages).map((pageNum, idx) =>
+                pageNum === '...' ? (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="px-1.5 py-1 text-slate-400"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={`page-${pageNum}`}
+                    type="button"
+                    onClick={() => setCurrentPage(Number(pageNum))}
+                    className={`flex h-8 min-w-[32px] items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${currentPage === pageNum
+                        ? 'bg-gradient-to-br from-[#785600] to-[#986d00] text-white shadow-sm'
+                        : 'border border-[#d3c4af]/30 bg-white text-[#1a1c1b] hover:bg-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700'
+                      }`}
+                  >
+                    {pageNum}
+                  </button>
+                ),
+              )}
+
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-[#d3c4af]/30 bg-white text-[#785600] transition-colors hover:bg-[#785600]/10 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400 dark:hover:bg-slate-700"
+                title="Next Page"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-[#d3c4af]/30 bg-white text-[#785600] transition-colors hover:bg-[#785600]/10 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400 dark:hover:bg-slate-700"
+                title="Last Page"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
