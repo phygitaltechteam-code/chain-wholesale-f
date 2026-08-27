@@ -117,7 +117,7 @@ const Sidebar = ({
     {
       label: 'Client & Settlement',
       path: '/setlment/settlement',
-      icon: <MdAccountBalance size={22} />,
+      icon: <MdGroups size={22} />,
       roles: ['ADMIN'],
     },
     {

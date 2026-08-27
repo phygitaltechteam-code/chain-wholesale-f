@@ -1430,7 +1430,7 @@ const BillEdit: React.FC = () => {
         key: 'availableQty',
         header: 'Available Qty',
         render: (item) => (
-          <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#d3c4af]/30 bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+          <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#c5b497] bg-[#eae3d5] px-2 py-1.5 text-xs shadow-inner dark:border-slate-600 dark:bg-slate-800">
             <span className="font-mono font-bold text-black dark:text-white">
               {item.availableQty !== undefined &&
               item.availableQty !== null &&
@@ -1526,8 +1526,8 @@ const BillEdit: React.FC = () => {
         key: 'fineWt',
         header: 'Fine Wt (G)',
         render: (item) => (
-          <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#d3c4af]/30 bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
-            <span className="font-mono font-bold text-[#785600] dark:text-amber-400">
+          <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#c5b497] bg-[#eae3d5] px-2 py-1.5 text-xs shadow-inner dark:border-slate-600 dark:bg-slate-800">
+            <span className="font-mono font-bold text-black dark:text-amber-400">
               {formatNumberThreeDecimals(item.fineWt)}
             </span>
             <span className="text-gray-500 text-[10px] dark:text-slate-400">

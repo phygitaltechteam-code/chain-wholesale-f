@@ -9,9 +9,18 @@
 @tailwind utilities;
 
 /* Sleek custom scrollbars for desktop & all devices */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c5b497 #f1ede6;
+}
+
+.dark * {
+  scrollbar-color: #c5b497 #1e293b;
+}
+
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: #f1ede6;
@@ -26,4 +35,10 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #785600;
+}
+
+/* Smooth horizontal scrolling for tables */
+.overflow-x-auto {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
 }
