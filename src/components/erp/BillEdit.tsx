@@ -107,6 +107,8 @@ const BillEdit: React.FC = () => {
     openingBalance?: string;
   }>({});
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchRef = useRef<{
@@ -1121,6 +1123,10 @@ const BillEdit: React.FC = () => {
 
   // Save as Draft
   const handleSaveAsDraft = async () => {
+    if (isSubmittingRef.current || updateBill.isPending) {
+      return;
+    }
+
     if (!formData.clientId || !formData.clientName) {
       toast.error('Please select a client');
       return;
@@ -1129,6 +1135,9 @@ const BillEdit: React.FC = () => {
       toast.error('Please add at least one item');
       return;
     }
+
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
 
     try {
       const totalGrossWt = calculateTotalGrossWt();
@@ -1161,6 +1170,8 @@ const BillEdit: React.FC = () => {
       // toast.success('Bill updated as draft successfully!');
       navigate({ to: '/billing' });
     } catch (error) {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
       console.error('Error saving draft:', error);
       toast.error('Failed to save draft');
     }
@@ -1168,6 +1179,10 @@ const BillEdit: React.FC = () => {
 
   // Save as Completed with Print
   const handleUpdateReceipt = async () => {
+    if (isSubmittingRef.current || updateBill.isPending) {
+      return;
+    }
+
     if (!formData.clientId || !formData.clientName) {
       toast.error('Please select a client');
       return;
@@ -1180,6 +1195,9 @@ const BillEdit: React.FC = () => {
     if (!validateAllItems()) {
       return;
     }
+
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
 
     try {
       const totalGrossWt = calculateTotalGrossWt();
@@ -1221,6 +1239,8 @@ const BillEdit: React.FC = () => {
         navigate({ to: '/billing' });
       }, 2000);
     } catch (error: any) {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
       console.error('Error updating receipt:', error);
 
       const backendMessage =
@@ -1637,26 +1657,28 @@ const BillEdit: React.FC = () => {
             <GenericButton
               type="button"
               onClick={handleSaveAsDraft}
-              disabled={updateBill.isPending}
+              disabled={isSubmitting || updateBill.isPending}
               className="hover:!bg-gray-700 !bg-gradient-to-br from-[#d97706] to-[#92400e] !text-white"
             >
-              <FileText className="h-5 w-5" />
-              {updateBill.isPending ? 'Saving...' : 'Save as Draft'}
+              {isSubmitting || updateBill.isPending ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <FileText className="h-5 w-5" />
+              )}
+              {isSubmitting || updateBill.isPending ? 'Saving...' : 'Save as Draft'}
             </GenericButton>
 
             <GenericButton
               type="button"
               onClick={handleUpdateReceipt}
-              disabled={updateBill.isPending}
+              disabled={isSubmitting || updateBill.isPending}
             >
-              {updateBill.isPending ? (
+              {isSubmitting || updateBill.isPending ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <>
-                  <Save className="h-5 w-5" />
-                </>
+                <Save className="h-5 w-5" />
               )}
-              {updateBill.isPending ? 'Updating...' : 'Update Bill'}
+              {isSubmitting || updateBill.isPending ? 'Updating...' : 'Update Bill'}
             </GenericButton>
           </div>
         </div>
@@ -1699,15 +1721,15 @@ const BillEdit: React.FC = () => {
                   setShowStockErrorModal(false);
                   void handleSaveAsDraft();
                 }}
-                disabled={updateBill.isPending}
+                disabled={isSubmitting || updateBill.isPending}
                 className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
               >
-                {updateBill.isPending ? (
+                {isSubmitting || updateBill.isPending ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <FileText className="h-3.5 w-3.5" />
                 )}
-                {updateBill.isPending ? 'Saving...' : 'Save as Draft'}
+                {isSubmitting || updateBill.isPending ? 'Saving...' : 'Save as Draft'}
               </button>
             </div>
           </div>
