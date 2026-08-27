@@ -705,9 +705,13 @@ const JointDept: React.FC = () => {
         to: '/manufacturingprocess/process',
         state: { selectedTab: 'cutting' },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving joint:', error);
-      toast.error('Failed to save joint entry');
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to save joint entry';
+      toast.error(errorMessage);
       setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
@@ -770,14 +774,11 @@ const JointDept: React.FC = () => {
     },
     {
       key: 'purity',
-      header: 'Purity (%)',
+      header: 'Purity % (टंच)',
       render: (item) => (
-        <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap rounded-md border border-[#d3c4af]/30 bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
-          <span className="font-mono font-bold text-black dark:text-white">
-            {formatNumberDisplay(item.purity)}
-          </span>
-          <span className="text-gray-500 text-[10px] dark:text-slate-400">
-            %
+        <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap  bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+      W      {formatNumberDisplay(item.purity)}%
           </span>
         </div>
       ),
@@ -912,31 +913,31 @@ const JointDept: React.FC = () => {
     },
     ...(showActionColumn
       ? [
-          {
-            key: 'actions',
-            header: 'Action',
-            render: (item: JointEntry, index: number) => {
-              if (item.isSaved || !hasEditableValues(item)) {
-                return null;
-              }
+        {
+          key: 'actions',
+          header: 'Action',
+          render: (item: JointEntry, index: number) => {
+            if (item.isSaved || !hasEditableValues(item)) {
+              return null;
+            }
 
-              return (
-                <div className="flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => handleSaveClick(index)}
-                    disabled={isLoading || isSubmitting}
-                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    title="Proceed to Cutting"
-                  >
-                    <Save className="h-3.5 w-3.5" />
-                    <span>Cutting</span>
-                  </button>
-                </div>
-              );
-            },
-          } as Column<JointEntry>,
-        ]
+            return (
+              <div className="flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => handleSaveClick(index)}
+                  disabled={isLoading || isSubmitting}
+                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Proceed to Cutting"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  <span>Cutting</span>
+                </button>
+              </div>
+            );
+          },
+        } as Column<JointEntry>,
+      ]
       : []),
   ];
 

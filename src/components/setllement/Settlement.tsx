@@ -824,7 +824,10 @@ const Settlement: React.FC = () => {
   const renderActions = (item: SettlementEntry) => (
     <button
       type="button"
-      onClick={() => handleSettle(item)}
+      onClick={(e) => {
+        e.stopPropagation();
+        handleSettle(item);
+      }}
       disabled={item.status === 'settled'}
       className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${item.status === 'settled'
         ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'

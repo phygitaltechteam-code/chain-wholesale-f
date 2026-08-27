@@ -462,20 +462,30 @@ const Sidebar = ({
   const SidebarContent = () => (
     <>
       <div
-        className={`mb-6 mt-6 transition-all duration-300 ${
+        onClick={toggleCollapse}
+        className={`mb-6 mt-6 cursor-pointer select-none transition-all duration-300 ${
           isMobileDevice ? 'px-4' : isCollapsed ? 'px-2' : 'px-4'
         }`}
+        title={isCollapsed ? 'Click to expand sidebar' : 'Click to collapse sidebar'}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleCollapse();
+          }
+        }}
       >
         {isCollapsed && !isMobileDevice ? (
           <div className="flex justify-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#B8860B]/20">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#B8860B]/20 transition-transform duration-200 hover:scale-105 hover:bg-[#B8860B]/30">
               <span className="font-['Playfair_Display'] text-lg font-bold text-[#B8860B]">
                 {getLogoLetter()}
               </span>
             </div>
           </div>
         ) : (
-          <div className="text-center md:text-left">
+          <div className="text-center transition-opacity duration-200 hover:opacity-80 md:text-left">
             <h1 className="font-['Playfair_Display'] text-xl font-bold text-[#B8860B] md:text-2xl">
               {getPortalName()}
             </h1>
@@ -485,19 +495,6 @@ const Sidebar = ({
           </div>
         )}
       </div>
-
-      {!isMobileDevice && !isTablet && (
-        <button
-          onClick={toggleCollapse}
-          className="absolute -right-3 top-20 z-10 rounded-full bg-[#B8860B] p-1 text-white shadow-md transition-all hover:bg-[#B8860B]/80"
-        >
-          {isCollapsed ? (
-            <MdChevronRight className="h-4 w-4" />
-          ) : (
-            <MdChevronLeft className="h-4 w-4" />
-          )}
-        </button>
-      )}
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-2">
         {menuItems.length > 0 ? (

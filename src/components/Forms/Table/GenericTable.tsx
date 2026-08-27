@@ -429,7 +429,10 @@ export function GenericTable<T extends { id?: string | number }>({
 
                         {/* Actions */}
                         {showActionsColumn && (
-                          <td className="px-3 py-3 text-center lg:px-4">
+                          <td
+                            className="px-3 py-3 text-center lg:px-4"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             {isItemEditing ? (
                               <div className="flex items-center justify-center gap-2">
                                 <button

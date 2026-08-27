@@ -118,14 +118,19 @@ export default function StockReport() {
 
             // Use the actual remark from API
             const remark = item.remark || 'N/A';
+            const itemName = item.item?.name || '';
+            const isItemGold =
+              itemName.toLowerCase().includes('gold') ||
+              item.sizeId === null ||
+              !item.size?.size;
 
             return {
               id: item.id,
               srNo: index + 1,
               dateTime: `${formattedDate} ${formattedTime}`,
-              item: item.item?.name || 'Unknown Item',
-              size: item.size?.size || 'N/A',
-              purity: item.purity ? item.purity.toString() : 'N/A',
+              item: isItemGold ? 'Gold' : itemName || 'Unknown Item',
+              size: isItemGold ? '-' : item.size?.size || 'N/A',
+              purity: isItemGold ? '100' : item.purity ? item.purity.toString() : 'N/A',
               remark: remark,
               wt: item.weight || 0,
             };
@@ -136,6 +141,16 @@ export default function StockReport() {
       setLoading(false);
     }
   }, [stockData]);
+
+  // Check if current report is for Gold
+  const isGold =
+    reportData.length > 0 &&
+    reportData.every(
+      (entry) =>
+        entry.item.toLowerCase().includes('gold') ||
+        entry.size === '-' ||
+        entry.size === 'N/A',
+    );
 
   // Filter data based on search term and date range
   const filteredData = reportData.filter((entry) => {
@@ -265,7 +280,7 @@ export default function StockReport() {
     }
   };
 
-  // Table columns
+  // Table columns (Hide Item and Size when isGold)
   const columns: Column<StockReportEntry>[] = [
     {
       key: 'dateTime',
@@ -287,30 +302,34 @@ export default function StockReport() {
         );
       },
     },
-    {
-      key: 'item',
-      header: 'Item',
-      render: (item) => (
-        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-          {item.item}
-        </span>
-      ),
-    },
-    {
-      key: 'size',
-      header: 'Size',
-      render: (item) => (
-        <span className="text-sm text-[#1a1c1b] dark:text-white">
-          {item.size}
-        </span>
-      ),
-    },
+    ...(!isGold
+      ? [
+          {
+            key: 'item',
+            header: 'Item',
+            render: (item: StockReportEntry) => (
+              <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
+                {item.item}
+              </span>
+            ),
+          },
+          {
+            key: 'size',
+            header: 'Size',
+            render: (item: StockReportEntry) => (
+              <span className="text-sm text-[#1a1c1b] dark:text-white">
+                {item.size}
+              </span>
+            ),
+          },
+        ]
+      : []),
     {
       key: 'purity',
       header: 'Purity',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {item.purity} %
+          {isGold ? '100 %' : `${item.purity} %`}
         </span>
       ),
     },
@@ -329,7 +348,7 @@ export default function StockReport() {
       key: 'wt',
       header: 'WT (G)',
       render: (item) => (
-        <span className="font-bold text-black">
+        <span className="font-bold text-black dark:text-white">
           {item.wt > 0 ? '+' : ''}
           {formatNumber(item.wt)} G
         </span>
@@ -350,9 +369,9 @@ export default function StockReport() {
       position: fixed;
       left: -9999px;
       top: 0;
-      width: 210mm;
+      width: 100%;
       background: white;
-      padding: 0;
+      padding: 4px;
       z-index: 9999;
     `;
     document.body.appendChild(printContainer);
@@ -364,8 +383,8 @@ export default function StockReport() {
           <tr>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">${item.dateTime}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.item}${item.size ? ` (${item.size})` : ''}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.purity ? `${item.purity}%` : '-'}</td>
+            ${!isGold ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.item}${item.size && item.size !== '-' && item.size !== 'N/A' ? ` (${item.size})` : ''}</td>` : ''}
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${isGold ? '100%' : item.purity ? `${item.purity}%` : '-'}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
               ${item.remark || '-'}
             </td>
@@ -444,7 +463,7 @@ export default function StockReport() {
           <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
             <div style="flex:1;"></div>
             <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
-              Stock Report.
+              ${isGold ? 'Gold Stock Report.' : 'Stock Report.'}
             </h2>
             <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
               ${fromDateStr && toDateStr ? `From: ${fromDateStr} &nbsp; To: ${toDateStr}` : ''}
@@ -456,11 +475,11 @@ export default function StockReport() {
             <thead>
               <tr style="background:#785600;color:white;font-weight:600;">
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:5%;">Sr</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:18%;">Date & Time</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:25%;">Item (Size)</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:12%;">Purity</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:25%;">Remark</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:15%;">WT (G)</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:${isGold ? '25%' : '18%'};">Date & Time</th>
+                ${!isGold ? `<th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:25%;">Item (Size)</th>` : ''}
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:${isGold ? '15%' : '12%'};">Purity</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:${isGold ? '35%' : '25%'};">Remark</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:${isGold ? '20%' : '15%'};">WT (G)</th>
               </tr>
             </thead>
             <tbody>
@@ -468,7 +487,7 @@ export default function StockReport() {
             </tbody>
             <tfoot>
               <tr style="background:#fef3c7;font-weight:bold;font-size:11px;">
-                <td colspan="5" style="border:1px solid #000;padding:2px 4px;text-align:right;color:#000;">TOTAL:</td>
+                <td colspan="${isGold ? '4' : '5'}" style="border:1px solid #000;padding:2px 4px;text-align:right;color:#000;">TOTAL:</td>
                 <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;color:#000;">
                   ${formatNumber(totalWt)}
                 </td>

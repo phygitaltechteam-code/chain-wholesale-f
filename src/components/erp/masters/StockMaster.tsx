@@ -211,16 +211,7 @@ const StockMaster: React.FC = () => {
             updated.sizeId = value;
             const foundSize = sizes.find((size) => size.id === value);
             updated.size = foundSize?.size || '';
-          } else if (field === 'purity') {
-            const sanitized = value.replace(/[^0-9.]/g, '');
-            const parts = sanitized.split('.');
-            const formatted =
-              parts.length > 2
-                ? `${parts[0]}.${parts.slice(1).join('')}`
-                : sanitized;
-            updated.purity = parseFloat(formatted) || 0;
-            updated.purityRaw = formatted;
-          } else if (field === 'grams') {
+} else if (field === 'grams') {
             const sanitized = value.replace(/[^0-9.]/g, '');
             const parts = sanitized.split('.');
             let formatted =
@@ -251,8 +242,6 @@ const StockMaster: React.FC = () => {
     );
   };
 
-  // Helper function to format numbers up to 3 decimal places without unnecessary trailing zeros
-  // (e.g. 1.200000000000003 -> "1.2", 1.233 -> "1.233", 92 -> "92")
   const formatNumberDisplay = (
     value: number | string | null | undefined,
     maxDecimals: number = 3,
@@ -358,17 +347,7 @@ const StockMaster: React.FC = () => {
         );
       },
     },
-    {
-      key: 'purity',
-      header: 'Purity (%)',
-      render: (item, index) => {
-        return (
-          <span className="font-mono text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.purity, 3)} %
-          </span>
-        );
-      },
-    },
+
   ];
 
   const isSubmitting =

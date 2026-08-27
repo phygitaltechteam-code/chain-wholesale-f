@@ -1,12 +1,12 @@
-import {useNavigate, useParams} from '@tanstack/react-router';
-import {Route} from '../../routes/_app/client/clientreport.$id';
-import {useState, useRef, useEffect, type FC} from 'react';
-import {ArrowLeft, Search, Printer, Calendar} from 'lucide-react';
+import { useNavigate, useParams } from '@tanstack/react-router';
+import { Route } from '../../routes/_app/client/clientreport.$id';
+import { useState, useRef, useEffect, type FC } from 'react';
+import { ArrowLeft, Search, Printer, Calendar } from 'lucide-react';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
-import {useGetClientReport} from '@/lib/api/reportapi';
+import { useGetClientReport } from '@/lib/api/reportapi';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import {useGetHeader} from '@/lib/api/headerapi';
+import { useGetHeader } from '@/lib/api/headerapi';
 
 const formatIndianDate = (date: Date) =>
   date.toLocaleDateString('en-IN', {
@@ -28,7 +28,7 @@ const getCurrentWeekRange = () => {
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
 
-  return {monday, sunday};
+  return { monday, sunday };
 };
 
 interface ClientReportEntry {
@@ -103,14 +103,14 @@ export default function ClientReport() {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return {monday, sunday};
+    return { monday, sunday };
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const {monday, sunday} = getDefaultWeekRange();
+    const { monday, sunday } = getDefaultWeekRange();
     return [monday, sunday];
   });
-  const {monday: defaultMonday, sunday: defaultSunday} = getCurrentWeekRange();
+  const { monday: defaultMonday, sunday: defaultSunday } = getCurrentWeekRange();
 
   const [fromDate, setFromDate] = useState<Date>(defaultMonday);
   const [toDate, setToDate] = useState<Date>(defaultSunday);
@@ -228,21 +228,21 @@ export default function ClientReport() {
   // Search by complete bill group
   const filteredData = searchTerm
     ? reportData.filter((entry) => {
-        const query = searchTerm.toLowerCase();
+      const query = searchTerm.toLowerCase();
 
-        return reportData.some((groupEntry) => {
-          if (groupEntry.groupId !== entry.groupId) return false;
+      return reportData.some((groupEntry) => {
+        if (groupEntry.groupId !== entry.groupId) return false;
 
-          return (
-            groupEntry.item.toLowerCase().includes(query) ||
-            groupEntry.billNo.toLowerCase().includes(query) ||
-            groupEntry.size.toLowerCase().includes(query) ||
-            groupEntry.remark.toLowerCase().includes(query) ||
-            groupEntry.purity.toLowerCase().includes(query) ||
-            groupEntry.wt.toString().includes(query)
-          );
-        });
-      })
+        return (
+          groupEntry.item.toLowerCase().includes(query) ||
+          groupEntry.billNo.toLowerCase().includes(query) ||
+          groupEntry.size.toLowerCase().includes(query) ||
+          groupEntry.remark.toLowerCase().includes(query) ||
+          groupEntry.purity.toLowerCase().includes(query) ||
+          groupEntry.wt.toString().includes(query)
+        );
+      });
+    })
     : reportData;
 
   // Calculate totals
@@ -301,7 +301,7 @@ export default function ClientReport() {
       }
     } else {
       // Clear - set to default Monday
-      const {monday} = getCurrentWeekRange();
+      const { monday } = getCurrentWeekRange();
       setFromDate(monday);
     }
   };
@@ -323,7 +323,7 @@ export default function ClientReport() {
       }
     } else {
       // Clear - set to default Sunday
-      const {sunday} = getCurrentWeekRange();
+      const { sunday } = getCurrentWeekRange();
       setToDate(sunday);
     }
   };
@@ -347,7 +347,7 @@ export default function ClientReport() {
     `;
     document.body.appendChild(printContainer);
 
-    const printGroupedData: {[key: string]: ClientReportEntry[]} = {};
+    const printGroupedData: { [key: string]: ClientReportEntry[] } = {};
     filteredData.forEach((entry) => {
       if (!printGroupedData[entry.groupId]) {
         printGroupedData[entry.groupId] = [];
@@ -372,9 +372,6 @@ export default function ClientReport() {
                     </td>` : ''}
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
                         ${entry.item}${entry.size ? ` (${entry.size})` : ''}
-                    </td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-                        ${entry.purity !== 'N/A' && entry.purity !== '' ? `${entry.purity}%` : 'N/A'}
                     </td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${entry.remark || 'N/A'}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:${entry.wt > 0 ? '#16a34a' : entry.wt < 0 ? '#dc2626' : '#000'};">
@@ -456,7 +453,6 @@ export default function ClientReport() {
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Bill No</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item (Size)</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Remark</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">WT (G)</th>
                     </tr>
@@ -580,7 +576,7 @@ export default function ClientReport() {
               No settlement records found for this client.
             </p>
             <button
-              onClick={() => navigate({to: '/client/client'})}
+              onClick={() => navigate({ to: '/client/client' })}
               className="mt-4 rounded-lg bg-[#785600] px-4 py-2 text-white hover:bg-[#5d4200]"
             >
               Go Back
@@ -598,7 +594,7 @@ export default function ClientReport() {
         <div className="flex flex-col items-center justify-between gap-3 px-3 py-2 sm:flex-row sm:px-4 sm:py-3 md:px-6">
           <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
             <button
-              onClick={() => navigate({to: '/client/client'})}
+              onClick={() => navigate({ to: '/setlment/settlement' })}
               className="inline-flex items-center justify-center rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
               title="Go Back"
             >
@@ -782,11 +778,10 @@ export default function ClientReport() {
                             className="whitespace-nowrap border-r border-[#f4f4f2] px-3 py-3 align-middle text-sm dark:border-slate-700"
                           >
                             <span
-                              className={`font-medium ${
-                                entry.billNo !== 'N/A' && entry.billNo !== ''
+                              className={`font-medium ${entry.billNo !== 'N/A' && entry.billNo !== ''
                                   ? 'text-[#785600] dark:text-amber-400'
                                   : 'text-gray-400'
-                              }`}
+                                }`}
                             >
                               {entry.billNo || 'N/A'}
                             </span>
