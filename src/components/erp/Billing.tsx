@@ -437,14 +437,13 @@ const Billing: React.FC = () => {
     group.items.forEach((item) => {
       itemsRows += `
         <tr>
-          <td style="border:1px solid #222;padding:4px 6px;font-size:10px;color:#000;">${item.item || '-'}</td>
-          <td style="border:1px solid #222;padding:4px 6px;font-size:10px;color:#000;">${item.size || '-'}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(item.purity)}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(item.availableQty || 0)}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(item.grossWeight)}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumberWith2Decimals(item.srp)}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:right;font-family:monospace;font-weight:bold;font-size:10px;color:#000;">${formatNumberWithDecimals(item.finWt)}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumberWith2Decimals(item.laborRate || 0)}</td>
+          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-size:10px;color:#000;">${item.item || '-'}</td>
+          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-size:10px;color:#000;">${item.size || '-'}</td>
+          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(item.purity)}</td>
+          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(item.grossWeight)}</td>
+          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWith2Decimals(item.srp)}</td>
+          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-weight:bold;font-size:10px;color:#000;">${formatNumberWithDecimals(item.finWt)}</td>
+          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWith2Decimals(item.laborRate || 0)}</td>
         </tr>
       `;
     });
@@ -614,14 +613,13 @@ const Billing: React.FC = () => {
               background:#785600;
               color:#ffffff;
             ">
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:left;font-size:9px;">Item</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:left;font-size:9px;">Size</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:right;font-size:9px;">Purity (%)</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:right;font-size:9px;">Available Qty</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:right;font-size:9px;">Gross Wt (G)</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:right;font-size:9px;">SRP (G)</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:right;font-size:9px;">Fine Wt (G)</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:right;font-size:9px;">Labor Rate (G)</th>
+              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Item</th>
+              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Size</th>
+              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Purity (%)</th>
+              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Gross Wt (G)</th>
+              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">SRP (G)</th>
+              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Fine Wt (G)</th>
+              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Labor Rate (G)</th>
             </tr>
           </thead>
 
@@ -721,14 +719,14 @@ const Billing: React.FC = () => {
     const style = document.createElement('style');
     style.textContent = `
       @page {
-        size: A4 portrait;
-        margin: 6mm !important;
+        size: portrait;
+        margin: 4mm !important;
       }
 
       @media print {
         @page {
-          size: A4 portrait;
-          margin: 6mm !important;
+          size: portrait;
+          margin: 4mm !important;
         }
 
         html,

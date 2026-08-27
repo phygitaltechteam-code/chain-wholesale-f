@@ -112,8 +112,8 @@ export default function ClientReport() {
   });
   const { monday: defaultMonday, sunday: defaultSunday } = getCurrentWeekRange();
 
-  const [fromDate, setFromDate] = useState<Date>(defaultMonday);
-  const [toDate, setToDate] = useState<Date>(defaultSunday);
+  const [fromDate, setFromDate] = useState<Date | null>(defaultMonday);
+  const [toDate, setToDate] = useState<Date | null>(defaultSunday);
   const {
     data: clientReportData,
     isLoading,
@@ -133,15 +133,19 @@ export default function ClientReport() {
         ? response.data
         : [];
 
-    const from = new Date(fromDate);
-    from.setHours(0, 0, 0, 0);
-
-    const to = new Date(toDate);
-    to.setHours(23, 59, 59, 999);
-
     const filteredApiItems = apiItems.filter((item) => {
       const createdAt = new Date(item.createdAt);
-      return createdAt >= from && createdAt <= to;
+      if (fromDate) {
+        const from = new Date(fromDate);
+        from.setHours(0, 0, 0, 0);
+        if (createdAt < from) return false;
+      }
+      if (toDate) {
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+        if (createdAt > to) return false;
+      }
+      return true;
     });
 
     const sortedItems = [...filteredApiItems].sort(
@@ -204,11 +208,25 @@ export default function ClientReport() {
             ? item.purity.toString()
             : 'N/A';
 
+        // Show date/time for each item individually
+        const itemDate = new Date(item.createdAt);
+        const itemFormattedDate = itemDate.toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        });
+        const itemFormattedTime = itemDate.toLocaleTimeString('en-IN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
+        const itemDateTime = `${itemFormattedDate} ${itemFormattedTime}`;
+
         transformedData.push({
           id: item.id || `group-${groupId}-${index}`,
           srNo: currentSrNo,
-          dateTime: isFirstInBill ? groupDateTime : '',
-          billNo: isFirstInBill ? groupBillNo : '',
+          dateTime: itemDateTime, // Individual date/time for each item
+          billNo: isFirstInBill ? groupBillNo : '', // Bill number only on first row
           item: itemName,
           size: sizeValue,
           purity: purityValue,
@@ -261,27 +279,9 @@ export default function ClientReport() {
     return str.replace(/\.?0+$/, '');
   };
 
-  // Get remark color
-  const getRemarkColor = (remark: string) => {
-    const remarkLower = remark?.toLowerCase() || '';
-    switch (remarkLower) {
-      case 'settle':
-        return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
-      case 'advance':
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'sale':
-        return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
-      case 'received':
-        return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
-      case 'given':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-      case 'inward':
-        return 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400';
-      case 'outward':
-        return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
-      default:
-        return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
-    }
+  // Get remark color - now returns plain style
+  const getRemarkStyle = (remark: string) => {
+    return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
   };
 
   // Handle From Date Change
@@ -290,7 +290,7 @@ export default function ClientReport() {
       const from = new Date(dates[0]);
       from.setHours(0, 0, 0, 0);
 
-      if (from > toDate) {
+      if (toDate && from > toDate) {
         const sunday = new Date(from);
         sunday.setDate(from.getDate() + 6);
         sunday.setHours(23, 59, 59, 999);
@@ -300,9 +300,7 @@ export default function ClientReport() {
         setFromDate(from);
       }
     } else {
-      // Clear - set to default Monday
-      const { monday } = getCurrentWeekRange();
-      setFromDate(monday);
+      setFromDate(null);
     }
   };
 
@@ -312,7 +310,7 @@ export default function ClientReport() {
       const to = new Date(dates[0]);
       to.setHours(23, 59, 59, 999);
 
-      if (to < fromDate) {
+      if (fromDate && to < fromDate) {
         const monday = new Date(to);
         monday.setDate(to.getDate() - 6);
         monday.setHours(0, 0, 0, 0);
@@ -322,9 +320,7 @@ export default function ClientReport() {
         setToDate(to);
       }
     } else {
-      // Clear - set to default Sunday
-      const { sunday } = getCurrentWeekRange();
-      setToDate(sunday);
+      setToDate(null);
     }
   };
 
@@ -374,7 +370,7 @@ export default function ClientReport() {
                         ${entry.item}${entry.size ? ` (${entry.size})` : ''}
                     </td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${entry.remark || 'N/A'}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:${entry.wt > 0 ? '#16a34a' : entry.wt < 0 ? '#dc2626' : '#000'};">
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
                         ${entry.wt > 0 ? '+' : ''}${formatNumber(entry.wt)}
                     </td>
                 </tr>
@@ -613,7 +609,7 @@ export default function ClientReport() {
                 id="from-date-box"
                 mode="from"
                 placeholder="DD/MM/YYYY"
-                initialDates={[fromDate]}
+                initialDates={fromDate ? [fromDate] : []}
                 onDateChange={handleFromDateChange}
                 className="w-32 sm:w-36 md:w-40"
               />
@@ -622,7 +618,7 @@ export default function ClientReport() {
                 id="to-date-box"
                 placeholder="DD/MM/YYYY"
                 mode="to"
-                initialDates={[toDate]}
+                initialDates={toDate ? [toDate] : []}
                 onDateChange={handleToDateChange}
                 className="w-32 sm:w-36 md:w-40"
               />
@@ -653,40 +649,6 @@ export default function ClientReport() {
       </div>
 
       <div className="px-3 py-4 sm:px-4 md:px-6">
-        {/* Summary Cards */}
-        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                Total WT
-              </span>
-              <span className={`text-lg font-bold text-black dark:text-white`}>
-                {formatNumber(totalWt)} G
-              </span>
-            </div>
-          </div>
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                Received
-              </span>
-              <span className={`text-lg font-bold text-black dark:text-white`}>
-                +{formatNumber(totalReceived)} G
-              </span>
-            </div>
-          </div>
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                Given
-              </span>
-              <span className={`text-lg font-bold text-black dark:text-white`}>
-                -{formatNumber(totalGiven)} G
-              </span>
-            </div>
-          </div>
-        </div>
-
         {/* Custom Table with Grouping */}
         <div className="-mx-3 overflow-x-auto sm:-mx-4 md:mx-0">
           <div className="inline-block min-w-full align-middle">
@@ -699,6 +661,11 @@ export default function ClientReport() {
                       className="py-3 pl-4 pr-3 text-left text-xs font-semibold uppercase tracking-wider text-white"
                     >
                       Sr No.
+                    </th> <th
+                      scope="col"
+                      className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white"
+                    >
+                      Bill No.
                     </th>
                     <th
                       scope="col"
@@ -706,12 +673,7 @@ export default function ClientReport() {
                     >
                       Date Time
                     </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white"
-                    >
-                      Bill No.
-                    </th>
+
                     <th
                       scope="col"
                       className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white"
@@ -762,31 +724,29 @@ export default function ClientReport() {
                         {isFirstRowOfGroup && (
                           <td
                             rowSpan={entry.groupRowSpan}
-                            className="border-r border-[#f4f4f2] px-3 py-3 text-left align-middle text-sm text-[#1a1c1b] dark:border-slate-700 dark:text-white"
-                          >
-                            <div className="flex flex-col items-start leading-tight">
-                              <span>{entry.dateTime.split(' ')[0]}</span>
-                              <span>
-                                {entry.dateTime.split(' ').slice(1).join(' ')}
-                              </span>
-                            </div>
-                          </td>
-                        )}
-                        {isFirstRowOfGroup && (
-                          <td
-                            rowSpan={entry.groupRowSpan}
                             className="whitespace-nowrap border-r border-[#f4f4f2] px-3 py-3 align-middle text-sm dark:border-slate-700"
                           >
                             <span
                               className={`font-medium ${entry.billNo !== 'N/A' && entry.billNo !== ''
-                                  ? 'text-[#785600] dark:text-amber-400'
-                                  : 'text-gray-400'
+                                ? 'text-[#785600] dark:text-amber-400'
+                                : 'text-gray-400'
                                 }`}
                             >
                               {entry.billNo || 'N/A'}
                             </span>
                           </td>
                         )}
+                        <td
+                          className="px-3 py-3 text-left align-middle text-sm text-[#1a1c1b] dark:text-white"
+                        >
+                          <div className="flex flex-col items-start leading-tight">
+                            <span>{entry.dateTime.split(' ')[0]}</span>
+                            <span>
+                              {entry.dateTime.split(' ').slice(1).join(' ')}
+                            </span>
+                          </div>
+                        </td>
+
 
                         <td className="px-3 py-3 text-sm">
                           <div className="flex flex-col">
@@ -807,7 +767,7 @@ export default function ClientReport() {
 
                         <td className="whitespace-nowrap px-3 py-3 text-sm">
                           <span
-                            className={`rounded-full px-2 py-1 text-xs font-medium ${getRemarkColor(
+                            className={`rounded-full px-2 py-1 text-xs font-medium ${getRemarkStyle(
                               entry.remark,
                             )}`}
                           >
@@ -815,19 +775,9 @@ export default function ClientReport() {
                           </span>
                         </td>
 
-                        <td className="font-mono whitespace-nowrap px-3 py-3 text-right text-sm font-bold">
-                          <span
-                            className={
-                              entry.wt > 0
-                                ? 'text-green-600 dark:text-green-400'
-                                : entry.wt < 0
-                                  ? 'text-red-600 dark:text-red-400'
-                                  : 'text-gray-500'
-                            }
-                          >
-                            {entry.wt > 0 ? '+' : ''}
-                            {formatNumber(entry.wt)} G
-                          </span>
+                        <td className="font-mono whitespace-nowrap px-3 py-3 text-right text-sm font-bold text-[#1a1c1b] dark:text-white">
+                          {entry.wt > 0 ? '+' : ''}
+                          {formatNumber(entry.wt)} G
                         </td>
                       </tr>
                     );

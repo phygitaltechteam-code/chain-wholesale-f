@@ -347,6 +347,28 @@ const StockMaster: React.FC = () => {
         );
       },
     },
+    {
+      key:'purity',
+      header: 'Purity (%)',
+      render: (item, index) => {
+        return (
+          <span className="font-mono text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.purity, 3)} %
+          </span>
+        );
+      },
+    },
+    {
+      key:'gramsRaw',
+      header: 'Weight (G)',
+      render: (item, index) => {
+        return (
+          <span className="font-mono text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.gramsRaw, 3)} G
+          </span>
+        );
+      },
+    },
 
   ];
 

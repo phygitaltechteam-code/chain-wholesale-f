@@ -565,14 +565,13 @@ const ReceiptAdd: React.FC = () => {
     formData.items.forEach((item) => {
       itemsRows += `
       <tr>
-        <td style="border:1px solid #222;padding:4px 6px;font-size:10px;color:#000;">${item.item || '-'}</td>
-        <td style="border:1px solid #222;padding:4px 6px;font-size:10px;color:#000;">${item.size || '-'}</td>
-        <td style="border:1px solid #222;padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.purity)}</td>
-        <td style="border:1px solid #222;padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.availableQty || 0)}</td>
-        <td style="border:1px solid #222;padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.grossWt)}</td>
-        <td style="border:1px solid #222;padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.srp)}</td>
-        <td style="border:1px solid #222;padding:4px 6px;text-align:right;font-family:monospace;font-weight:bold;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.fineWt)}</td>
-        <td style="border:1px solid #222;padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.laborRate)}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-size:10px;color:#000;">${item.item || '-'}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-size:10px;color:#000;">${item.size || '-'}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.purity)}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.grossWt)}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.srp)}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-weight:bold;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.fineWt)}</td>
+        <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.laborRate)}</td>
       </tr>
     `;
     });
@@ -743,14 +742,13 @@ const ReceiptAdd: React.FC = () => {
             background:#785600;
             color:#ffffff;
           ">
-            <th style="border:1px solid #785600;padding:4px 6px;text-align:left;font-size:9px;">Item</th>
-            <th style="border:1px solid #785600;padding:4px 6px;text-align:left;font-size:9px;">Size</th>
-            <th style="border:1px solid #785600;padding:4px 6px;text-align:right;font-size:9px;">Purity (%)</th>
-            <th style="border:1px solid #785600;padding:4px 6px;text-align:right;font-size:9px;">Available Qty</th>
-            <th style="border:1px solid #785600;padding:4px 6px;text-align:right;font-size:9px;">Gross Wt (G)</th>
-            <th style="border:1px solid #785600;padding:4px 6px;text-align:right;font-size:9px;">SRP (G)</th>
-            <th style="border:1px solid #785600;padding:4px 6px;text-align:right;font-size:9px;">Fine Wt (G)</th>
-            <th style="border:1px solid #785600;padding:4px 6px;text-align:right;font-size:9px;">Labor Rate (G)</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Item</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Size</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Purity (%)</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Gross Wt (G)</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">SRP (G)</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Fine Wt (G)</th>
+            <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Labor Rate (G)</th>
           </tr>
         </thead>
 

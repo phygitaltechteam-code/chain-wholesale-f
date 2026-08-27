@@ -1,14 +1,15 @@
-import {useNavigate} from '@tanstack/react-router';
-import {useState, useRef, useEffect, useMemo} from 'react';
-import {ArrowLeft, Search, Printer, Calendar} from 'lucide-react';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
-import {useReactToPrint} from 'react-to-print';
-import PDFHeader from '@/components/Forms/Common/PDFHeader';
-import {useGetManufacturingData} from '@/lib/api/reportapi';
+import { useNavigate } from '@tanstack/react-router';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { ArrowLeft, Search, Printer, Calendar } from 'lucide-react';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import { useReactToPrint } from 'react-to-print';
+// Remove PDFHeader import since it's not used
+// import PDFHeader from '@/components/Forms/Common/PDFHeader';
+import { useGetManufacturingData } from '@/lib/api/reportapi';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
-import {useGetHeader} from '@/lib/api/headerapi';
+import { useGetHeader } from '@/lib/api/headerapi';
 
 interface ManufacturingEntry {
   id: string;
@@ -82,7 +83,7 @@ export default function ManufacturingReport() {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return {monday, sunday};
+    return { monday, sunday };
   };
 
   const [fromDate, setFromDate] = useState<Date | null>(
@@ -113,17 +114,17 @@ export default function ManufacturingReport() {
       const date = new Date(item.createdAt);
       const formattedDate = !isNaN(date.getTime())
         ? date.toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          })
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        })
         : '';
       const formattedTime = !isNaN(date.getTime())
         ? date.toLocaleTimeString('en-IN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-          })
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        })
         : '';
 
       return {
@@ -200,7 +201,7 @@ export default function ManufacturingReport() {
         totalLoss: acc.totalLoss + entry.loss,
         currentWeight: acc.currentWeight + entry.currentWeight,
       }),
-      {totalWeight: 0, totalScrap: 0, totalLoss: 0, currentWeight: 0},
+      { totalWeight: 0, totalScrap: 0, totalLoss: 0, currentWeight: 0 },
     );
   }, [filteredData]);
 
@@ -213,7 +214,7 @@ export default function ManufacturingReport() {
 
   // Reset to current Monday -> Sunday
   const handleResetDates = () => {
-    const {monday, sunday} = getCurrentWeekRange();
+    const { monday, sunday } = getCurrentWeekRange();
     setFromDate(monday);
     setToDate(sunday);
   };
@@ -281,15 +282,15 @@ export default function ManufacturingReport() {
         return `
           <tr>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
+              ${item.item} ${item.size !== 'N/A' ? `(${item.size})` : ''} ${item.purity > 0 ? `(${item.purity}%)` : ''}
+            </td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
               ${item.dateTime}
             </td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.item}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.size}</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.purity}%</td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.weight)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.scrap)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.loss)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.weight)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item.currentWeight)}</td>
           </tr>
         `;
@@ -364,17 +365,16 @@ export default function ManufacturingReport() {
             <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
               Manufacturing Report
             </h2>
-            ${
-              fromDate || toDate
-                ? `
+            ${fromDate || toDate
+        ? `
             <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
               ${fromDate ? `From: ${formatDateForDisplay(fromDate)}` : ''} 
               ${fromDate && toDate ? '&nbsp;&nbsp;' : ''}
               ${toDate ? `To: ${formatDateForDisplay(toDate)}` : ''}
             </div>
             `
-                : `<div style="flex:1;"></div>`
-            }
+        : `<div style="flex:1;"></div>`
+      }
           </div>
 
           <!-- Data Table - Compact -->
@@ -382,13 +382,11 @@ export default function ManufacturingReport() {
             <thead>
               <tr style="background:#785600;color:white;font-weight:600;">
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Sr</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Item (Size) (Purity)</th>
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;white-space:nowrap;">Date & Time</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Item</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Size</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Purity</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Wt(g)</th>
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Scrap</th>
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Loss</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Wt(g)</th>
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Current Wt</th>
               </tr>
             </thead>
@@ -408,14 +406,14 @@ export default function ManufacturingReport() {
               <span>Powered by Matoshree Gold</span>
               <span>|</span>
               <span>Generated: ${new Date().toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-              })} ${new Date().toLocaleTimeString('en-IN', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true,
-              })}</span>
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })} ${new Date().toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      })}</span>
             </div>
           </div>
         </div>
@@ -605,7 +603,7 @@ export default function ManufacturingReport() {
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Total Weight
               </span>
-              <span className="text-lg font-bold text-black dark:text-amber-400">
+              <span className="text-lg font-bold text-black dark:text-white">
                 {formatNumber(filteredTotals.totalWeight)} G
               </span>
             </div>
@@ -615,7 +613,7 @@ export default function ManufacturingReport() {
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Total Scrap
               </span>
-              <span className="text-lg font-bold text-black dark:text-blue-400">
+              <span className="text-lg font-bold text-black dark:text-white">
                 {formatNumber(filteredTotals.totalScrap)} G
               </span>
             </div>
@@ -625,7 +623,7 @@ export default function ManufacturingReport() {
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Total Loss
               </span>
-              <span className="text-lg font-bold text-black dark:text-red-400">
+              <span className="text-lg font-bold text-black dark:text-white">
                 {formatNumber(filteredTotals.totalLoss)} G
               </span>
             </div>
@@ -635,7 +633,7 @@ export default function ManufacturingReport() {
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Current Weight
               </span>
-              <span className="text-lg font-bold text-black dark:text-green-400">
+              <span className="text-lg font-bold text-black dark:text-white">
                 {formatNumber(filteredTotals.currentWeight)} G
               </span>
             </div>
@@ -661,16 +659,16 @@ export default function ManufacturingReport() {
                       Sr No.
                     </th>
                     <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                      Date & Time
-                    </th>
-                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
                       Item (Size) (Purity)
                     </th>
                     <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                      Scrap
+                      Date & Time
                     </th>
                     <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
-                      Loss
+                      Scrap (G)
+                    </th>
+                    <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
+                      Loss (G)
                     </th>
                     <th className="border border-[#785600] px-3 py-3 text-center font-semibold">
                       Wt. (G)
@@ -684,33 +682,38 @@ export default function ManufacturingReport() {
                   {filteredData.map((item, index) => (
                     <tr
                       key={item.id}
-                      className={`group transition-colors ${
-                        index % 2 === 0
-                          ? 'bg-white dark:bg-slate-900'
-                          : 'bg-[#fafaf8] dark:bg-slate-900/80'
-                      } hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50`}
+                      className={`group transition-colors ${index % 2 === 0
+                        ? 'bg-white dark:bg-slate-900'
+                        : 'bg-[#fafaf8] dark:bg-slate-900/80'
+                        } hover:bg-[#f4f4f2]/50 dark:hover:bg-slate-800/50`}
                     >
                       <td className="px-3 py-3 text-center text-sm text-black dark:text-white">
                         {item.srNo}
                       </td>
+                      <td className="px-3 py-3 text-center text-sm font-medium text-black dark:text-white">
+                        <div>{item.item}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {item.size !== 'N/A' ? `${item.size}` : ''}
+                          {item.size !== 'N/A' && item.purity > 0 ? ' | ' : ''}
+                          {item.purity > 0 ? `${item.purity}%` : ''}
+                        </div>
+                      </td>
                       <td className="px-3 py-3 text-center text-sm text-black dark:text-white">
                         <div>{item.dateTime.split(' ')[0]}</div>
-                        <div>{item.dateTime.split(' ').slice(1).join(' ')}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {item.dateTime.split(' ').slice(1).join(' ')}
+                        </div>
                       </td>
-                      <td className="px-3 py-3 text-center text-sm font-medium text-black dark:text-white">
-                        {item.item} ({item.size}){' '}
-                        {item.purity > 0 && `(${item.purity}%)`}
-                      </td>
-                      <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-blue-400">
+                      <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-white">
                         {formatNumber(item.scrap)} G
                       </td>
-                      <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-red-400">
+                      <td className="font-mono px-3 py-3 text-center text-sm text-black dark:text-white">
                         {formatNumber(item.loss)} G
                       </td>
-                      <td className="font-mono px-3 py-3 text-center text-sm font-bold text-black dark:text-amber-400">
+                      <td className="font-mono px-3 py-3 text-center text-sm font-medium text-black dark:text-white">
                         {formatNumber(item.weight)} G
                       </td>
-                      <td className="font-mono px-3 py-3 text-center text-sm font-bold text-black dark:text-green-400">
+                      <td className="font-mono px-3 py-3 text-center text-sm font-bold text-black dark:text-white">
                         {formatNumber(item.currentWeight)} G
                       </td>
                     </tr>

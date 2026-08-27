@@ -880,15 +880,15 @@ const Settlement: React.FC = () => {
         </span>
       ),
     },
-    {
-      key: 'goldBalance',
-      header: 'Due Balance(G)',
-      render: (item) => (
-        <div className="text-black dark:text-white">
-          {formatNumber(Math.abs(item.goldBalance))} G
-        </div>
-      ),
-    },
+  {
+  key: 'goldBalance',
+  header: 'Due Balance(G)',
+  render: (item) => (
+    <div className='text-black dark:text-white'>
+      {formatNumber(item.goldBalance)} G
+    </div>
+  ),
+},
     {
       key: 'totalBills',
       header: 'Total Bills',

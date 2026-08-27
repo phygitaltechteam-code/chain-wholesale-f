@@ -127,7 +127,7 @@ const BackupAndRestorePage = () => {
 
     const confirmed = window.confirm(
       'This will overwrite all existing database data.\n\n' +
-        'Are you sure you want to restore this backup?',
+      'Are you sure you want to restore this backup?',
     );
 
     if (!confirmed) {
@@ -286,11 +286,10 @@ const BackupAndRestorePage = () => {
               type="button"
               onClick={handleRestore}
               disabled={!selectedFile || restore.isPending || isUploading}
-              className={`w-full !whitespace-nowrap !px-6 ${
-                !selectedFile || restore.isPending || isUploading
-                  ? '!cursor-not-allowed !bg-gray-300 !text-gray-500 dark:!bg-slate-800 dark:!text-slate-600'
-                  : '!bg-emerald-600 !text-white hover:!bg-emerald-700'
-              }`}
+              className={`w-full !whitespace-nowrap !px-6 ${!selectedFile || restore.isPending || isUploading
+                ? '!cursor-not-allowed !bg-gray-300 !text-gray-500 dark:!bg-slate-800 dark:!text-slate-600'
+                : '!bg-emerald-600 !text-white hover:!bg-emerald-700'
+                }`}
             >
               {restore.isPending || isUploading ? (
                 <>
@@ -348,13 +347,13 @@ const BackupAndRestorePage = () => {
               {/* Header */}
               <div className="bg-red-50 p-6 text-center dark:bg-red-950/30">
                 <h3 className="text-lg font-bold text-red-600 dark:text-red-400">
-                  Confirm Database Deletion (डेटाबेस डिलीट करा)
+                  Confirm Database Deletion
                 </h3>
                 <p className="mt-1 text-xs text-[#4f4535] dark:text-slate-400">
                   Are you sure you want to permanently delete all database records?
                   <br />
                   <span className="font-semibold text-red-600 dark:text-red-400">
-                    (सर्व डेटा नष्ट केला जाईल, ही कृती पूर्ववत करता येणार नाही.)
+                    [क्या आप वाकई सभी डेटाबेस रिकॉर्ड्स को स्थायी रूप से हटाना चाहते हैं?]
                   </span>
                 </p>
               </div>
@@ -363,7 +362,7 @@ const BackupAndRestorePage = () => {
               <form onSubmit={handleDeleteDatabase} className="p-6">
                 <div className="mb-4">
                   <label className="mb-1.5 block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
-                    Enter Admin Password (पासवर्ड टाका) <span className="text-red-500">*</span>
+                    Enter Admin Password [एडमिन पासवर्ड डालें] <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -376,13 +375,12 @@ const BackupAndRestorePage = () => {
                         setDeletePassword(e.target.value);
                         if (passwordError) setPasswordError('');
                       }}
-                      placeholder="Enter admin password"
+                      placeholder="Enter admin password [एडमिन पासवर्ड डालें]"
                       autoFocus
-                      className={`w-full rounded-lg border py-2.5 pl-9 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${
-                        passwordError
-                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                          : 'border-[#d3c4af]/40 focus:border-red-600 focus:ring-red-600/10 dark:border-slate-700'
-                      }`}
+                      className={`w-full rounded-lg border py-2.5 pl-9 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${passwordError
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                        : 'border-[#d3c4af]/40 focus:border-red-600 focus:ring-red-600/10 dark:border-slate-700'
+                        }`}
                     />
                     <button
                       type="button"
@@ -398,7 +396,7 @@ const BackupAndRestorePage = () => {
                   </div>
                   {passwordError && (
                     <p className="mt-1 text-xs font-medium text-red-500">
-                      {passwordError}
+                      {passwordError} [गलत पासवर्ड]
                     </p>
                   )}
                 </div>
@@ -414,7 +412,7 @@ const BackupAndRestorePage = () => {
                     disabled={deleteDbMutation.isPending}
                     className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
                   >
-                    Cancel (रद्द करा)
+                    Cancel [रद्द करें]
                   </button>
                   <button
                     type="submit"
@@ -424,12 +422,12 @@ const BackupAndRestorePage = () => {
                     {deleteDbMutation.isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Deleting...</span>
+                        <span>Deleting... [हट रहा है...]</span>
                       </>
                     ) : (
                       <>
                         <Trash2 className="h-4 w-4" />
-                        <span>Delete Database (डिलीट करा)</span>
+                        <span>Delete Database [डेटाबेस हटाएं]</span>
                       </>
                     )}
                   </button>
