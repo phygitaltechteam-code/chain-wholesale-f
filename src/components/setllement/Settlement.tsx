@@ -1094,7 +1094,7 @@ const Settlement: React.FC = () => {
                     {formatNumber(remainingBalance)} g
                   </span>
                 </div>
-                <div className="mt-1 flex items-center justify-between text-[11px] text-[#817563] dark:text-slate-400">
+                {/* <div className="mt-1 flex items-center justify-between text-[11px] text-[#817563] dark:text-slate-400">
                   <span>Calculation:</span>
                   <span className="font-mono">
                     {formatNumber(settlementDetail.pendingBalance)} g{' '}
@@ -1102,7 +1102,7 @@ const Settlement: React.FC = () => {
                     {formatNumber(settlementDetail.settlementAmount)} g ={' '}
                     {formatNumber(remainingBalance)} g
                   </span>
-                </div>
+                </div> */}
               </div>
             )}
 
@@ -1193,7 +1193,7 @@ const Settlement: React.FC = () => {
                   {formatNumber(settlementDetail.pendingBalance)} g
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
+              {/* <div className="flex justify-between text-sm">
                 <span className="text-[#4f4535] dark:text-slate-400">
                   Action:
                 </span>
@@ -1208,7 +1208,7 @@ const Settlement: React.FC = () => {
                     ? `Receive (-${formatNumber(settlementDetail.settlementAmount)} g)`
                     : `Give (+${formatNumber(settlementDetail.settlementAmount)} g)`}
                 </span>
-              </div>
+              </div> */}
               <div className="border-t border-[#d3c4af]/20 pt-2 dark:border-slate-700 flex justify-between text-sm">
                 <span className="font-semibold text-[#4f4535] dark:text-slate-300">
                   New Due Balance:
