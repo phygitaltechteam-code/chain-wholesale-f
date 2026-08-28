@@ -79,3 +79,25 @@ export const useDeleteDatabase = (queryClient?: any) => {
   });
 };
 
+export const sendBackupEmail = async () => {
+  try {
+    const response = await api.get('/backup');
+    return response;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      'Failed to trigger backup',
+    );
+  }
+};
+
+export const useSendBackupEmail = () => {
+  return useMutation({
+    mutationFn: sendBackupEmail,
+  });
+};
+
+
+
+

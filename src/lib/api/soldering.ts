@@ -76,15 +76,37 @@ export const useGetSolderingHistory = () => {
 
 export const useSubmitSoldering = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: submitSolderingApi,
     onSuccess: () => {
       toast.success('Soldering submitted successfully');
-      queryClient.invalidateQueries({queryKey: ['soldering']});
+      queryClient.invalidateQueries({ queryKey: ['soldering'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to submit soldering');
     },
   });
 };
+
+export const createSolderingApi = async (data: any) => {
+  try {
+    const response = await api.post('/admin/soldering', data);
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to create soldering entry');
+    }
+    throw error;
+  }
+};
+
+export const useCreateSoldering = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createSolderingApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['soldering'] });
+    },
+  });
+};
+

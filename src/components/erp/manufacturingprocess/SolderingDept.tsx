@@ -7,6 +7,10 @@ import {
   ChevronRight,
   ChevronDown,
   Printer,
+  Plus,
+  X,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
@@ -16,7 +20,10 @@ import {
   useGetSoldering,
   useGetSolderingHistory,
   useSubmitSoldering,
+  useCreateSoldering,
 } from '@/lib/api/soldering';
+import { useGetItems, Item } from '@/lib/api/items';
+import { useGetSizes, Size } from '@/lib/api/sizes';
 import { useSubmitCutting, useSubmitMoveCutting } from '@/lib/api/cutting';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
@@ -49,6 +56,7 @@ interface SolderingEntry {
   item: string;
   size: string;
   purity: string;
+  fine: number;
   chainGiven: number;
   chainReceived: number;
   powder: number;
@@ -60,11 +68,33 @@ interface SolderingEntry {
   powderRaw?: string;
   scrapRaw?: string;
   purityRaw?: string;
+  fineRaw?: string;
   itemId?: string;
   sizeId?: string;
   isCompleted?: boolean;
   isDirty?: boolean;
 }
+
+interface SolderingCardForm {
+  id: string;
+  itemId: string;
+  sizeId: string;
+  purity: string;
+  chainGiven: string;
+  fine: string;
+  isSaving?: boolean;
+}
+
+const createNewSolderingCard = (
+  initial?: Partial<SolderingCardForm>,
+): SolderingCardForm => ({
+  id: `soldering-card-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+  itemId: initial?.itemId || '',
+  sizeId: initial?.sizeId || '',
+  purity: initial?.purity || '',
+  chainGiven: initial?.chainGiven || '',
+  fine: initial?.fine || '',
+});
 
 // Helper function to safely get item name
 const getItemName = (item: any): string => {
@@ -96,6 +126,10 @@ const SolderingDept: React.FC = () => {
     null,
   );
   const [showHistory, setShowHistory] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalCards, setModalCards] = useState<SolderingCardForm[]>([
+    createNewSolderingCard(),
+  ]);
   const [fromDate, setFromDate] = useState<Date | null>(null);
   const [toDate, setToDate] = useState<Date | null>(null);
 
@@ -138,7 +172,11 @@ const SolderingDept: React.FC = () => {
     refetch: refetchHistory,
   } = useGetSolderingHistory();
 
+  const { data: items = [], isLoading: itemsLoading } = useGetItems();
+  const { data: sizes = [], isLoading: sizesLoading } = useGetSizes();
+
   const submitSoldering = useSubmitSoldering();
+  const createSoldering = useCreateSoldering();
   const submitCutting = useSubmitMoveCutting();
 
   // Load data from API
@@ -160,6 +198,12 @@ const SolderingDept: React.FC = () => {
 
           const chainGiven = soldering.chainWeight || 0;
           const purity = soldering.purity;
+          const fine =
+            soldering.fine !== undefined && soldering.fine !== null
+              ? soldering.fine
+              : Math.round(
+                  ((chainGiven * (parseFloat(purity) || 0)) / 100) * 1000,
+                ) / 1000;
           const chainReceived = soldering.chainReceived || 0;
           const powder =
             chainReceived > 0
@@ -172,7 +216,6 @@ const SolderingDept: React.FC = () => {
             powder > 0 && chainGiven > 0
               ? Math.round(((powder / chainGiven) * 100) * 1000) / 1000
               : 0;
-
 
           const isSaved =
             soldering.isCompleted === true &&
@@ -195,6 +238,7 @@ const SolderingDept: React.FC = () => {
             item: itemName,
             size: sizeName,
             purity: soldering.purity || '',
+            fine: fine,
 
             chainGiven: chainGiven,
             chainReceived: chainReceived,
@@ -218,6 +262,7 @@ const SolderingDept: React.FC = () => {
               soldering.purity !== null && soldering.purity !== undefined
                 ? soldering.purity.toString()
                 : '',
+            fineRaw: fine > 0 ? fine.toString() : '',
 
             itemId: soldering.itemId,
             sizeId: soldering.sizeId,
@@ -370,7 +415,11 @@ const SolderingDept: React.FC = () => {
                     </td>
 
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-                        ${item?.purity || '-'}
+                        ${item?.purity || '-'}%
+                    </td>
+
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
+                        ${formatNumber(item?.fine || (item?.chainWeight * (parseFloat(item?.purity) || 0) / 100))}
                     </td>
 
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
@@ -501,7 +550,11 @@ const SolderingDept: React.FC = () => {
                 </th>
 
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Purity
+                  Purity %
+                </th>
+
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
+                  Fine (लगड)
                 </th>
 
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
@@ -670,6 +723,15 @@ const SolderingDept: React.FC = () => {
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumber(item.purity)}%
+        </span>
+      ),
+    },
+    {
+      key: 'fine',
+      header: 'Fine (लगड)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.fine || (item.chainWeight * (parseFloat(item.purity) || 0) / 100))} G
         </span>
       ),
     },
@@ -1002,6 +1064,142 @@ const SolderingDept: React.FC = () => {
     refetch,
   ]);
 
+  const handleCardChange = (
+    cardIndex: number,
+    field: 'itemId' | 'sizeId' | 'purity' | 'chainGiven' | 'fine',
+    value: string,
+  ) => {
+    setModalCards((prev) =>
+      prev.map((card, idx) => {
+        if (idx !== cardIndex) return card;
+        if (field === 'chainGiven' || field === 'purity') {
+          const sanitized = value.replace(/[^0-9.]/g, '');
+          const nextCard = { ...card, [field]: sanitized };
+          const chainNum = parseFloat(
+            field === 'chainGiven' ? sanitized : card.chainGiven,
+          );
+          const purityNum = parseFloat(
+            field === 'purity' ? sanitized : card.purity,
+          );
+          if (
+            !isNaN(chainNum) &&
+            !isNaN(purityNum) &&
+            chainNum > 0 &&
+            purityNum > 0
+          ) {
+            const autoFine =
+              Math.round(((chainNum * purityNum) / 100) * 1000) / 1000;
+            nextCard.fine = autoFine.toString();
+          }
+          return nextCard;
+        } else if (field === 'fine') {
+          const sanitized = value.replace(/[^0-9.]/g, '');
+          return { ...card, fine: sanitized };
+        } else {
+          return { ...card, [field]: value };
+        }
+      }),
+    );
+  };
+
+  const handleAddCard = () => {
+    setModalCards((prev) => [...prev, createNewSolderingCard()]);
+  };
+
+  const handleRemoveCard = (cardIndex: number) => {
+    setModalCards((prev) => {
+      const next = prev.filter((_, idx) => idx !== cardIndex);
+      if (next.length === 0) {
+        setIsModalOpen(false);
+        return [createNewSolderingCard()];
+      }
+      return next;
+    });
+  };
+
+  const handleOpenModal = () => {
+    setModalCards([createNewSolderingCard()]);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveCard = async (cardIndex: number) => {
+    const card = modalCards[cardIndex];
+    if (!card) return;
+
+    if (!card.itemId) {
+      toast.error(`Please select an item`);
+      return;
+    }
+
+    if (!card.sizeId) {
+      toast.error(`Please select a size`);
+      return;
+    }
+
+    const chainGivenVal = parseFloat(card.chainGiven) || 0;
+    const purityVal = parseFloat(card.purity) || 0;
+    const fineVal =
+      parseFloat(card.fine) ||
+      Math.round(((chainGivenVal * purityVal) / 100) * 1000) / 1000;
+
+    if (chainGivenVal <= 0) {
+      toast.error(`Please enter a valid Chain Given weight`);
+      return;
+    }
+
+    setModalCards((prev) =>
+      prev.map((c, idx) => (idx === cardIndex ? { ...c, isSaving: true } : c)),
+    );
+
+    try {
+      const selectedItem = items.find((i) => i.id === card.itemId);
+      const selectedSize = sizes.find((s) => s.id === card.sizeId);
+
+      const payload = {
+        itemId: card.itemId,
+        sizeId: card.sizeId,
+        item: selectedItem?.name || '',
+        size: selectedSize?.size || '',
+        purity: purityVal ? String(purityVal) : '',
+        fine: fineVal,
+        chainGiven: chainGivenVal,
+        chainWeight: chainGivenVal,
+        chainReceived: 0,
+        powder: 0,
+        increase: 0,
+        scrap: 0,
+        isCompleted: false,
+      };
+
+      await createSoldering.mutateAsync(payload);
+      toast.success(`Soldering Item added successfully`);
+
+      setModalCards((prev) => {
+        const next = prev.filter((_, idx) => idx !== cardIndex);
+        if (next.length === 0) {
+          setIsModalOpen(false);
+          return [createNewSolderingCard()];
+        }
+        return next;
+      });
+
+      await refetch();
+    } catch (error: any) {
+      console.error('Error saving soldering card:', error);
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        'Failed to save soldering entry';
+      toast.error(backendMessage);
+      setModalCards((prev) =>
+        prev.map((c, idx) =>
+          idx === cardIndex ? { ...c, isSaving: false } : c,
+        ),
+      );
+    }
+  };
+
   // A row is edited only when the user has entered a value.
   const hasEditableValues = (entry: SolderingEntry): boolean => {
     return Boolean(entry.isDirty);
@@ -1073,6 +1271,15 @@ const SolderingDept: React.FC = () => {
             {formatNumberDisplay(item.purity)}%
           </span>
         </div>
+      ),
+    },
+    {
+      key: 'fine',
+      header: 'Fine (लगड)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.fine)} G
+        </span>
       ),
     },
     {
@@ -1314,6 +1521,17 @@ const SolderingDept: React.FC = () => {
               </GenericButton>
             )}
 
+            {!showHistory && (
+              <GenericButton
+                type="button"
+                onClick={handleOpenModal}
+                variant="primary"
+              >
+                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>Add Soldering</span>
+              </GenericButton>
+            )}
+
             {/* History Toggle Button */}
             <GenericButton
               type="button"
@@ -1413,8 +1631,233 @@ const SolderingDept: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Add Soldering Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
+          <div
+            className={`w-full ${
+              modalCards.length > 1 ? 'max-w-4xl' : 'max-w-lg'
+            } flex max-h-[90vh] flex-col rounded-2xl bg-white shadow-2xl transition-all dark:bg-slate-900 border border-[#d3c4af]/30 dark:border-slate-700`}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#d3c4af]/20 p-4 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="rounded-lg bg-[#785600]/10 p-2 text-[#785600] dark:bg-amber-900/30 dark:text-amber-400">
+                  <Layers className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#1a1c1b] dark:text-white sm:text-lg">
+                    Add Soldering Process
+                  </h3>
+                  <p className="text-xs text-[#4f4535] dark:text-slate-400">
+                    {modalCards.length}{' '}
+                    {modalCards.length === 1
+                      ? 'soldering item'
+                      : 'soldering items'}{' '}
+                    to configure
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddCard}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[#785600]/30 bg-[#785600]/5 px-2.5 py-1.5 text-xs font-semibold text-[#785600] transition-colors hover:bg-[#785600]/15 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20"
+                  title="Add another card"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Add Card</span>
+                </button>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="rounded-lg p-1.5 text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body - Cards Container */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div
+                className={`grid gap-4 ${
+                  modalCards.length > 1
+                    ? 'grid-cols-1 md:grid-cols-2'
+                    : 'grid-cols-1'
+                }`}
+              >
+                {modalCards.map((card, idx) => {
+                  const isCardSaving = card.isSaving || false;
+                  return (
+                    <div
+                      key={card.id || idx}
+                      className="relative flex flex-col justify-between rounded-xl border border-[#d3c4af]/30 bg-[#fbfaf8] p-4 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800/80"
+                    >
+                    
+                        {modalCards.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCard(idx)}
+                            disabled={isCardSaving}
+                            className="rounded-md p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40"
+                            title="Remove this card"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      
+                      {/* Card Inputs */}
+                      <div className="space-y-3">
+                        {/* Item */}
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                            Item <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={card.itemId}
+                            onChange={(e) =>
+                              handleCardChange(idx, 'itemId', e.target.value)
+                            }
+                            className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                          >
+                            <option value="">Select Item</option>
+                            {items
+                              .filter(
+                                (item) =>
+                                  item?.name?.trim().toLowerCase() !== 'gold',
+                              )
+                              .map((item) => (
+                                <option key={item.id} value={item.id}>
+                                  {item.name || JSON.stringify(item)}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+
+                        {/* Size */}
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                            Size <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={card.sizeId}
+                            onChange={(e) =>
+                              handleCardChange(idx, 'sizeId', e.target.value)
+                            }
+                            className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                          >
+                            <option value="">Select Size</option>
+                            {sizes.map((size) => (
+                              <option key={size.id} value={size.id}>
+                                {size.size || JSON.stringify(size)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Purity & Chain Given */}
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div>
+                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                              Purity (%) <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={card.purity}
+                                onChange={(e) =>
+                                  handleCardChange(
+                                    idx,
+                                    'purity',
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="e.g. 93"
+                                className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                              />
+                              <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                                %
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                              Chain Given (G) <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={card.chainGiven}
+                                onChange={(e) =>
+                                  handleCardChange(
+                                    idx,
+                                    'chainGiven',
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="0.000"
+                                className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                              />
+                              <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                                G
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Fine Wt (Auto / Editable like Tar) */}
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                            Fine Wt (लगड)
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={card.fine}
+                              onChange={(e) =>
+                                handleCardChange(idx, 'fine', e.target.value)
+                              }
+                              placeholder="0.000"
+                              className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm font-bold text-[#785600] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-amber-400"
+                            />
+                            <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                              G
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card Action Button */}
+                      <div className="mt-4 border-t border-[#d3c4af]/20 pt-3 dark:border-slate-700">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveCard(idx)}
+                          disabled={isCardSaving}
+                          className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] py-2 text-xs font-semibold text-white shadow-sm transition-all hover:scale-[1.01] hover:shadow active:scale-[0.99] disabled:opacity-50"
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                          <span>
+                            {isCardSaving ? 'Saving...' : 'Save'}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default SolderingDept;
+
