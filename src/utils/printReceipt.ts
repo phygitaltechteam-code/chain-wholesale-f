@@ -1,0 +1,339 @@
+import toast from 'react-hot-toast';
+
+export interface ReceiptPrintItem {
+  item?: string;
+  size?: string;
+  purity?: number | string;
+  grossWeight?: number | string;
+  grossWt?: number | string;
+  srp?: number | string;
+  finWt?: number | string;
+  fineWt?: number | string;
+  fineWeight?: number | string;
+  laborRate?: number | string;
+}
+
+export interface ReceiptPrintData {
+  clientName?: string;
+  phoneNumber?: string;
+  dateTime?: string;
+  date?: string | Date;
+  dateStr?: string;
+  items?: ReceiptPrintItem[];
+  totalFineWt?: number | string;
+  totalGrossWt?: number | string;
+  totalSRP?: number | string;
+  totalLabor?: number | string;
+  receive?: number | string;
+  customerWeight?: number | string;
+  pending?: number | string;
+  total?: number | string;
+  headerInfo?: any;
+}
+
+const format3Decimals = (value: number | string | undefined | null): string => {
+  const num = Number(value);
+  if (isNaN(num) || num === 0) return '0.000';
+  return num.toFixed(3);
+};
+
+const format2Decimals = (value: number | string | undefined | null): string => {
+  const num = Number(value);
+  if (isNaN(num) || num === 0) return '0.00';
+  return num.toFixed(2);
+};
+
+export const printReceipt = (
+  receiptData: ReceiptPrintData,
+  headerDataQuery?: any,
+) => {
+  if (!receiptData) return;
+
+  const phoneNumber = receiptData.phoneNumber || 'N/A';
+
+  let dateFormatted = receiptData.dateStr || receiptData.dateTime;
+  if (!dateFormatted && receiptData.date) {
+    const d = new Date(receiptData.date);
+    dateFormatted = isNaN(d.getTime())
+      ? String(receiptData.date)
+      : d.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+  }
+  if (!dateFormatted) {
+    dateFormatted = new Date().toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
+
+  const items = receiptData.items || [];
+
+  // Calculate totals if not directly provided
+  const totalFineWt =
+    receiptData.totalFineWt !== undefined
+      ? Number(receiptData.totalFineWt)
+      : items.reduce((sum, i) => {
+        const fine = i.finWt ?? i.fineWt ?? i.fineWeight ?? 0;
+        return sum + Number(fine || 0);
+      }, 0);
+
+  const receive =
+    receiptData.receive !== undefined
+      ? Number(receiptData.receive)
+      : receiptData.customerWeight !== undefined
+        ? Number(receiptData.customerWeight)
+        : 0;
+
+  const total =
+    receiptData.total !== undefined
+      ? Number(receiptData.total)
+      : receiptData.pending !== undefined
+        ? Number(receiptData.pending)
+        : 0;
+
+  const pending =
+    receiptData.pending !== undefined && receiptData.total !== undefined
+      ? Number(receiptData.pending)
+      : Math.round(Math.abs(total + receive - totalFineWt) * 1000) / 1000;
+
+  let itemsRows = '';
+  items.forEach((item) => {
+    const itemName = item.item || '-';
+    const itemSize = item.size || '-';
+    const purity = format3Decimals(item.purity);
+    const gross = format3Decimals(item.grossWeight ?? item.grossWt ?? 0);
+    const srp = format2Decimals(item.srp ?? 0);
+    const fine = format3Decimals(item.finWt ?? item.fineWt ?? item.fineWeight ?? 0);
+    const labor = format2Decimals(item.laborRate ?? 0);
+
+    itemsRows += `
+      <tr>
+        <td style="border:1px solid #333;padding:4px 6px;text-align:center;font-size:10px;color:#000;">${itemName}</td>
+        <td style="border:1px solid #333;padding:4px 6px;text-align:center;font-size:10px;color:#000;">${itemSize}</td>
+        <td style="border:1px solid #333;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${purity}</td>
+        <td style="border:1px solid #333;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${gross}</td>
+        <td style="border:1px solid #333;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${srp}</td>
+        <td style="border:1px solid #333;padding:4px 6px;text-align:center;font-family:monospace;font-weight:bold;font-size:10px;color:#000;">${fine}</td>
+        <td style="border:1px solid #333;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${labor}</td>
+      </tr>
+    `;
+  });
+
+  const headerSource = receiptData.headerInfo || headerDataQuery;
+  const headerInfo =
+    headerSource?.data?.data ||
+    (headerSource?.data?.factoryName ? headerSource.data : headerSource || {});
+
+  const leftInvocation =
+    headerInfo.leftInvocation ||
+    headerInfo.leftInovation ||
+    '॥ श्री गणेश प्रसन्न ॥';
+  const rightInvocation =
+    headerInfo.rightInvocation ||
+    headerInfo.rightInovation ||
+    '॥ श्री साई प्रसन्न ॥';
+  const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+  const description =
+    headerInfo.description ||
+    'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+  const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
+  const phoneNumbers =
+    headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+  const invocationColor = headerInfo.invocationColor || '#a84b20';
+  const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
+  const descriptionColor = headerInfo.descriptionColor || '#8b451f';
+  const proprietorColor = headerInfo.proprietorColor || '#a84b20';
+  const phoneColor = headerInfo.phoneColor || '#a84b20';
+  const factoryFontSize = headerInfo.factoryFontSize
+    ? `${headerInfo.factoryFontSize}px`
+    : '18px';
+  const descriptionFontSize = headerInfo.descriptionFontSize
+    ? `${headerInfo.descriptionFontSize}px`
+    : '10px';
+  const proprietorFontSize = headerInfo.proprietorFontSize
+    ? `${headerInfo.proprietorFontSize}px`
+    : '10px';
+  const phoneFontSize = headerInfo.phoneFontSize
+    ? `${headerInfo.phoneFontSize}px`
+    : '10px';
+
+  const receiptHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Receipt - ${receiptData.clientName || 'Client'}</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #ffffff;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .receipt-container {
+            width: 100%;
+            max-width: 800px;
+            background: #ffffff;
+            padding: 4mm 6mm;
+            box-sizing: border-box;
+            color: #111111;
+          }
+          @page {
+            size: portrait;
+            margin: 4mm;
+          }
+          @media print {
+            body {
+              background: white !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .receipt-container {
+              width: 100% !important;
+              max-width: 100% !important;
+              padding: 2mm 4mm !important;
+              margin: 0 !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            table {
+              width: 100% !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            tr {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-container">
+          <!-- HEADER -->
+          <div style="width:100%;text-align:center;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin:0;padding:0;">
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};white-space:nowrap;">
+                ${leftInvocation}
+              </span>
+              <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};line-height:1.1;white-space:nowrap;">
+                ${factoryName}
+              </span>
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};white-space:nowrap;">
+                ${rightInvocation}
+              </span>
+            </div>
+
+            <div style="margin:3px 0 0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
+              ${description}
+            </div>
+
+            <div style="margin:3px 0 0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
+              ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
+            </div>
+
+            <div style="border-bottom:2px solid ${factoryNameColor};margin:4px 0 6px;"></div>
+          </div>
+
+          <!-- RECEIPT TITLE -->
+          <div style="display:flex;align-items:center;justify-content:center;margin:0 0 4px;">
+            <h2 style="margin:0;text-align:center;font-size:15px;font-weight:bold;letter-spacing:2px;color:#111111;">
+              RECEIPT
+            </h2>
+          </div>
+
+          <!-- SIMPLE RECEIPT INFO -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 6px;padding:0 2px;font-size:11px;line-height:1.3;">
+            <div>
+              <span style="font-weight:bold;">Client:</span> ${receiptData.clientName || 'N/A'}
+              <span style="margin-left:16px;font-weight:bold;">Phone:</span> ${phoneNumber}
+            </div>
+            <div style="text-align:right;">
+              <span style="font-weight:bold;">Date:</span> ${dateFormatted}
+            </div>
+          </div>
+
+          <!-- ITEM TABLE -->
+          <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0 0 6px;">
+            <thead>
+              <tr style="background:#785600 !important;color:#ffffff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">Item</th>
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">Size</th>
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">Purity (%)</th>
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">Gross Wt (G)</th>
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">SRP (G)</th>
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">Fine Wt (G)</th>
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">Labor Rate (G)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsRows || '<tr><td colspan="7" style="text-align:center;padding:8px;border:1px solid #333;">No items</td></tr>'}
+            </tbody>
+          </table>
+
+          <!-- PAYMENT SUMMARY -->
+          <div style="display:flex;justify-content:flex-end;margin-top:2px;">
+            <div style="width:35%;min-width:180px;border:1px solid #d6c08a;border-radius:4px;background:#fffdf7 !important;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+              <div style="display:flex;justify-content:space-between;padding:3px 8px;border-bottom:1px dashed #dddddd;font-size:10px;">
+                <span style="font-weight:bold;color:#666666;">Total Fine Wt</span>
+                <span style="font-family:monospace;font-weight:bold;color:#111111;">${format3Decimals(totalFineWt)} G</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:3px 8px;border-bottom:1px dashed #dddddd;font-size:10px;">
+                <span style="font-weight:bold;color:#666666;">Receive</span>
+                <span style="font-family:monospace;font-weight:bold;color:#111111;">${format3Decimals(receive)} G</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:3px 8px;border-bottom:1px dashed #dddddd;font-size:10px;">
+                <span style="font-weight:bold;color:#666666;">Pending</span>
+                <span style="font-family:monospace;font-weight:bold;color:#111111;">${format3Decimals(pending)} G</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:4px 8px;background:#f4f0e5 !important;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                <span style="font-weight:bold;color:#111111;">Total</span>
+                <span style="font-family:monospace;font-weight:bold;color:#785600;">${format3Decimals(total)} G</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- FOOTER -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:4px;border-top:1px dashed #aaaaaa;font-size:10px;line-height:1;color:#444444;">
+            <div>Contact For Support: 9511640351</div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+            window.onafterprint = function() {
+              window.close();
+            };
+          };
+        </script>
+      </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '_blank', 'width=460,height=800');
+  if (printWindow) {
+    printWindow.document.write(receiptHtml);
+    printWindow.document.close();
+  } else {
+    toast.error('Please allow pop-ups to print the receipt');
+  }
+};

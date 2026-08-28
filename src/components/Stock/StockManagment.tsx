@@ -104,7 +104,7 @@ const StockManagment: React.FC = () => {
   const selectedItemObj = items.find((i: any) => i.id === watchedItemId);
   const isGold = selectedItemObj?.name?.trim().toLowerCase().includes('gold');
 
-  // Clear size and purity when Gold is selected (do not auto-populate purity for items)
+  // Clear size and purity when Gold is selected
   useEffect(() => {
     if (!watchedItemId) {
       setCurrentStock(0);
@@ -124,6 +124,13 @@ const StockManagment: React.FC = () => {
     if (watchedItemId) {
       const matchingStock = stockData.find((s: any) => {
         if (s.itemId !== watchedItemId) return false;
+        
+        // For Gold: match without sizeId and purity
+        if (isGold) {
+          return !s.sizeId || s.sizeId === null;
+        }
+        
+        // For non-gold: match with size and purity
         const matchSize = watchedSizeId
           ? s.sizeId === watchedSizeId
           : !s.sizeId || s.sizeId === null;
@@ -146,7 +153,7 @@ const StockManagment: React.FC = () => {
       setRemainingStock(0);
       setStockId('');
     }
-  }, [watchedItemId, watchedSizeId, watchedPurity, stockData]);
+  }, [watchedItemId, watchedSizeId, watchedPurity, stockData, isGold]);
 
   // Calculate remaining/total stock when quantity changes
   useEffect(() => {
@@ -161,12 +168,22 @@ const StockManagment: React.FC = () => {
   // Handle save
   const onSubmit = async (data: StockFormData) => {
     const stockQty = data.stockQty || 0;
-    const finalSizeId = isGold ? null : data.sizeId || null;
-    const finalPurity = isGold ? null : data.purity ? parseFloat(data.purity) : null;
+    
+    // For Gold: set sizeId and purity to null
+    // For non-Gold: use the values from form
+    const finalSizeId = isGold ? null : (data.sizeId || null);
+    const finalPurity = isGold ? null : (data.purity ? parseFloat(data.purity) : null);
 
     // Check if matching stock exists
     const matchingStock = stockData.find((s: any) => {
       if (s.itemId !== data.itemId) return false;
+      
+      // For Gold: match without sizeId and purity
+      if (isGold) {
+        return !s.sizeId || s.sizeId === null;
+      }
+      
+      // For non-gold: match with size and purity
       const matchSize = finalSizeId
         ? s.sizeId === finalSizeId
         : !s.sizeId || s.sizeId === null;
@@ -208,19 +225,15 @@ const StockManagment: React.FC = () => {
           await updateStock.mutateAsync({ id: targetStockId, data: payload });
         } else {
           // If no existing stock record, create new entry
-          try {
-            await createStock.mutateAsync({
-              itemId: data.itemId,
-              sizeId: finalSizeId || '',
-              purity: finalPurity || 0,
-              weight: stockQty,
-              type: 'INWARD',
-              note: data.note || '',
-              stockQty: stockQty,
-            });
-          } catch {
-            await updateStock.mutateAsync({ id: data.itemId, data: payload });
-          }
+          await createStock.mutateAsync({
+            itemId: data.itemId,
+            sizeId: finalSizeId || '',
+            purity: finalPurity || 0,
+            weight: stockQty,
+            type: 'INWARD',
+            note: data.note || '',
+            stockQty: stockQty,
+          });
         }
 
         toast.success('Stock added successfully!');
@@ -409,10 +422,11 @@ const StockManagment: React.FC = () => {
                       Total Stock
                     </label>
                     <div
-                      className={`mt-1 rounded-lg px-3 py-2 text-left text-sm font-semibold ${remainingStock < 0
-                        ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                        : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                        }`}
+                      className={`mt-1 rounded-lg px-3 py-2 text-left text-sm font-semibold ${
+                        remainingStock < 0
+                          ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                          : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                      }`}
                     >
                       {remainingStock.toFixed(3)} G
                     </div>

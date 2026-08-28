@@ -16,6 +16,7 @@ import toast from 'react-hot-toast';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import { useDeleteBill, useGetBill } from '@/lib/api/bill';
 import { useGetHeader } from '@/lib/api/headerapi';
+import { printReceipt } from '@/utils/printReceipt';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
 import {
   Scale,
@@ -394,411 +395,21 @@ const Billing: React.FC = () => {
     return value.toFixed(2);
   };
 
-  // Print Receipt (Matching ReceiptAdd receipt format)
+  // Print Receipt (Using shared printReceipt function)
   const handlePrintReceipt = (group: BillGroup) => {
     if (!group) return;
-
-    const printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
-    printContainer.style.cssText = `
-      position: fixed;
-      left: -9999px;
-      top: 0;
-      width: 100%;
-      background: white;
-      padding: 0;
-      z-index: 9999;
-    `;
-    document.body.appendChild(printContainer);
-
-    const phoneNumber = group?.phoneNumber || 'N/A';
-    const dateStr =
-      group.dateTime ||
-      new Date().toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
-
-    const totalFineWt = group.totalFinWt || 0;
-    const totalGrossWt = group.items.reduce(
-      (sum, i) => sum + (i.grossWeight || 0),
-      0,
+    printReceipt(
+      {
+        clientName: group.clientName,
+        phoneNumber: group.phoneNumber,
+        dateTime: group.dateTime,
+        items: group.items,
+        totalFineWt: group.totalFinWt,
+        receive: group.receive,
+        total: group.pending,
+      },
+      getpdfheaderdata,
     );
-    const totalSRP = group.totalSRP || 0;
-    const totalLabor = 0;
-    const totalAmount = totalSRP + totalLabor;
-    const receive = group.receive || 0;
-    const total = group.pending || 0;
-    const pending =
-      Math.round(Math.abs(total + receive - totalFineWt) * 1000) / 1000;
-
-    let itemsRows = '';
-    group.items.forEach((item) => {
-      itemsRows += `
-        <tr>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-size:10px;color:#000;">${item.item || '-'}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-size:10px;color:#000;">${item.size || '-'}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(item.purity)}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWithDecimals(item.grossWeight)}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWith2Decimals(item.srp)}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-weight:bold;font-size:10px;color:#000;">${formatNumberWithDecimals(item.finWt)}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberWith2Decimals(item.laborRate || 0)}</td>
-        </tr>
-      `;
-    });
-
-    const headerInfo =
-      getpdfheaderdata?.data?.data ||
-      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation =
-      headerInfo.leftInvocation ||
-      headerInfo.leftInovation ||
-      '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation =
-      headerInfo.rightInvocation ||
-      headerInfo.rightInovation ||
-      '॥ श्री साई प्रसन्न ॥';
-    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description =
-      headerInfo.description ||
-      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
-    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers =
-      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
-    const invocationColor = headerInfo.invocationColor || '#a84b20';
-    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
-    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
-    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
-    const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize
-      ? `${headerInfo.factoryFontSize}px`
-      : '18px';
-    const descriptionFontSize = headerInfo.descriptionFontSize
-      ? `${headerInfo.descriptionFontSize}px`
-      : '10px';
-    const proprietorFontSize = headerInfo.proprietorFontSize
-      ? `${headerInfo.proprietorFontSize}px`
-      : '10px';
-    const phoneFontSize = headerInfo.phoneFontSize
-      ? `${headerInfo.phoneFontSize}px`
-      : '10px';
-
-    printContainer.innerHTML = `
-      <div style="
-        width:100%;
-        max-width:100%;
-        margin:0 auto;
-        background:#ffffff;
-        font-family:Arial,Helvetica,sans-serif;
-        padding:2mm 4mm;
-        box-sizing:border-box;
-        color:#111111;
-      ">
-        <!-- HEADER -->
-        <div style="width:100%;text-align:center;">
-          <div style="
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            margin:0;
-            padding:0;
-          ">
-            <span style="
-              font-size:11px;
-              font-weight:bold;
-              color:${invocationColor};
-              white-space:nowrap;
-            ">
-              ${leftInvocation}
-            </span>
-
-            <span style="
-              font-size:${factoryFontSize};
-              font-weight:bold;
-              color:${factoryNameColor};
-              line-height:1.1;
-              white-space:nowrap;
-            ">
-              ${factoryName}
-            </span>
-
-            <span style="
-              font-size:11px;
-              font-weight:bold;
-              color:${invocationColor};
-              white-space:nowrap;
-            ">
-              ${rightInvocation}
-            </span>
-          </div>
-
-          <div style="
-            margin:3px 0 0;
-            font-size:${descriptionFontSize};
-            font-weight:bold;
-            color:${descriptionColor};
-            line-height:1.2;
-          ">
-            ${description}
-          </div>
-
-          <div style="
-            margin:3px 0 0;
-            font-size:${proprietorFontSize};
-            font-weight:bold;
-            color:${proprietorColor};
-            line-height:1.2;
-          ">
-            ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
-          </div>
-
-          <div style="
-            border-bottom:2px solid ${factoryNameColor};
-            margin:4px 0 6px;
-          "></div>
-        </div>
-
-        <!-- RECEIPT TITLE -->
-        <div style="
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          margin:0 0 4px;
-        ">
-          <h2 style="
-            margin:0;
-            text-align:center;
-            font-size:15px;
-            font-weight:bold;
-            letter-spacing:2px;
-            color:#111111;
-          ">
-            RECEIPT
-          </h2>
-        </div>
-
-        <!-- SIMPLE RECEIPT INFO -->
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          margin:0 0 6px;
-          padding:0 2px;
-          font-size:11px;
-          line-height:1.3;
-        ">
-          <div>
-            <span style="font-weight:bold;">Client:</span>
-            ${group.clientName}
-            <span style="margin-left:16px;font-weight:bold;">Phone:</span>
-            ${phoneNumber}
-          </div>
-
-          <div style="text-align:right;">
-            <span style="font-weight:bold;">Date:</span>
-            ${dateStr}
-          </div>
-        </div>
-
-        <!-- ITEM TABLE -->
-        <table style="
-          width:100%;
-          border-collapse:collapse;
-          font-size:10px;
-          margin:0 0 6px;
-        ">
-          <thead>
-            <tr style="
-              background:#785600;
-              color:#ffffff;
-            ">
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Item</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Size</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Purity (%)</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Gross Wt (G)</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">SRP (G)</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Fine Wt (G)</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Labor Rate (G)</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            ${itemsRows}
-          </tbody>
-        </table>
-
-        <!-- PAYMENT SUMMARY -->
-        <div style="
-          display:flex;
-          justify-content:flex-end;
-          margin-top:2px;
-        ">
-          <div style="
-            width:35%;
-            min-width:180px;
-            border:1px solid #d6c08a;
-            border-radius:4px;
-            background:#fffdf7;
-            overflow:hidden;
-          ">
-            <div style="
-              display:flex;
-              justify-content:space-between;
-              padding:3px 8px;
-              border-bottom:1px dashed #dddddd;
-              font-size:10px;
-            ">
-              <span style="font-weight:bold;color:#666666;">Total Fine Wt</span>
-              <span style="font-family:monospace;font-weight:bold;color:#111111;">
-                ${formatNumberWithDecimals(totalFineWt)} G
-              </span>
-            </div>
-
-            <div style="
-              display:flex;
-              justify-content:space-between;
-              padding:3px 8px;
-              border-bottom:1px dashed #dddddd;
-              font-size:10px;
-            ">
-              <span style="font-weight:bold;color:#666666;">Receive</span>
-              <span style="font-family:monospace;font-weight:bold;color:#111111;">
-                ${formatNumberWithDecimals(receive)} G
-              </span>
-            </div>
-
-            <div style="
-              display:flex;
-              justify-content:space-between;
-              padding:3px 8px;
-              border-bottom:1px dashed #dddddd;
-              font-size:10px;
-            ">
-              <span style="font-weight:bold;color:#666666;">Pending</span>
-              <span style="font-family:monospace;font-weight:bold;color:#111111;">
-                ${formatNumberWithDecimals(pending)} G
-              </span>
-            </div>
-
-            <div style="
-              display:flex;
-              justify-content:space-between;
-              padding:4px 8px;
-              background:#f4f0e5;
-              font-size:11px;
-            ">
-              <span style="font-weight:bold;color:#111111;">Total</span>
-              <span style="font-family:monospace;font-weight:bold;color:#785600;">
-                ${formatNumberWithDecimals(total)} G
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- FOOTER -->
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          margin-top:16px;
-          padding-top:4px;
-          border-top:1px dashed #aaaaaa;
-          font-size:10px;
-          line-height:1;
-          color:#444444;
-        ">
-          <div>
-            Contact For Support: 9511640351
-          </div>
-        </div>
-
-      </div>
-    `;
-
-    const style = document.createElement('style');
-    style.textContent = `
-      @page {
-        size: portrait;
-        margin: 4mm !important;
-      }
-
-      @media print {
-        @page {
-          size: portrait;
-          margin: 4mm !important;
-        }
-
-        html,
-        body {
-          width: 100% !important;
-          height: auto !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: #ffffff !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-
-        body * {
-          visibility: hidden;
-        }
-
-        #print-container,
-        #print-container * {
-          visibility: visible;
-        }
-
-        #print-container {
-          position: absolute !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
-          height: auto !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: #ffffff !important;
-          z-index: 999999 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-
-        #print-container > div {
-          width: 100% !important;
-          height: auto !important;
-          box-sizing: border-box !important;
-          padding: 2mm 4mm !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-
-        #print-container table {
-          width: 100% !important;
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
-        }
-
-        #print-container tr {
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
-        }
-      }
-    `;
-
-    document.head.appendChild(style);
-
-    setTimeout(() => {
-      window.print();
-
-      setTimeout(() => {
-        if (document.body.contains(printContainer)) {
-          document.body.removeChild(printContainer);
-        }
-        if (document.head.contains(style)) {
-          document.head.removeChild(style);
-        }
-      }, 1000);
-    }, 300);
   };
 
   // Print Table Report (Matching Tar / Cutting departmental reports)
@@ -807,20 +418,6 @@ const Billing: React.FC = () => {
       toast.error('No records available to print');
       return;
     }
-
-    const printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
-    printContainer.style.cssText = `
-      position: fixed;
-      left: -9999px;
-      top: 0;
-      width: 210mm;
-      min-height: 297mm;
-      background: white;
-      padding: 0;
-      z-index: 9999;
-    `;
-    document.body.appendChild(printContainer);
 
     const headerInfo =
       getpdfheaderdata?.data?.data ||
@@ -922,132 +519,151 @@ const Billing: React.FC = () => {
     const totalReceiveAll = filteredGroups.reduce((s, g) => s + (g.receive || 0), 0);
     const totalPendingAll = filteredGroups.reduce((s, g) => s + (g.pending || 0), 0);
 
-    printContainer.innerHTML = `
-      <div style="width:287mm;min-height:200mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
-        <div>
-          <!-- Header Section -->
-          <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
-              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
-              <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
-              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
+    const reportHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Billing Report</title>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: Arial, sans-serif;
+              background: #ffffff;
+              padding: 0;
+              margin: 0;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .report-container {
+              width: 100%;
+              max-width: 287mm;
+              margin: 0 auto;
+              padding: 6mm 5mm;
+              box-sizing: border-box;
+            }
+            @page {
+              size: A4 landscape;
+              margin: 3mm;
+            }
+            @media print {
+              body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .report-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 3mm !important;
+                margin: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+              }
+              tr {
+                page-break-inside: avoid !important;
+              }
+              thead tr, thead tr th {
+                background: #785600 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              tfoot tr {
+                background: #fef3c7 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="report-container">
+            <!-- Header Section -->
+            <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
+                <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
+                <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
+                <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
+              </div>
+              <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">${description}</div>
+              <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
+                ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
+              </div>
+              <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
             </div>
-            <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">${description}</div>
-            <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
-              ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
+
+            <!-- Title and Date Range -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
+              <div style="flex:1;"></div>
+              <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">Billing Report.</h2>
+              <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
+                ${fromStr && toStr ? `From: ${fromStr} &nbsp; To: ${toStr}` : ''}
+              </div>
             </div>
-            <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
+
+            <!-- Table -->
+            <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
+              <thead>
+                <tr style="background:#785600;color:white;font-weight:600;">
+                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:3%;">Sr</th>
+                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:10%;">Date & Time</th>
+                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:8%;">Bill No</th>
+                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:16%;">Client Name</th>
+                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:10%;">Phone</th>
+                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:14%;">Item (Size)</th>
+                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:7%;">Purity</th>
+                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:8%;">Fine Wt</th>
+                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:7%;">SRP</th>
+                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:8%;">Receive</th>
+                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:9%;">Pending</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+              <tfoot>
+                <tr style="background:#fef3c7;font-weight:bold;font-size:11px;">
+                  <td colspan="7" style="border:1px solid #000;padding:2px 4px;text-align:right;color:#000;">TOTAL:</td>
+                  <td style="border:1px solid #000;padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberWithDecimals(totalFineAll)}</td>
+                  <td style="border:1px solid #000;padding:2px 4px;text-align:right;color:#000;">-</td>
+                  <td style="border:1px solid #000;padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberWithDecimals(totalReceiveAll)}</td>
+                  <td style="border:1px solid #000;padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberWithDecimals(totalPendingAll)}</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
 
-          <!-- Title and Date Range -->
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
-            <div style="flex:1;"></div>
-            <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">Billing Report.</h2>
-            <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
-              ${fromStr && toStr ? `From: ${fromStr} &nbsp; To: ${toStr}` : ''}
-            </div>
-          </div>
-
-          <!-- Table -->
-          <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
-            <thead>
-              <tr style="background:#785600;color:white;font-weight:600;">
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:3%;">Sr</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:10%;">Date & Time</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:8%;">Bill No</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:16%;">Client Name</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:10%;">Phone</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:14%;">Item (Size)</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:7%;">Purity</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:8%;">Fine Wt</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:7%;">SRP</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:8%;">Receive</th>
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:9%;">Pending</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows}
-            </tbody>
-            <tfoot>
-              <tr style="background:#fef3c7;font-weight:bold;font-size:11px;">
-                <td colspan="7" style="border:1px solid #000;padding:2px 4px;text-align:right;color:#000;">TOTAL:</td>
-                <td style="border:1px solid #000;padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberWithDecimals(totalFineAll)}</td>
-                <td style="border:1px solid #000;padding:2px 4px;text-align:right;color:#000;">-</td>
-                <td style="border:1px solid #000;padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberWithDecimals(totalReceiveAll)}</td>
-                <td style="border:1px solid #000;padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberWithDecimals(totalPendingAll)}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            };
+          </script>
+        </body>
+      </html>
     `;
 
-    // Add print styles matching ClientReport exactly
-    const style = document.createElement('style');
-    style.textContent = `
-      @page {
-        size: A4 landscape;
-        margin: 3mm;
-      }
-      @media print {
-        body * {
-          visibility: hidden;
-        }
-        #print-container, #print-container * {
-          visibility: visible;
-        }
-        #print-container {
-          position: fixed !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-          background: white !important;
-          padding: 4px !important;
-          overflow: auto !important;
-          z-index: 9999 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        #print-container table {
-          width: 100% !important;
-          border-collapse: collapse !important;
-        }
-        #print-container tr {
-          page-break-inside: avoid !important;
-        }
-        #print-container thead tr {
-          background: #785600 !important;
-          color: white !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        #print-container thead tr th {
-          background: #785600 !important;
-          color: white !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        #print-container tfoot tr {
-          background: #fef3c7 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => {
-        if (document.body.contains(printContainer)) {
-          document.body.removeChild(printContainer);
-        }
-        if (document.head.contains(style)) {
-          document.head.removeChild(style);
-        }
-      }, 1000);
-    }, 500);
+    const printWindow = window.open('', '_blank', 'width=1100,height=800');
+    if (printWindow) {
+      printWindow.document.write(reportHtml);
+      printWindow.document.close();
+    } else {
+      toast.error('Please allow pop-ups to print the report');
+    }
   };
 
   const handleDelete = (group: BillGroup) => {

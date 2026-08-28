@@ -75,77 +75,76 @@ const StockMaster: React.FC = () => {
   const updateStock = useUpdateStock();
   const deleteStock = useDeleteStock();
 
-  // Initialize with existing stock data only (no empty row)
-  useEffect(() => {
-    if (itemsLoading || sizesLoading || stockLoading) {
-      return;
-    }
+useEffect(() => {
+  if (itemsLoading || sizesLoading || stockLoading) {
+    return;
+  }
 
-    // Separate gold items and other items
-    let entries: OpeningStockEntry[] = [];
+  let entries: OpeningStockEntry[] = [];
 
-    if (stockData.length > 0) {
-      const stockEntries: OpeningStockEntry[] = stockData.map(
-        (stock, index) => {
-          const item = items.find((i) => i.id === stock.itemId);
-          const size = sizes.find((s) => s.id === stock.sizeId);
+  if (stockData.length > 0) {
+    const stockEntries: OpeningStockEntry[] = stockData.map(
+      (stock, index) => {
+        const item = items.find((i) => i.id === stock.itemId);
+        const size = sizes.find((s) => s.id === stock.sizeId);
 
-          const isGold =
-            item?.name?.toLowerCase().includes('gold') ||
-            (stock.sizeId === null && stock.purity === null);
+        // FIX: Gold should be identified as:
+        // 1. sizeId === null AND purity === null (pure gold)
+        // 2. OR if the item name contains 'gold' AND sizeId === null
+        const isGold = 
+          (stock.sizeId === null && stock.purity === null) || 
+          (item?.name?.toLowerCase().includes('gold') && stock.sizeId === null);
 
-          const weight = stock.weight ? Number(stock.weight) : 0;
-          const purity = isGold ? 100 : stock.purity ? Number(stock.purity) : 0;
+        const weight = stock.weight ? Number(stock.weight) : 0;
+        const purity = isGold ? 100 : stock.purity ? Number(stock.purity) : 0;
 
-          return {
-            id: stock.id,
-            srNo: index + 1,
-            item: item?.name || (isGold ? 'Gold' : ''),
-            size: isGold ? '-' : size?.size || '',
-            purity: purity,
-            grams: weight,
-            isEditing: false,
-            isSaved: true,
-            gramsRaw: formatNumberDisplay(weight, 3),
-            purityRaw: formatNumberDisplay(purity, 3),
-            itemId: stock.itemId,
-            sizeId: stock.sizeId,
-          };
-        },
-      );
+        return {
+          id: stock.id,
+          srNo: index + 1,
+          item: item?.name || (isGold ? 'Gold' : ''),
+          size: isGold ? '-' : size?.size || '',
+          purity: purity,
+          grams: weight,
+          isEditing: false,
+          isSaved: true,
+          gramsRaw: formatNumberDisplay(weight, 3),
+          purityRaw: formatNumberDisplay(purity, 3),
+          itemId: stock.itemId,
+          sizeId: stock.sizeId,
+        };
+      },
+    );
 
-      // Separate gold items (assuming gold is identified by name containing 'gold' or itemId)
-      const goldItems = stockEntries.filter(
-        (entry) =>
-          entry.item.toLowerCase().includes('gold') ||
-          entry.itemId?.toLowerCase().includes('gold'),
-      );
-      const otherItems = stockEntries.filter(
-        (entry) =>
-          !entry.item.toLowerCase().includes('gold') &&
-          !entry.itemId?.toLowerCase().includes('gold'),
-      );
+    // Separate gold items
+    const goldItems = stockEntries.filter(
+      (entry) =>
+        // FIX: Only filter entries that are truly gold (sizeId === null)
+        entry.sizeId === null && entry.purity === 100,
+    );
+    
+    const otherItems = stockEntries.filter(
+      (entry) =>
+        // FIX: All non-gold entries (including those with 'gold' in name but with size)
+        !(entry.sizeId === null && entry.purity === 100),
+    );
 
-      // Sort gold items to top, then sort by item name
-      const sortedGold = goldItems.sort((a, b) => a.item.localeCompare(b.item));
-      const sortedOther = otherItems.sort((a, b) =>
-        a.item.localeCompare(b.item),
-      );
+    // Sort gold items to top, then sort by item name
+    const sortedGold = goldItems.sort((a, b) => a.item.localeCompare(b.item));
+    const sortedOther = otherItems.sort((a, b) =>
+      a.item.localeCompare(b.item),
+    );
 
-      // Combine with gold items first
-      entries = [...sortedGold, ...sortedOther];
+    entries = [...sortedGold, ...sortedOther];
 
-      // Recalculate srNo
-      entries = entries.map((entry, index) => ({
-        ...entry,
-        srNo: index + 1,
-      }));
-    } else {
-      entries = [];
-    }
+    // Recalculate srNo
+    entries = entries.map((entry, index) => ({
+      ...entry,
+      srNo: index + 1,
+    }));
+  }
 
-    setOpeningEntries(entries);
-  }, [stockData, items, sizes, itemsLoading, sizesLoading, stockLoading]);
+  setOpeningEntries(entries);
+}, [stockData, items, sizes, itemsLoading, sizesLoading, stockLoading]);
 
   // Filter data based on search term - search across all fields
   const filteredData = searchTerm
@@ -184,63 +183,6 @@ const StockMaster: React.FC = () => {
     }
   };
 
-  // Handle inline field change
-  const handleInlineChange = (
-    index: number,
-    field: 'item' | 'size' | 'purity' | 'grams' | 'itemId' | 'sizeId',
-    value: string,
-  ) => {
-    setOpeningEntries((prev) =>
-      prev.map((entry, i) => {
-        if (i === index) {
-          const updated = {...entry};
-
-          if (field === 'item') {
-            updated.item = value;
-            const foundItem = items.find((item) => item.name === value);
-            updated.itemId = foundItem?.id || '';
-          } else if (field === 'size') {
-            updated.size = value;
-            const foundSize = sizes.find((size) => size.size === value);
-            updated.sizeId = foundSize?.id || '';
-          } else if (field === 'itemId') {
-            updated.itemId = value;
-            const foundItem = items.find((item) => item.id === value);
-            updated.item = foundItem?.name || '';
-          } else if (field === 'sizeId') {
-            updated.sizeId = value;
-            const foundSize = sizes.find((size) => size.id === value);
-            updated.size = foundSize?.size || '';
-} else if (field === 'grams') {
-            const sanitized = value.replace(/[^0-9.]/g, '');
-            const parts = sanitized.split('.');
-            let formatted =
-              parts.length > 2
-                ? `${parts[0]}.${parts.slice(1).join('')}`
-                : sanitized;
-
-            if (
-              formatted.includes('.') &&
-              formatted.split('.')[1]?.length > 3
-            ) {
-              formatted = `${formatted.split('.')[0]}.${formatted.split('.')[1].slice(0, 3)}`;
-            }
-
-            updated.gramsRaw = formatted;
-            if (formatted === '' || formatted === '.' || formatted === '-') {
-              updated.grams = 0;
-            } else {
-              const numValue = parseFloat(formatted);
-              updated.grams = isNaN(numValue) ? 0 : numValue;
-            }
-          }
-
-          return updated;
-        }
-        return entry;
-      }),
-    );
-  };
 
   const formatNumberDisplay = (
     value: number | string | null | undefined,

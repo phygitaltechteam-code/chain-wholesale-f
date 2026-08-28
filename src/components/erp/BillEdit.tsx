@@ -31,6 +31,7 @@ import GenericInputField from '../Forms/Input/GenericInputField';
 import { useGetHeader } from '@/lib/api/headerapi';
 import { ClientSearch } from '../reciept/ClientSearch';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
+import { printReceipt } from '@/utils/printReceipt';
 
 interface ReceiptItem {
   id: string;
@@ -62,6 +63,39 @@ interface ReceiptFormData {
     weight: number;
     totalAmount: number;
   };
+}
+
+interface BillGroup {
+  id: string;
+  srNo: number;
+  dateTime: string;
+  billNo: string;
+  clientName: string;
+  phoneNumber: string;
+  receive: number;
+  pending: number;
+  type: 'DRAFT' | 'BILL';
+  createdAt: string;
+  items: {
+    itemId?: string;
+    sizeId?: string;
+    item: string;
+    size: string;
+    purity: number;
+    availableQty?: number;
+    finWt: number;
+    srp: number;
+    grossWeight: number;
+    laborRate?: number;
+  }[];
+  displayItems: string;
+  displaySizes: string;
+  displayPurity: string;
+  displayGrossWt: string;
+  displayFinWt: string;
+  displaySRP: string;
+  totalFinWt: number;
+  totalSRP: number;
 }
 
 const ClientSchema = z.object({
@@ -684,7 +718,7 @@ const BillEdit: React.FC = () => {
     return calculateTotalSRP() + calculateTotalLabor();
   };
 
-  // Get Client Due Balance from client.due or client.openingBalance
+  // Get Client Due Balance from client.due or client.openingBalance (Positive value)
   const getClientDueBalance = (client: any) => {
     if (!client) return 0;
     const due =
@@ -692,22 +726,29 @@ const BillEdit: React.FC = () => {
         ? Number(client.due)
         : NaN;
     if (!isNaN(due)) {
-      return Math.round(due * 1000) / 1000;
+      return Math.round(Math.abs(due) * 1000) / 1000;
     }
     const openingBalance = Number(client?.openingBalance) || 0;
-    return Math.round(openingBalance * 1000) / 1000;
+    return Math.round(Math.abs(openingBalance) * 1000) / 1000;
   };
 
   const calculateRemainingWeight = () => {
     if (isReadOnly && savedRemaining !== null) {
-      return Math.round(Math.abs(savedRemaining) * 1000) / 1000;
+      return Math.round(savedRemaining * 1000) / 1000;
     }
     const client = clients.find((c: any) => c.id === formData.clientId);
     const dueBalance = getClientDueBalance(client);
     const advance = Number(formData.customerWeight) || 0;
-    const issue = Number(formData.totalFine) || 0;
-    const remaining = dueBalance - advance + issue;
-    return Math.round(Math.abs(remaining) * 1000) / 1000;
+    const totalFineWeight =
+      formData.totalFine !== undefined && formData.totalFine !== ''
+        ? Number(formData.totalFine) || 0
+        : formData.items.reduce(
+          (sum, item) => sum + (Number(item.fineWt) || 0),
+          0,
+        );
+    // Remaining Balance = Total Fine Wt + Due Balance - Advance
+    const remaining = totalFineWeight + dueBalance - advance;
+    return Math.round(remaining * 1000) / 1000;
   };
 
   const formatNumberThreeDecimals = (value: number) => {
@@ -719,416 +760,22 @@ const BillEdit: React.FC = () => {
     if (value === 0 || !value) return '0';
     return Number(Math.abs(value).toFixed(2)).toString();
   };
-
-  // ======================================================
-  // PRINT RECEIPT - A5 Landscape
-  // ======================================================
-  const handlePrintReceipt = (billData: any) => {
-    const printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
-    printContainer.style.cssText = `
-      position: fixed;
-      left: -9999px;
-      top: 0;
-      width: 100%;
-      background: white;
-      padding: 0;
-      z-index: 9999;
-    `;
-
-    document.body.appendChild(printContainer);
-
-    // Get client phone
-    const client = clients.find((c: any) => c.id === formData.clientId);
-    const phoneNumber = client?.phoneNumber || 'N/A';
-
-    // Format date
-    const receiptDate = formData.date ? new Date(formData.date) : new Date();
-    const dateStr = receiptDate.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-
-    // Calculate amounts
-    const totalFineWt = calculateTotalFineWt();
-    const totalGrossWt = calculateTotalGrossWt();
-    const totalSRP = calculateTotalSRP();
-    const totalLabor = calculateTotalLabor();
-    const totalAmount = totalSRP + totalLabor;
-    const receive = formData.customerWeight || 0;
-    const pending = getClientDueBalance(client);
-    const total = calculateRemainingWeight();
-
-    // Build items table rows
-    let itemsRows = '';
-    formData.items.forEach((item) => {
-      itemsRows += `
-        <tr>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-size:10px;color:#000;">${item.item || '-'}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-size:10px;color:#000;">${item.size || '-'}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.purity)}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.grossWt)}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.srp)}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-weight:bold;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.fineWt)}</td>
-          <td style="border:1px solid #222;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${formatNumberThreeDecimals(item.laborRate)}</td>
-        </tr>
-      `;
-    });
-
-    const headerInfo =
-      getpdfheaderdata?.data?.data ||
-      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation =
-      headerInfo.leftInvocation ||
-      headerInfo.leftInovation ||
-      '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation =
-      headerInfo.rightInvocation ||
-      headerInfo.rightInovation ||
-      '॥ श्री साई प्रसन्न ॥';
-    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description =
-      headerInfo.description ||
-      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
-    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers =
-      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
-    const invocationColor = headerInfo.invocationColor || '#a84b20';
-    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
-    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
-    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
-    const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize
-      ? `${headerInfo.factoryFontSize}px`
-      : '18px';
-    const descriptionFontSize = headerInfo.descriptionFontSize
-      ? `${headerInfo.descriptionFontSize}px`
-      : '10px';
-    const proprietorFontSize = headerInfo.proprietorFontSize
-      ? `${headerInfo.proprietorFontSize}px`
-      : '10px';
-    const phoneFontSize = headerInfo.phoneFontSize
-      ? `${headerInfo.phoneFontSize}px`
-      : '10px';
-
-    printContainer.innerHTML = `
-      <div style="
-        width:100%;
-        max-width:100%;
-        margin:0 auto;
-        background:#ffffff;
-        font-family:Arial,Helvetica,sans-serif;
-        padding:2mm 4mm;
-        box-sizing:border-box;
-        color:#111111;
-      ">
-
-        <!-- HEADER -->
-        <div style="width:100%;text-align:center;">
-          <div style="
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            margin:0;
-            padding:0;
-          ">
-            <span style="
-              font-size:11px;
-              font-weight:bold;
-              color:${invocationColor};
-              white-space:nowrap;
-            ">
-              ${leftInvocation}
-            </span>
-
-            <span style="
-              font-size:${factoryFontSize};
-              font-weight:bold;
-              color:${factoryNameColor};
-              line-height:1.1;
-              white-space:nowrap;
-            ">
-              ${factoryName}
-            </span>
-
-            <span style="
-              font-size:11px;
-              font-weight:bold;
-              color:${invocationColor};
-              white-space:nowrap;
-            ">
-              ${rightInvocation}
-            </span>
-          </div>
-
-          <div style="
-            margin:3px 0 0;
-            font-size:${descriptionFontSize};
-            font-weight:bold;
-            color:${descriptionColor};
-            line-height:1.2;
-          ">
-            ${description}
-          </div>
-
-          <div style="
-            margin:3px 0 0;
-            font-size:${proprietorFontSize};
-            font-weight:bold;
-            color:${proprietorColor};
-            line-height:1.2;
-          ">
-            ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
-          </div>
-
-          <div style="
-            border-bottom:2px solid ${factoryNameColor};
-            margin:4px 0 6px;
-          "></div>
-        </div>
-
-        <!-- RECEIPT TITLE -->
-        <div style="
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          margin:0 0 4px;
-        ">
-          <h2 style="
-            margin:0;
-            text-align:center;
-            font-size:15px;
-            font-weight:bold;
-            letter-spacing:2px;
-            color:#111111;
-          ">
-            RECEIPT
-          </h2>
-        </div>
-
-        <!-- SIMPLE RECEIPT INFO -->
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          margin:0 0 6px;
-          padding:0 2px;
-          font-size:11px;
-          line-height:1.3;
-        ">
-          <div>
-            <span style="font-weight:bold;">Client:</span>
-            ${client?.name || 'N/A'}
-            <span style="margin-left:16px;font-weight:bold;">Phone:</span>
-            ${phoneNumber}
-          </div>
-
-          <div style="text-align:right;">
-            <span style="font-weight:bold;">Date:</span>
-            ${dateStr}
-          </div>
-        </div>
-
-        <!-- ITEM TABLE -->
-        <table style="
-          width:100%;
-          border-collapse:collapse;
-          font-size:10px;
-          margin:0 0 6px;
-        ">
-          <thead>
-            <tr style="
-              background:#785600;
-              color:#ffffff;
-            ">
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Item</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Size</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Purity (%)</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Gross Wt (G)</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">SRP (G)</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Fine Wt (G)</th>
-              <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;">Labor Rate (G)</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            ${itemsRows}
-          </tbody>
-        </table>
-
-        <!-- PAYMENT SUMMARY -->
-        <div style="
-          display:flex;
-          justify-content:flex-end;
-          margin-top:2px;
-        ">
-          <div style="
-            width:35%;
-            min-width:180px;
-            border:1px solid #d6c08a;
-            border-radius:4px;
-            background:#fffdf7;
-            overflow:hidden;
-          ">
-            <div style="
-              display:flex;
-              justify-content:space-between;
-              padding:3px 8px;
-              border-bottom:1px dashed #dddddd;
-              font-size:10px;
-            ">
-              <span style="font-weight:bold;color:#666666;">Total Fine Wt</span>
-              <span style="font-family:monospace;font-weight:bold;color:#111111;">
-                ${formatNumberThreeDecimals(totalFineWt)} G
-              </span>
-            </div>
-
-            <div style="
-              display:flex;
-              justify-content:space-between;
-              padding:3px 8px;
-              border-bottom:1px dashed #dddddd;
-              font-size:10px;
-            ">
-              <span style="font-weight:bold;color:#666666;">Receive</span>
-              <span style="font-family:monospace;font-weight:bold;color:#111111;">
-                ${formatNumberThreeDecimals(receive)} G
-              </span>
-            </div>
-
-            <div style="
-              display:flex;
-              justify-content:space-between;
-              padding:3px 8px;
-              border-bottom:1px dashed #dddddd;
-              font-size:10px;
-            ">
-              <span style="font-weight:bold;color:#666666;">Pending</span>
-              <span style="font-family:monospace;font-weight:bold;color:#111111;">
-                ${formatNumberThreeDecimals(pending)} G
-              </span>
-            </div>
-
-            <div style="
-              display:flex;
-              justify-content:space-between;
-              padding:4px 8px;
-              background:#f4f0e5;
-              font-size:11px;
-            ">
-              <span style="font-weight:bold;color:#111111;">Total</span>
-              <span style="font-family:monospace;font-weight:bold;color:#785600;">
-                ${formatNumberThreeDecimals(total)} G
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- FOOTER -->
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          margin-top:16px;
-          padding-top:4px;
-          border-top:1px dashed #aaaaaa;
-          font-size:10px;
-          line-height:1;
-          color:#444444;
-        ">
-          <div>
-            Contact For Support: 9511640351
-          </div>
-        </div>
-
-      </div>
-    `;
-
-    const style = document.createElement('style');
-    style.textContent = `
-      @page {
-        size: portrait;
-        margin: 4mm !important;
-      }
-
-      @media print {
-        @page {
-          size: portrait;
-          margin: 4mm !important;
-        }
-
-        html,
-        body {
-          width: 100% !important;
-          height: auto !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: #ffffff !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-
-        body * {
-          visibility: hidden;
-        }
-
-        #print-container,
-        #print-container * {
-          visibility: visible;
-        }
-
-        #print-container {
-          position: absolute !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
-          height: auto !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: #ffffff !important;
-          z-index: 999999 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-
-        #print-container > div {
-          width: 100% !important;
-          height: auto !important;
-          box-sizing: border-box !important;
-          padding: 2mm 4mm !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-
-        #print-container table {
-          width: 100% !important;
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
-        }
-
-        #print-container tr {
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
-        }
-      }
-    `;
-
-    document.head.appendChild(style);
-
-    setTimeout(() => {
-      window.print();
-
-      setTimeout(() => {
-        if (document.body.contains(printContainer)) {
-          document.body.removeChild(printContainer);
-        }
-        if (document.head.contains(style)) {
-          document.head.removeChild(style);
-        }
-      }, 1000);
-    }, 300);
+  const handlePrintReceipt = (group: BillGroup) => {
+    if (!group) return;
+    printReceipt(
+      {
+        clientName: group.clientName,
+        phoneNumber: group.phoneNumber,
+        dateTime: group.dateTime,
+        items: group.items,
+        totalFineWt: group.totalFinWt,
+        receive: group.receive,
+        total: group.pending,
+      },
+      getpdfheaderdata,
+    );
   };
+
 
   // Save as Draft
   const handleSaveAsDraft = async () => {
@@ -1368,8 +1015,8 @@ const BillEdit: React.FC = () => {
             return (
               <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
                 {item.purity !== undefined &&
-                item.purity !== null &&
-                item.purity !== ''
+                  item.purity !== null &&
+                  item.purity !== ''
                   ? `${formatNumberThreeDecimals(Number(item.purity))}%`
                   : '-'}
               </span>
@@ -1414,8 +1061,8 @@ const BillEdit: React.FC = () => {
           <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#c5b497] bg-[#eae3d5] px-2 py-1.5 text-xs shadow-inner dark:border-slate-600 dark:bg-slate-800">
             <span className="font-mono font-bold text-black dark:text-white">
               {item.availableQty !== undefined &&
-              item.availableQty !== null &&
-              item.availableQty !== ''
+                item.availableQty !== null &&
+                item.availableQty !== ''
                 ? formatNumberThreeDecimals(Number(item.availableQty))
                 : '0'}
             </span>
@@ -1436,8 +1083,8 @@ const BillEdit: React.FC = () => {
             return (
               <span className="font-mono text-sm font-semibold text-[#1a1c1b] dark:text-white">
                 {item.grossWt !== undefined &&
-                item.grossWt !== null &&
-                item.grossWt !== ''
+                  item.grossWt !== null &&
+                  item.grossWt !== ''
                   ? `${formatNumberThreeDecimals(Number(item.grossWt))} G`
                   : '0 G'}
               </span>
@@ -1475,8 +1122,8 @@ const BillEdit: React.FC = () => {
             return (
               <span className="font-mono text-sm text-[#4f4535] dark:text-slate-300">
                 {item.srp !== undefined &&
-                item.srp !== null &&
-                item.srp !== ''
+                  item.srp !== null &&
+                  item.srp !== ''
                   ? `${formatNumberThreeDecimals(Number(item.srp))} G`
                   : '0 G'}
               </span>
@@ -1525,8 +1172,8 @@ const BillEdit: React.FC = () => {
             return (
               <span className="font-mono text-sm text-[#4f4535] dark:text-slate-300">
                 {item.laborRate !== undefined &&
-                item.laborRate !== null &&
-                item.laborRate !== ''
+                  item.laborRate !== null &&
+                  item.laborRate !== ''
                   ? `${formatNumberThreeDecimals(Number(item.laborRate))} G`
                   : '0 G'}
               </span>
