@@ -19,6 +19,7 @@ interface JointEntry {
   chainWeight: number;
   chainReceived: number;
   powder: number;
+  increase: number;
   powderReceived: number;
   srp: number;
   scrap: number;
@@ -118,6 +119,20 @@ const JointDept: React.FC = () => {
           const itemName = joint.item?.name || joint.itemId || 'N/A';
           const sizeName = joint.size?.size || joint.sizeId || 'N/A';
 
+          const chainGiven = joint.chainReceived || joint.chainWeight || 0;
+          const chainReceived = joint.powderReceived || 0;
+          const powder =
+            chainReceived > 0
+              ? Math.max(
+                0,
+                Math.round((chainReceived - chainGiven) * 1000) / 1000,
+              )
+              : joint.powder || 0;
+          const increase =
+            powder > 0 && chainReceived > 0
+              ? Math.round(((powder / chainReceived) * 100) * 1000) / 1000
+              : joint.increase || 0;
+
           const isSaved = joint.isCompleted === true;
 
           return {
@@ -134,22 +149,26 @@ const JointDept: React.FC = () => {
             item: itemName,
             size: sizeName,
             purity: joint.purity || 0,
-            chainWeight: joint.chainWeight || 0,
-            chainReceived: joint.chainReceived || 0,
-            powder: joint.powder || 0,
-            powderReceived: joint.powderReceived || 0,
+            chainWeight: chainGiven,
+            chainReceived: chainGiven,
+            powder: powder,
+            powderReceived: chainReceived,
+            increase: increase,
             srp: joint.srp || 0,
             scrap: joint.scrap || 0,
             isEditing: !isSaved,
             isSaved: isSaved,
-            powderReceivedRaw: '',
-            powderRaw:
-              joint.powder !== null && joint.powder !== undefined
-                ? joint.powder.toString()
+            powderReceivedRaw:
+              joint.powderReceived !== null && joint.powderReceived !== undefined
+                ? joint.powderReceived.toString()
                 : '',
+            powderRaw: powder > 0 ? powder.toString() : '',
             srpRaw: '',
             purityRaw: joint.purity ? joint.purity.toString() : '',
-            scrapRaw: '',
+            scrapRaw:
+              joint.scrap !== null && joint.scrap !== undefined
+                ? joint.scrap.toString()
+                : '',
             itemId: joint.itemId,
             sizeId: joint.sizeId,
             isCompleted: joint.isCompleted || false,
@@ -296,11 +315,11 @@ const JointDept: React.FC = () => {
                     </td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainWeight)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainReceived)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.powder)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainReceived || item?.chainWeight)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.powderReceived)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.powder)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.increase)}%</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
                         ${proceedDate} ${proceedTime}
@@ -310,27 +329,6 @@ const JointDept: React.FC = () => {
       })
       .join('');
 
-    // Calculate totals
-    const totalChainWeight = filteredData.reduce(
-      (sum: number, item: any) => sum + (item?.chainWeight || 0),
-      0,
-    );
-    const totalChainReceived = filteredData.reduce(
-      (sum: number, item: any) => sum + (item?.chainReceived || 0),
-      0,
-    );
-    const totalPowder = filteredData.reduce(
-      (sum: number, item: any) => sum + (item?.powder || 0),
-      0,
-    );
-    const totalPowderReceived = filteredData.reduce(
-      (sum: number, item: any) => sum + (item?.powderReceived || 0),
-      0,
-    );
-    const totalScrap = filteredData.reduce(
-      (sum: number, item: any) => sum + (item?.scrap || 0),
-      0,
-    );
 
     const headerInfo =
       getpdfheaderdata?.data?.data ||
@@ -414,13 +412,13 @@ const JointDept: React.FC = () => {
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Given</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Powder Rec</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Powder Given</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Powder Rec (Joint)</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Proceed</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Given (G)</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Received (G)</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Powder Given (G)</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Increase %</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap (G)</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Proceed Date & Time</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -533,11 +531,29 @@ const JointDept: React.FC = () => {
       ),
     },
     {
+      key: 'purity',
+      header: 'Purity % (टंच)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.purity)} %
+        </span>
+      ),
+    },
+    {
       key: 'chainWeight',
       header: 'Chain Given (G)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.chainReceived)} G
+          {formatNumberDisplay(item.chainReceived || item.chainWeight)} G
+        </span>
+      ),
+    },
+    {
+      key: 'powderReceived',
+      header: 'Chain Received (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.powderReceived)} G
         </span>
       ),
     },
@@ -551,28 +567,17 @@ const JointDept: React.FC = () => {
       ),
     },
     {
-      key: 'powderReceived',
-      header: 'Powder Received (G)',
+      key: 'increase',
+      header: 'Increase %',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.powderReceived)} G
-        </span>
-      ),
-    },
-
-
-    {
-      key: 'purity',
-      header: 'Purity (%)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.purity)} %
+          {formatNumberDisplay(item.increase)} %
         </span>
       ),
     },
     {
       key: 'scrap',
-      header: 'Scrap (G)',
+      header: 'Scrap (स्क्रॅप)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.scrap)} G
@@ -618,6 +623,27 @@ const JointDept: React.FC = () => {
                 const numValue = parseFloat(value);
                 updated.powderReceived = isNaN(numValue) ? 0 : numValue;
               }
+
+              // Auto calculate: Powder Given = Chain Received - Chain Given
+              const chainGiven = entry.chainReceived || entry.chainWeight || 0;
+              const autoPowder =
+                Math.max(
+                  0,
+                  Math.round((updated.powderReceived - chainGiven) * 1000) /
+                  1000,
+                );
+              updated.powder = autoPowder;
+              updated.powderRaw = autoPowder > 0 ? autoPowder.toString() : '0';
+
+              // Auto calculate: Increase % = (Powder Given / Chain Received) * 100
+              if (updated.powder > 0 && updated.powderReceived > 0) {
+                updated.increase =
+                  Math.round(
+                    ((updated.powder / updated.powderReceived) * 100) * 1000,
+                  ) / 1000;
+              } else {
+                updated.increase = 0;
+              }
             } else if (field === 'powder') {
               updated.powderRaw = value;
               if (value === '' || value === '.' || value === '-') {
@@ -625,6 +651,15 @@ const JointDept: React.FC = () => {
               } else {
                 const numValue = parseFloat(value);
                 updated.powder = isNaN(numValue) ? 0 : numValue;
+              }
+
+              if (updated.powder > 0 && updated.powderReceived > 0) {
+                updated.increase =
+                  Math.round(
+                    ((updated.powder / updated.powderReceived) * 100) * 1000,
+                  ) / 1000;
+              } else {
+                updated.increase = 0;
               }
             } else if (field === 'purity') {
               updated.purityRaw = value;
@@ -681,6 +716,7 @@ const JointDept: React.FC = () => {
         data: {
           powderReceived: entry.powderReceived,
           powder: entry.powder,
+          increase: entry.increase,
           purity: entry.purity,
           scrap: entry.scrap,
           srp: 0,
@@ -778,7 +814,7 @@ const JointDept: React.FC = () => {
       render: (item) => (
         <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap  bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-      W      {formatNumberDisplay(item.purity)}%
+            {formatNumberDisplay(item.purity)}%
           </span>
         </div>
       ),
@@ -792,46 +828,9 @@ const JointDept: React.FC = () => {
         </span>
       ),
     },
-
-    {
-      key: 'powder',
-      header: 'Powder Given (G)',
-      render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <div className="relative inline-block">
-              <input
-                type="text"
-                value={
-                  item.powderRaw !== undefined
-                    ? item.powderRaw
-                    : item.powder === 0
-                      ? ''
-                      : item.powder
-                }
-                {...getScaleProps(index, 'powder')}
-                onChange={(e) =>
-                  handleInlineChange(index, 'powder', e.target.value)
-                }
-                placeholder="0.000"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-              />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
-              </span>
-            </div>
-          );
-        }
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.powder)} G
-          </span>
-        );
-      },
-    },
     {
       key: 'powderReceived',
-      header: 'Powder Received (G)',
+      header: 'Chain Received (G)',
       render: (item, index) => {
         if (item.isEditing) {
           return (
@@ -866,11 +865,23 @@ const JointDept: React.FC = () => {
       },
     },
     {
-      key: 'loss',
-      header: 'Loss (G)',
+      key: 'powder',
+      header: 'Powder Given(G)',
+
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.loss)} G
+          {formatNumberDisplay(item.powder)} G
+        </span>
+      ),
+    },
+
+    {
+      key: 'increase',
+      header: 'Increase %',
+
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.increase)} %
         </span>
       ),
     },
@@ -1145,7 +1156,7 @@ const JointDept: React.FC = () => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel 
+                  Cancel
                 </button>
                 <button
                   onClick={confirmSave}

@@ -59,10 +59,14 @@ const getSizeName = (size: any): string => {
   return '-';
 };
 
-// Calculate Loss: Chain Given - Chain Received
-const calculateLoss = (chainGiven: number, chainReceived: number): number => {
-  return Math.max(0, chainGiven - chainReceived);
+const calculateLoss = (
+  chainGiven: number,
+  chainReceived: number,
+  scrap: number = 0,
+): number => {
+  return Math.max(0, Math.round((chainGiven - chainReceived - scrap) * 1000) / 1000);
 };
+
 
 const CuttingDept: React.FC = () => {
   const getpdfheaderdata = useGetHeader();
@@ -138,16 +142,17 @@ const CuttingDept: React.FC = () => {
           const itemName = cutting.item?.name || cutting.itemId || 'N/A';
           const sizeName = cutting.size?.size || cutting.sizeId || 'N/A';
 
-          const chainGiven = cutting.chainWeight || cutting.chainGiven || 0;
-          const chainReceived = cutting.chainReceived || 0;
-          const loss = calculateLoss(chainGiven, chainReceived);
-
           const isSaved =
             cutting.isCompleted === true &&
             cutting.chainReceived !== null &&
             cutting.chainReceived !== undefined &&
             cutting.purity !== null &&
             cutting.purity !== undefined;
+
+          const chainGiven = cutting.chainWeight || cutting.chainGiven || 0;
+          const chainReceived = isSaved ? cutting.chainReceived || 0 : 0;
+          const scrap = isSaved ? cutting.scrap || 0 : 0;
+          const loss = calculateLoss(chainGiven, chainReceived, scrap);
 
           return {
             id: cutting.id,
@@ -165,18 +170,16 @@ const CuttingDept: React.FC = () => {
             purity: cutting.purity || 0,
             chainGiven: chainGiven,
             chainReceived: chainReceived,
-            scrap: cutting.scrap || 0,
+            scrap: scrap,
             loss: loss,
             isEditing: !isSaved,
             isSaved: isSaved,
-            chainGivenRaw:
-              cutting.chainWeight || cutting.chainGiven
-                ? (cutting.chainWeight || cutting.chainGiven).toString()
+            chainGivenRaw: chainGiven > 0 ? chainGiven.toString() : '',
+            chainReceivedRaw:
+              isSaved && cutting.chainReceived
+                ? cutting.chainReceived.toString()
                 : '',
-            chainReceivedRaw: cutting.chainReceived
-              ? cutting.chainReceived.toString()
-              : '',
-            scrapRaw: cutting.scrap ? cutting.scrap.toString() : '',
+            scrapRaw: isSaved && cutting.scrap ? cutting.scrap.toString() : '',
             purityRaw: cutting.purity ? cutting.purity.toString() : '',
             itemId: cutting.itemId,
             sizeId: cutting.sizeId,
@@ -631,6 +634,7 @@ const CuttingDept: React.FC = () => {
               updated.loss = calculateLoss(
                 updated.chainGiven,
                 updated.chainReceived,
+                updated.scrap
               );
             } else if (field === 'chainReceived') {
               updated.chainReceivedRaw = value;
@@ -644,6 +648,7 @@ const CuttingDept: React.FC = () => {
               updated.loss = calculateLoss(
                 updated.chainGiven,
                 updated.chainReceived,
+                updated.scrap
               );
             } else if (field === 'scrap') {
               updated.scrapRaw = value;
@@ -653,6 +658,12 @@ const CuttingDept: React.FC = () => {
                 const numValue = parseFloat(value);
                 updated.scrap = isNaN(numValue) ? 0 : numValue;
               }
+              // Recalculate loss when scrap changes
+              updated.loss = calculateLoss(
+                updated.chainGiven,
+                updated.chainReceived,
+                updated.scrap,
+              );
             } else if (field === 'purity') {
               updated.purityRaw = value;
               if (value === '' || value === '.' || value === '-') {
@@ -866,7 +877,7 @@ const CuttingDept: React.FC = () => {
         </span>
       ),
     },
-     {
+    {
       key: 'purity',
       header: 'Purity % (टंच)',
       render: (item) => (
@@ -1211,7 +1222,7 @@ const CuttingDept: React.FC = () => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel 
+                  Cancel
                 </button>
                 <button
                   onClick={

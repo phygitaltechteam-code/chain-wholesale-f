@@ -170,8 +170,9 @@ const SolderingDept: React.FC = () => {
               : soldering.powder || 0;
           const increase =
             powder > 0 && chainGiven > 0
-              ? Math.round((chainGiven / powder) * 1000) / 1000
+              ? Math.round(((powder / chainGiven) * 100) * 1000) / 1000
               : 0;
+
 
           const isSaved =
             soldering.isCompleted === true &&
@@ -808,9 +809,9 @@ const SolderingDept: React.FC = () => {
               }
             }
 
-            if (updated.powder > 0 && entry.chainGiven > 0) {
+            if (updated.powder > 0 && updated.chainGiven > 0) {
               updated.increase =
-                Math.round((entry.chainGiven / updated.powder) * 1000) / 1000;
+                Math.round(((updated.powder / updated.chainGiven) * 100) * 1000) / 1000;
             } else {
               updated.increase = 0;
             }

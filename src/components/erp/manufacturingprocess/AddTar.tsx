@@ -1015,10 +1015,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
               const numValue = parseFloat(sanitized);
               updated.tar = isNaN(numValue) ? 0 : numValue;
             }
-            updated.loss = Math.max(
-              0,
-              toNumber(entry.fine) - toNumber(updated.tar),
-            );
           } else if (field === 'scrap') {
             const sanitized = value.replace(/[^0-9.]/g, '');
             updated.scrapRaw = sanitized;
@@ -1038,6 +1034,16 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
               updated.purity = isNaN(numValue) ? 0 : numValue;
             }
           }
+          // Formula: Loss = Gross Wt - Tar - Scrap
+          const grossVal = toNumber(
+            updated.grosswt > 0 ? updated.grosswt : updated.fine,
+          );
+          const tarVal = toNumber(updated.tar);
+          const scrapVal = toNumber(updated.scrap);
+          updated.loss = Math.max(
+            0,
+            Math.round((grossVal - tarVal - scrapVal) * 1000) / 1000,
+          );
 
           updated.isDirty = true;
           return updated;
@@ -1062,7 +1068,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
 
     if (entry.loss < 0) {
       toast.error(
-        'Loss cannot be negative. Tar must be less than or equal to Fine.',
+        'Loss cannot be negative. (Tar + Scrap) must be less than or equal to Gross Weight.',
       );
       return;
     }
