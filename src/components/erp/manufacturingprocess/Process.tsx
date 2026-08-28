@@ -12,6 +12,7 @@ import PageHeader from '@/components/Forms/Common/PageHeader';
 import { manufacturingStore } from '@/utils/manufacturingStore';
 
 // Import all department components
+import MeltingDept from './MeltingDept';
 import AddTar from './AddTar';
 import BoxDept from './BoxDept';
 import SolderingDept from './SolderingDept';
@@ -38,12 +39,20 @@ const Process: React.FC = () => {
   // Define process steps with their routes
   const processSteps: ProcessStep[] = [
     {
+      id: 'melting',
+      name: 'Melting',
+      icon: <Flame className="h-4 w-4" />,
+      component: <MeltingDept />,
+      path: '/manufacturingprocess/melting',
+      status: 'active',
+    },
+    {
       id: 'tar',
       name: 'Tar Management',
       icon: <TrendingUp className="h-4 w-4" />,
       component: <AddTar showBack={false} />,
       path: '/manufacturingprocess/addtar',
-      status: 'active',
+      status: 'pending',
     },
     {
       id: 'box',

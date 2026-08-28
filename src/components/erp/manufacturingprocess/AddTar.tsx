@@ -9,7 +9,6 @@ import {
   Printer,
   Trash2,
   Layers,
-  Sparkles,
   AlertCircle,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
@@ -55,8 +54,6 @@ interface TarEntry {
 
 interface TarCardForm {
   id: string;
-  itemId: string;
-  sizeId: string;
   grossWt: string;
   purity: string;
   fine: string;
@@ -65,8 +62,6 @@ interface TarCardForm {
 
 const createNewCard = (initial?: Partial<TarCardForm>): TarCardForm => ({
   id: `card-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-  itemId: initial?.itemId || '',
-  sizeId: initial?.sizeId || '',
   grossWt: initial?.grossWt || '',
   purity: initial?.purity || '',
   fine: initial?.fine || '',
@@ -350,8 +345,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
                             ${date} ${time}
                         </td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.fine)}</td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.purity)}%</td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.tar)}</td>
@@ -447,10 +440,8 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                         <tr style="background:#785600;color:white;font-weight:600;">
                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
-                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
-                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Fine</th>
-                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
+                            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Tar</th>
                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
                             <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
@@ -548,24 +539,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
           </div>
         );
       },
-    },
-    {
-      key: 'item',
-      header: 'Item',
-      render: (item) => (
-        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-          {getItemName(item?.item)}
-        </span>
-      ),
-    },
-    {
-      key: 'size',
-      header: 'Size',
-      render: (item) => (
-        <span className="text-sm text-[#1a1c1b] dark:text-white">
-          {getSizeName(item?.size)}
-        </span>
-      ),
     },
     {
       key: 'fine',
@@ -868,16 +841,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     const card = modalCards[cardIndex];
     if (!card) return;
 
-    if (!card.itemId) {
-      toast.error(`Please select an item for Process Item #${cardIndex + 1}`);
-      return;
-    }
-
-    if (!card.sizeId) {
-      toast.error(`Please select a size for Process Item #${cardIndex + 1}`);
-      return;
-    }
-
     const fineValue = parseFloat(card.fine) || 0;
     const grossWtValue = parseFloat(card.grossWt) || 0;
     const purityValue = parseFloat(card.purity) || 0;
@@ -894,22 +857,19 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     );
 
     try {
-      const selectedItem = items.find((i) => i.id === card.itemId);
-      const selectedSize = sizes.find((s) => s.id === card.sizeId);
-
       const { day, month, year, hour, minute } = selectedDate;
       const date = new Date(year, month - 1, day, hour, minute);
       const dateTimeStr = formatDateTime(date);
       const grossVal = grossWtValue > 0 ? grossWtValue : fineValue;
 
       const payload = {
-        itemId: card.itemId,
-        sizeId: card.sizeId,
+        itemId: '',
+        sizeId: '',
         grosswt: grossVal,
         grossWt: grossVal,
         fine: fineValue,
-        item: selectedItem?.name || '',
-        size: selectedSize?.size || '',
+        item: '',
+        size: '',
         tar: 0,
         scrap: 0,
         loss: 0,
@@ -1187,28 +1147,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
           </div>
         );
       },
-    },
-    {
-      key: 'item',
-      header: 'Item',
-      render: (item) => (
-        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-          {typeof item.item === 'string'
-            ? item.item
-            : JSON.stringify(item.item)}
-        </span>
-      ),
-    },
-    {
-      key: 'size',
-      header: 'Size',
-      render: (item) => (
-        <span className="text-sm text-[#1a1c1b] dark:text-white">
-          {typeof item.size === 'string'
-            ? item.size
-            : JSON.stringify(item.size)}
-        </span>
-      ),
     },
     {
       key: 'fine',
@@ -1626,74 +1564,22 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                       key={card.id || idx}
                       className="relative flex flex-col justify-between rounded-xl border border-[#d3c4af]/30 bg-[#fbfaf8] p-4 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800/80"
                     >
-                      {/* Card Top / Header */}
-                      <div className="mb-3 flex items-center justify-between border-b border-[#d3c4af]/20 pb-2.5 dark:border-slate-700">
-                        <span className="flex items-center gap-1.5 rounded-md bg-[#785600]/10 px-2 py-0.5 text-xs font-bold text-[#785600] dark:bg-amber-900/30 dark:text-amber-400">
-                          <Sparkles className="h-3 w-3" />
-                          Process Item #{idx + 1}
-                        </span>
-                        {modalCards.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveCard(idx)}
-                            disabled={isCardSaving}
-                            className="rounded-md p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40"
-                            title="Remove this card"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
+
+                      {modalCards.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCard(idx)}
+                          disabled={isCardSaving}
+                          className="rounded-md p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40"
+                          title="Remove this card"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+
 
                       {/* Card Inputs */}
                       <div className="space-y-3">
-                        {/* Item */}
-                        <div>
-                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                            Item <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            value={card.itemId}
-                            onChange={(e) =>
-                              handleCardChange(idx, 'itemId', e.target.value)
-                            }
-                            className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                          >
-                            <option value="">Select Item</option>
-                            {items
-                              .filter(
-                                (item) =>
-                                  item?.name?.trim().toLowerCase() !== 'gold',
-                              )
-                              .map((item) => (
-                                <option key={item.id} value={item.id}>
-                                  {item.name || JSON.stringify(item)}
-                                </option>
-                              ))}
-                          </select>
-                        </div>
-
-                        {/* Size */}
-                        <div>
-                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                            Size <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            value={card.sizeId}
-                            onChange={(e) =>
-                              handleCardChange(idx, 'sizeId', e.target.value)
-                            }
-                            className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                          >
-                            <option value="">Select Size</option>
-                            {sizes.map((size) => (
-                              <option key={size.id} value={size.id}>
-                                {size.size || JSON.stringify(size)}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
                         {/* Gross Wt & Purity */}
                         <div className="grid grid-cols-2 gap-2.5">
                           <div>
@@ -1748,42 +1634,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                           </div>
                         </div>
 
-                        {/* Item & Size Stock Qty Banner (After Gross Wt & Purity) */}
-                        <div className="flex items-center justify-between rounded-lg bg-[#785600]/10 px-2.5 py-1.5 text-xs text-[#785600] dark:bg-amber-900/30 dark:text-amber-300">
-                          <span className="truncate text-[11px] font-medium">
-                            {card.itemId ? (
-                              <>
-                                <strong className="font-bold text-[#785600] dark:text-amber-300">
-                                  {items.find((i) => i.id === card.itemId)
-                                    ?.name || 'Item'}
-                                </strong>
-                                {card.sizeId && (
-                                  <span className="text-[#4f4535] dark:text-slate-400">
-                                    {' '}
-                                    (
-                                    {sizes.find((s) => s.id === card.sizeId)
-                                      ?.size || ''}
-                                    )
-                                  </span>
-                                )}
-                                {' '}Stock Qty:
-                              </>
-                            ) : (
-                              'Item Stock Qty:'
-                            )}
-                          </span>
-                          <span className="font-mono font-bold">
-                            {formatNumber(
-                              getItemStockWeight(
-                                card.itemId,
-                                card.sizeId,
-                                card.purity,
-                              ),
-                            )}{' '}
-                            G
-                          </span>
-                        </div>
-
                         {/* Fine Wt */}
                         <div>
                           <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
@@ -1824,7 +1674,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                           type="button"
                           onClick={() => handleSaveCard(idx)}
                           disabled={isCardSaving}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] py-2 text-xs font-semibold text-white shadow-sm transition-all hover:scale-[1.01] hover:shadow active:scale-[0.99] disabled:opacity-50"
                         >
                           <Plus className="h-3.5 w-3.5" />
                           <span>{isCardSaving ? 'Adding...' : 'Add'}</span>
@@ -1864,7 +1714,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                   }}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
-                  Cancel 
+                  Cancel
                 </button>
                 <GenericButton
                   onClick={confirmSave}
@@ -1888,7 +1738,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                 <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
               <h3 className="text-sm font-bold text-[#1a1c1b] dark:text-white">
-                Insufficient Stock (स्टॉक कम है)
+                Insufficient Stock
               </h3>
             </div>
 
@@ -1896,9 +1746,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
               <p className="text-xs leading-relaxed text-[#4f4535] dark:text-slate-300">
                 {stockErrorMessage ||
                   'Not enough stock available to add this tar entry.'}
-              </p>
-              <p className="mt-1 text-xs font-medium text-[#785600] dark:text-amber-400">
-                (उपलब्ध स्टॉक कम है, कृपया स्टॉक तपासा.)
               </p>
             </div>
 

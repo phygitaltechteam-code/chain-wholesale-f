@@ -6,12 +6,17 @@ import {
   ChevronDown,
   Printer,
   Calendar,
+  Plus,
+  X,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useGetBox, useGetBoxHistory, useSubmitBox } from '@/lib/api/box';
+import { useGetBox, useGetBoxHistory, useSubmitBox, useCreateBox } from '@/lib/api/box';
+import { useGetSizes, Size } from '@/lib/api/sizes';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
@@ -38,6 +43,23 @@ interface BoxEntry {
   isDirty?: boolean;
 }
 
+interface BoxCardForm {
+  id: string;
+  sizeId: string;
+  purity: string;
+  tarWeight: string;
+  chainWeight: string;
+  isSaving?: boolean;
+}
+
+const createNewBoxCard = (initial?: Partial<BoxCardForm>): BoxCardForm => ({
+  id: `box-card-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+  sizeId: initial?.sizeId || '',
+  purity: initial?.purity || '',
+  tarWeight: initial?.tarWeight || '',
+  chainWeight: initial?.chainWeight || '',
+});
+
 // Helper functions for safely extracting values
 const getItemName = (item: any): string => {
   if (!item) return '-';
@@ -62,6 +84,8 @@ const BoxDept: React.FC = () => {
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalCards, setModalCards] = useState<BoxCardForm[]>([createNewBoxCard()]);
   const [fromDate, setFromDate] = useState<Date[]>([]);
   const [toDate, setToDate] = useState<Date[]>([]);
   const [activeFilter, setActiveFilter] = useState<'all' | 'weekly' | 'custom'>(
@@ -76,7 +100,9 @@ const BoxDept: React.FC = () => {
     isLoading: historyLoading,
     refetch: refetchHistory,
   } = useGetBoxHistory();
+  const { data: sizes = [], isLoading: sizesLoading } = useGetSizes();
   const submitBox = useSubmitBox();
+  const createBox = useCreateBox();
 
   // Weighing Scale table focus hook
   const { getScaleProps } = useTableScaleFocus<'chainWeight' | 'scrap'>(
@@ -302,7 +328,6 @@ const BoxDept: React.FC = () => {
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
               ${date} ${time}
             </td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.tarWeight)}</td>
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
@@ -420,7 +445,6 @@ const BoxDept: React.FC = () => {
             <tr style="background:#785600;color:white;font-weight:600;">
               <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
               <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
-              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
               <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
               <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Tar</th>
               <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
@@ -533,15 +557,6 @@ const BoxDept: React.FC = () => {
           </div>
         );
       },
-    },
-    {
-      key: 'item',
-      header: 'Item',
-      render: (item) => (
-        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-          {item?.item?.name}
-        </span>
-      ),
     },
     {
       key: 'size',
@@ -743,6 +758,107 @@ const BoxDept: React.FC = () => {
     }
   }, [saveIndex, boxEntries, submitBox, navigate, refetch]);
 
+  const handleCardChange = (
+    cardIndex: number,
+    field: 'sizeId' | 'purity' | 'tarWeight' | 'chainWeight',
+    value: string,
+  ) => {
+    setModalCards((prev) =>
+      prev.map((card, idx) => {
+        if (idx !== cardIndex) return card;
+        const sanitized =
+          field === 'sizeId' ? value : value.replace(/[^0-9.]/g, '');
+        return { ...card, [field]: sanitized };
+      }),
+    );
+  };
+
+  const handleAddCard = () => {
+    setModalCards((prev) => [...prev, createNewBoxCard()]);
+  };
+
+  const handleRemoveCard = (cardIndex: number) => {
+    setModalCards((prev) => {
+      const next = prev.filter((_, idx) => idx !== cardIndex);
+      if (next.length === 0) {
+        setIsModalOpen(false);
+        return [createNewBoxCard()];
+      }
+      return next;
+    });
+  };
+
+  const handleOpenModal = () => {
+    setModalCards([createNewBoxCard()]);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveCard = async (cardIndex: number) => {
+    const card = modalCards[cardIndex];
+    if (!card) return;
+
+    if (!card.sizeId) {
+      toast.error(`Please select a size for Box Item #${cardIndex + 1}`);
+      return;
+    }
+
+    const tarWeightVal = parseFloat(card.tarWeight) || 0;
+    const purityVal = parseFloat(card.purity) || 0;
+    const chainWeightVal = parseFloat(card.chainWeight) || 0;
+
+    if (tarWeightVal <= 0) {
+      toast.error(`Please enter a valid Tar weight for Box Item #${cardIndex + 1}`);
+      return;
+    }
+
+    setModalCards((prev) =>
+      prev.map((c, idx) => (idx === cardIndex ? { ...c, isSaving: true } : c)),
+    );
+
+    try {
+      const selectedSize = sizes.find((s) => s.id === card.sizeId);
+      const lossVal = Math.max(0, Math.round((tarWeightVal - chainWeightVal) * 1000) / 1000);
+
+      const payload = {
+        sizeId: card.sizeId,
+        size: selectedSize?.size || '',
+        purity: purityVal,
+        tarWeight: tarWeightVal,
+        chainWeight: chainWeightVal,
+        scrap: 0,
+        loss: lossVal,
+        isCompleted: false,
+      };
+
+      await createBox.mutateAsync(payload);
+      toast.success(`Box Item #${cardIndex + 1} added successfully`);
+
+      setModalCards((prev) => {
+        const next = prev.filter((_, idx) => idx !== cardIndex);
+        if (next.length === 0) {
+          setIsModalOpen(false);
+          return [createNewBoxCard()];
+        }
+        return next;
+      });
+
+      await refetch();
+    } catch (error: any) {
+      console.error('Error saving box item:', error);
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        'Failed to save box entry';
+      toast.error(backendMessage);
+      setModalCards((prev) =>
+        prev.map((c, idx) =>
+          idx === cardIndex ? { ...c, isSaving: false } : c,
+        ),
+      );
+    }
+  };
+
   // Check if all entries are saved
   const allSaved = boxEntries.every((entry) => entry.isSaved);
 
@@ -776,17 +892,6 @@ const BoxDept: React.FC = () => {
           </div>
         );
       },
-    },
-    {
-      key: 'itemName',
-      header: 'Item',
-      render: (item) => (
-        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-          {typeof item?.item === 'object'
-            ? (item?.item?.name ?? '-')
-            : (item?.item ?? '-')}
-        </span>
-      ),
     },
     {
       key: 'sizeName',
@@ -1014,6 +1119,17 @@ const BoxDept: React.FC = () => {
               </GenericButton>
             )}
 
+            {!showHistory && (
+              <GenericButton
+                type="button"
+                onClick={handleOpenModal}
+                variant="primary"
+              >
+                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>Add Box</span>
+              </GenericButton>
+            )}
+
             {/* HISTORY / SHOW BOX */}
             <GenericButton
               type="button"
@@ -1144,8 +1260,211 @@ const BoxDept: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Add Box Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
+          <div
+            className={`w-full ${
+              modalCards.length > 1 ? 'max-w-4xl' : 'max-w-lg'
+            } flex max-h-[90vh] flex-col rounded-2xl bg-white shadow-2xl transition-all dark:bg-slate-900 border border-[#d3c4af]/30 dark:border-slate-700`}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#d3c4af]/20 p-4 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="rounded-lg bg-[#785600]/10 p-2 text-[#785600] dark:bg-amber-900/30 dark:text-amber-400">
+                  <Layers className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#1a1c1b] dark:text-white sm:text-lg">
+                    Add Box Process
+                  </h3>
+                  <p className="text-xs text-[#4f4535] dark:text-slate-400">
+                    {modalCards.length}{' '}
+                    {modalCards.length === 1 ? 'box item' : 'box items'} to
+                    configure
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddCard}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[#785600]/30 bg-[#785600]/5 px-2.5 py-1.5 text-xs font-semibold text-[#785600] transition-colors hover:bg-[#785600]/15 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20"
+                  title="Add another card"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Add Card</span>
+                </button>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="rounded-lg p-1.5 text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body - Cards Container */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div
+                className={`grid gap-4 ${
+                  modalCards.length > 1
+                    ? 'grid-cols-1 md:grid-cols-2'
+                    : 'grid-cols-1'
+                }`}
+              >
+                {modalCards.map((card, idx) => {
+                  const isCardSaving = card.isSaving || false;
+                  return (
+                    <div
+                      key={card.id || idx}
+                      className="relative flex flex-col justify-between rounded-xl border border-[#d3c4af]/30 bg-[#fbfaf8] p-4 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800/80"
+                    >
+                      {/* Card Top / Header */}
+                     
+                        {modalCards.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCard(idx)}
+                            disabled={isCardSaving}
+                            className="rounded-md p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40"
+                            title="Remove this card"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                     
+
+                      {/* Card Inputs */}
+                      <div className="space-y-3">
+                        {/* Size */}
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                            Size <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={card.sizeId}
+                            onChange={(e) =>
+                              handleCardChange(idx, 'sizeId', e.target.value)
+                            }
+                            className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                          >
+                            <option value="">Select Size</option>
+                            {sizes.map((size) => (
+                              <option key={size.id} value={size.id}>
+                                {size.size || JSON.stringify(size)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Tar Wt & Purity */}
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div>
+                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                              Tar Wt (G) <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={card.tarWeight}
+                                onChange={(e) =>
+                                  handleCardChange(
+                                    idx,
+                                    'tarWeight',
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="0.000"
+                                className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                              />
+                              <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                                G
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                              Purity (%) <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={card.purity}
+                                onChange={(e) =>
+                                  handleCardChange(
+                                    idx,
+                                    'purity',
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="e.g. 93"
+                                className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                              />
+                              <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                                %
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Chain Weight */}
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                            Chain Weight (G)
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={card.chainWeight}
+                              onChange={(e) =>
+                                handleCardChange(
+                                  idx,
+                                  'chainWeight',
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="0.000"
+                              className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                            />
+                            <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                              G
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card Action Button */}
+                      <div className="mt-4 border-t border-[#d3c4af]/20 pt-3 dark:border-slate-700">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveCard(idx)}
+                          disabled={isCardSaving}
+                          className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] py-2 text-xs font-semibold text-white shadow-sm transition-all hover:scale-[1.01] hover:shadow active:scale-[0.99] disabled:opacity-50"
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                          <span>
+                            {isCardSaving ? 'Saving...' : 'Save'}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+           
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default BoxDept;
+

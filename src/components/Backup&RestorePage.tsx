@@ -8,12 +8,21 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Mail,
+  X,
+  Database,
+  CheckCircle,
 } from 'lucide-react';
 
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
-import { getBackFile, useRestore, useDeleteDatabase } from '@/lib/api/backup';
+import {
+  getBackFile,
+  useRestore,
+  useDeleteDatabase,
+  useSendBackupEmail,
+} from '@/lib/api/backup';
 
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import PageHeader from '@/components/Forms/Common/PageHeader';
@@ -26,6 +35,8 @@ const BackupAndRestorePage = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [showBackupOptionsModal, setShowBackupOptionsModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -33,6 +44,7 @@ const BackupAndRestorePage = () => {
 
   const restore = useRestore(queryClient);
   const deleteDbMutation = useDeleteDatabase(queryClient);
+  const sendEmailMutation = useSendBackupEmail();
 
   /**
    * ============================================
@@ -77,6 +89,7 @@ const BackupAndRestorePage = () => {
       toast.success('SQL backup downloaded successfully', {
         id: 'backup-download',
       });
+      setShowBackupOptionsModal(false);
     } catch (error: any) {
       console.error('========== DOWNLOAD ERROR ==========', error);
       toast.error(error?.message || 'Failed to download database backup', {
@@ -84,6 +97,39 @@ const BackupAndRestorePage = () => {
       });
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  /**
+   * ============================================
+   * SEND BACKUP VIA EMAIL (DIRECT API CALL)
+   * ============================================
+   */
+  const handleSendBackupToEmail = async () => {
+    if (isSendingEmail) {
+      return;
+    }
+
+    setIsSendingEmail(true);
+
+    try {
+      toast.loading('Sending backup to email...', {
+        id: 'backup-email',
+      });
+
+      await sendEmailMutation.mutateAsync();
+
+      toast.success('Backup sent to your email successfully!', {
+        id: 'backup-email',
+      });
+      setShowBackupOptionsModal(false);
+    } catch (error: any) {
+      console.error('========== EMAIL BACKUP ERROR ==========', error);
+      toast.error(error?.message || 'Failed to send backup via email', {
+        id: 'backup-email',
+      });
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -223,36 +269,36 @@ const BackupAndRestorePage = () => {
 
         {/* 3 Action Cards */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Card 1: Download Backup */}
+          {/* Card 1: Backup Data */}
           <div className="flex flex-col justify-between rounded-xl border border-[#d3c4af]/30 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div>
               <div className="mb-2 flex items-center gap-2">
-                <Download className="h-5 w-5 text-[#785600] dark:text-amber-400" />
+                <Database className="h-5 w-5 text-[#785600] dark:text-amber-400" />
                 <h2 className="text-lg font-semibold text-[#1a1c1b] dark:text-white">
-                  Download Backup
+                  Database Backup
                 </h2>
               </div>
               <p className="mb-6 text-sm text-[#4f4535] dark:text-slate-400">
-                Download a complete SQL backup of your database safely to your device.
+                Backup your complete database via direct email or instant download to your device.
               </p>
             </div>
 
             <GenericButton
               type="button"
-              onClick={handleDownloadBackup}
-              disabled={isDownloading}
+              onClick={() => setShowBackupOptionsModal(true)}
+              disabled={isDownloading || isSendingEmail}
               variant="primary"
               className="w-full !px-6"
             >
-              {isDownloading ? (
+              {isDownloading || isSendingEmail ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
+                  Processing...
                 </>
               ) : (
                 <>
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Backup
+                  <Database className="mr-2 h-4 w-4" />
+                  Backup Data
                 </>
               )}
             </GenericButton>
@@ -433,9 +479,70 @@ const BackupAndRestorePage = () => {
             </div>
           </div>
         )}
+
+        {/* Simple Backup Modal (Email or Download) */}
+        {showBackupOptionsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-sm rounded-2xl border border-[#d3c4af]/30 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-base font-bold text-[#1a1c1b] dark:text-white sm:text-lg">
+                  Backup Database
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowBackupOptionsModal(false)}
+                  disabled={isDownloading || isSendingEmail}
+                  className="rounded-lg p-1 text-[#4f4535] hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <p className="mb-5 text-xs text-[#4f4535] dark:text-slate-400">
+                Please select your preferred backup option:
+              </p>
+
+              {/* 2 Simple Action Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={handleSendBackupToEmail}
+                  disabled={isSendingEmail || isDownloading}
+                  className="flex flex-col items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50/80 p-4 text-blue-700 transition-all hover:bg-blue-100 active:scale-95 disabled:opacity-50 dark:border-blue-900/40 dark:bg-blue-950/50 dark:text-blue-300"
+                >
+                  {isSendingEmail ? (
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                  ) : (
+                    <Mail className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  )}
+                  <span className="text-xs font-bold sm:text-sm">
+                    {isSendingEmail ? 'Sending...' : 'Send to Email'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadBackup}
+                  disabled={isDownloading || isSendingEmail}
+                  className="flex flex-col items-center justify-center gap-2 rounded-xl border border-[#785600]/30 bg-[#785600]/10 p-4 text-[#785600] transition-all hover:bg-[#785600]/20 active:scale-95 disabled:opacity-50 dark:border-amber-500/30 dark:bg-amber-950/50 dark:text-amber-300"
+                >
+                  {isDownloading ? (
+                    <Loader2 className="h-6 w-6 animate-spin text-[#785600] dark:text-amber-400" />
+                  ) : (
+                    <Download className="h-6 w-6 text-[#785600] dark:text-amber-400" />
+                  )}
+                  <span className="text-xs font-bold sm:text-sm">
+                    {isDownloading ? 'Downloading...' : 'Download'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default BackupAndRestorePage;
+

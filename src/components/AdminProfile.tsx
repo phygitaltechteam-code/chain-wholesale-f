@@ -150,7 +150,7 @@ const AdminProfile: React.FC = () => {
             </div>
 
             {/* Email */}
-            <div className="flex items-start gap-3">
+            {/* <div className="flex items-start gap-3">
               <div className="mt-1 rounded-lg bg-amber-50 p-2.5 text-[#785600] dark:bg-slate-800 dark:text-amber-400">
                 <Mail className="h-5 w-5" />
               </div>
@@ -167,7 +167,7 @@ const AdminProfile: React.FC = () => {
                   className="w-full rounded-lg border border-[#d3c4af]/40 bg-white px-3.5 py-2 text-sm font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white"
                 />
               </div>
-            </div>
+            </div> */}
 
             {/* Primary Phone */}
             <div className="flex items-start gap-3">

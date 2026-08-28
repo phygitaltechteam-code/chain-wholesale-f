@@ -55,7 +55,29 @@ export const useSubmitBox = () => {
   });
 };
 
-export const submitBoxApi = async ({id, data}: {id: string; data: any}) => {
+export const createBoxApi = async (data: any) => {
+  try {
+    const response = await api.post('/admin/box', data);
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to create box entry');
+    }
+    throw error;
+  }
+};
+
+export const useCreateBox = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createBoxApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['box'] });
+    },
+  });
+};
+
+export const submitBoxApi = async ({ id, data }: { id: string; data: any }) => {
   try {
     const response = await api.put(`/admin/box/${id}`, data);
     return response.data;
@@ -66,3 +88,5 @@ export const submitBoxApi = async ({id, data}: {id: string; data: any}) => {
     throw error;
   }
 };
+
+
