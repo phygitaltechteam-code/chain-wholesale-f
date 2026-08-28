@@ -636,7 +636,11 @@ const BoxDept: React.FC = () => {
                 const numValue = parseFloat(value);
                 updated.chainWeight = isNaN(numValue) ? 0 : numValue;
               }
-              updated.loss = Math.max(0, entry.tarWeight - updated.chainWeight);
+              updated.loss = Math.max(
+                0,
+                Math.round((entry.tarWeight - updated.chainWeight - updated.scrap) * 1000) / 1000
+              );
+
             } else if (field === 'scrap') {
               updated.scrapRaw = value;
               if (value === '' || value === '.' || value === '-') {
@@ -902,8 +906,6 @@ const BoxDept: React.FC = () => {
       ),
     },
 
-    // IMPORTANT:
-    // This entire column is added only after the user edits a row.
     ...(showActionColumn
       ? [
         {
