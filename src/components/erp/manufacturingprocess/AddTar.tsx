@@ -1654,11 +1654,16 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                             className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                           >
                             <option value="">Select Item</option>
-                            {items.map((item) => (
-                              <option key={item.id} value={item.id}>
-                                {item.name || JSON.stringify(item)}
-                              </option>
-                            ))}
+                            {items
+                              .filter(
+                                (item) =>
+                                  item?.name?.trim().toLowerCase() !== 'gold',
+                              )
+                              .map((item) => (
+                                <option key={item.id} value={item.id}>
+                                  {item.name || JSON.stringify(item)}
+                                </option>
+                              ))}
                           </select>
                         </div>
 
