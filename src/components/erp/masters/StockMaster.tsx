@@ -279,17 +279,6 @@ useEffect(() => {
       },
     },
     {
-      key: 'grams',
-      header: 'Weight (G)',
-      render: (item, index) => {
-        return (
-          <span className="font-mono text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.grams, 3)} G
-          </span>
-        );
-      },
-    },
-    {
       key:'purity',
       header: 'Purity (%)',
       render: (item, index) => {
