@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback, useRef} from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Square,
   Save,
@@ -11,9 +11,9 @@ import {
   ArrowDownToLine,
   Clock,
 } from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import {
@@ -22,8 +22,8 @@ import {
   useSubmitKunda,
 } from '@/lib/api/cutting';
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import {useGetHeader} from '@/lib/api/headerapi';
-import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
+import { useGetHeader } from '@/lib/api/headerapi';
+import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 
 interface KundaEntry {
   id: string;
@@ -84,11 +84,11 @@ const SKundaDept: React.FC = () => {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return {monday, sunday};
+    return { monday, sunday };
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const {monday, sunday} = getDefaultWeekRange();
+    const { monday, sunday } = getDefaultWeekRange();
     return [monday, sunday];
   });
 
@@ -108,7 +108,7 @@ const SKundaDept: React.FC = () => {
   const submitKunda = useSubmitKunda();
 
   // Weighing Scale table focus hook
-  const {getScaleProps} = useTableScaleFocus<
+  const { getScaleProps } = useTableScaleFocus<
     'kundaGiven' | 'chainReceived' | 'scrap'
   >((index, field, weight) => {
     handleInlineChange(index, field, weight.toString());
@@ -135,15 +135,14 @@ const SKundaDept: React.FC = () => {
 
           const chainGiven = kunda.chainWeight || 0;
           const kundaGiven =
-            kunda.kundaGiven || kunda.kundaGiven || kunda.kunda || 0;
-          const chainReceived = kunda.chainReceived || 0;
-          const scrap = kunda.scrap || 0;
+            kunda.kundaGiven || kunda.kunda || 0;
+          const isSaved = kunda.isCompleted === true;
+          const chainReceived = isSaved ? kunda.chainReceived || 0 : 0;
+          const scrap = isSaved ? kunda.scrap || 0 : 0;
           const loss = Math.max(
             0,
-            chainGiven + kundaGiven - chainReceived,
+            Math.round((chainGiven - kundaGiven - chainReceived - scrap) * 1000) / 1000,
           );
-
-          const isSaved = kunda.isCompleted === true;
 
           return {
             id: kunda.id,
@@ -184,7 +183,7 @@ const SKundaDept: React.FC = () => {
   }, [kundaData, kundaLoading, error]);
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return {date: '-', time: '-'};
+    if (!dateString) return { date: '-', time: '-' };
     const date = new Date(dateString);
     return {
       date: date.toLocaleDateString('en-IN', {
@@ -303,8 +302,8 @@ const SKundaDept: React.FC = () => {
     // Build the table rows
     const rows = filteredData
       .map((item: any, index: number) => {
-        const {date, time} = formatDate(item?.createdAt);
-        const {date: proceedDate, time: proceedTime} = formatDate(
+        const { date, time } = formatDate(item?.createdAt);
+        const { date: proceedDate, time: proceedTime } = formatDate(
           item?.updatedAt,
         );
 
@@ -529,7 +528,7 @@ const SKundaDept: React.FC = () => {
       setKundaEntries((prev) =>
         prev.map((entry, i) => {
           if (i === index) {
-            const updated = {...entry};
+            const updated = { ...entry };
 
             if (field === 'kundaGiven') {
               updated.kundaGivenRaw = value;
@@ -565,10 +564,15 @@ const SKundaDept: React.FC = () => {
               }
             }
 
-            const totalGiven = updated.chainGiven + (updated.kundaGiven || 0);
             updated.loss = Math.max(
               0,
-              totalGiven - updated.chainReceived,
+              Math.round(
+                (updated.chainGiven -
+                  (updated.kundaGiven || 0) -
+                  updated.chainReceived -
+                  updated.scrap) *
+                1000,
+              ) / 1000,
             );
             // Show Action column only after the user actually changes an input field.
             updated.isDirty = true;
@@ -626,12 +630,12 @@ const SKundaDept: React.FC = () => {
         prev.map((s, i) =>
           i === index
             ? {
-                ...s,
-                isEditing: false,
-                isSaved: true,
-                isCompleted: true,
-                isDirty: false,
-              }
+              ...s,
+              isEditing: false,
+              isSaved: true,
+              isCompleted: true,
+              isDirty: false,
+            }
             : s,
         ),
       );
@@ -847,30 +851,30 @@ const SKundaDept: React.FC = () => {
 
     ...(showActionColumn
       ? [
-          {
-            key: 'actions',
-            header: 'Action',
-            render: (item: KundaEntry, index: number) => {
-              // Only show the action button after the user has changed an input.
-              if (item.isSaved || !item.isEditing || !hasEditableValues(item)) return null;
+        {
+          key: 'actions',
+          header: 'Action',
+          render: (item: KundaEntry, index: number) => {
+            // Only show the action button after the user has changed an input.
+            if (item.isSaved || !item.isEditing || !hasEditableValues(item)) return null;
 
-              return (
-                <div className="flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => handleStockClick(index)}
-                    disabled={isLoading || submitKunda.isPending}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#5d4200] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    title="Stock Process"
-                  >
-                    <Square className="h-3.5 w-3.5 fill-current" />
-                    <span>Stock</span>
-                  </button>
-                </div>
-              );
-            },
-          } as Column<KundaEntry>,
-        ]
+            return (
+              <div className="flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => handleStockClick(index)}
+                  disabled={isLoading || submitKunda.isPending}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#5d4200] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Stock Process"
+                >
+                  <Square className="h-3.5 w-3.5 fill-current" />
+                  <span>Stock</span>
+                </button>
+              </div>
+            );
+          },
+        } as Column<KundaEntry>,
+      ]
       : []),
   ];
 
@@ -879,7 +883,7 @@ const SKundaDept: React.FC = () => {
       key: 'createdAt',
       header: 'Date & Time',
       render: (item) => {
-        const {date, time} = formatDate(item.createdAt);
+        const { date, time } = formatDate(item.createdAt);
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
@@ -971,7 +975,7 @@ const SKundaDept: React.FC = () => {
       key: 'updatedAt',
       header: 'Proceed Date & Time',
       render: (item) => {
-        const {date, time} = formatDate(item.updatedAt);
+        const { date, time } = formatDate(item.updatedAt);
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
