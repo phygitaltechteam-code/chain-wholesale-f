@@ -8,6 +8,8 @@ import { useGetJoint, useGetJointHistory, useSubmitJoint } from '@/lib/api/joint
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
+import { useAddMelting } from '@/lib/api/tar';
+import { useAddJointMelting } from '@/lib/api/processmelting';
 
 interface JointEntry {
   id: string;
@@ -23,6 +25,7 @@ interface JointEntry {
   powderReceived: number;
   srp: number;
   scrap: number;
+  loss: number;
   isEditing?: boolean;
   isSaved?: boolean;
   powderReceivedRaw?: string;
@@ -59,11 +62,11 @@ const JointDept: React.FC = () => {
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [meltingLoadingIds, setMeltingLoadingIds] = useState<Set<string>>(new Set());
 
-  // Helper function to get week start (Monday 00:00) and end (Sunday 23:59:59)
   const getDefaultWeekRange = () => {
     const now = new Date();
-    const day = now.getDay(); // 0 = Sun, 1 = Mon, ...
+    const day = now.getDay();
     const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(now);
     monday.setDate(diffToMonday);
@@ -95,7 +98,42 @@ const JointDept: React.FC = () => {
     refetch: refetchHistory,
   } = useGetJointHistory();
   const submitJoint = useSubmitJoint();
+  const submitMelting = useAddJointMelting();
 
+  const handleMelting = async (entry: JointEntry) => {
+
+    setMeltingLoadingIds((prev) => new Set(prev).add(entry.id));
+
+    try {
+      await submitMelting.mutateAsync({
+        id: entry.id,
+        data: {
+          purity: entry.purity || 0,
+          chainWeight: entry.chainWeight || entry.chainReceived || 0,
+          jointId: entry.id,
+        },
+      });
+      await refetch();
+    } catch (error: any) {
+      console.error('Error in melting:', error);
+      const errorMessage =
+        (Array.isArray(error?.response?.data?.message)
+          ? error.response.data.message.join(', ')
+          : error?.response?.data?.message) ||
+        error?.response?.data?.error ||
+        error?.data?.message ||
+        error?.message ||
+        'Failed to process melting';
+      toast.error(errorMessage);
+    } finally {
+      // Remove this entry ID from loading set
+      setMeltingLoadingIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(entry.id);
+        return newSet;
+      });
+    }
+  };
   // Weighing Scale table focus hook
   const { getScaleProps } = useTableScaleFocus<
     'powderReceived' | 'powder' | 'scrap'
@@ -120,7 +158,8 @@ const JointDept: React.FC = () => {
           const sizeName = joint.size?.size || joint.sizeId || 'N/A';
 
           const chainGiven = joint.chainReceived || joint.chainWeight || 0;
-          const chainReceived = joint.powderReceived || 0;
+          const isSaved = joint.isCompleted === true;
+          const chainReceived = isSaved ? joint.powderReceived || 0 : 0;
           const powder =
             chainReceived > 0
               ? Math.max(
@@ -133,7 +172,17 @@ const JointDept: React.FC = () => {
               ? Math.round(((powder / chainReceived) * 100) * 1000) / 1000
               : joint.increase || 0;
 
-          const isSaved = joint.isCompleted === true;
+          const scrapVal = isSaved ? joint.scrap || 0 : 0;
+          const loss =
+            joint.loss !== undefined && joint.loss !== null
+              ? joint.loss
+              : isSaved && chainReceived > 0
+                ? Math.max(
+                  0,
+                  Math.round((chainGiven - chainReceived - scrapVal) * 1000) /
+                  1000,
+                )
+                : 0;
 
           return {
             id: joint.id,
@@ -155,7 +204,8 @@ const JointDept: React.FC = () => {
             powderReceived: chainReceived,
             increase: increase,
             srp: joint.srp || 0,
-            scrap: joint.scrap || 0,
+            scrap: scrapVal,
+            loss: loss,
             isEditing: !isSaved,
             isSaved: isSaved,
             powderReceivedRaw:
@@ -255,6 +305,7 @@ const JointDept: React.FC = () => {
         totalPowder: number;
         totalPowderReceived: number;
         totalScrap: number;
+        totalLoss: number;
       },
       item: any,
     ) => ({
@@ -264,6 +315,17 @@ const JointDept: React.FC = () => {
       totalPowderReceived:
         acc.totalPowderReceived + toNumber(item?.powderReceived),
       totalScrap: acc.totalScrap + toNumber(item?.scrap),
+      totalLoss:
+        acc.totalLoss +
+        toNumber(
+          item?.loss ??
+          Math.max(
+            0,
+            (item?.chainReceived || item?.chainWeight || 0) -
+            (item?.powderReceived || 0) -
+            (item?.scrap || 0),
+          ),
+        ),
     }),
     {
       totalGiven: 0,
@@ -271,6 +333,7 @@ const JointDept: React.FC = () => {
       totalPowder: 0,
       totalPowderReceived: 0,
       totalScrap: 0,
+      totalLoss: 0,
     },
   );
 
@@ -321,6 +384,7 @@ const JointDept: React.FC = () => {
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.powder)}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.increase)}%</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.loss !== undefined && item?.loss !== null ? item?.loss : Math.max(0, (item?.chainReceived || item?.chainWeight || 0) - (item?.powderReceived || 0) - (item?.scrap || 0)))}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
                         ${proceedDate} ${proceedTime}
                     </td>
@@ -418,6 +482,7 @@ const JointDept: React.FC = () => {
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Powder Given (G)</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Increase %</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap (G)</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss (G)</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Proceed Date & Time</th>
                     </tr>
                 </thead>
@@ -505,7 +570,7 @@ const JointDept: React.FC = () => {
             <span className="text-sm text-[#1a1c1b] dark:text-white">
               {date}
             </span>
-            <span className="text-gray-500 dark:text-gray-400 text-sm">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
               {time}
             </span>
           </div>
@@ -581,6 +646,28 @@ const JointDept: React.FC = () => {
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.scrap)} G
+        </span>
+      ),
+    },
+    {
+      key: 'loss',
+      header: 'Loss (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(
+            item.loss !== undefined && item.loss !== null
+              ? item.loss
+              : Math.max(
+                0,
+                Math.round(
+                  ((item.chainReceived || item.chainWeight || 0) -
+                    (item.powderReceived || 0) -
+                    (item.scrap || 0)) *
+                  1000,
+                ) / 1000,
+              ),
+          )}{' '}
+          G
         </span>
       ),
     },
@@ -679,6 +766,26 @@ const JointDept: React.FC = () => {
               }
             }
 
+            // Auto calculate Loss = Chain Given - Chain Received - Scrap (scrap is optional)
+            const chainGiven = entry.chainReceived || entry.chainWeight || 0;
+            const hasReceived =
+              (updated.powderReceivedRaw !== undefined &&
+                updated.powderReceivedRaw !== '' &&
+                updated.powderReceived > 0) ||
+              updated.powderReceived > 0;
+
+            if (hasReceived) {
+              const scrapAmount = updated.scrap || 0;
+              updated.loss = Math.max(
+                0,
+                Math.round(
+                  (chainGiven - updated.powderReceived - scrapAmount) * 1000,
+                ) / 1000,
+              );
+            } else {
+              updated.loss = 0;
+            }
+
             // Mark row as dirty so only this row shows the action button
             updated.isDirty = true;
             return updated;
@@ -719,6 +826,7 @@ const JointDept: React.FC = () => {
           increase: entry.increase,
           purity: entry.purity,
           scrap: entry.scrap,
+          loss: entry.loss,
           srp: 0,
           isCompleted: true,
         },
@@ -744,7 +852,10 @@ const JointDept: React.FC = () => {
     } catch (error: any) {
       console.error('Error saving joint:', error);
       const errorMessage =
-        error?.response?.data?.message ||
+        (Array.isArray(error?.response?.data?.message)
+          ? error.response.data.message.join(', ')
+          : error?.response?.data?.message) ||
+        error?.response?.data?.error ||
         error?.message ||
         'Failed to save joint entry';
       toast.error(errorMessage);
@@ -922,34 +1033,64 @@ const JointDept: React.FC = () => {
         );
       },
     },
-    ...(showActionColumn
-      ? [
-        {
-          key: 'actions',
-          header: 'Action',
-          render: (item: JointEntry, index: number) => {
-            if (item.isSaved || !hasEditableValues(item)) {
-              return null;
-            }
+    {
+      key: 'loss',
+      header: 'Loss (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.loss)} G
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Action',
+      render: (item: JointEntry, index: number) => {
+        const isMeltingLoading = meltingLoadingIds.has(item.id);
 
-            return (
-              <div className="flex items-center justify-center">
-                <button
-                  type="button"
-                  onClick={() => handleSaveClick(index)}
-                  disabled={isLoading || isSubmitting}
-                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Proceed to Cutting"
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  <span>Cutting</span>
-                </button>
-              </div>
-            );
-          },
-        } as Column<JointEntry>,
-      ]
-      : []),
+        return (
+          <div className="flex items-center justify-center gap-1.5">
+            {/* Cutting Button - Only show if entry is not saved and has editable values */}
+            {!item.isSaved && hasEditableValues(item) && (
+              <button
+                type="button"
+                onClick={() => handleSaveClick(index)}
+                disabled={isLoading || isSubmitting || isMeltingLoading}
+                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                title="Proceed to Cutting"
+              >
+                <Save className="h-3.5 w-3.5" />
+                <span>Cutting</span>
+              </button>
+            )}
+
+            {/* Melting Button - Always visible for all entries */}
+            <button
+              type="button"
+              onClick={() => handleMelting(item)}
+              disabled={isLoading || isSubmitting || isMeltingLoading}
+              className={`inline-flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
+                ? 'bg-gray-400 cursor-wait'
+                : 'bg-gradient-to-br from-[#785600] to-[#986d00]'
+                }`}
+              title="Send to Melting"
+            >
+              {isMeltingLoading ? (
+                <>
+                  <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <span>Melting</span>
+              )}
+            </button>
+          </div>
+        );
+      },
+    } as Column<JointEntry>,
   ];
 
   const isSubmitting = submitJoint.isPending;
@@ -965,92 +1106,90 @@ const JointDept: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-      {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
-        <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
-          <div className="flex min-w-0 items-center gap-2">
-            <h1 className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white sm:text-base md:text-lg">
-              {showHistory ? 'Joint History' : 'Joint Department'}
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Weekly Date Filter - Only show when viewing history */}
-            {showHistory && (
-              <div className="flex items-center gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* From Date - Defaults to Monday */}
-                  <GenericWeeklyDatePicker
-                    id="from-date-box"
-                    placeholder="DD/MM/YYYY"
-                    mode="from"
-                    initialDates={dateRange}
-                    onDateChange={(dates) => {
-                      if (dates && dates.length > 0) {
-                        const from = new Date(dates[0]);
-                        from.setHours(0, 0, 0, 0);
-                        setDateRange((prev) => [from, prev[1] || from]);
-                      } else {
-                        setDateRange((prev) => [undefined as any, prev[1]]);
-                      }
-                    }}
-                    className="w-32 sm:w-36 md:w-40"
-                  />
+    <div className="flex flex-col gap-4">
+      {/* Header Controls */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
+            {showHistory ? 'Joint History' : 'Joint Department'}
+          </h2>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Weekly Date Filter - Only show when viewing history */}
+          {showHistory && (
+            <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* From Date - Defaults to Monday */}
+                <GenericWeeklyDatePicker
+                  id="from-date-box"
+                  placeholder="DD/MM/YYYY"
+                  mode="from"
+                  initialDates={dateRange}
+                  onDateChange={(dates) => {
+                    if (dates && dates.length > 0) {
+                      const from = new Date(dates[0]);
+                      from.setHours(0, 0, 0, 0);
+                      setDateRange((prev) => [from, prev[1] || from]);
+                    } else {
+                      setDateRange((prev) => [undefined as any, prev[1]]);
+                    }
+                  }}
+                  className="w-32 sm:w-36 md:w-40"
+                />
 
-                  {/* To Date - Defaults to Sunday */}
-                  <GenericWeeklyDatePicker
-                    id="to-date-box"
-                    placeholder="DD/MM/YYYY"
-                    mode="to"
-                    initialDates={dateRange}
-                    onDateChange={(dates) => {
-                      if (dates && dates.length > 0) {
-                        const to = new Date(dates[0]);
-                        to.setHours(23, 59, 59, 999);
-                        setDateRange((prev) => [prev[0] || to, to]);
-                      } else {
-                        setDateRange((prev) => [prev[0], undefined as any]);
-                      }
-                    }}
-                    className="w-32 sm:w-36 md:w-40"
-                  />
-                </div>
+                {/* To Date - Defaults to Sunday */}
+                <GenericWeeklyDatePicker
+                  id="to-date-box"
+                  placeholder="DD/MM/YYYY"
+                  mode="to"
+                  initialDates={dateRange}
+                  onDateChange={(dates) => {
+                    if (dates && dates.length > 0) {
+                      const to = new Date(dates[0]);
+                      to.setHours(23, 59, 59, 999);
+                      setDateRange((prev) => [prev[0] || to, to]);
+                    } else {
+                      setDateRange((prev) => [prev[0], undefined as any]);
+                    }
+                  }}
+                  className="w-32 sm:w-36 md:w-40"
+                />
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Print History Button */}
-            {showHistory && (
-              <GenericButton
-                type="button"
-                onClick={handlePrintHistory}
-                variant="primary"
-              >
-                <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span>Print</span>
-              </GenericButton>
-            )}
-
-            {/* History Toggle Button */}
+          {/* Print History Button */}
+          {showHistory && (
             <GenericButton
               type="button"
-              onClick={toggleHistory}
+              onClick={handlePrintHistory}
               variant="primary"
             >
-              {showHistory ? (
-                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              )}
-              <span>{showHistory ? 'Show Joint' : 'History'}</span>
+              <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Print</span>
             </GenericButton>
-          </div>
+          )}
+
+          {/* History Toggle Button */}
+          <GenericButton
+            type="button"
+            onClick={toggleHistory}
+            variant="primary"
+          >
+            {showHistory ? (
+              <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            )}
+            <span>{showHistory ? 'Show Joint' : 'History'}</span>
+          </GenericButton>
         </div>
       </div>
 
       {/* Conditional Rendering: Joint Table OR History Table */}
       {!showHistory ? (
         /* Joint Department Table */
-        <div className="px-3 py-4 sm:px-4 md:px-6">
+        <div>
           <GenericTable<JointEntry>
             data={jointEntries}
             columns={columns}
@@ -1062,9 +1201,9 @@ const JointDept: React.FC = () => {
         </div>
       ) : (
         /* History Table */
-        <div className="px-3 py-4 sm:px-4 md:px-6">
+        <div>
           {/* History Summary Cards */}
-          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
             <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="flex flex-col">
                 <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
@@ -1112,6 +1251,16 @@ const JointDept: React.FC = () => {
                 </span>
                 <span className="text-lg font-bold text-black dark:text-green-400">
                   {formatNumberDisplay(historyTotals.totalScrap)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                  Total Loss
+                </span>
+                <span className="text-lg font-bold text-black dark:text-red-400">
+                  {formatNumberDisplay(historyTotals.totalLoss)} G
                 </span>
               </div>
             </div>

@@ -9,6 +9,44 @@ export const useGetBox = () => {
   });
 };
 
+export const useGetBoxweight  = () => {
+  return useQuery({
+    queryKey: ['boxweight'],
+    queryFn: getBoxweightApi,
+  });
+};
+
+const getBoxweightApi = async () => {
+  try {
+    const response = await api.get('/admin/box/stock');
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to fetch boxweight entries');
+    }
+    throw error;
+  }
+};
+
+export const useGetTarweight = () => {
+  return useQuery({
+    queryKey: ['tarweight'],
+    queryFn: getTarweightApi,
+  });
+};
+
+const getTarweightApi = async () => {
+  try {
+    const response = await api.get('/admin/tar/stock');
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to fetch tarweight entries');
+    }
+    throw error;
+  }
+};
+
 export const useGetBoxHistory = () => {
   return useQuery({
     queryKey: ['box'],

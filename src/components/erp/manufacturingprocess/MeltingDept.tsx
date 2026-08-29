@@ -501,6 +501,14 @@ const MeltingDept: React.FC = () => {
       await refetch();
     } catch (err: any) {
       console.error('Error stocking melted gold:', err);
+      const backendMessage =
+        (Array.isArray(err?.response?.data?.message)
+          ? err.response.data.message.join(', ')
+          : err?.response?.data?.message) ||
+        err?.response?.data?.error ||
+        err?.message ||
+        'Failed to send melting gold to stock';
+      toast.error(backendMessage);
       setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
@@ -797,16 +805,14 @@ const MeltingDept: React.FC = () => {
             {scrapCards.map((card, idx) => (
               <div
                 key={idx}
-                className="flex min-w-[200px] flex-1 items-center justify-between rounded-xl border border-[#d3c4af]/30 bg-gradient-to-br from-white to-[#fbfaf8] p-3 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:from-slate-900 dark:to-slate-800"
+                className="flex min-w-[90px] flex-col rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900"
               >
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-[#4f4535] dark:text-slate-400">
-                    Scrap {card.purity}%
-                  </span>
-                  <span className="font-mono text-base font-bold text-[#1a1c1b] dark:text-white">
-                    {formatNumberDisplay(card.totalWeight)} G
-                  </span>
-                </div>
+                <span className="font-mono text-[11px] font-bold text-black dark:text-white">
+                  Scrap ({card.purity}%)
+                </span>
+                <span className="font-mono text-[11px] font-bold text-black dark:text-white">
+                  {formatNumberDisplay(card.totalWeight)} G
+                </span>
               </div>
             ))}
           </div>
@@ -927,7 +933,7 @@ const MeltingDept: React.FC = () => {
                 <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total Melted Fine
                 </span>
-                <span className="text-lg font-bold text-black dark:text-green-400">
+                <span className="text-lg font-bold text-black dark:text-amber-400">
                   {formatNumberDisplay(historyTotals.totalFine)} G
                 </span>
               </div>
