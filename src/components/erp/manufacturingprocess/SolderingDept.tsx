@@ -11,6 +11,7 @@ import {
   X,
   Layers,
   Sparkles,
+  Box,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
@@ -24,11 +25,14 @@ import {
 } from '@/lib/api/soldering';
 import { useGetItems, Item } from '@/lib/api/items';
 import { useGetSizes, Size } from '@/lib/api/sizes';
-import { useSubmitCutting, useSubmitMoveCutting } from '@/lib/api/cutting';
-import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
+import { useSubmitMoveCutting } from '@/lib/api/cutting';
+import { useGetBox, useGetBoxweight } from '@/lib/api/box';
+import { useGetStock } from '@/lib/api/stock';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
+import { useAddMelting } from '@/lib/api/tar';
+import { useAddSolderingMelting } from '@/lib/api/processmelting';
 
 // ======================================================
 // HELPER: Get Current Week Range
@@ -57,7 +61,7 @@ interface SolderingEntry {
   size: string;
   purity: string;
   fine: number;
-  chainGiven: number;
+  chainWeight: number;
   chainReceived: number;
   powder: number;
   increase: number;
@@ -77,11 +81,11 @@ interface SolderingEntry {
 
 interface SolderingCardForm {
   id: string;
-  itemId: string;
+  itemId?: string;
   sizeId: string;
   purity: string;
-  chainGiven: string;
-  fine: string;
+  chainWeight: string;
+  fine?: string;
   isSaving?: boolean;
 }
 
@@ -92,7 +96,7 @@ const createNewSolderingCard = (
   itemId: initial?.itemId || '',
   sizeId: initial?.sizeId || '',
   purity: initial?.purity || '',
-  chainGiven: initial?.chainGiven || '',
+  chainWeight: initial?.chainWeight || '',
   fine: initial?.fine || '',
 });
 
@@ -118,6 +122,7 @@ const SolderingDept: React.FC = () => {
   const [solderingEntries, setSolderingEntries] = useState<SolderingEntry[]>(
     [],
   );
+  const [meltingLoadingIds, setMeltingLoadingIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [hasEditedRow, setHasEditedRow] = useState(false);
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
@@ -173,11 +178,224 @@ const SolderingDept: React.FC = () => {
   } = useGetSolderingHistory();
 
   const { data: items = [], isLoading: itemsLoading } = useGetItems();
+  const itemsList: Item[] = Array.isArray((items as any)?.data)
+    ? (items as any).data
+    : Array.isArray(items)
+      ? items
+      : [];
   const { data: sizes = [], isLoading: sizesLoading } = useGetSizes();
+  const { data: boxData = [] } = useGetBox();
+  const { data: stockData = [] } = useGetStock();
+  const { data: tarData = [], isLoading: tarLoading, refetch: tarRefetch } = useGetBoxweight();
 
   const submitSoldering = useSubmitSoldering();
   const createSoldering = useCreateSoldering();
   const submitCutting = useSubmitMoveCutting();
+
+  const submitMelting = useAddSolderingMelting();
+  const handleMelting = async (entry: SolderingEntry) => {
+    // Add this entry ID to loading set
+    setMeltingLoadingIds((prev) => new Set(prev).add(entry.id));
+
+    try {
+      await submitMelting.mutateAsync({
+        id: entry.id,
+        data: {
+          purity: parseFloat(entry.purity) || 0,
+          chainWeight: entry.chainWeight || 0,
+          solderingId: entry.id,
+        },
+      });
+      await refetch();
+    } catch (error: any) {
+      console.error('Error in melting:', error);
+      const errorMessage =
+        (Array.isArray(error?.response?.data?.message)
+          ? error.response.data.message.join(', ')
+          : error?.response?.data?.message) ||
+        error?.response?.data?.error ||
+        error?.data?.message ||
+        error?.message ||
+        'Failed to process melting';
+      toast.error(errorMessage);
+    } finally {
+      // Remove this entry ID from loading set
+      setMeltingLoadingIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(entry.id);
+        return newSet;
+      });
+    }
+  };
+  // Weighing Scale modal focus hook
+  const { getScaleProps: getModalScaleProps } = useTableScaleFocus<'chainWeight'>(
+    (cardIndex, field, weight) => {
+      handleCardChange(cardIndex, field, weight.toString());
+    },
+  );
+
+  const boxStockList = Array.isArray(tarData?.data)
+    ? tarData.data
+    : Array.isArray(tarData)
+      ? tarData
+      : [];
+
+  // Top Box Cards for Soldering Department (from /admin/box/stock)
+  const boxCards = React.useMemo(() => {
+    return boxStockList
+      .map((item: any) => {
+        const sizeLabel =
+          item.size?.size ||
+          (typeof item.size === 'string' ? item.size : '') ||
+          'Box';
+        const p = Number(item.purity || 0);
+        const wt = Number(
+          item.tarWeight || item.chainWeight || item.weight || 0,
+        );
+        return {
+          id: item.id,
+          sizeId: item.sizeId || item.size?.id,
+          size: sizeLabel,
+          purity: p,
+          totalWeight: Math.round(wt * 1000) / 1000,
+        };
+      })
+      .filter((c: any) => c.totalWeight > 0);
+  }, [boxStockList]);
+
+  // Unique available purities from Box Stock (or standard defaults)
+  const availablePurities = React.useMemo(() => {
+    const pSet = new Set<number>();
+    boxCards.forEach((c) => {
+      if (c.purity && c.purity > 0) pSet.add(c.purity);
+    });
+    if (pSet.size === 0) {
+      return [92, 90, 84, 75];
+    }
+    return Array.from(pSet).sort((a, b) => b - a);
+  }, [boxCards]);
+
+  // Helper to get purities that actually have available stock for the selected size
+  const getPuritiesForSize = (sizeId?: string): number[] => {
+    if (!sizeId) {
+      return availablePurities;
+    }
+    const pSet = new Set<number>();
+    boxCards.forEach((c) => {
+      if (
+        String(c.sizeId) === String(sizeId) &&
+        c.purity &&
+        c.purity > 0 &&
+        c.totalWeight > 0
+      ) {
+        pSet.add(c.purity);
+      }
+    });
+
+    if (pSet.size === 0) {
+      boxStockList.forEach((b: any) => {
+        const bSizeId = b.sizeId || b.size?.id;
+        const wt = Number(b.tarWeight || b.chainWeight || b.weight || 0);
+        const p = Number(b.purity || 0);
+        if (String(bSizeId) === String(sizeId) && wt > 0 && p > 0) {
+          pSet.add(p);
+        }
+      });
+    }
+
+    return Array.from(pSet).sort((a, b) => b - a);
+  };
+
+  // Helper to get available box quantity for a size and purity
+  const getAvailableBoxQty = (sizeId?: string, purity?: string): number => {
+    if (!sizeId) {
+      return 0;
+    }
+
+    if (boxStockList.length > 0) {
+      let filtered = boxStockList.filter(
+        (b: any) =>
+          (String(b.sizeId) === String(sizeId) || String(b.size?.id) === String(sizeId)) &&
+          Number(b.tarWeight || b.chainWeight || b.weight || 0) > 0,
+      );
+      if (purity && parseFloat(purity) > 0) {
+        const pNum = parseFloat(purity);
+        filtered = filtered.filter(
+          (b: any) => parseFloat(b.purity) === pNum,
+        );
+      }
+      const total = filtered.reduce((sum: number, b: any) => {
+        const wt = Number(b.tarWeight || b.chainWeight || b.weight || 0);
+        return sum + (isNaN(wt) ? 0 : wt);
+      }, 0);
+      return Math.round(total * 1000) / 1000;
+    }
+
+    if (Array.isArray(boxData) && boxData.length > 0) {
+      let filtered = boxData.filter(
+        (b: any) =>
+          (String(b.sizeId) === String(sizeId) || String(b.size?.id) === String(sizeId)) &&
+          Number(b.chainWeight || 0) > 0,
+      );
+      if (purity && parseFloat(purity) > 0) {
+        const pNum = parseFloat(purity);
+        filtered = filtered.filter(
+          (b: any) => parseFloat(b.purity) === pNum,
+        );
+      }
+      const total = filtered.reduce((sum: number, b: any) => {
+        const wt = Number(b.chainWeight || 0);
+        return sum + (isNaN(wt) ? 0 : wt);
+      }, 0);
+      return Math.round(total * 1000) / 1000;
+    }
+
+    if (Array.isArray(stockData) && stockData.length > 0) {
+      let filtered = stockData.filter(
+        (s: any) =>
+          (String(s.sizeId) === String(sizeId) || String(s.size?.id) === String(sizeId)) &&
+          Number(s.weight ?? s.stockQty ?? 0) > 0,
+      );
+      if (purity && parseFloat(purity) > 0) {
+        const pNum = parseFloat(purity);
+        filtered = filtered.filter(
+          (s: any) => parseFloat(s.purity) === pNum,
+        );
+      }
+      const total = filtered.reduce((sum: number, s: any) => {
+        const wt = Number(s.weight ?? s.stockQty ?? 0);
+        return sum + (isNaN(wt) ? 0 : wt);
+      }, 0);
+      return Math.round(total * 1000) / 1000;
+    }
+
+    return 0;
+  };
+
+  // When a size is selected in the modal, automatically prefill purity and chain weight from box stock
+  const handleSizeSelect = (cardIndex: number, selectedSizeId: string) => {
+    const sizePurities = getPuritiesForSize(selectedSizeId);
+    const chosenPurity = sizePurities.length > 0 ? String(sizePurities[0]) : '';
+
+    const stockMatch = boxStockList.find(
+      (b: any) =>
+        (String(b.sizeId) === String(selectedSizeId) || String(b.size?.id) === String(selectedSizeId)) &&
+        (chosenPurity ? String(b.purity) === chosenPurity : true) &&
+        Number(b.tarWeight || b.chainWeight || b.weight || 0) > 0,
+    );
+
+    setModalCards((prev) =>
+      prev.map((c, idx) => {
+        if (idx !== cardIndex) return c;
+        return {
+          ...c,
+          sizeId: selectedSizeId,
+          purity: chosenPurity,
+          chainWeight: '',
+        };
+      }),
+    );
+  };
 
   // Load data from API
   useEffect(() => {
@@ -196,26 +414,26 @@ const SolderingDept: React.FC = () => {
 
           const sizeName = soldering.size?.size || soldering.sizeId || 'N/A';
 
-          const chainGiven = soldering.chainWeight || 0;
+          const chainWeight = soldering.chainWeight || 0;
           const purity = soldering.purity;
           const fine =
             soldering.fine !== undefined && soldering.fine !== null
               ? soldering.fine
               : Math.round(
-                  ((chainGiven * (parseFloat(purity) || 0)) / 100) * 1000,
-                ) / 1000;
+                ((chainWeight * (parseFloat(purity) || 0)) / 100) * 1000,
+              ) / 1000;
           const chainReceived = soldering.chainReceived || 0;
           const powder =
             chainReceived > 0
               ? Math.max(
                 0,
-                Math.round((chainReceived - chainGiven) * 1000) / 1000,
+                Math.round((chainReceived - chainWeight) * 1000) / 1000,
               )
               : soldering.powder || 0;
           const increase =
-            powder > 0 && chainGiven > 0
-              ? Math.round(((powder / chainGiven) * 100) * 1000) / 1000
-              : 0;
+            powder > 0 && chainReceived > 0
+              ? Math.round(((powder / chainReceived) * 100) * 1000) / 1000
+              : soldering.increase || 0;
 
           const isSaved =
             soldering.isCompleted === true &&
@@ -240,7 +458,7 @@ const SolderingDept: React.FC = () => {
             purity: soldering.purity || '',
             fine: fine,
 
-            chainGiven: chainGiven,
+            chainWeight: chainWeight,
             chainReceived: chainReceived,
             powder: powder,
 
@@ -320,19 +538,14 @@ const SolderingDept: React.FC = () => {
   };
 
   // Format number for display
-  const formatNumberDisplay = (value: number) => {
-    if (value === 0 || !value) {
-      return '0';
-    }
-
-    const str = value.toString();
-
-    if (str.includes('.')) {
-      return str.replace(/\.?0+$/, '');
-    }
-
-    return str;
+  const formatNumberDisplay = (value: unknown): string => {
+    if (value === null || value === undefined || value === '') return '0';
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '0';
+    const str = num.toFixed(3);
+    return str.replace(/\.?0+$/, '');
   };
+
 
   // Filter history by date
   const getFilteredHistory = () => {
@@ -416,10 +629,6 @@ const SolderingDept: React.FC = () => {
 
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
                         ${item?.purity || '-'}%
-                    </td>
-
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-                        ${formatNumber(item?.fine || (item?.chainWeight * (parseFloat(item?.purity) || 0) / 100))}
                     </td>
 
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
@@ -554,10 +763,6 @@ const SolderingDept: React.FC = () => {
                 </th>
 
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Fine (लगड)
-                </th>
-
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
                   Chain Given
                 </th>
 
@@ -688,7 +893,7 @@ const SolderingDept: React.FC = () => {
               {date}
             </span>
 
-            <span className="text-gray-500 dark:text-gray-400 text-sm">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
               {time}
             </span>
           </div>
@@ -722,16 +927,7 @@ const SolderingDept: React.FC = () => {
       header: 'Purity % (टंच)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.purity)}%
-        </span>
-      ),
-    },
-    {
-      key: 'fine',
-      header: 'Fine (लगड)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.fine || (item.chainWeight * (parseFloat(item.purity) || 0) / 100))} G
+          {formatNumberDisplay(item.purity)}%
         </span>
       ),
     },
@@ -741,7 +937,7 @@ const SolderingDept: React.FC = () => {
 
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.chainWeight)} G
+          {formatNumberDisplay(item.chainWeight)} G
         </span>
       ),
     },
@@ -752,7 +948,7 @@ const SolderingDept: React.FC = () => {
 
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.chainReceived)} G
+          {formatNumberDisplay(item.chainReceived)} G
         </span>
       ),
     },
@@ -763,7 +959,7 @@ const SolderingDept: React.FC = () => {
 
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.powder)} G
+          {formatNumberDisplay(item.powder)} G
         </span>
       ),
     },
@@ -785,7 +981,7 @@ const SolderingDept: React.FC = () => {
 
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.scrap)} G
+          {formatNumberDisplay(item.scrap)} G
         </span>
       ),
     },
@@ -853,7 +1049,7 @@ const SolderingDept: React.FC = () => {
               const autoPowder =
                 Math.max(
                   0,
-                  Math.round((updated.chainReceived - entry.chainGiven) * 1000) /
+                  Math.round((updated.chainReceived - entry.chainWeight) * 1000) /
                   1000,
                 );
               updated.powder = autoPowder;
@@ -871,9 +1067,12 @@ const SolderingDept: React.FC = () => {
               }
             }
 
-            if (updated.powder > 0 && updated.chainGiven > 0) {
+            // Auto calculate: Increase % = (Powder Given / Chain Received) * 100
+            if (updated.powder > 0 && updated.chainReceived > 0) {
               updated.increase =
-                Math.round(((updated.powder / updated.chainGiven) * 100) * 1000) / 1000;
+                Math.round(
+                  ((updated.powder / updated.chainReceived) * 100) * 1000,
+                ) / 1000;
             } else {
               updated.increase = 0;
             }
@@ -962,7 +1161,10 @@ const SolderingDept: React.FC = () => {
     } catch (error: any) {
       console.error('Error saving soldering:', error);
       const errorMessage =
-        error?.response?.data?.message ||
+        (Array.isArray(error?.response?.data?.message)
+          ? error.response.data.message.join(', ')
+          : error?.response?.data?.message) ||
+        error?.response?.data?.error ||
         error?.message ||
         'Failed to save soldering entry';
       toast.error(errorMessage);
@@ -1045,7 +1247,10 @@ const SolderingDept: React.FC = () => {
     } catch (error: any) {
       console.error('Error saving soldering:', error);
       const errorMessage =
-        error?.response?.data?.message ||
+        (Array.isArray(error?.response?.data?.message)
+          ? error.response.data.message.join(', ')
+          : error?.response?.data?.message) ||
+        error?.response?.data?.error ||
         error?.message ||
         'Failed to save soldering entry';
       toast.error(errorMessage);
@@ -1066,38 +1271,17 @@ const SolderingDept: React.FC = () => {
 
   const handleCardChange = (
     cardIndex: number,
-    field: 'itemId' | 'sizeId' | 'purity' | 'chainGiven' | 'fine',
+    field: 'sizeId' | 'purity' | 'chainWeight' | 'itemId',
     value: string,
   ) => {
     setModalCards((prev) =>
       prev.map((card, idx) => {
         if (idx !== cardIndex) return card;
-        if (field === 'chainGiven' || field === 'purity') {
-          const sanitized = value.replace(/[^0-9.]/g, '');
-          const nextCard = { ...card, [field]: sanitized };
-          const chainNum = parseFloat(
-            field === 'chainGiven' ? sanitized : card.chainGiven,
-          );
-          const purityNum = parseFloat(
-            field === 'purity' ? sanitized : card.purity,
-          );
-          if (
-            !isNaN(chainNum) &&
-            !isNaN(purityNum) &&
-            chainNum > 0 &&
-            purityNum > 0
-          ) {
-            const autoFine =
-              Math.round(((chainNum * purityNum) / 100) * 1000) / 1000;
-            nextCard.fine = autoFine.toString();
-          }
-          return nextCard;
-        } else if (field === 'fine') {
-          const sanitized = value.replace(/[^0-9.]/g, '');
-          return { ...card, fine: sanitized };
-        } else {
-          return { ...card, [field]: value };
-        }
+        const sanitized =
+          field === 'sizeId' || field === 'itemId'
+            ? value
+            : value.replace(/[^0-9.]/g, '');
+        return { ...card, [field]: sanitized };
       }),
     );
   };
@@ -1136,14 +1320,13 @@ const SolderingDept: React.FC = () => {
       return;
     }
 
-    const chainGivenVal = parseFloat(card.chainGiven) || 0;
+    const chainWeightVal = parseFloat(card.chainWeight) || 0;
     const purityVal = parseFloat(card.purity) || 0;
     const fineVal =
-      parseFloat(card.fine) ||
-      Math.round(((chainGivenVal * purityVal) / 100) * 1000) / 1000;
+      Math.round(((chainWeightVal * purityVal) / 100) * 1000) / 1000;
 
-    if (chainGivenVal <= 0) {
-      toast.error(`Please enter a valid Chain Given weight`);
+    if (chainWeightVal <= 0) {
+      toast.error(`Please enter a valid Chain Weight`);
       return;
     }
 
@@ -1152,25 +1335,28 @@ const SolderingDept: React.FC = () => {
     );
 
     try {
-      const selectedItem = items.find((i) => i.id === card.itemId);
-      const selectedSize = sizes.find((s) => s.id === card.sizeId);
+      const itemsList = Array.isArray(items?.data)
+        ? items.data
+        : Array.isArray(items)
+          ? items
+          : [];
+      const selectedItem = itemsList.find(
+        (i: any) => String(i.id || i._id) === String(card.itemId),
+      );
+      const selectedSize = sizes.find(
+        (s: any) => String(s.id || s._id) === String(card.sizeId),
+      );
 
       const payload = {
         itemId: card.itemId,
-        sizeId: card.sizeId,
         item: selectedItem?.name || '',
+        sizeId: card.sizeId,
         size: selectedSize?.size || '',
         purity: purityVal ? String(purityVal) : '',
         fine: fineVal,
-        chainGiven: chainGivenVal,
-        chainWeight: chainGivenVal,
-        chainReceived: 0,
-        powder: 0,
-        increase: 0,
-        scrap: 0,
-        isCompleted: false,
+        chainWeight: chainWeightVal,
       };
-
+      console.log(payload, 'pay');
       await createSoldering.mutateAsync(payload);
       toast.success(`Soldering Item added successfully`);
 
@@ -1183,11 +1369,15 @@ const SolderingDept: React.FC = () => {
         return next;
       });
 
+      await tarRefetch();
       await refetch();
     } catch (error: any) {
       console.error('Error saving soldering card:', error);
       const backendMessage =
-        error?.response?.data?.message ||
+        (Array.isArray(error?.response?.data?.message)
+          ? error.response.data.message.join(', ')
+          : error?.response?.data?.message) ||
+        error?.response?.data?.error ||
         error?.data?.message ||
         error?.message ||
         'Failed to save soldering entry';
@@ -1274,21 +1464,12 @@ const SolderingDept: React.FC = () => {
       ),
     },
     {
-      key: 'fine',
-      header: 'Fine (लगड)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.fine)} G
-        </span>
-      ),
-    },
-    {
-      key: 'chainGiven',
+      key: 'chainWeight',
       header: 'Chain Given(G)',
 
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.chainGiven)} G
+          {formatNumberDisplay(item.chainWeight)} G
         </span>
       ),
     },
@@ -1393,45 +1574,69 @@ const SolderingDept: React.FC = () => {
       },
     },
 
-    ...(showActionColumn
-      ? [
-        {
-          key: 'actions',
-          header: 'Action',
-          render: (item: SolderingEntry, index: number) => {
-            if (item.isSaved || !hasEditableValues(item)) {
-              return null;
-            }
+    {
+      key: 'actions',
+      header: 'Action',
+      render: (item: SolderingEntry, index: number) => {
+        const isMeltingLoading = meltingLoadingIds.has(item.id);
 
-            return (
-              <div className="flex items-center justify-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleSaveClick(index, 'joint')}
-                  disabled={isLoading || isSubmitting}
-                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Go to Joint"
-                >
-                  <Hammer className="h-3.5 w-3.5" />
-                  <span>Joint</span>
-                </button>
+        return (
+          <div className="flex items-center justify-center gap-1.5">
+            {/* Joint Button - Only show if entry is not saved and has editable values */}
+            {!item.isSaved && hasEditableValues(item) && (
+              <button
+                type="button"
+                onClick={() => handleSaveClick(index, 'joint')}
+                disabled={isLoading || isSubmitting || isMeltingLoading}
+                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                title="Go to Joint"
+              >
+                <Hammer className="h-3.5 w-3.5" />
+                <span>Joint</span>
+              </button>
+            )}
 
-                <button
-                  type="button"
-                  onClick={() => handleSaveClick(index, 'cutting')}
-                  disabled={isLoading || isSubmitting}
-                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Go to Cutting"
-                >
-                  <Scissors className="h-3.5 w-3.5" />
-                  <span>Cutting</span>
-                </button>
-              </div>
-            );
-          },
-        } as Column<SolderingEntry>,
-      ]
-      : []),
+            {/* Cutting Button - Only show if entry is not saved and has editable values */}
+            {!item.isSaved && hasEditableValues(item) && (
+              <button
+                type="button"
+                onClick={() => handleSaveClick(index, 'cutting')}
+                disabled={isLoading || isSubmitting || isMeltingLoading}
+                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                title="Go to Cutting"
+              >
+                <Scissors className="h-3.5 w-3.5" />
+                <span>Cutting</span>
+              </button>
+            )}
+
+            {/* Melting Button - Always visible for all entries */}
+            <button
+              type="button"
+              onClick={() => handleMelting(item)}
+              disabled={isLoading || isSubmitting || isMeltingLoading}
+              className={`inline-flex items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
+                  ? 'bg-gray-400 cursor-wait'
+                  : 'bg-gradient-to-br from-[#785600] to-[#986d00]'
+                }`}
+              title="Send to Melting"
+            >
+              {isMeltingLoading ? (
+                <>
+                  <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <span>Melting</span>
+              )}
+            </button>
+          </div>
+        );
+      },
+    } as Column<SolderingEntry>,
   ];
 
   const isSubmitting = submitSoldering.isPending || submitCutting.isPending;
@@ -1452,107 +1657,125 @@ const SolderingDept: React.FC = () => {
     }
   };
 
-  // Clear date filters
-  const clearDateFilters = () => {
-    setFromDate(null);
-    setToDate(null);
-  };
+
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-      {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
-        <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
-          <div className="flex min-w-0 items-center gap-2">
-            <h1 className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white sm:text-base md:text-lg">
-              {showHistory ? 'Soldering History' : 'Soldering Department'}
-            </h1>
+    <div className="flex flex-col gap-4">
+      {/* Top Box Cards Bar with Smooth Scrollbar */}
+      {boxCards.length > 0 && !showHistory && (
+        <div className="w-full">
+          <div className="mb-2 flex items-center gap-2 px-1">
+            <Box className="h-4 w-4 text-[#785600] dark:text-amber-400" />
+            <span className="text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-300">
+              Available Box Stock
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Date Filters */}
-            {showHistory && (
-              <>
-                <div className="flex flex-wrap items-center gap-2">
-                  <div>
-                    <GenericWeeklyDatePicker
-                      id="from-date-box"
-                      placeholder="DD/MM/YYYY"
-                      mode="from"
-                      initialDates={fromDate ? [fromDate] : []}
-                      onDateChange={(dates) => {
-                        if (dates && dates.length > 0) {
-                          const selected = new Date(dates[0]);
-                          selected.setHours(0, 0, 0, 0);
-                          setFromDate(selected);
-                        } else {
-                          setFromDate(null);
-                        }
-                      }}
-                      className="w-32 sm:w-36 md:w-40"
-                    />
-                  </div>
-
-                  <GenericWeeklyDatePicker
-                    id="to-date-box"
-                    placeholder="DD/MM/YYYY"
-                    mode="to"
-                    initialDates={toDate ? [toDate] : []}
-                    onDateChange={(dates) => {
-                      if (dates && dates.length > 0) {
-                        const selected = new Date(dates[0]);
-                        selected.setHours(23, 59, 59, 999);
-                        setToDate(selected);
-                      } else {
-                        setToDate(null);
-                      }
-                    }}
-                    className="w-32 sm:w-36 md:w-40"
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Print History Button */}
-            {showHistory && (
-              <GenericButton type="button" onClick={handlePrintHistory}>
-                <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span>Print</span>
-              </GenericButton>
-            )}
-
-            {!showHistory && (
-              <GenericButton
-                type="button"
-                onClick={handleOpenModal}
-                variant="primary"
+          {/* Scrollable Container */}
+          <div className="flex gap-2 overflow-x-auto pb-2 pt-1 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-[#785600]/40 dark:scrollbar-track-slate-800 dark:scrollbar-thumb-slate-600">
+            {boxCards.map((card, idx) => (
+              <div
+                key={card.id || idx}
+                className="flex min-w-[90px] flex-col rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900"
               >
-                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span>Add Soldering</span>
-              </GenericButton>
-            )}
+                <span className="font-mono text-[11px] font-bold text-black dark:text-white">
+                  {card.size} ({card.purity}%)
+                </span>
+                <span className="font-mono text-[11px] font-bold text-black dark:text-white">
+                  {formatNumberDisplay(card.totalWeight)} G
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-            {/* History Toggle Button */}
+      {/* Header Controls */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
+            {showHistory ? 'Soldering History' : 'Soldering Department'}
+          </h2>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Date Filters */}
+          {showHistory && (
+            <div className="flex flex-wrap items-center gap-2">
+              <GenericWeeklyDatePicker
+                id="from-date-box"
+                placeholder="DD/MM/YYYY"
+                mode="from"
+                initialDates={fromDate ? [fromDate] : []}
+                onDateChange={(dates) => {
+                  if (dates && dates.length > 0) {
+                    const selected = new Date(dates[0]);
+                    selected.setHours(0, 0, 0, 0);
+                    setFromDate(selected);
+                  } else {
+                    setFromDate(null);
+                  }
+                }}
+                className="w-32 sm:w-36 md:w-40"
+              />
+
+              <GenericWeeklyDatePicker
+                id="to-date-box"
+                placeholder="DD/MM/YYYY"
+                mode="to"
+                initialDates={toDate ? [toDate] : []}
+                onDateChange={(dates) => {
+                  if (dates && dates.length > 0) {
+                    const selected = new Date(dates[0]);
+                    selected.setHours(23, 59, 59, 999);
+                    setToDate(selected);
+                  } else {
+                    setToDate(null);
+                  }
+                }}
+                className="w-32 sm:w-36 md:w-40"
+              />
+            </div>
+          )}
+
+          {/* Print History Button */}
+          {showHistory && (
+            <GenericButton type="button" onClick={handlePrintHistory} variant="primary">
+              <Printer className="h-4 w-4" />
+              <span>Print</span>
+            </GenericButton>
+          )}
+
+          {!showHistory && (
             <GenericButton
               type="button"
-              onClick={toggleHistory}
+              onClick={handleOpenModal}
               variant="primary"
             >
-              {showHistory ? (
-                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              )}
-              <span>{showHistory ? 'Show Soldering' : 'History'}</span>
+              <Plus className="h-4 w-4" />
+              <span>Add Soldering</span>
             </GenericButton>
-          </div>
+          )}
+
+          {/* History Toggle Button */}
+          <GenericButton
+            type="button"
+            onClick={toggleHistory}
+            variant="primary"
+          >
+            {showHistory ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+            <span>{showHistory ? 'Show Soldering' : 'History'}</span>
+          </GenericButton>
         </div>
       </div>
 
-      {/* Conditional Rendering */}
+      {/* Table Section */}
       {!showHistory ? (
-        /* Soldering Department Table */
-        <div className="px-3 py-4 sm:px-4 md:px-6">
+        <div>
           <GenericTable<SolderingEntry>
             data={solderingEntries}
             columns={columns}
@@ -1564,8 +1787,7 @@ const SolderingDept: React.FC = () => {
           />
         </div>
       ) : (
-        /* History Table */
-        <div className="px-3 py-4 sm:px-4 md:px-6">
+        <div>
           <GenericTable
             data={getFilteredHistory()}
             columns={historyColumns}
@@ -1635,9 +1857,8 @@ const SolderingDept: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
           <div
-            className={`w-full ${
-              modalCards.length > 1 ? 'max-w-4xl' : 'max-w-lg'
-            } flex max-h-[90vh] flex-col rounded-2xl bg-white shadow-2xl transition-all dark:bg-slate-900 border border-[#d3c4af]/30 dark:border-slate-700`}
+            className={`w-full ${modalCards.length > 1 ? 'max-w-4xl' : 'max-w-lg'
+              } flex max-h-[90vh] flex-col rounded-2xl bg-white shadow-2xl transition-all dark:bg-slate-900 border border-[#d3c4af]/30 dark:border-slate-700`}
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-[#d3c4af]/20 p-4 dark:border-slate-800">
@@ -1660,15 +1881,6 @@ const SolderingDept: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  type="button"
-                  onClick={handleAddCard}
-                  className="inline-flex items-center gap-1 rounded-lg border border-[#785600]/30 bg-[#785600]/5 px-2.5 py-1.5 text-xs font-semibold text-[#785600] transition-colors hover:bg-[#785600]/15 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20"
-                  title="Add another card"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Add Card</span>
-                </button>
-                <button
                   onClick={() => setIsModalOpen(false)}
                   className="rounded-lg p-1.5 text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
@@ -1680,153 +1892,163 @@ const SolderingDept: React.FC = () => {
             {/* Modal Body - Cards Container */}
             <div className="flex-1 overflow-y-auto p-4">
               <div
-                className={`grid gap-4 ${
-                  modalCards.length > 1
-                    ? 'grid-cols-1 md:grid-cols-2'
-                    : 'grid-cols-1'
-                }`}
+                className={`grid gap-4 ${modalCards.length > 1
+                  ? 'grid-cols-1 md:grid-cols-2'
+                  : 'grid-cols-1'
+                  }`}
               >
                 {modalCards.map((card, idx) => {
                   const isCardSaving = card.isSaving || false;
+                  const availableQty = getAvailableBoxQty(card.sizeId, card.purity);
+
                   return (
                     <div
                       key={card.id || idx}
                       className="relative flex flex-col justify-between rounded-xl border border-[#d3c4af]/30 bg-[#fbfaf8] p-4 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800/80"
                     >
-                    
-                        {modalCards.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveCard(idx)}
-                            disabled={isCardSaving}
-                            className="rounded-md p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40"
-                            title="Remove this card"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        )}
-                      
+                      {modalCards.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCard(idx)}
+                          disabled={isCardSaving}
+                          className="absolute right-2 top-2 rounded-md p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40"
+                          title="Remove this card"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+
                       {/* Card Inputs */}
                       <div className="space-y-3">
-                        {/* Item */}
-                        <div>
-                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                            Item <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            value={card.itemId}
-                            onChange={(e) =>
-                              handleCardChange(idx, 'itemId', e.target.value)
-                            }
-                            className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                          >
-                            <option value="">Select Item</option>
-                            {items
-                              .filter(
-                                (item) =>
-                                  item?.name?.trim().toLowerCase() !== 'gold',
-                              )
-                              .map((item) => (
-                                <option key={item.id} value={item.id}>
-                                  {item.name || JSON.stringify(item)}
-                                </option>
-                              ))}
-                          </select>
-                        </div>
-
-                        {/* Size */}
-                        <div>
-                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                            Size <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            value={card.sizeId}
-                            onChange={(e) =>
-                              handleCardChange(idx, 'sizeId', e.target.value)
-                            }
-                            className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                          >
-                            <option value="">Select Size</option>
-                            {sizes.map((size) => (
-                              <option key={size.id} value={size.id}>
-                                {size.size || JSON.stringify(size)}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* Purity & Chain Given */}
-                        <div className="grid grid-cols-2 gap-2.5">
+                        {/* Row 1: Size, Purity, Available Qty in one line */}
+                        <div className="grid grid-cols-3 gap-2">
+                          {/* Size */}
                           <div>
-                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                              Purity (%) <span className="text-red-500">*</span>
+                            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                              Size <span className="text-red-500">*</span>
                             </label>
-                            <div className="relative">
-                              <input
-                                type="text"
-                                inputMode="decimal"
-                                value={card.purity}
-                                onChange={(e) =>
-                                  handleCardChange(
-                                    idx,
-                                    'purity',
-                                    e.target.value,
-                                  )
-                                }
-                                placeholder="e.g. 93"
-                                className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                              />
-                              <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                                %
-                              </span>
-                            </div>
+                            <select
+                              value={card.sizeId}
+                              onChange={(e) =>
+                                handleSizeSelect(idx, e.target.value)
+                              }
+                              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                            >
+                              <option value="">Select</option>
+                              {sizes.map((size) => {
+                                const stock = boxCards.find((b: any) => b.sizeId === size.id);
+                                return (
+                                  <option key={size.id} value={size.id}>
+                                    {size.size || JSON.stringify(size)}
+                                  </option>
+                                );
+                              })}
+                            </select>
                           </div>
 
+                          {/* Purity (%) Dropdown */}
                           <div>
-                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                              Chain Given (G) <span className="text-red-500">*</span>
+                            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                              Purity (%) <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={card.purity}
+                              onChange={(e) => {
+                                const newPurity = e.target.value;
+                                setModalCards((prev) =>
+                                  prev.map((c, i) =>
+                                    i === idx
+                                      ? {
+                                        ...c,
+                                        purity: newPurity,
+                                      }
+                                      : c,
+                                  ),
+                                );
+                              }}
+                              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                            >
+                              <option value="">Select</option>
+                              {getPuritiesForSize(card.sizeId).map((p) => (
+                                <option key={p} value={p}>
+                                  {p}%
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Available Qty */}
+                          <div>
+                            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                              Available Qty (G)
                             </label>
                             <div className="relative">
                               <input
                                 type="text"
-                                inputMode="decimal"
-                                value={card.chainGiven}
-                                onChange={(e) =>
-                                  handleCardChange(
-                                    idx,
-                                    'chainGiven',
-                                    e.target.value,
-                                  )
-                                }
-                                placeholder="0.000"
-                                className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                readOnly
+                                value={formatNumberDisplay(availableQty)}
+                                className="font-mono w-full rounded-lg border border-[#d3c4af]/20 bg-amber-50/50 px-2 py-1.5 pr-6 text-sm font-bold text-black outline-none cursor-not-allowed dark:bg-amber-950/20 dark:text-amber-400"
                               />
-                              <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-[10px] dark:text-slate-500">
                                 G
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        {/* Fine Wt (Auto / Editable like Tar) */}
-                        <div>
-                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                            Fine Wt (लगड)
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              inputMode="decimal"
-                              value={card.fine}
+                        {/* Row 2: Item and Chain Weight */}
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* Item */}
+                          <div>
+                            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                              Item <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={card.itemId}
                               onChange={(e) =>
-                                handleCardChange(idx, 'fine', e.target.value)
+                                handleCardChange(idx, 'itemId', e.target.value)
                               }
-                              placeholder="0.000"
-                              className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm font-bold text-[#785600] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-amber-400"
-                            />
-                            <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                              G
-                            </span>
+                              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                            >
+                              <option value="">Select Item</option>
+                              {itemsList
+                                .filter(
+                                  (item) =>
+                                    item?.name?.trim().toLowerCase() !== 'gold',
+                                )
+                                .map((item) => (
+                                  <option key={item.id} value={item.id}>
+                                    {item.name || JSON.stringify(item)}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+
+                          {/* Chain Weight */}
+                          <div>
+                            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                              Chain Weight (G) <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={card.chainWeight}
+                                {...getModalScaleProps(idx, 'chainWeight')}
+                                onChange={(e) =>
+                                  handleCardChange(
+                                    idx,
+                                    'chainWeight',
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="0.000"
+                                className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 pr-6 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                              />
+                              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-[10px] dark:text-slate-500">
+                                G
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1850,8 +2072,6 @@ const SolderingDept: React.FC = () => {
                 })}
               </div>
             </div>
-
-            
           </div>
         </div>
       )}

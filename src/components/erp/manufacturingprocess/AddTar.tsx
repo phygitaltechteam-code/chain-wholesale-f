@@ -15,17 +15,16 @@ import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import { Column, GenericTable } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useGetItems, Item } from '@/lib/api/items';
-import { useGetSizes, Size } from '@/lib/api/sizes';
 import {
   useTar,
   useCreateTar,
   useSaveTar,
   Tar,
   useGetTarHistory,
+  useAddMelting,
 } from '@/lib/api/tar';
 import { useGetStock } from '@/lib/api/stock';
-import GenericDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
+import { useGetItems } from '@/lib/api/items';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
@@ -47,9 +46,8 @@ interface TarEntry {
   scrapRaw?: string;
   purityRaw?: string;
   grosswtRaw?: string;
-  itemId?: string;
-  sizeId?: string;
   isDirty?: boolean;
+  isMeltingLoading?: boolean;
 }
 
 interface TarCardForm {
@@ -71,21 +69,6 @@ interface AddTarProps {
   showBack?: boolean;
 }
 
-// Helper functions for safely extracting values
-const getItemName = (item: any): string => {
-  if (!item) return '-';
-  if (typeof item === 'string') return item;
-  if (item.name) return item.name;
-  return '-';
-};
-
-const getSizeName = (size: any): string => {
-  if (!size) return '-';
-  if (typeof size === 'string') return size;
-  if (size.size) return size.size;
-  return '-';
-};
-
 const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   const getpdfheaderdata = useGetHeader();
   const navigate = useNavigate();
@@ -99,10 +82,10 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   const [showStockErrorModal, setShowStockErrorModal] = useState(false);
   const [stockErrorMessage, setStockErrorMessage] = useState('');
 
-  // Default date range: Monday to Sunday of current week
+
   const [dateRange, setDateRange] = useState<Date[]>(() => {
     const now = new Date();
-    const day = now.getDay(); // 0 = Sunday, 1 = Monday, ...
+    const day = now.getDay();
     const diffToMonday = day === 0 ? -6 : 1 - day;
 
     const monday = new Date(now);
@@ -120,7 +103,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     createNewCard(),
   ]);
 
-  // Date and Time state for modal
+
   const [selectedDate, setSelectedDate] = useState({
     day: new Date().getDate(),
     month: new Date().getMonth() + 1,
@@ -129,11 +112,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     minute: new Date().getMinutes(),
   });
 
-  // Fetch items and sizes from API
-  const { data: items = [], isLoading: itemsLoading } = useGetItems();
-  const { data: sizes = [], isLoading: sizesLoading } = useGetSizes();
-
-  // Fetch existing tar data
   const { data: tarData = [], isLoading: tarLoading, refetch } = useTar();
   const {
     data: tarHistory = [],
@@ -145,56 +123,90 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   const createTar = useCreateTar();
   const saveTar = useSaveTar();
 
-  // Fetch stock data
-  const { data: stockData = [] } = useGetStock();
+  // Fetch stock and items data
+  const { data: rawStockData = [] } = useGetStock();
+  const { data: rawItemsData = [] } = useGetItems();
+  const submitMelting = useAddMelting();
+  const handleMelting = async (entry: TarEntry) => {
+    // Set loading state for this specific row
+    setTarEntries((prev) =>
+      prev.map((e) =>
+        e.id === entry.id ? { ...e, isMeltingLoading: true } : e
+      )
+    );
+
+    try {
+      const result = await submitMelting.mutateAsync({
+        id: entry.id,
+        data: {
+          purity: entry.purity,
+          grosswt: entry.grosswt || entry.fine,
+          fine: entry.fine,
+          meltingWeight: entry.grosswt || entry.fine,
+          status: 'processing',
+        },
+      });
+      await refetch();
+    } catch (error: any) {
+      console.error('Error in melting:', error);
+      const errorMessage = error?.response?.data?.message || 'Failed to process melting';
+      toast.error(errorMessage);
+    } finally {
+      // Clear loading state for this specific row
+      setTarEntries((prev) =>
+        prev.map((e) =>
+          e.id === entry.id ? { ...e, isMeltingLoading: false } : e
+        )
+      );
+    }
+  };
+  const stockList = Array.isArray(rawStockData)
+    ? rawStockData
+    : (rawStockData as any)?.data || [];
+
+  const itemsList = Array.isArray(rawItemsData)
+    ? rawItemsData
+    : (rawItemsData as any)?.data || [];
+
+  const goldItemIds = React.useMemo(() => {
+    return itemsList
+      .filter((it: any) => {
+        const name = (it?.name || '').trim().toLowerCase();
+        return name === 'gold' || name.includes('gold');
+      })
+      .map((it: any) => it.id);
+  }, [itemsList]);
 
   // Helper to get total gold available
   const getGoldAvailableWeight = (): number => {
-    if (!stockData || !Array.isArray(stockData)) return 0;
-    return stockData
-      .filter((s: any) => {
-        const item = items.find((i) => i.id === s.itemId);
-        const itemName = item?.name?.trim().toLowerCase() || '';
-        return itemName === 'gold' || itemName.includes('gold') || !s.sizeId;
-      })
-      .reduce((sum: number, s: any) => {
-        const wt = Number(s.weight ?? s.grams ?? s.stockQty ?? 0);
-        return sum + (isNaN(wt) ? 0 : wt);
-      }, 0);
-  };
+    if (!stockList || stockList.length === 0) return 0;
 
-  // Helper to get stock quantity for a card's item, size, and purity
-  const getItemStockWeight = (
-    itemId: string,
-    sizeId?: string,
-    purity?: string,
-  ): number => {
-    if (!itemId || !stockData || !Array.isArray(stockData)) return 0;
-
-    let matching = stockData.filter((s: any) => s.itemId === itemId);
-    if (matching.length === 0) return 0;
-
-    if (sizeId) {
-      const sizeMatched = matching.filter((s: any) => s.sizeId === sizeId);
-      if (sizeMatched.length > 0) {
-        matching = sizeMatched;
+    // 1. Try matching by Gold item ID from items API
+    let goldMatches = stockList.filter((s: any) => {
+      if (goldItemIds.length > 0 && s.itemId) {
+        return goldItemIds.includes(s.itemId);
       }
-    }
+      const itemName = (
+        typeof s.item === 'string'
+          ? s.item
+          : s.item?.name || s.itemName || ''
+      ).trim().toLowerCase();
+      return itemName === 'gold' || itemName.includes('gold');
+    });
 
-    if (purity && parseFloat(purity) > 0) {
-      const purityNum = parseFloat(purity);
-      const purityMatched = matching.filter(
-        (s: any) => Number(s.purity) === purityNum,
+    // 2. If no match by name/id yet, raw gold in stock has sizeId: null
+    if (goldMatches.length === 0) {
+      goldMatches = stockList.filter(
+        (s: any) => !s.sizeId || s.sizeId === null,
       );
-      if (purityMatched.length > 0) {
-        matching = purityMatched;
-      }
     }
 
-    return matching.reduce((sum: number, s: any) => {
+    const total = goldMatches.reduce((sum: number, s: any) => {
       const wt = Number(s.weight ?? s.grams ?? s.stockQty ?? 0);
       return sum + (isNaN(wt) ? 0 : wt);
     }, 0);
+
+    return Math.round(total * 1000) / 1000;
   };
 
   // Scale hooks for modal and table
@@ -606,9 +618,9 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
 
   // Initialize with existing tar data
   useEffect(() => {
-    if (!tarLoading && items.length > 0 && sizes.length > 0) {
+    if (!tarLoading) {
       if (tarData.length > 0) {
-        const entries: TarEntry[] = tarData.map((tar, index: any) => {
+        const entries: TarEntry[] = tarData?.map((tar, index: any) => {
           let sizeValue = tar.size;
           if (typeof tar.size === 'object' && tar.size !== null) {
             sizeValue =
@@ -658,7 +670,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         setTarEntries([]);
       }
     }
-  }, [tarData, items, sizes, tarLoading]);
+  }, [tarData, tarLoading]);
 
   // Check if Tar is completed when entries change
   useEffect(() => {
@@ -680,89 +692,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
   };
 
-  // Auto-fill from Billing when navigated via Manufacturing action
-  useEffect(() => {
-    if (
-      itemsLoading ||
-      sizesLoading ||
-      items.length === 0 ||
-      sizes.length === 0
-    ) {
-      return;
-    }
 
-    try {
-      const prefillRaw = sessionStorage.getItem(
-        'manufacturing_billing_prefill',
-      );
-      if (prefillRaw) {
-        sessionStorage.removeItem('manufacturing_billing_prefill');
-        const parsed = JSON.parse(prefillRaw);
-        const list = Array.isArray(parsed) ? parsed : [parsed];
-
-        if (list.length > 0) {
-          const generatedCards: TarCardForm[] = list.map((prefill, idx) => {
-            let resolvedItemId = prefill.itemId || '';
-            if (!resolvedItemId && prefill.itemName) {
-              const foundItem = items.find(
-                (i) => i.name?.toLowerCase() === prefill.itemName.toLowerCase(),
-              );
-              if (foundItem) resolvedItemId = foundItem.id;
-            }
-
-            let resolvedSizeId = prefill.sizeId || '';
-            if (!resolvedSizeId && prefill.sizeName) {
-              const foundSize = sizes.find(
-                (s) => s.size?.toLowerCase() === prefill.sizeName.toLowerCase(),
-              );
-              if (foundSize) resolvedSizeId = foundSize.id;
-            }
-
-            const grossNum = parseFloat(prefill.grossWt) || 0;
-            const purityNum = parseFloat(prefill.purity) || 0;
-            let calculatedFine = '';
-            if (grossNum > 0 && purityNum > 0) {
-              calculatedFine = (
-                Math.round(((grossNum * purityNum) / 100) * 1000) / 1000
-              ).toString();
-            } else if (prefill.fine) {
-              calculatedFine = String(prefill.fine);
-            }
-
-            return {
-              id: `card-${Date.now()}-${idx}`,
-              itemId: resolvedItemId,
-              sizeId: resolvedSizeId,
-              grossWt:
-                prefill.grossWt !== undefined && prefill.grossWt !== null
-                  ? String(prefill.grossWt)
-                  : '',
-              purity:
-                prefill.purity !== undefined && prefill.purity !== null
-                  ? String(prefill.purity)
-                  : '',
-              fine: calculatedFine,
-            };
-          });
-
-          setModalCards(generatedCards);
-
-          const now = new Date();
-          setSelectedDate({
-            day: now.getDate(),
-            month: now.getMonth() + 1,
-            year: now.getFullYear(),
-            hour: now.getHours(),
-            minute: now.getMinutes(),
-          });
-
-          setIsModalOpen(true);
-        }
-      }
-    } catch (e) {
-      console.error('Error loading manufacturing prefill data:', e);
-    }
-  }, [items, sizes, itemsLoading, sizesLoading]);
 
   const handleCardChange = (
     cardIndex: number,
@@ -803,9 +733,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     );
   };
 
-  const handleAddCard = () => {
-    setModalCards((prev) => [...prev, createNewCard()]);
-  };
 
   const handleRemoveCard = (cardIndex: number) => {
     setModalCards((prev) => {
@@ -884,8 +811,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         id: result?.data?.id || Date.now().toString(),
         srNo: tarEntries.length + 1,
         dateTime: dateTimeStr,
-        item: selectedItem?.name || '',
-        size: selectedSize?.size || '',
+
         fine: fineValue,
         tar: 0,
         scrap: 0,
@@ -897,8 +823,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         scrapRaw: '',
         purityRaw: purityValue > 0 ? String(purityValue) : '',
         grosswtRaw: grossVal > 0 ? String(grossVal) : '',
-        itemId: card.itemId,
-        sizeId: card.sizeId,
+
       };
 
       setTarEntries((prev) => [...prev, newEntry]);
@@ -919,7 +844,10 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
 
       // Show the exact backend error when stock is insufficient.
       const backendMessage =
-        error?.response?.data?.message ||
+        (Array.isArray(error?.response?.data?.message)
+          ? error.response.data.message.join(', ')
+          : error?.response?.data?.message) ||
+        error?.response?.data?.error ||
         error?.data?.message ||
         error?.message ||
         '';
@@ -1050,8 +978,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         id: entry.id,
         data: {
           id: entry.id,
-          itemId: entry.itemId || '',
-          sizeId: entry.sizeId || '',
           fine: Number(entry.fine),
           item: entry.item || '',
           size: entry.size || '',
@@ -1081,7 +1007,10 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     } catch (error: any) {
       console.error('Error saving tar:', error);
       const backendMessage =
-        error?.response?.data?.message ||
+        (Array.isArray(error?.response?.data?.message)
+          ? error.response.data.message.join(', ')
+          : error?.response?.data?.message) ||
+        error?.response?.data?.error ||
         error?.data?.message ||
         error?.message ||
         '';
@@ -1105,25 +1034,13 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     }
   };
 
-  const resetForm = () => {
-    setModalCards([createNewCard()]);
-  };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    resetForm();
-  };
 
-  // A row is edited only when the user has entered a value.
+
   const hasEditableValues = (entry: TarEntry): boolean => {
     return Boolean(entry.isDirty);
   };
 
-  // The whole Action column is conditional.
-  // Therefore the "Action" header also disappears when no row is edited.
-  const showActionColumn = tarEntries.some(
-    (entry) => !entry.isSaved && Boolean(entry.isDirty),
-  );
 
   const isSubmitting = createTar.isPending || saveTar.isPending;
 
@@ -1141,7 +1058,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             <span className="text-sm text-[#1a1c1b] dark:text-white">
               {datePart}
             </span>
-            <span className="text-sm text-[#4f4535] dark:text-slate-400">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
               {timePart}
             </span>
           </div>
@@ -1293,32 +1210,40 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     },
 
 
-    ...(showActionColumn
-      ? [
-        {
-          key: 'actions',
-          header: 'Action',
-          render: (item: TarEntry, index: number) => {
-            if (item.isSaved || !hasEditableValues(item)) {
-              return null;
-            }
-
-            return (
+    {
+      key: 'actions',
+      header: 'Action',
+      render: (item: TarEntry, index: number) => {
+        return (
+          <div className="flex items-center justify-center gap-1.5">
+            {/* Box Button - Only show if entry is not saved and has editable values */}
+            {!item.isSaved && hasEditableValues(item) && (
               <button
                 type="button"
                 onClick={() => handleSaveClick(index)}
                 disabled={isLoading || isSubmitting}
                 className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                title="Save Entry"
+                title="Move to Box"
               >
                 <Save className="h-3 w-3" />
                 <span>Box</span>
               </button>
-            );
-          },
-        } as Column<TarEntry>,
-      ]
-      : []),
+            )}
+
+            {/* Melting Button - Always visible for all entries */}
+            <button
+              type="button"
+              onClick={() => handleMelting(item)}
+              disabled={isLoading || isSubmitting}
+              className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              title="Send to Melting"
+            >
+              <span>Melting</span>
+            </button>
+          </div>
+        );
+      },
+    } as Column<TarEntry>,
   ];
 
   const toggleHistory = () => {
@@ -1333,118 +1258,116 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
 
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-      {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
-        <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
-          <div className="flex min-w-0 items-center gap-2">
-            <h1 className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white sm:text-base md:text-lg">
-              {showHistory ? 'Tar History' : 'Tar Management'}
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            {!showHistory && (
-              <GenericButton
-                type="button"
-                onClick={handleOpenModal}
-                disabled={isTarCompleted}
-                variant="primary"
-              >
-                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span>{isTarCompleted ? 'Completed' : 'Add Tar'}</span>
-              </GenericButton>
-            )}
+    <div className="flex flex-col gap-4">
+      {/* Header Controls */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
+            {showHistory ? 'Tar History' : 'Tar Management'}
+          </h2>
+        </div>
 
-            {showHistory && (
-              <div className="flex flex-wrap items-center gap-2">
-                {/* From Date - Defaults to Monday */}
-                <div className="w-32 sm:w-36 md:w-40">
-                  <GenericWeeklyDatePicker
-                    id="from-date-tar"
-                    placeholder="DD/MM/YYYY"
-                    mode="from"
-                    initialDates={dateRange}
-                    onDateChange={(dates) => {
-                      if (dates && dates.length > 0) {
-                        const from = new Date(dates[0]);
-                        from.setHours(0, 0, 0, 0);
-                        setDateRange((prev) => [from, prev[1] || from]);
-                      } else {
-                        setDateRange((prev) => [undefined as any, prev[1]]);
-                      }
-                    }}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* To Date - Defaults to Sunday */}
-                <div className="w-32 sm:w-36 md:w-40">
-                  <GenericWeeklyDatePicker
-                    id="to-date-tar"
-                    placeholder="DD/MM/YYYY"
-                    mode="to"
-                    initialDates={dateRange}
-                    onDateChange={(dates) => {
-                      if (dates && dates.length > 0) {
-                        const to = new Date(dates[0]);
-                        to.setHours(23, 59, 59, 999);
-                        setDateRange((prev) => [prev[0] || to, to]);
-                      } else {
-                        setDateRange((prev) => [prev[0], undefined as any]);
-                      }
-                    }}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Print History Button */}
-            {showHistory && (
-              <GenericButton
-                type="button"
-                onClick={handlePrintHistory}
-                variant="primary"
-              >
-                <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span>Print</span>
-              </GenericButton>
-            )}
-
-            {/* History Toggle Button */}
+        <div className="flex flex-wrap items-center gap-2">
+          {!showHistory && (
             <GenericButton
               type="button"
-              onClick={toggleHistory}
+              onClick={handleOpenModal}
+              disabled={isTarCompleted}
               variant="primary"
             >
-              {showHistory ? (
-                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              )}
-              <span>{showHistory ? 'Show Tar' : 'History'}</span>
+              <Plus className="h-4 w-4" />
+              <span>{isTarCompleted ? 'Completed' : 'Add Tar'}</span>
             </GenericButton>
-          </div>
+          )}
+
+          {showHistory && (
+            <div className="flex flex-wrap items-center gap-2">
+              {/* From Date - Defaults to Monday */}
+              <div className="w-32 sm:w-36 md:w-40">
+                <GenericWeeklyDatePicker
+                  id="from-date-tar"
+                  placeholder="DD/MM/YYYY"
+                  mode="from"
+                  initialDates={dateRange}
+                  onDateChange={(dates) => {
+                    if (dates && dates.length > 0) {
+                      const from = new Date(dates[0]);
+                      from.setHours(0, 0, 0, 0);
+                      setDateRange((prev) => [from, prev[1] || from]);
+                    } else {
+                      setDateRange((prev) => [undefined as any, prev[1]]);
+                    }
+                  }}
+                  className="w-full"
+                />
+              </div>
+
+              {/* To Date - Defaults to Sunday */}
+              <div className="w-32 sm:w-36 md:w-40">
+                <GenericWeeklyDatePicker
+                  id="to-date-tar"
+                  placeholder="DD/MM/YYYY"
+                  mode="to"
+                  initialDates={dateRange}
+                  onDateChange={(dates) => {
+                    if (dates && dates.length > 0) {
+                      const to = new Date(dates[0]);
+                      to.setHours(23, 59, 59, 999);
+                      setDateRange((prev) => [prev[0] || to, to]);
+                    } else {
+                      setDateRange((prev) => [prev[0], undefined as any]);
+                    }
+                  }}
+                  className="w-full"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Print History Button */}
+          {showHistory && (
+            <GenericButton
+              type="button"
+              onClick={handlePrintHistory}
+              variant="primary"
+            >
+              <Printer className="h-4 w-4" />
+              <span>Print</span>
+            </GenericButton>
+          )}
+
+          {/* History Toggle Button */}
+          <GenericButton
+            type="button"
+            onClick={toggleHistory}
+            variant="primary"
+          >
+            {showHistory ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+            <span>{showHistory ? 'Show Tar' : 'History'}</span>
+          </GenericButton>
         </div>
       </div>
 
+      {/* Table Section */}
       {!showHistory ? (
-        /* Tar Management Table */
-        <div className="px-3 py-4 sm:px-4 md:px-6">
+        <div>
           <GenericTable<TarEntry>
             data={tarEntries}
             columns={columns}
             emptyMessage="No tar entries found. Click 'Add Tar' to create one."
             isLoading={
-              tarLoading || itemsLoading || sizesLoading || isSubmitting
+              tarLoading || isSubmitting
             }
             showSrNo={true}
             srNoLabel="Sr No."
           />
         </div>
       ) : (
-        /* History Section */
-        <div className="px-3 py-4 sm:px-4 md:px-6">
+        <div>
           {/* History Summary Cards */}
           <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -1523,23 +1446,9 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                   <h3 className="text-base font-bold text-[#1a1c1b] dark:text-white sm:text-lg">
                     Add Tar Process
                   </h3>
-                  <p className="text-xs text-[#4f4535] dark:text-slate-400">
-                    {modalCards.length}{' '}
-                    {modalCards.length === 1 ? 'process item' : 'process items'}{' '}
-                    to configure
-                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleAddCard}
-                  className="inline-flex items-center gap-1 rounded-lg border border-[#785600]/30 bg-[#785600]/5 px-2.5 py-1.5 text-xs font-semibold text-[#785600] transition-colors hover:bg-[#785600]/15 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20"
-                  title="Add another process card"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Add Card</span>
-                </button>
                 <button
                   onClick={() => setIsModalOpen(false)}
                   className="rounded-lg p-1.5 text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"

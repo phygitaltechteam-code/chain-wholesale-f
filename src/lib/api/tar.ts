@@ -36,13 +36,8 @@ const getTarApi = async () => {
 };
 
 const createTarApi = async (data: {
-  itemId: string;
-  sizeId: string;
-  grosswt?: number;
   grossWt?: number;
   fine: number;
-  item: string;
-  size: string;
   tar: number;
   scrap: number;
   loss: number;
@@ -84,8 +79,6 @@ const saveTarApi = async ({id, data}: {id: string; data: Partial<Tar>}) => {
     isSaved: data.isSaved || false,
   };
 
-  console.log('Saving payload:', payload);
-  // Use PUT with ID in the URL path
   const response = await api.put(`/admin/tar/${id}`, payload);
   return response.data;
 };
@@ -163,3 +156,31 @@ const getTarHistory = async () => {
     throw error;
   }
 };
+
+
+export const useAddMelting = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await api.post(`/admin/tar/melting/${id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Melting completed successfully');
+      queryClient.invalidateQueries({queryKey: ['tar']});
+      queryClient.invalidateQueries({queryKey: ['melting']});
+    },
+    onError: (error: any) => {
+      const errorMessage =
+      (Array.isArray(error?.response?.data?.message)
+        ? error.response.data.message.join(', ')
+        : error?.response?.data?.message) ||
+      error?.response?.data?.error ||
+      error?.data?.message ||
+      error?.message ||
+      'Failed to complete melting';
+    toast.error(errorMessage);
+    },
+  });
+};
+

@@ -20,6 +20,8 @@ import {
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
+import { useAddMelting } from '@/lib/api/tar';
+import { useAddCuttingMelting } from '@/lib/api/processmelting';
 
 interface CuttingEntry {
   id: string;
@@ -78,7 +80,7 @@ const CuttingDept: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [actionType, setActionType] = useState<'stock' | 'kunda' | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-
+  const [meltingLoadingIds, setMeltingLoadingIds] = useState<Set<string>>(new Set());
   // Weighing Scale table focus hook
   const { getScaleProps } = useTableScaleFocus<'chainReceived' | 'scrap'>(
     (index, field, weight) => {
@@ -123,7 +125,42 @@ const CuttingDept: React.FC = () => {
   } = useGetCuttingHistory();
   const submitCutting = useSubmitCutting();
   const submitMoveKunda = useSubmitMoveKunda();
+  const submitMelting = useAddCuttingMelting();
+  const handleMelting = async (entry: CuttingEntry) => {
+    // Add this entry ID to loading set
+    setMeltingLoadingIds((prev) => new Set(prev).add(entry.id));
 
+    try {
+      await submitMelting.mutateAsync({
+        id: entry.id,
+        data: {
+          purity: entry.purity || 0,
+          chainWeight: entry.chainGiven || entry.chainReceived || 0,
+          cuttingId: entry.id,
+
+        },
+      });
+      await refetch();
+    } catch (error: any) {
+      console.error('Error in melting:', error);
+      const errorMessage =
+        (Array.isArray(error?.response?.data?.message)
+          ? error.response.data.message.join(', ')
+          : error?.response?.data?.message) ||
+        error?.response?.data?.error ||
+        error?.data?.message ||
+        error?.message ||
+        'Failed to process melting';
+      toast.error(errorMessage);
+    } finally {
+      // Remove this entry ID from loading set
+      setMeltingLoadingIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(entry.id);
+        return newSet;
+      });
+    }
+  };
   // Load data from API
   useEffect(() => {
     if (cuttingLoading) {
@@ -152,7 +189,12 @@ const CuttingDept: React.FC = () => {
           const chainGiven = cutting.chainWeight || cutting.chainGiven || 0;
           const chainReceived = isSaved ? cutting.chainReceived || 0 : 0;
           const scrap = isSaved ? cutting.scrap || 0 : 0;
-          const loss = calculateLoss(chainGiven, chainReceived, scrap);
+          const loss =
+            isSaved && chainReceived > 0
+              ? cutting.loss !== undefined && cutting.loss !== null
+                ? cutting.loss
+                : calculateLoss(chainGiven, chainReceived, scrap)
+              : 0;
 
           return {
             id: cutting.id,
@@ -630,12 +672,6 @@ const CuttingDept: React.FC = () => {
                 const numValue = parseFloat(value);
                 updated.chainGiven = isNaN(numValue) ? 0 : numValue;
               }
-              // Recalculate loss when chainGiven changes
-              updated.loss = calculateLoss(
-                updated.chainGiven,
-                updated.chainReceived,
-                updated.scrap
-              );
             } else if (field === 'chainReceived') {
               updated.chainReceivedRaw = value;
               if (value === '' || value === '.' || value === '-') {
@@ -644,12 +680,6 @@ const CuttingDept: React.FC = () => {
                 const numValue = parseFloat(value);
                 updated.chainReceived = isNaN(numValue) ? 0 : numValue;
               }
-              // Recalculate loss when chainReceived changes
-              updated.loss = calculateLoss(
-                updated.chainGiven,
-                updated.chainReceived,
-                updated.scrap
-              );
             } else if (field === 'scrap') {
               updated.scrapRaw = value;
               if (value === '' || value === '.' || value === '-') {
@@ -658,12 +688,6 @@ const CuttingDept: React.FC = () => {
                 const numValue = parseFloat(value);
                 updated.scrap = isNaN(numValue) ? 0 : numValue;
               }
-              // Recalculate loss when scrap changes
-              updated.loss = calculateLoss(
-                updated.chainGiven,
-                updated.chainReceived,
-                updated.scrap,
-              );
             } else if (field === 'purity') {
               updated.purityRaw = value;
               if (value === '' || value === '.' || value === '-') {
@@ -672,6 +696,25 @@ const CuttingDept: React.FC = () => {
                 const numValue = parseFloat(value);
                 updated.purity = isNaN(numValue) ? 0 : numValue;
               }
+            }
+
+            const hasReceived =
+              (updated.chainReceivedRaw !== undefined &&
+                updated.chainReceivedRaw !== '' &&
+                updated.chainReceived > 0) ||
+              updated.chainReceived > 0;
+
+            if (hasReceived) {
+              const scrapAmount = updated.scrap || 0;
+              updated.loss = Math.max(
+                0,
+                Math.round(
+                  (updated.chainGiven - updated.chainReceived - scrapAmount) *
+                  1000,
+                ) / 1000,
+              );
+            } else {
+              updated.loss = 0;
             }
 
             // Mark row as dirty so only this row shows the action button
@@ -756,7 +799,10 @@ const CuttingDept: React.FC = () => {
     } catch (error: any) {
       console.error('Error saving cutting to Stock:', error);
       const errorMessage =
-        error?.response?.data?.message ||
+        (Array.isArray(error?.response?.data?.message)
+          ? error.response.data.message.join(', ')
+          : error?.response?.data?.message) ||
+        error?.response?.data?.error ||
         error?.message ||
         'Failed to save cutting entry';
       toast.error(errorMessage);
@@ -812,7 +858,10 @@ const CuttingDept: React.FC = () => {
     } catch (error: any) {
       console.error('Error moving cutting entry to S Kunda:', error);
       const errorMessage =
-        error?.response?.data?.message ||
+        (Array.isArray(error?.response?.data?.message)
+          ? error.response.data.message.join(', ')
+          : error?.response?.data?.message) ||
+        error?.response?.data?.error ||
         error?.message ||
         'Failed to move to S Kunda';
       toast.error(errorMessage);
@@ -823,17 +872,7 @@ const CuttingDept: React.FC = () => {
     }
   }, [saveIndex, cuttingEntries, submitMoveKunda, navigate, refetch]);
 
-  // Action column is hidden initially and appears only after
-  // the user edits one of the input fields.
-  const hasEditableValues = (entry: CuttingEntry): boolean => {
-    return Boolean(entry.isDirty);
-  };
 
-  const showActionColumn = cuttingEntries.some(
-    (entry) => !entry.isSaved && entry.isDirty,
-  );
-
-  // Define columns for GenericTable
   const columns: Column<CuttingEntry>[] = [
     {
       key: 'dateTime',
@@ -848,7 +887,7 @@ const CuttingDept: React.FC = () => {
             <span className="text-sm text-[#1a1c1b] dark:text-white">
               {datePart}
             </span>
-            <span className="text-sm text-[#4f4535] dark:text-slate-400">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
               {timePart}
             </span>
           </div>
@@ -983,39 +1022,75 @@ const CuttingDept: React.FC = () => {
       key: 'actions',
       header: 'Action',
       render: (item: CuttingEntry, index: number) => {
-        if (item.isSaved) {
-          return null;
-        }
+        const isMeltingLoading = meltingLoadingIds.has(item.id);
 
         return (
           <div className="flex items-center justify-center gap-1.5">
+            {/* S / Kunda Button - Only show if entry is not saved */}
+            {!item.isSaved && (
+              <button
+                type="button"
+                onClick={() => handleSaveClick(index, 'kunda')}
+                disabled={
+                  isLoading ||
+                  submitCutting.isPending ||
+                  submitMoveKunda.isPending ||
+                  isMeltingLoading
+                }
+                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                title="Move to S Kunda"
+              >
+                <Save className="h-3.5 w-3.5" />
+                <span>S / Kunda</span>
+              </button>
+            )}
+
+            {/* Stock Button - Only show if entry is not saved */}
+            {!item.isSaved && (
+              <button
+                type="button"
+                onClick={() => handleSaveClick(index, 'stock')}
+                disabled={
+                  isLoading ||
+                  submitCutting.isPending ||
+                  submitMoveKunda.isPending ||
+                  isMeltingLoading
+                }
+                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                title="Save to Stock"
+              >
+                <Save className="h-3.5 w-3.5" />
+                <span>Stock</span>
+              </button>
+            )}
+
+            {/* Melting Button - Always visible for all entries */}
             <button
               type="button"
-              onClick={() => handleSaveClick(index, 'kunda')}
+              onClick={() => handleMelting(item)}
               disabled={
                 isLoading ||
                 submitCutting.isPending ||
-                submitMoveKunda.isPending
+                submitMoveKunda.isPending ||
+                isMeltingLoading
               }
-              className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-              title="Move to S Kunda"
+              className={`inline-flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
+                ? 'bg-gray-400 cursor-wait'
+                : 'bg-gradient-to-br from-[#785600] to-[#986d00]'
+                }`}
+              title="Send to Melting"
             >
-              <Save className="h-3.5 w-3.5" />
-              <span>S / Kunda</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSaveClick(index, 'stock')}
-              disabled={
-                isLoading ||
-                submitCutting.isPending ||
-                submitMoveKunda.isPending
-              }
-              className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-              title="Save to Stock"
-            >
-              <Save className="h-3.5 w-3.5" />
-              <span>Stock</span>
+              {isMeltingLoading ? (
+                <>
+                  <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <span>Melting</span>
+              )}
             </button>
           </div>
         );
@@ -1036,89 +1111,87 @@ const CuttingDept: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
-      {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
-        <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 md:px-6">
-          <div className="flex min-w-0 items-center gap-2">
-            <h1 className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white sm:text-base md:text-lg">
-              {showHistory ? 'Cutting History' : 'Cutting Department'}
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Weekly Date Filter - Only show when viewing history */}
-            {showHistory && (
-              <div className="flex flex-wrap items-center gap-2">
-                {/* From Date - Defaults to Monday */}
-                <GenericWeeklyDatePicker
-                  id="from-date-box"
-                  placeholder="DD/MM/YYYY"
-                  mode="from"
-                  initialDates={dateRange}
-                  onDateChange={(dates) => {
-                    if (dates && dates.length > 0) {
-                      const from = new Date(dates[0]);
-                      from.setHours(0, 0, 0, 0);
-                      setDateRange((prev) => [from, prev[1] || from]);
-                    } else {
-                      setDateRange((prev) => [undefined as any, prev[1]]);
-                    }
-                  }}
-                  className="w-32 sm:w-36 md:w-40"
-                />
+    <div className="flex flex-col gap-4">
+      {/* Header Controls */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
+            {showHistory ? 'Cutting History' : 'Cutting Department'}
+          </h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Weekly Date Filter - Only show when viewing history */}
+          {showHistory && (
+            <div className="flex flex-wrap items-center gap-2">
+              {/* From Date - Defaults to Monday */}
+              <GenericWeeklyDatePicker
+                id="from-date-box"
+                placeholder="DD/MM/YYYY"
+                mode="from"
+                initialDates={dateRange}
+                onDateChange={(dates) => {
+                  if (dates && dates.length > 0) {
+                    const from = new Date(dates[0]);
+                    from.setHours(0, 0, 0, 0);
+                    setDateRange((prev) => [from, prev[1] || from]);
+                  } else {
+                    setDateRange((prev) => [undefined as any, prev[1]]);
+                  }
+                }}
+                className="w-32 sm:w-36 md:w-40"
+              />
 
-                {/* To Date - Defaults to Sunday */}
-                <GenericWeeklyDatePicker
-                  id="to-date-box"
-                  placeholder="DD/MM/YYYY"
-                  mode="to"
-                  initialDates={dateRange}
-                  onDateChange={(dates) => {
-                    if (dates && dates.length > 0) {
-                      const to = new Date(dates[0]);
-                      to.setHours(23, 59, 59, 999);
-                      setDateRange((prev) => [prev[0] || to, to]);
-                    } else {
-                      setDateRange((prev) => [prev[0], undefined as any]);
-                    }
-                  }}
-                  className="w-32 sm:w-36 md:w-40"
-                />
-              </div>
-            )}
+              {/* To Date - Defaults to Sunday */}
+              <GenericWeeklyDatePicker
+                id="to-date-box"
+                placeholder="DD/MM/YYYY"
+                mode="to"
+                initialDates={dateRange}
+                onDateChange={(dates) => {
+                  if (dates && dates.length > 0) {
+                    const to = new Date(dates[0]);
+                    to.setHours(23, 59, 59, 999);
+                    setDateRange((prev) => [prev[0] || to, to]);
+                  } else {
+                    setDateRange((prev) => [prev[0], undefined as any]);
+                  }
+                }}
+                className="w-32 sm:w-36 md:w-40"
+              />
+            </div>
+          )}
 
-            {/* Print History Button */}
-            {showHistory && (
-              <GenericButton
-                type="button"
-                onClick={handlePrintHistory}
-                variant="primary"
-              >
-                <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span>Print</span>
-              </GenericButton>
-            )}
-
-            {/* History Toggle Button */}
+          {/* Print History Button */}
+          {showHistory && (
             <GenericButton
               type="button"
-              onClick={toggleHistory}
+              onClick={handlePrintHistory}
               variant="primary"
             >
-              {showHistory ? (
-                <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              )}
-              <span>{showHistory ? 'Show Cutting' : 'History'}</span>
+              <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Print</span>
             </GenericButton>
-          </div>
+          )}
+
+          {/* History Toggle Button */}
+          <GenericButton
+            type="button"
+            onClick={toggleHistory}
+            variant="primary"
+          >
+            {showHistory ? (
+              <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            )}
+            <span>{showHistory ? 'Show Cutting' : 'History'}</span>
+          </GenericButton>
         </div>
       </div>
 
       {/* Conditional Rendering: Cutting Table OR History Table */}
       {!showHistory ? (
-        <div className="px-3 py-4 sm:px-4 md:px-6">
+        <div>
           <GenericTable<CuttingEntry>
             data={cuttingEntries}
             columns={columns}
@@ -1129,7 +1202,7 @@ const CuttingDept: React.FC = () => {
           />
         </div>
       ) : (
-        <div className="px-3 py-4 sm:px-4 md:px-6">
+        <div>
           {/* History Summary Cards - Updated with Loss */}
           <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
