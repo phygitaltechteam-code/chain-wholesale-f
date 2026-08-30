@@ -504,20 +504,15 @@ const ReceiptAdd: React.FC = () => {
   };
 
   
+const getClientDueBalance = (client: any) => {
+  if (!client) return 0;
+  const due = client?.due !== null && client?.due !== undefined 
+    ? Number(client.due) 
+    : Number(client?.openingBalance) || 0;
+  return Math.round(due * 1000) / 1000;
+};
 
-  // Get Client Due Balance from client.due or client.openingBalance (Positive value)
-  const getClientDueBalance = (client: any) => {
-    if (!client) return 0;
-    const due =
-      client?.due !== null && client?.due !== undefined
-        ? Number(client.due)
-        : NaN;
-    if (!isNaN(due)) {
-      return Math.round(Math.abs(due) * 1000) / 1000;
-    }
-    const openingBalance = Number(client?.openingBalance) || 0;
-    return Math.round(Math.abs(openingBalance) * 1000) / 1000;
-  };
+
 
 const calculateRemainingWeight = () => {
   const client = clients.find((c: any) => c.id === formData.clientId);
@@ -535,10 +530,11 @@ const calculateRemainingWeight = () => {
   return Math.round(remaining * 1000) / 1000;
 };
 
-  const formatNumberThreeDecimals = (value: number) => {
-    if (value === 0 || !value) return '0';
-    return Number(Math.abs(value).toFixed(3)).toString();
-  };
+const formatNumberThreeDecimals = (value: number) => {
+  if (value === 0 || !value) return '0';
+  const formatted = Number(value.toFixed(3)).toString();
+  return formatted;
+};
 
 
 

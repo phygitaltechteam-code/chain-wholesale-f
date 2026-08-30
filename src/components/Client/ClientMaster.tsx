@@ -30,7 +30,7 @@ const ClientSchema = z.object({
     .min(10, 'Phone number must be at least 10 digits')
     .max(15, 'Phone number must be at most 15 digits'),
   address: z.string().min(1, 'Address is required'),
-  openingBalance: z.number().min(0, 'Opening balance cannot be negative'),
+  openingBalance: z.number(),
 });
 
 type ClientFormData = z.infer<typeof ClientSchema>;
@@ -70,26 +70,42 @@ const ClientMaster: React.FC = () => {
     : clients;
 
   // Handle form input change
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
+ const handleInputChange = (
+  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+) => {
+  const { name, value } = e.target;
 
-    if (name === 'openingBalance') {
-      const sanitized = value.replace(/[^0-9.]/g, '');
-      const parts = sanitized.split('.');
-      const formatted =
-        parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : sanitized;
-      setFormData((prev) => ({ ...prev, [name]: formatted }));
+  if (name === 'openingBalance') {
+    // Allow +, -, and numbers with decimal
+    const sanitized = value.replace(/[^0-9.+-]/g, '');
+    
+    // Handle multiple decimal points - keep only the first one
+    const parts = sanitized.split('.');
+    const formatted = parts.length > 2 
+      ? `${parts[0]}.${parts.slice(1).join('')}` 
+      : sanitized;
+    
+    // Allow only one + or - sign at the beginning
+    let finalValue = formatted;
+    const signMatch = formatted.match(/^([+-])/);
+    if (signMatch) {
+      const sign = signMatch[1];
+      const rest = formatted.substring(1).replace(/[+-]/g, '');
+      finalValue = sign + rest;
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      // Remove any remaining + or - signs if not at the beginning
+      finalValue = formatted.replace(/[+-]/g, '');
     }
+    
+    setFormData((prev) => ({ ...prev, [name]: finalValue }));
+  } else {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  }
 
-    if (formErrors[name as keyof typeof formErrors]) {
-      setFormErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
-  };
-
+  if (formErrors[name as keyof typeof formErrors]) {
+    setFormErrors((prev) => ({ ...prev, [name]: undefined }));
+  }
+};
   // Validate form data
   const validateForm = (): boolean => {
     try {

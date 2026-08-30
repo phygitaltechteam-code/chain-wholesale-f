@@ -41,6 +41,9 @@ interface ClientReportEntry {
   purity: string;
   remark: string;
   wt: number;
+  chainWt: number | null;
+  goldWt: number | null;
+  isGold: boolean;
   groupId: string;
   isFirstInGroup: boolean;
   groupRowSpan: number;
@@ -199,7 +202,7 @@ export default function ClientReport() {
 
       items.forEach((item, index) => {
         const isFirstInBill = index === 0;
-        const itemName = item.item?.name || 'Unknown Item';
+        const itemName = item.item?.name || 'Gold';
         const isGold = itemName.trim().toLowerCase() === 'gold' || itemName.trim().toLowerCase().includes('gold');
         const sizeValue = isGold ? '' : (item.size?.size || '');
         const purityValue = isGold
@@ -222,6 +225,8 @@ export default function ClientReport() {
         });
         const itemDateTime = `${itemFormattedDate} ${itemFormattedTime}`;
 
+        const weightValue = item.weight || 0;
+
         transformedData.push({
           id: item.id || `group-${groupId}-${index}`,
           srNo: currentSrNo,
@@ -231,7 +236,10 @@ export default function ClientReport() {
           size: sizeValue,
           purity: purityValue,
           remark: item.remark || 'N/A',
-          wt: item.weight || 0,
+          wt: weightValue,
+          chainWt: isGold ? null : weightValue,
+          goldWt: isGold ? weightValue : null,
+          isGold,
           groupId: `group-${groupId}`,
           isFirstInGroup: isFirstInBill,
           groupRowSpan,
@@ -257,7 +265,9 @@ export default function ClientReport() {
           groupEntry.size.toLowerCase().includes(query) ||
           groupEntry.remark.toLowerCase().includes(query) ||
           groupEntry.purity.toLowerCase().includes(query) ||
-          groupEntry.wt.toString().includes(query)
+          groupEntry.wt.toString().includes(query) ||
+          (groupEntry.chainWt !== null && groupEntry.chainWt.toString().includes(query)) ||
+          (groupEntry.goldWt !== null && groupEntry.goldWt.toString().includes(query))
         );
       });
     })
@@ -371,7 +381,10 @@ export default function ClientReport() {
                     </td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${entry.remark || 'N/A'}</td>
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-                        ${entry.wt > 0 ? '+' : ''}${formatNumber(entry.wt)}
+                        ${entry.chainWt !== null && entry.chainWt !== undefined ? `${entry.chainWt > 0 ? '+' : ''}${formatNumber(entry.chainWt)}` : '-'}
+                    </td>
+                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
+                        ${entry.goldWt !== null && entry.goldWt !== undefined ? `${entry.goldWt > 0 ? '+' : ''}${formatNumber(entry.goldWt)}` : '-'}
                     </td>
                 </tr>
             `;
@@ -450,7 +463,8 @@ export default function ClientReport() {
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Bill No</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item (Size)</th>
                         <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Remark</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">WT (G)</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain WT (G)</th>
+                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Gold WT (G)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -694,9 +708,15 @@ export default function ClientReport() {
                     </th>
                     <th
                       scope="col"
-                      className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white"
+                      className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
                     >
-                      WT (G)
+                      Chain WT (G)
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                    >
+                      Gold WT (G)
                     </th>
                   </tr>
                 </thead>
@@ -772,9 +792,26 @@ export default function ClientReport() {
                           </span>
                         </td>
 
-                        <td className="font-mono whitespace-nowrap px-3 py-3 text-right text-sm font-bold text-[#1a1c1b] dark:text-white">
-                          {entry.wt > 0 ? '+' : ''}
-                          {formatNumber(entry.wt)} G
+                        <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm font-bold text-[#1a1c1b] dark:text-white">
+                          {entry.chainWt !== null && entry.chainWt !== undefined ? (
+                            <span>
+                              {entry.chainWt > 0 ? '+' : ''}
+                              {formatNumber(entry.chainWt)} G
+                            </span>
+                          ) : (
+                            <span className="font-normal text-gray-400 dark:text-gray-500">-</span>
+                          )}
+                        </td>
+
+                        <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm font-bold text-[#1a1c1b] dark:text-white">
+                          {entry.goldWt !== null && entry.goldWt !== undefined ? (
+                            <span>
+                              {entry.goldWt > 0 ? '+' : ''}
+                              {formatNumber(entry.goldWt)} G
+                            </span>
+                          ) : (
+                            <span className="font-normal text-gray-400 dark:text-gray-500">-</span>
+                          )}
                         </td>
                       </tr>
                     );

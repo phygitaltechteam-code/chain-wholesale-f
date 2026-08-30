@@ -619,16 +619,16 @@ const SolderingDept: React.FC = () => {
     document.body.appendChild(printContainer);
 
     // Build the table rows
-   // Build the table rows
-const rows = filteredData
-  .map((item: any, index: number) => {
-    const { date, time } = formatDate(item?.createdAt);
-    const { date: proceedDate, time: proceedTime } = formatDate(
-      item?.updatedAt,
-    );
-    const isMelting = hasMeltingStatus(item);
+    // Build the table rows
+    const rows = filteredData
+      .map((item: any, index: number) => {
+        const { date, time } = formatDate(item?.createdAt);
+        const { date: proceedDate, time: proceedTime } = formatDate(
+          item?.updatedAt,
+        );
+        const isMelting = hasMeltingStatus(item);
 
-    return `
+        return `
       <tr style="${isMelting ? 'opacity:0.6;background-color:#fafafa;' : ''}">
         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
           ${index + 1}
@@ -645,9 +645,9 @@ const rows = filteredData
         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
           ${item?.purity || '-'}%
         </td>
-        ${isMelting 
-          ? `<td colspan="5" style="border:1px solid #000;padding:1px 2px;text-align:center;font-weight:bold;font-size:11px;color:#785600;background-color:#fffbeb;">Melting</td>`
-          : `
+        ${isMelting
+            ? `<td colspan="5" style="border:1px solid #000;padding:1px 2px;text-align:center;font-weight:bold;font-size:11px;color:#785600;background-color:#fffbeb;">Melting</td>`
+            : `
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
               ${formatNumber(item?.chainWeight)}
             </td>
@@ -669,8 +669,8 @@ const rows = filteredData
         </td>
       </tr>
     `;
-  })
-  .join('');
+      })
+      .join('');
 
     const headerInfo =
       getpdfheaderdata?.data?.data ||
@@ -1637,9 +1637,9 @@ const rows = filteredData
               type="button"
               onClick={() => handleMelting(item)}
               disabled={isLoading || isSubmitting || isMeltingLoading}
-              className={`inline-flex items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
-                ? 'bg-gray-400 cursor-wait'
-                : 'bg-gradient-to-br from-[#785600] to-[#986d00]'
+              className={`inline-flex items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold uppercase tracking-wider shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
+                  ? 'bg-gray-300 text-gray-600 cursor-wait dark:bg-gray-600 dark:text-gray-300'
+                  : 'bg-amber-200 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60'
                 }`}
               title="Send to Melting"
             >
@@ -1652,7 +1652,10 @@ const rows = filteredData
                   <span>Processing...</span>
                 </>
               ) : (
-                <span>Melting</span>
+                <>
+                  <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                  <span>Melting</span>
+                </>
               )}
             </button>
           </div>
@@ -1826,11 +1829,11 @@ const rows = filteredData
             showSrNo={true}
             srNoLabel="Sr No."
             className="shadow-sm"
-             rowClassName={(item) =>
-        hasMeltingStatus(item)
-            ? 'opacity-60 bg-gray-50/70 text-gray-500 hover:bg-gray-100/70 dark:bg-slate-900/40 dark:text-slate-400'
-            : ''
-    }
+            rowClassName={(item) =>
+              hasMeltingStatus(item)
+                ? 'opacity-60 bg-gray-50/70 text-gray-500 hover:bg-gray-100/70 dark:bg-slate-900/40 dark:text-slate-400'
+                : ''
+            }
           />
         </div>
       )}

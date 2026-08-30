@@ -1121,9 +1121,9 @@ const CuttingDept: React.FC = () => {
                 submitMoveKunda.isPending ||
                 isMeltingLoading
               }
-              className={`inline-flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
-                ? 'bg-gray-400 cursor-wait'
-                : 'bg-gradient-to-br from-[#785600] to-[#986d00]'
+              className={`inline-flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wider shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
+                  ? 'bg-gray-300 text-gray-600 cursor-wait dark:bg-gray-600 dark:text-gray-300'
+                  : 'bg-amber-200 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60'
                 }`}
               title="Send to Melting"
             >
@@ -1136,7 +1136,10 @@ const CuttingDept: React.FC = () => {
                   <span>Processing...</span>
                 </>
               ) : (
-                <span>Melting</span>
+                <>
+                  <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                  <span>Melting</span>
+                </>
               )}
             </button>
           </div>
