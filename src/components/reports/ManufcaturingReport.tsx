@@ -172,17 +172,17 @@ export default function ManufacturingReport() {
         const date = new Date(item.createdAt);
         const formattedDate = !isNaN(date.getTime())
           ? date.toLocaleDateString('en-IN', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-            })
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          })
           : '';
         const formattedTime = !isNaN(date.getTime())
           ? date.toLocaleTimeString('en-IN', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true,
-            })
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+          })
           : '';
 
         return {
@@ -335,18 +335,16 @@ export default function ManufacturingReport() {
         const isFirst = index === 0;
         rows += `
           <tr>
-            ${
-              isFirst
-                ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${group.items.length}">${group.srNo}</td>`
-                : ''
-            }
-            ${
-              isFirst
-                ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${group.items.length}">
+            ${isFirst
+            ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${group.items.length}">${group.srNo}</td>`
+            : ''
+          }
+            ${isFirst
+            ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${group.items.length}">
                     ${group.item} ${group.size !== 'N/A' ? `(${group.size})` : ''} ${group.purity > 0 ? `(${group.purity}%)` : ''}
                   </td>`
-                : ''
-            }
+            : ''
+          }
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
               ${item.dateTime}
             </td>
@@ -420,17 +418,16 @@ export default function ManufacturingReport() {
             <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
               Manufacturing Report
             </h2>
-            ${
-              fromDate || toDate
-                ? `
+            ${fromDate || toDate
+        ? `
             <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
               ${fromDate ? `From: ${formatDateForDisplay(fromDate)}` : ''} 
               ${fromDate && toDate ? '&nbsp;&nbsp;' : ''}
               ${toDate ? `To: ${formatDateForDisplay(toDate)}` : ''}
             </div>
             `
-                : `<div style="flex:1;"></div>`
-            }
+        : `<div style="flex:1;"></div>`
+      }
           </div>
 
           <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
@@ -460,14 +457,14 @@ export default function ManufacturingReport() {
               <span>Powered by Matoshree Gold</span>
               <span>|</span>
               <span>Generated: ${new Date().toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-              })} ${new Date().toLocaleTimeString('en-IN', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true,
-              })}</span>
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })} ${new Date().toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      })}</span>
             </div>
           </div>
         </div>
@@ -642,28 +639,6 @@ export default function ManufacturingReport() {
       <div className="px-3 py-4 sm:px-4 md:px-6">
         {/* Summary Cards */}
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-              Total Scrap
-            </span>
-            <span className="text-lg font-bold text-black dark:text-white">
-              {formatNumber(filteredTotals.totalScrap)} G
-            </span>
-          </div>
-        </div>
-
-
-        <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-              Total Loss
-            </span>
-            <span className="text-lg font-bold text-black dark:text-white">
-              {formatNumber(filteredTotals.totalLoss)} G
-            </span>
-          </div>
-        </div>
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
@@ -674,8 +649,31 @@ export default function ManufacturingReport() {
               </span>
             </div>
           </div>
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                Total Scrap
+              </span>
+              <span className="text-lg font-bold text-black dark:text-white">
+                {formatNumber(filteredTotals.totalScrap)} G
+              </span>
+            </div>
+          </div>
 
-        
+
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                Total Loss
+              </span>
+              <span className="text-lg font-bold text-black dark:text-white">
+                {formatNumber(filteredTotals.totalLoss)} G
+              </span>
+            </div>
+          </div>
+
+
+
 
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
@@ -728,6 +726,12 @@ export default function ManufacturingReport() {
                           scope="col"
                           className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
                         >
+                          Wt. (G)
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                        >
                           Scrap (G)
                         </th>
                         <th
@@ -736,12 +740,7 @@ export default function ManufacturingReport() {
                         >
                           Loss (G)
                         </th>
-                        <th
-                          scope="col"
-                          className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
-                        >
-                          Wt. (G)
-                        </th>
+
                         <th
                           scope="col"
                           className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
@@ -760,11 +759,10 @@ export default function ManufacturingReport() {
                           return (
                             <tr
                               key={item.id}
-                              className={`${
-                                isEvenGroup
-                                  ? 'bg-white dark:bg-slate-900'
-                                  : 'bg-gray-50 dark:bg-slate-800/50'
-                              } transition-colors hover:bg-[#f4f4f2]/60 dark:hover:bg-slate-800/80`}
+                              className={`${isEvenGroup
+                                ? 'bg-white dark:bg-slate-900'
+                                : 'bg-gray-50 dark:bg-slate-800/50'
+                                } transition-colors hover:bg-[#f4f4f2]/60 dark:hover:bg-slate-800/80`}
                             >
                               {isFirstInGroup && (
                                 <td
@@ -795,7 +793,9 @@ export default function ManufacturingReport() {
                                   {item.dateTime.split(' ').slice(1).join(' ')}
                                 </div>
                               </td>
-
+                              <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                                {formatNumber(item.weight)} G
+                              </td>
                               <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
                                 {formatNumber(item.scrap)} G
                               </td>
@@ -804,9 +804,7 @@ export default function ManufacturingReport() {
                                 {formatNumber(item.loss)} G
                               </td>
 
-                              <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
-                                {formatNumber(item.weight)} G
-                              </td>
+
 
                               <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
                                 {formatNumber(item.currentWeight)} G
@@ -872,11 +870,10 @@ export default function ManufacturingReport() {
                           <button
                             key={pageNum}
                             onClick={() => setCurrentPage(pageNum)}
-                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                              pageNum === currentPage
-                                ? 'z-10 bg-[#785600] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#785600]'
-                                : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:text-gray-300 dark:ring-slate-600 dark:hover:bg-slate-700'
-                            }`}
+                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${pageNum === currentPage
+                              ? 'z-10 bg-[#785600] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#785600]'
+                              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:text-gray-300 dark:ring-slate-600 dark:hover:bg-slate-700'
+                              }`}
                           >
                             {pageNum}
                           </button>

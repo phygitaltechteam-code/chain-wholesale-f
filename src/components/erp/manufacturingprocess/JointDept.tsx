@@ -1097,15 +1097,15 @@ const JointDept: React.FC = () => {
         );
       },
     },
-    {
-      key: 'loss',
-      header: 'Loss (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.loss)} G
-        </span>
-      ),
-    },
+    // {
+    //   key: 'loss',
+    //   header: 'Loss (G)',
+    //   render: (item) => (
+    //     <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+    //       {formatNumberDisplay(item.loss)} G
+    //     </span>
+    //   ),
+    // },
     {
       key: 'actions',
       header: 'Action',

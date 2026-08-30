@@ -1260,12 +1260,12 @@ const SolderingDept: React.FC = () => {
 
       await refetch();
 
-      navigate({
-        to: '/manufacturingprocess/process',
-        state: {
-          selectedTab: 'cutting',
-        },
-      });
+      // navigate({
+      //   to: '/manufacturingprocess/process',
+      //   state: {
+      //     selectedTab: 'cutting',
+      //   },
+      // });
     } catch (error: any) {
       console.error('Error saving soldering:', error);
       const errorMessage =

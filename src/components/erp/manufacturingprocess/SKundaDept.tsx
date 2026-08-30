@@ -726,9 +726,9 @@ const SKundaDept: React.FC = () => {
       setSaveIndex(null);
       await refetch();
       // toast.success('S Kunda process stockped successfully!');
-      navigate({
-        to: '/Stocks/stockpage',
-      });
+      // navigate({
+      //   to: '/Stocks/stockpage',
+      // });
     } catch (error: any) {
       console.error('Error submitting S Kunda process:', error);
       const errorMessage =
@@ -932,55 +932,35 @@ const SKundaDept: React.FC = () => {
         </span>
       ),
     },
-    {
-      key: 'actions',
-      header: 'Action',
-      render: (item: KundaEntry, index: number) => {
-        const isMeltingLoading = meltingLoadingIds.has(item.id);
+    ...(showActionColumn
+      ? [
+        {
+          key: 'actions',
+          header: 'Action',
+          render: (item: KundaEntry, index: number) => {
+            // Only show the action button after the user has changed an input
+            if (item.isSaved || !item.isEditing || !hasEditableValues(item)) {
+              return null;
+            }
 
-        return (
-          <div className="flex items-center justify-center gap-1.5">
-            {/* Melting Button - Always visible for all entries */}
-            <button
-              type="button"
-              onClick={() => handleMelting(item)}
-              disabled={isLoading || isSubmitting || isMeltingLoading}
-              className={`inline-flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
-                  ? 'bg-gray-400 cursor-wait'
-                  : 'bg-gradient-to-br from-[#785600] to-[#986d00]'
-                }`}
-              title="Send to Melting"
-            >
-              {isMeltingLoading ? (
-                <>
-                  <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span>Processing...</span>
-                </>
-              ) : (
-                <span>Melting</span>
-              )}
-            </button>
-
-            {/* Stock Button - Only show if entry is not saved and has editable values */}
-            {!item.isSaved && item.isEditing && hasEditableValues(item) && (
-              <button
-                type="button"
-                onClick={() => handleStockClick(index)}
-                disabled={isLoading || submitKunda.isPending}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#5d4200] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                title="Stock Process"
-              >
-                <Square className="h-3.5 w-3.5 fill-current" />
-                <span>Stock</span>
-              </button>
-            )}
-          </div>
-        );
-      },
-    } as Column<KundaEntry>,
+            return (
+              <div className="flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => handleStockClick(index)}
+                  disabled={isLoading || submitKunda.isPending}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#5d4200] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Stock Process"
+                >
+                  <Square className="h-3.5 w-3.5 fill-current" />
+                  <span>Stock</span>
+                </button>
+              </div>
+            );
+          },
+        } as Column<KundaEntry>,
+      ]
+      : []),
   ];
 
   const historyColumns: Column<any>[] = [

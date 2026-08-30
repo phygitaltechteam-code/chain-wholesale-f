@@ -587,7 +587,7 @@ const LossReport: React.FC = () => {
 
             <div className="px-3 py-4 sm:px-4 md:px-6">
                 {/* Summary Cards - Black text only */}
-                <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-2">
                     <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
                         <div className="flex items-start justify-between">
                             <div className="flex flex-col">
@@ -620,7 +620,7 @@ const LossReport: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+                    {/* <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
                         <div className="flex items-start justify-between">
                             <div className="flex flex-col">
                                 <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
@@ -631,9 +631,9 @@ const LossReport: React.FC = () => {
                                 </span>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
-                    <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+                    {/* <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
                         <div className="flex items-start justify-between">
                             <div className="flex flex-col">
                                 <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
@@ -644,9 +644,9 @@ const LossReport: React.FC = () => {
                                 </span>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
-                    <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+                    {/* <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
                         <div className="flex items-start justify-between">
                             <div className="flex flex-col">
                                 <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
@@ -657,7 +657,7 @@ const LossReport: React.FC = () => {
                                 </span>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
 
                 {/* Table using GenericTable */}
@@ -665,7 +665,7 @@ const LossReport: React.FC = () => {
                     data={filteredData}
                     columns={columns}
                     emptyMessage="No loss entries found for the selected date range."
-                    isLoading={isLoading || loading}
+                    // isLoading={isLoading || loading}
                     showSrNo={true}
                     srNoLabel="Sr No."
                     className="shadow-sm"
