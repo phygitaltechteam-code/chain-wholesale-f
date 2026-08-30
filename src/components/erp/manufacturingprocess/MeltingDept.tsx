@@ -433,10 +433,10 @@ const MeltingDept: React.FC = () => {
   const handleStockClick = useCallback(
     (index: number) => {
       const entry = meltingEntries[index];
-      if (!entry.fineWeight || entry.fineWeight <= 0) {
-        toast.error('Please enter a valid fine weight');
-        return;
-      }
+      // if (!entry.fineWeight || entry.fineWeight <= 0) {
+      //   toast.error('Please enter a valid fine weight');
+      //   return;
+      // }
       setSaveIndex(index);
       setShowConfirmModal(true);
     },

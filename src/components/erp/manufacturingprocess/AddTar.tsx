@@ -10,6 +10,7 @@ import {
   Trash2,
   Layers,
   AlertCircle,
+  Flame,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
@@ -48,6 +49,10 @@ interface TarEntry {
   grosswtRaw?: string;
   isDirty?: boolean;
   isMeltingLoading?: boolean;
+  status?: string;
+  process?: string;
+  isMelting?: boolean;
+  meltingStatus?: boolean;
 }
 
 interface TarCardForm {
@@ -128,7 +133,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   const { data: rawItemsData = [] } = useGetItems();
   const submitMelting = useAddMelting();
   const handleMelting = async (entry: TarEntry) => {
-    // Set loading state for this specific row
     setTarEntries((prev) =>
       prev.map((e) =>
         e.id === entry.id ? { ...e, isMeltingLoading: true } : e
@@ -221,6 +225,16 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
       handleInlineChange(index, field, weight.toString());
     },
   );
+
+  // Helper to check if item has melting status
+  const hasMeltingStatus = (item: any): boolean => {
+    const s = String(item?.status || item?.process || '').toUpperCase();
+    return (
+      s === 'MELTING' ||
+      item?.isMelting === true ||
+      item?.meltingStatus === true
+    );
+  };
 
   // Format date helper for history
   const formatDate = (dateString: string) => {
@@ -350,18 +364,23 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         const { date: proceedDate, time: proceedTime } = formatDate(
           item?.updatedAt,
         );
+        const isMelting = hasMeltingStatus(item);
 
         return `
-                    <tr>
+                    <tr style="${isMelting ? 'opacity:0.6;background-color:#fafafa;' : ''}">
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
                             ${date} ${time}
                         </td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.fine)}</td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.purity)}%</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.tar)}</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.scrap)}</td>
-                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.loss)}</td>
+                        ${isMelting
+                          ? `<td colspan="3" style="border:1px solid #000;padding:1px 2px;text-align:center;font-weight:bold;font-size:11px;color:#785600;background-color:#fffbeb;">Melting</td>`
+                          : `
+                            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.tar)}</td>
+                            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.scrap)}</td>
+                            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.loss)}</td>
+                          `}
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
                             ${proceedDate} ${proceedTime}
                         </td>
@@ -573,15 +592,29 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     {
       key: 'tar',
       header: 'Tar (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.tar)} G
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 3 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return (
+            <div className="flex items-center justify-center py-0.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                Melting
+              </span>
+            </div>
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumber(item.tar)} G
+          </span>
+        );
+      },
     },
     {
       key: 'scrap',
       header: 'Scrap (G)',
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumber(item.scrap)} G
@@ -591,6 +624,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     {
       key: 'loss',
       header: 'Loss (G)',
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumber(item.loss)} G
@@ -663,6 +697,10 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             itemId: tar.itemId || '',
             sizeId: tar.sizeId || '',
             isDirty: false,
+            status: tar.status,
+            process: tar.process,
+            isMelting: tar.isMelting,
+            meltingStatus: tar.meltingStatus,
           };
         });
         setTarEntries(entries);
@@ -1000,10 +1038,10 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
       setSaveIndex(null);
       await refetch();
 
-      navigate({
-        to: '/manufacturingprocess/process',
-        state: { selectedTab: 'box' },
-      });
+      // navigate({
+      //   to: '/manufacturingprocess/process',
+      //   state: { selectedTab: 'box' },
+      // });
     } catch (error: any) {
       console.error('Error saving tar:', error);
       const backendMessage =
@@ -1088,33 +1126,19 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     {
       key: 'grosswt',
       header: 'GrossWt (G)',
+      colSpan: (item) => (hasMeltingStatus(item) ? 3 : 1),
       render: (item, index) => {
-        if (!item.isSaved) {
+        if (hasMeltingStatus(item)) {
           return (
-            <div className="relative inline-block">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={
-                  item.grosswtRaw !== undefined
-                    ? item.grosswtRaw
-                    : item.grosswt === 0
-                      ? ''
-                      : item.grosswt
-                }
-                {...getScaleProps(index, 'grosswt')}
-                onChange={(e) =>
-                  handleInlineChange(index, 'grosswt', e.target.value)
-                }
-                placeholder="0.000"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-              />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
+            <div className="flex items-center justify-center py-0.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                Melting
               </span>
             </div>
           );
         }
+      
 
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
@@ -1126,6 +1150,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     {
       key: 'tar',
       header: 'Tar (G)',
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
       render: (item, index) => {
         if (!item.isSaved) {
           return (
@@ -1164,6 +1189,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     {
       key: 'scrap',
       header: 'Scrap (G)',
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
       render: (item, index) => {
         if (!item.isSaved) {
           return (
@@ -1214,6 +1240,14 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
       key: 'actions',
       header: 'Action',
       render: (item: TarEntry, index: number) => {
+        if (hasMeltingStatus(item)) {
+          return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+              Melting
+            </span>
+          );
+        }
+
         return (
           <div className="flex items-center justify-center gap-1.5">
             {/* Box Button - Only show if entry is not saved and has editable values */}
@@ -1272,11 +1306,11 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             <GenericButton
               type="button"
               onClick={handleOpenModal}
-              disabled={isTarCompleted}
+             
               variant="primary"
             >
               <Plus className="h-4 w-4" />
-              <span>{isTarCompleted ? 'Completed' : 'Add Tar'}</span>
+              <span>Add Tar</span>
             </GenericButton>
           )}
 
@@ -1364,6 +1398,11 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             }
             showSrNo={true}
             srNoLabel="Sr No."
+            rowClassName={(item) =>
+              hasMeltingStatus(item)
+                ? 'opacity-60 bg-gray-50/70 text-gray-500 hover:bg-gray-100/70 dark:bg-slate-900/40 dark:text-slate-400'
+                : ''
+            }
           />
         </div>
       ) : (
@@ -1425,6 +1464,11 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             showSrNo={true}
             srNoLabel="Sr No."
             className="shadow-sm"
+            rowClassName={(item: any) =>
+              hasMeltingStatus(item)
+                ? 'opacity-60 bg-gray-50/70 text-gray-500 hover:bg-gray-100/70 dark:bg-slate-900/40 dark:text-slate-400'
+                : ''
+            }
           />
         </div>
       )}

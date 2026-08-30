@@ -10,7 +10,7 @@ import {
   Plus,
   X,
   Layers,
-  Sparkles,
+  Flame,
   Box,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
@@ -77,6 +77,10 @@ interface SolderingEntry {
   sizeId?: string;
   isCompleted?: boolean;
   isDirty?: boolean;
+  status?: string;
+  process?: string;
+  isMelting?: boolean;
+  meltingStatus?: boolean;
 }
 
 interface SolderingCardForm {
@@ -226,6 +230,16 @@ const SolderingDept: React.FC = () => {
         return newSet;
       });
     }
+  };
+
+  // Helper to check if item has melting status
+  const hasMeltingStatus = (item: any): boolean => {
+    const s = String(item?.status || item?.process || '').toUpperCase();
+    return (
+      s === 'MELTING' ||
+      item?.isMelting === true ||
+      item?.meltingStatus === true
+    );
   };
   // Weighing Scale modal focus hook
   const { getScaleProps: getModalScaleProps } = useTableScaleFocus<'chainWeight'>(
@@ -486,6 +500,10 @@ const SolderingDept: React.FC = () => {
             sizeId: soldering.sizeId,
             isCompleted: soldering.isCompleted || false,
             isDirty: false,
+            status: soldering.status,
+            process: soldering.process,
+            isMelting: soldering.isMelting,
+            meltingStatus: soldering.meltingStatus,
           };
         },
       );
@@ -601,63 +619,58 @@ const SolderingDept: React.FC = () => {
     document.body.appendChild(printContainer);
 
     // Build the table rows
-    const rows = filteredData
-      .map((item: any, index: number) => {
-        const { date, time } = formatDate(item?.createdAt);
+   // Build the table rows
+const rows = filteredData
+  .map((item: any, index: number) => {
+    const { date, time } = formatDate(item?.createdAt);
+    const { date: proceedDate, time: proceedTime } = formatDate(
+      item?.updatedAt,
+    );
+    const isMelting = hasMeltingStatus(item);
 
-        const { date: proceedDate, time: proceedTime } = formatDate(
-          item?.updatedAt,
-        );
-
-        return `
-                <tr>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-                        ${index + 1}
-                    </td>
-
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
-                        ${date} ${time}
-                    </td>
-
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-                        ${getItemName(item?.item)}
-                    </td>
-
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-                        ${getSizeName(item?.size)}
-                    </td>
-
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-                        ${item?.purity || '-'}%
-                    </td>
-
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-                        ${formatNumber(item?.chainWeight)}
-                    </td>
-
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-                        ${formatNumber(item?.chainReceived)}
-                    </td>
-
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-                        ${formatNumber(item?.powder)}
-                    </td>
-
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-                        ${formatNumberDisplay(item?.increase)}%
-                    </td>
-
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-                        ${formatNumber(item?.scrap)}
-                    </td>
-
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
-                        ${proceedDate} ${proceedTime}
-                    </td>
-                </tr>
-            `;
-      })
-      .join('');
+    return `
+      <tr style="${isMelting ? 'opacity:0.6;background-color:#fafafa;' : ''}">
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
+          ${index + 1}
+        </td>
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+          ${date} ${time}
+        </td>
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
+          ${getItemName(item?.item)}
+        </td>
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
+          ${getSizeName(item?.size)}
+        </td>
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
+          ${item?.purity || '-'}%
+        </td>
+        ${isMelting 
+          ? `<td colspan="5" style="border:1px solid #000;padding:1px 2px;text-align:center;font-weight:bold;font-size:11px;color:#785600;background-color:#fffbeb;">Melting</td>`
+          : `
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
+              ${formatNumber(item?.chainWeight)}
+            </td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
+              ${formatNumber(item?.chainReceived)}
+            </td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
+              ${formatNumber(item?.powder)}
+            </td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
+              ${formatNumberDisplay(item?.increase)}%
+            </td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
+              ${formatNumber(item?.scrap)}
+            </td>
+          `}
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+          ${proceedDate} ${proceedTime}
+        </td>
+      </tr>
+    `;
+  })
+  .join('');
 
     const headerInfo =
       getpdfheaderdata?.data?.data ||
@@ -883,16 +896,13 @@ const SolderingDept: React.FC = () => {
     {
       key: 'createdAt',
       header: 'Date & Time',
-
       render: (item) => {
         const { date, time } = formatDate(item.createdAt);
-
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
               {date}
             </span>
-
             <span className="text-sm text-[#1a1c1b] dark:text-white">
               {time}
             </span>
@@ -900,22 +910,18 @@ const SolderingDept: React.FC = () => {
         );
       },
     },
-
     {
       key: 'itemName',
       header: 'Item',
-
       render: (item) => (
         <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
           {item?.item?.name}
         </span>
       ),
     },
-
     {
       key: 'sizeName',
       header: 'Size',
-
       render: (item) => (
         <span className="text-sm text-[#1a1c1b] dark:text-white">
           {item?.size?.size}
@@ -934,79 +940,95 @@ const SolderingDept: React.FC = () => {
     {
       key: 'chainWeight',
       header: 'Chain Given (G)',
-
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.chainWeight)} G
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 5 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return (
+            <div className="flex items-center justify-center py-0.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                Melting
+              </span>
+            </div>
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.chainWeight)} G
+          </span>
+        );
+      },
     },
-
     {
       key: 'chainReceived',
       header: 'Chain Received (G)',
-
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.chainReceived)} G
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return null;
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.chainReceived)} G
+          </span>
+        );
+      },
     },
-
     {
       key: 'powder',
       header: 'Powder Given (G)',
-
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.powder)} G
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return null;
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.powder)} G
+          </span>
+        );
+      },
     },
-
     {
       key: 'increase',
       header: 'Increase %',
-
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.increase)} %
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return null;
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.increase)} %
+          </span>
+        );
+      },
     },
-
     {
       key: 'scrap',
       header: 'Scrap (स्क्रॅप)',
-
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.scrap)} G
-        </span>
-      ),
-    },
-    {
-      key: 'process',
-      header: 'Status',
-      render: (item) => (
-        <span className="text-sm text-[#1a1c1b] dark:text-white">
-          {item.process}
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return null;
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.scrap)} G
+          </span>
+        );
+      },
     },
     {
       key: 'updatedAt',
       header: 'Proceed Date & Time',
-
       render: (item) => {
         const { date, time } = formatDate(item.updatedAt);
-
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
               {date}
             </span>
-
             <span className="text-gray-500 dark:text-gray-400 text-sm">
               {time}
             </span>
@@ -1152,12 +1174,12 @@ const SolderingDept: React.FC = () => {
 
       await refetch();
 
-      navigate({
-        to: '/manufacturingprocess/process',
-        state: {
-          selectedTab: 'joint',
-        },
-      });
+      // navigate({
+      //   to: '/manufacturingprocess/process',
+      //   state: {
+      //     selectedTab: 'joint',
+      //   },
+      // });
     } catch (error: any) {
       console.error('Error saving soldering:', error);
       const errorMessage =
@@ -1616,8 +1638,8 @@ const SolderingDept: React.FC = () => {
               onClick={() => handleMelting(item)}
               disabled={isLoading || isSubmitting || isMeltingLoading}
               className={`inline-flex items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
-                  ? 'bg-gray-400 cursor-wait'
-                  : 'bg-gradient-to-br from-[#785600] to-[#986d00]'
+                ? 'bg-gray-400 cursor-wait'
+                : 'bg-gradient-to-br from-[#785600] to-[#986d00]'
                 }`}
               title="Send to Melting"
             >
@@ -1804,6 +1826,11 @@ const SolderingDept: React.FC = () => {
             showSrNo={true}
             srNoLabel="Sr No."
             className="shadow-sm"
+             rowClassName={(item) =>
+        hasMeltingStatus(item)
+            ? 'opacity-60 bg-gray-50/70 text-gray-500 hover:bg-gray-100/70 dark:bg-slate-900/40 dark:text-slate-400'
+            : ''
+    }
           />
         </div>
       )}

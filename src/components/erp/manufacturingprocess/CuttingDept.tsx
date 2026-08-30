@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Printer,
   Calendar,
+  Flame,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
@@ -44,6 +45,10 @@ interface CuttingEntry {
   sizeId?: string;
   isCompleted?: boolean;
   isDirty?: boolean;
+  status?: string;
+  process?: string;
+  isMelting?: boolean;
+  meltingStatus?: boolean;
 }
 
 // Helper functions for safely extracting values
@@ -227,6 +232,10 @@ const CuttingDept: React.FC = () => {
             sizeId: cutting.sizeId,
             isCompleted: cutting.isCompleted || false,
             isDirty: false,
+            status: cutting.status,
+            process: cutting.process,
+            isMelting: cutting.isMelting,
+            meltingStatus: cutting.meltingStatus,
           };
         },
       );
@@ -267,6 +276,15 @@ const CuttingDept: React.FC = () => {
       maximumFractionDigits: 3,
       useGrouping: true,
     }).format(toNumber(value));
+  };
+
+  const hasMeltingStatus = (item: any): boolean => {
+    const s = String(item?.status || item?.process || '').toUpperCase();
+    return (
+      s === 'MELTING' ||
+      item?.isMelting === true ||
+      item?.meltingStatus === true
+    );
   };
 
   // Filter history by selected From-To date range.
@@ -344,33 +362,37 @@ const CuttingDept: React.FC = () => {
     `;
     document.body.appendChild(printContainer);
 
-    // Build the table rows - Compact with minimum padding
+
     const rows = filteredData
       .map((item: any, index: number) => {
         const { date, time } = formatDate(item?.createdAt);
         const { date: proceedDate, time: proceedTime } = formatDate(
           item?.updatedAt,
         );
+        const isMelting = hasMeltingStatus(item);
 
         return `
-                <tr>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
-                        ${date} ${time}
-                    </td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
-                                        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
-
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainWeight)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainReceived)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.loss)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
-                        ${proceedDate} ${proceedTime}
-                    </td>
-                </tr>
-            `;
+      <tr style="${isMelting ? 'opacity:0.6;background-color:#fafafa;' : ''}">
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+          ${date} ${time}
+        </td>
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
+        ${isMelting
+            ? `<td colspan="5" style="border:1px solid #000;padding:1px 2px;text-align:center;font-weight:bold;font-size:11px;color:#785600;background-color:#fffbeb;">Melting</td>`
+            : `
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainWeight)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainReceived)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.loss)}</td>
+          `}
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+          ${proceedDate} ${proceedTime}
+        </td>
+      </tr>
+    `;
       })
       .join('');
 
@@ -451,20 +473,20 @@ const CuttingDept: React.FC = () => {
 
             <!-- Table -->
             <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
-                <thead>
-                    <tr style="background:#785600;color:white;font-weight:600;">
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Given</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Rec</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
-                        <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Proceed</th>
-                    </tr>
-                </thead>
+              <thead>
+  <tr style="background:#785600;color:white;font-weight:600;">
+    <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
+    <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
+    <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Item</th>
+    <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Size</th>
+    <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
+    <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Given</th>
+    <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Chain Rec</th>
+    <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Scrap</th>
+    <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss</th>
+    <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Proceed</th>
+  </tr>
+</thead>
                 <tbody>
                     ${rows}
                 </tbody>
@@ -577,58 +599,84 @@ const CuttingDept: React.FC = () => {
     {
       key: 'purity',
       header: 'Purity (%)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.purity)}%
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 5 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return (
+            <div className="flex items-center justify-center py-0.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                Melting
+              </span>
+            </div>
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.purity)}%
+          </span>
+        );
+      },
     },
     {
       key: 'chainWeight',
       header: 'Chain Given (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.chainWeight)} G
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return null;
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.chainWeight)} G
+          </span>
+        );
+      },
     },
     {
       key: 'chainReceived',
       header: 'Chain Received (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.chainReceived)} G
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return null;
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.chainReceived)} G
+          </span>
+        );
+      },
     },
     {
       key: 'scrap',
       header: 'Scrap (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.scrap)} G
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return null;
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.scrap)} G
+          </span>
+        );
+      },
     },
-
     {
       key: 'loss',
       header: 'Loss (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.loss)} G
-        </span>
-      ),
-    },
-
-    {
-      key: 'process',
-      header: 'Status',
-      render: (item) => (
-        <span className="text-sm text-[#1a1c1b] dark:text-white">
-          {item.process}
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return null;
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.loss)} G
+          </span>
+        );
+      },
     },
     {
       key: 'updatedAt',
@@ -648,7 +696,6 @@ const CuttingDept: React.FC = () => {
       },
     },
   ];
-
   // Handle inline field change
   const handleInlineChange = useCallback(
     (
@@ -851,10 +898,10 @@ const CuttingDept: React.FC = () => {
       await refetch();
 
       toast.success('Cutting entry moved to S Kunda successfully!');
-      navigate({
-        to: '/manufacturingprocess/process',
-        state: { selectedTab: 'kunda' },
-      });
+      // navigate({
+      //   to: '/manufacturingprocess/process',
+      //   state: { selectedTab: 'kunda' },
+      // });
     } catch (error: any) {
       console.error('Error moving cutting entry to S Kunda:', error);
       const errorMessage =
@@ -1199,6 +1246,11 @@ const CuttingDept: React.FC = () => {
             isLoading={cuttingLoading || isSubmitting}
             showSrNo={true}
             srNoLabel="Sr No."
+            rowClassName={(item) =>
+              hasMeltingStatus(item)
+                ? 'opacity-60 bg-gray-50/70 text-gray-500 hover:bg-gray-100/70 dark:bg-slate-900/40 dark:text-slate-400'
+                : ''
+            }
           />
         </div>
       ) : (
