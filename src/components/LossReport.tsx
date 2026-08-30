@@ -463,15 +463,15 @@ const LossReport: React.FC = () => {
                 </span>
             ),
         },
-        {
-            key: 'purity',
-            header: 'Purity %',
-            render: (item) => (
-                <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumberDisplay(item.purity)}%
-                </span>
-            ),
-        },
+        // {
+        //     key: 'purity',
+        //     header: 'Purity %',
+        //     render: (item) => (
+        //         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+        //             {formatNumberDisplay(item.purity)}%
+        //         </span>
+        //     ),
+        // },
         {
             key: 'loss',
             header: 'Loss (G)',
