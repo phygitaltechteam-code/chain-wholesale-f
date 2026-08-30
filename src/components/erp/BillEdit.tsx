@@ -1400,7 +1400,7 @@ const BillEdit: React.FC = () => {
             </div>
 
             {/* Due Balance (Client Due - Read Only) */}
-            <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-4 py-2.5 dark:border-slate-700">
+            {/* <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-4 py-2.5 dark:border-slate-700">
               <span className="text-sm font-medium text-[#4f4535] dark:text-slate-300">
                 Due Balance
               </span>
@@ -1414,7 +1414,7 @@ const BillEdit: React.FC = () => {
                 )}{' '}
                 G
               </span>
-            </div>
+            </div> */}
 
             {/* Remaining Balance */}
             <div className="flex items-center justify-between bg-[#f4f0e5] px-4 py-3 dark:bg-slate-800">

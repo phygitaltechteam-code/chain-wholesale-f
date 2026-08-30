@@ -642,6 +642,28 @@ export default function ManufacturingReport() {
       <div className="px-3 py-4 sm:px-4 md:px-6">
         {/* Summary Cards */}
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+              Total Scrap
+            </span>
+            <span className="text-lg font-bold text-black dark:text-white">
+              {formatNumber(filteredTotals.totalScrap)} G
+            </span>
+          </div>
+        </div>
+
+
+        <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+              Total Loss
+            </span>
+            <span className="text-lg font-bold text-black dark:text-white">
+              {formatNumber(filteredTotals.totalLoss)} G
+            </span>
+          </div>
+        </div>
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
@@ -653,27 +675,7 @@ export default function ManufacturingReport() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                Total Scrap
-              </span>
-              <span className="text-lg font-bold text-black dark:text-white">
-                {formatNumber(filteredTotals.totalScrap)} G
-              </span>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                Total Loss
-              </span>
-              <span className="text-lg font-bold text-black dark:text-white">
-                {formatNumber(filteredTotals.totalLoss)} G
-              </span>
-            </div>
-          </div>
+        
 
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">

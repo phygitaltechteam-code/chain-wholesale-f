@@ -375,8 +375,8 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.fine)}</td>
                         <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.purity)}%</td>
                         ${isMelting
-                          ? `<td colspan="3" style="border:1px solid #000;padding:1px 2px;text-align:center;font-weight:bold;font-size:11px;color:#785600;background-color:#fffbeb;">Melting</td>`
-                          : `
+            ? `<td colspan="3" style="border:1px solid #000;padding:1px 2px;text-align:center;font-weight:bold;font-size:11px;color:#785600;background-color:#fffbeb;">Melting</td>`
+            : `
                             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.tar)}</td>
                             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.scrap)}</td>
                             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumber(item?.loss)}</td>
@@ -1138,7 +1138,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             </div>
           );
         }
-      
+
 
         return (
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
@@ -1269,9 +1269,10 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
               type="button"
               onClick={() => handleMelting(item)}
               disabled={isLoading || isSubmitting}
-              className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1 rounded-lg bg-amber00 px-2 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-amber-200 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60"
               title="Send to Melting"
             >
+              <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
               <span>Melting</span>
             </button>
           </div>
@@ -1306,7 +1307,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             <GenericButton
               type="button"
               onClick={handleOpenModal}
-             
+
               variant="primary"
             >
               <Plus className="h-4 w-4" />
