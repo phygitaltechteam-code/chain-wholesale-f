@@ -840,9 +840,9 @@ const CuttingDept: React.FC = () => {
       await refetch();
 
       toast.success('Cutting entry saved to Stock successfully!');
-      navigate({
-        to: '/Stocks/stockpage',
-      });
+      // navigate({
+      //   to: '/Stocks/stockpage',
+      // });
     } catch (error: any) {
       console.error('Error saving cutting to Stock:', error);
       const errorMessage =
