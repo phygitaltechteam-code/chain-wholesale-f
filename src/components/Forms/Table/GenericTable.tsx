@@ -23,6 +23,7 @@ export interface Column<T> {
   className?: string;
   align?: 'left' | 'right' | 'center';
   width?: string;
+  colSpan?: (item: T, index: number) => number;
 }
 
 export interface GenericTableProps<T> {
@@ -364,13 +365,21 @@ export function GenericTable<T extends { id?: string | number }>({
                         onClick={() => handleRowClick(item, actualIndex)}
                       >
                         {allColumns.map((column, colIdx) => {
+                          if (column.colSpan) {
+                            const span = column.colSpan(item, actualIndex);
+                            if (span === 0) return null;
+                          }
                           const value = getCellValue(item, column, actualIndex);
                           const isEditable = column.editable && isItemEditing;
                           const align = getColumnAlign(column);
+                          const colSpanVal = column.colSpan
+                            ? column.colSpan(item, actualIndex)
+                            : undefined;
 
                           return (
                             <td
                               key={colIdx}
+                              colSpan={colSpanVal && colSpanVal > 1 ? colSpanVal : undefined}
                               className={`px-3 py-3 text-sm lg:px-4 ${textColor} ${column.className || ''}`}
                               style={{ textAlign: align }}
                             >

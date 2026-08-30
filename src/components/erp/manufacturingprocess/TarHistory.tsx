@@ -1,15 +1,15 @@
-import React, {useState} from 'react';
-import {ArrowLeft, Filter, X, Download} from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
-import {useGetTarHistory} from '@/lib/api/tar';
+import React, { useState } from 'react';
+import { ArrowLeft, Filter, X, Download } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import { useGetTarHistory } from '@/lib/api/tar';
 import toast from 'react-hot-toast';
 
 interface TarHistoryProps {
   onBack?: () => void;
 }
 
-const TarHistory: React.FC<TarHistoryProps> = ({onBack}) => {
+const TarHistory: React.FC<TarHistoryProps> = ({ onBack }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<string>('');
@@ -17,7 +17,7 @@ const TarHistory: React.FC<TarHistoryProps> = ({onBack}) => {
   const [showFilter, setShowFilter] = useState(false);
 
   // Fetch tar history data
-  const {data: tarHistory = [], isLoading, refetch} = useGetTarHistory();
+  const { data: tarHistory = [], isLoading, refetch } = useGetTarHistory();
 
   // Get unique items and sizes for filter
   const uniqueItems = React.useMemo(() => {
@@ -27,7 +27,7 @@ const TarHistory: React.FC<TarHistoryProps> = ({onBack}) => {
         items.set(tar.item.id, tar.item.name);
       }
     });
-    return Array.from(items.entries()).map(([id, name]) => ({id, name}));
+    return Array.from(items.entries()).map(([id, name]) => ({ id, name }));
   }, [tarHistory]);
 
   const uniqueSizes = React.useMemo(() => {
@@ -37,7 +37,7 @@ const TarHistory: React.FC<TarHistoryProps> = ({onBack}) => {
         sizes.set(tar.size.id, tar.size.size);
       }
     });
-    return Array.from(sizes.entries()).map(([id, size]) => ({id, size}));
+    return Array.from(sizes.entries()).map(([id, size]) => ({ id, size }));
   }, [tarHistory]);
 
   // Format date helper
@@ -106,7 +106,7 @@ const TarHistory: React.FC<TarHistoryProps> = ({onBack}) => {
     } else {
       navigate({
         to: '/manufacturingprocess/process',
-        state: {selectedTab: 'box'},
+        state: { selectedTab: 'box' },
       });
     }
   };
@@ -141,7 +141,7 @@ const TarHistory: React.FC<TarHistoryProps> = ({onBack}) => {
         headers.join(','),
         ...rows.map((row) => row.join(',')),
       ].join('\n');
-      const blob = new Blob([csvContent], {type: 'text/csv'});
+      const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -266,11 +266,10 @@ const TarHistory: React.FC<TarHistoryProps> = ({onBack}) => {
               {/* Filter Toggle Button */}
               <button
                 onClick={() => setShowFilter(!showFilter)}
-                className={`rounded-lg p-2 transition-colors ${
-                  showFilter || searchTerm || selectedItem || selectedSize
+                className={`rounded-lg p-2 transition-colors ${showFilter || searchTerm || selectedItem || selectedSize
                     ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                     : 'hover:bg-[#f4f4f2] dark:hover:bg-slate-800'
-                }`}
+                  }`}
               >
                 <Filter className="h-4 w-4" />
               </button>

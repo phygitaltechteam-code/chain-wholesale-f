@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Save, History, ChevronRight, ChevronDown, Printer } from 'lucide-react';
+import { Save, History, ChevronRight, ChevronDown, Printer, Flame } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
@@ -37,6 +37,10 @@ interface JointEntry {
   sizeId?: string;
   isCompleted?: boolean;
   isDirty?: boolean;
+  status?: string;
+  process?: string;
+  isMelting?: boolean;
+  meltingStatus?: boolean;
 }
 
 // Helper functions for safely extracting values
@@ -134,7 +138,16 @@ const JointDept: React.FC = () => {
       });
     }
   };
-  // Weighing Scale table focus hook
+
+  const hasMeltingStatus = (item: any): boolean => {
+    const s = String(item?.status || item?.process || '').toUpperCase();
+    return (
+      s === 'MELTING' ||
+      item?.isMelting === true ||
+      item?.meltingStatus === true
+    );
+  };
+
   const { getScaleProps } = useTableScaleFocus<
     'powderReceived' | 'powder' | 'scrap'
   >((index, field, weight) => {
@@ -223,6 +236,10 @@ const JointDept: React.FC = () => {
             sizeId: joint.sizeId,
             isCompleted: joint.isCompleted || false,
             isDirty: false,
+            status: joint.status || '',
+            process: joint.process || '',
+            isMelting: joint.isMelting || false,
+            meltingStatus: joint.meltingStatus || false,
           };
         },
       );
@@ -369,30 +386,34 @@ const JointDept: React.FC = () => {
         const { date: proceedDate, time: proceedTime } = formatDate(
           item?.updatedAt,
         );
+        const isMelting = hasMeltingStatus(item);
 
         return `
-                <tr>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
-                        ${date} ${time}
-                    </td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainReceived || item?.chainWeight)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.powderReceived)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.powder)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.increase)}%</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.loss !== undefined && item?.loss !== null ? item?.loss : Math.max(0, (item?.chainReceived || item?.chainWeight || 0) - (item?.powderReceived || 0) - (item?.scrap || 0)))}</td>
-                    <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
-                        ${proceedDate} ${proceedTime}
-                    </td>
-                </tr>
-            `;
+      <tr style="${isMelting ? 'opacity:0.6;background-color:#fafafa;' : ''}">
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${index + 1}</td>
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+          ${date} ${time}
+        </td>
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getItemName(item?.item)}</td>
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${getSizeName(item?.size)}</td>
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
+        ${isMelting
+            ? `<td colspan="6" style="border:1px solid #000;padding:1px 2px;text-align:center;font-weight:bold;font-size:11px;color:#785600;background-color:#fffbeb;">Melting</td>`
+            : `
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.chainReceived || item?.chainWeight)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.powderReceived)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.powder)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.increase)}%</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
+            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">${formatNumberDisplay(item?.loss !== undefined && item?.loss !== null ? item?.loss : Math.max(0, (item?.chainReceived || item?.chainWeight || 0) - (item?.powderReceived || 0) - (item?.scrap || 0)))}</td>
+          `}
+        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
+          ${proceedDate} ${proceedTime}
+        </td>
+      </tr>
+    `;
       })
       .join('');
-
 
     const headerInfo =
       getpdfheaderdata?.data?.data ||
@@ -607,69 +628,112 @@ const JointDept: React.FC = () => {
     {
       key: 'chainWeight',
       header: 'Chain Given (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.chainReceived || item.chainWeight)} G
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 6 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return (
+            <div className="flex items-center justify-center py-0.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                Melting
+              </span>
+            </div>
+          );
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.chainReceived || item.chainWeight)} G
+          </span>
+        );
+      },
     },
     {
       key: 'powderReceived',
       header: 'Chain Received (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.powderReceived)} G
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return null;
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.powderReceived)} G
+          </span>
+        );
+      },
     },
     {
       key: 'powder',
       header: 'Powder Given (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.powder)} G
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return null;
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.powder)} G
+          </span>
+        );
+      },
     },
     {
       key: 'increase',
       header: 'Increase %',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.increase)} %
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return null;
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.increase)} %
+          </span>
+        );
+      },
     },
     {
       key: 'scrap',
       header: 'Scrap (स्क्रॅप)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.scrap)} G
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return null;
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.scrap)} G
+          </span>
+        );
+      },
     },
     {
       key: 'loss',
       header: 'Loss (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(
-            item.loss !== undefined && item.loss !== null
-              ? item.loss
-              : Math.max(
-                0,
-                Math.round(
-                  ((item.chainReceived || item.chainWeight || 0) -
-                    (item.powderReceived || 0) -
-                    (item.scrap || 0)) *
-                  1000,
-                ) / 1000,
-              ),
-          )}{' '}
-          G
-        </span>
-      ),
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item) => {
+        if (hasMeltingStatus(item)) {
+          return null;
+        }
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(
+              item.loss !== undefined && item.loss !== null
+                ? item.loss
+                : Math.max(
+                  0,
+                  Math.round(
+                    ((item.chainReceived || item.chainWeight || 0) -
+                      (item.powderReceived || 0) -
+                      (item.scrap || 0)) *
+                    1000,
+                  ) / 1000,
+                ),
+            )}{' '}
+            G
+          </span>
+        );
+      },
     },
     {
       key: 'updatedAt',
@@ -845,10 +909,10 @@ const JointDept: React.FC = () => {
       setSaveIndex(null);
       await refetch();
 
-      navigate({
-        to: '/manufacturingprocess/process',
-        state: { selectedTab: 'cutting' },
-      });
+      // navigate({
+      //   to: '/manufacturingprocess/process',
+      //   state: { selectedTab: 'cutting' },
+      // });
     } catch (error: any) {
       console.error('Error saving joint:', error);
       const errorMessage =
@@ -1278,6 +1342,11 @@ const JointDept: React.FC = () => {
             showSrNo={true}
             srNoLabel="Sr No."
             className="shadow-sm"
+            rowClassName={(item) =>
+              hasMeltingStatus(item)
+                ? 'opacity-60 bg-gray-50/70 text-gray-500 hover:bg-gray-100/70 dark:bg-slate-900/40 dark:text-slate-400'
+                : ''
+            }
           />
         </div>
       )}
