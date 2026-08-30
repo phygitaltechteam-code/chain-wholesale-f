@@ -32,6 +32,8 @@ interface MeltingRow {
   id: string;
   srNo: number;
   dateTime: string;
+  createdAt?: string;
+  updatedAt?: string;
   particular: string;
   grossWt: number;
   purity: number;
@@ -322,6 +324,8 @@ const MeltingDept: React.FC = () => {
                 hour12: true,
               })
               : '-',
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
             particular:
               item.particular ||
               item.name ||
@@ -350,8 +354,12 @@ const MeltingDept: React.FC = () => {
 
   // Format date helper for history
   const formatDate = (dateString: string) => {
-    if (!dateString) return { date: '-', time: '-' };
+    if (!dateString || dateString === '-') return { date: '-', time: '-' };
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      const parts = String(dateString).split(', ');
+      return { date: parts[0] || dateString, time: parts[1] || '' };
+    }
     return {
       date: date.toLocaleDateString('en-IN', {
         day: '2-digit',
@@ -389,16 +397,37 @@ const MeltingDept: React.FC = () => {
   const historyTotals = React.useMemo(() => {
     const data = getFilteredHistory();
     return data.reduce(
-      (acc: any, item: any) => ({
-        totalGross:
-          acc.totalGross + (item.grossWt || item.weight || item.grossWeight || 0),
-        totalExpected: acc.totalExpected + (item.expectedFine || 0),
-        totalFine:
-          acc.totalFine + (item.fineWeight || item.fineWeight || 0),
-      }),
-      { totalGross: 0, totalExpected: 0, totalFine: 0 },
+      (acc: any, item: any) => {
+        const gross = item.grossWt || item.weight || item.grossWeight || 0;
+        const expected = item.expectedFine || 0;
+        const fine = item.fineWeight || 0;
+        const loss =
+          item.loss !== undefined && item.loss !== null
+            ? Number(item.loss)
+            : Math.max(0, expected - fine);
+        return {
+          totalGross: acc.totalGross + gross,
+          totalExpected: acc.totalExpected + expected,
+          totalFine: acc.totalFine + fine,
+          totalLoss: acc.totalLoss + loss,
+        };
+      },
+      { totalGross: 0, totalExpected: 0, totalFine: 0, totalLoss: 0 },
     );
   }, [meltingHistory, fromDate, toDate]);
+
+  // Main Melting process totals
+  const meltingTotals = React.useMemo(() => {
+    return (meltingEntries || []).reduce(
+      (acc: any, item: MeltingRow) => ({
+        totalGross: acc.totalGross + (Number(item.grossWt) || 0),
+        totalExpected: acc.totalExpected + (Number(item.expectedFine) || 0),
+        totalFine: acc.totalFine + (Number(item.fineWeight) || 0),
+        totalLoss: acc.totalLoss + (Number(item.loss) || 0),
+      }),
+      { totalGross: 0, totalExpected: 0, totalFine: 0, totalLoss: 0 },
+    );
+  }, [meltingEntries]);
 
   const handleInlineChange = useCallback(
     (index: number, field: 'fineWeight', value: string) => {
@@ -514,13 +543,13 @@ const MeltingDept: React.FC = () => {
       key: 'createdAt',
       header: 'Date & Time',
       render: (item) => {
-        const { date, time } = formatDate(item.createdAt || item.updatedAt);
+        const { date, time } = formatDate(item.createdAt);
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
               {date}
             </span>
-            <span className="text-gray-500 dark:text-gray-400 text-sm">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
               {time}
             </span>
           </div>
@@ -572,10 +601,63 @@ const MeltingDept: React.FC = () => {
         </span>
       ),
     },
+    {
+      key: 'loss',
+      header: 'Loss (G)',
+      render: (item) => {
+        const expected =
+          item.expectedFine ||
+          calculateExpectedFine(item.grossWt || item.weight, item.purity);
+        const fine = item.fineWeight || 0;
+        const loss =
+          item.loss !== undefined && item.loss !== null
+            ? item.loss
+            : Math.max(0, Math.round((expected - fine) * 1000) / 1000);
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(loss)} G
+          </span>
+        );
+      },
+    },
+    {
+      key: 'updatedAt',
+      header: 'Processed Date & Time',
+      render: (item) => {
+        const { date, time } = formatDate(item.updatedAt);
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {date}
+            </span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {time}
+            </span>
+          </div>
+        );
+      },
+    },
   ];
 
   // Main Table columns
   const columns: Column<MeltingRow>[] = [
+    {
+      key: 'dateTime',
+      header: 'Date & Time',
+      render: (item) => {
+        const { date, time } = formatDate(item.createdAt || item.dateTime);
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {date}
+            </span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {time}
+            </span>
+          </div>
+        );
+      },
+    },
     {
       key: 'particular',
       header: 'Particular',
@@ -701,16 +783,19 @@ const MeltingDept: React.FC = () => {
 
     const rows = data
       .map((item: any, idx: number) => {
-        const { date, time } = formatDate(item.createdAt || item.updatedAt);
+        const { date: createDate, time: createTime } = formatDate(item.createdAt);
+        const { date: updateDate, time: updateTime } = formatDate(item.updatedAt);
         return `
           <tr>
             <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;">${idx + 1}</td>
-            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;">${date} ${time}</td>
+            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;white-space:nowrap;">${createDate} ${createTime}</td>
             <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;">${item.particular || 'Scrap Melting'}</td>
             <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.grossWt || item.weight)}</td>
             <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.purity)}%</td>
             <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.expectedFine)}</td>
             <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;font-weight:bold;">${formatNumberDisplay(item.fineWeight || item.fineWeight)}</td>
+            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.loss !== undefined && item.loss !== null ? item.loss : Math.max(0, Math.round(((item.expectedFine || 0) - (item.fineWeight || 0)) * 1000) / 1000))}</td>
+            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;white-space:nowrap;">${updateDate} ${updateTime}</td>
           </tr>
         `;
       })
@@ -757,6 +842,8 @@ const MeltingDept: React.FC = () => {
               <th style="border:1px solid #785600;padding:2px 3px;">Purity %</th>
               <th style="border:1px solid #785600;padding:2px 3px;">Expected Fine (G)</th>
               <th style="border:1px solid #785600;padding:2px 3px;">Fine Wt (G)</th>
+              <th style="border:1px solid #785600;padding:2px 3px;">Loss (G)</th>
+              <th style="border:1px solid #785600;padding:2px 3px;">Processed Date & Time</th>
             </tr>
           </thead>
           <tbody>
@@ -895,6 +982,30 @@ const MeltingDept: React.FC = () => {
       {/* Table Section */}
       {!showHistory ? (
         <div>
+          {/* Melting Process Summary Cards */}
+          <div className="mb-4 grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                  Total Gross Wt
+                </span>
+                <span className="text-lg font-bold text-black dark:text-amber-400">
+                  {formatNumberDisplay(meltingTotals.totalGross)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                  Total Expected Wt
+                </span>
+                <span className="text-lg font-bold text-black dark:text-blue-400">
+                  {formatNumberDisplay(meltingTotals.totalExpected)} G
+                </span>
+              </div>
+            </div>
+          </div>
+
           <GenericTable<MeltingRow>
             data={meltingEntries || []}
             columns={columns}
@@ -907,7 +1018,7 @@ const MeltingDept: React.FC = () => {
       ) : (
         <div>
           {/* History Summary Cards */}
-          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="flex flex-col">
                 <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
@@ -921,7 +1032,7 @@ const MeltingDept: React.FC = () => {
             <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="flex flex-col">
                 <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                  Total Expected Fine
+                  Total Expected Wt
                 </span>
                 <span className="text-lg font-bold text-black dark:text-blue-400">
                   {formatNumberDisplay(historyTotals.totalExpected)} G
@@ -931,10 +1042,20 @@ const MeltingDept: React.FC = () => {
             <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="flex flex-col">
                 <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                  Total Melted Fine
+                  Total Fine Wt
                 </span>
-                <span className="text-lg font-bold text-black dark:text-amber-400">
+                <span className="text-lg font-bold text-black dark:text-green-400">
                   {formatNumberDisplay(historyTotals.totalFine)} G
+                </span>
+              </div>
+            </div>
+            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                  Total Loss
+                </span>
+                <span className="text-lg font-bold text-black dark:text-red-400">
+                  {formatNumberDisplay(historyTotals.totalLoss)} G
                 </span>
               </div>
             </div>
