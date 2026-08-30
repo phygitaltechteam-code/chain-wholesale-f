@@ -33,6 +33,15 @@ export const getMeltingHistoryApi = async () => {
   }
 };
 
+export const getScrapApi = async () => {
+  try {
+    const response = await api.get('/admin/scrap');
+    return response.data?.data || response.data || [];
+  } catch (error) {
+    return [];
+  }
+};
+
 export const submitMeltingStockApi = async ({
   id,
   data,
@@ -40,14 +49,10 @@ export const submitMeltingStockApi = async ({
   id?: string;
   data: any;
 }) => {
-  try {
-    const endpoint = id ? `/admin/melting/stock/${id}` : '/admin/stock';
-    const response = await api.post(endpoint, data);
-    return response.data;
-  } catch (error) {
-    const response = await api.post('/admin/stock', data);
-    return response.data;
-  }
+
+  const response = await api.put(`/admin/melting/${id}`, data);
+  return response.data;
+
 };
 
 export const useGetMelting = () => {
@@ -64,6 +69,13 @@ export const useGetMeltingHistory = () => {
   });
 };
 
+export const useGetScrap = () => {
+  return useQuery({
+    queryKey: ['scrap'],
+    queryFn: getScrapApi,
+  });
+};
+
 export const useSubmitMeltingStock = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -74,6 +86,31 @@ export const useSubmitMeltingStock = () => {
     },
     onError: (error: any) => {
       const msg = error?.response?.data?.message || error?.message || 'Failed to submit melting stock';
+      toast.error(msg);
+    },
+  });
+};
+
+
+export const submitMeltingScrapStockApi = async (data: any) => {
+  const response = await api.post('/admin/melting/scrap', data);
+  return response.data;
+};
+
+export const useSubmitMeltingScrapStock = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: submitMeltingScrapStockApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['melting'] });
+      queryClient.invalidateQueries({ queryKey: ['scrap'] });
+      queryClient.invalidateQueries({ queryKey: ['stock'] });
+    },
+    onError: (error: any) => {
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to submit melting scrap';
       toast.error(msg);
     },
   });
