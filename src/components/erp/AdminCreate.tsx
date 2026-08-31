@@ -759,11 +759,7 @@ const AdminCreate: React.FC = () => {
     }
   };
 
-  const handleGenerateKey = () => {
-    const newKey = generateKey();
-    setFormData((prev) => ({...prev, key: newKey}));
-    toast.success('Offline access key generated!');
-  };
+
 
   const handleCopyKey = (keyVal?: string) => {
     const val = keyVal || formData.key;
@@ -1087,7 +1083,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       key: 'renewalAmount',
       header: 'Renewal Charges',
       render: (item) => (
-        <span className="text-sm font-semibold text-[#785600] dark:text-amber-400">
+        <span className="text-sm font-semibold text-black dark:text-amber-400">
           {item.renewalAmount !== undefined &&
           item.renewalAmount !== null &&
           item.renewalAmount !== ''

@@ -65,7 +65,6 @@ export const getAdminByIdApi = async (id: string) => {
     }
     throw error;
   }
-}
 };
 
 // Hook to fetch single admin by ID
