@@ -1,5 +1,5 @@
-import {api} from '@/utils/axios';
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import { api } from '@/utils/axios';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export interface AdminPayload {
@@ -104,7 +104,7 @@ export const useCreateAdmin = () => {
     mutationFn: createAdminApi,
     onSuccess: () => {
       toast.success('Admin created successfully');
-      queryClient.invalidateQueries({queryKey: ['admins']});
+      queryClient.invalidateQueries({ queryKey: ['admins'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create admin');
@@ -156,7 +156,7 @@ export const useUpdateAdmin = () => {
     mutationFn: updateAdminApi,
     onSuccess: () => {
       toast.success('Admin updated successfully');
-      queryClient.invalidateQueries({queryKey: ['admins']});
+      queryClient.invalidateQueries({ queryKey: ['admins'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update admin');
@@ -166,7 +166,7 @@ export const useUpdateAdmin = () => {
 
 // API call to delete an admin
 export const deleteAdminApi = async (
-  param: string | {id: string; userId?: string},
+  param: string | { id: string; userId?: string },
 ) => {
   const id = typeof param === 'string' ? param : param.id;
   const userId = typeof param === 'object' ? param.userId : undefined;
@@ -182,10 +182,10 @@ export const deleteAdminApi = async (
         return fallback1.data;
       } catch {
         try {
-          const fallback2 = await api.delete(`/users/${userId}`);
+          const fallback2 = await api.delete(`/users/${id}`);
           return fallback2.data;
         } catch {
-          // ignore fallback failures and throw original error
+          // ignore fallback failures and throw original
         }
       }
     }
@@ -206,7 +206,7 @@ export const useDeleteAdmin = () => {
     mutationFn: deleteAdminApi,
     onSuccess: () => {
       toast.success('Admin deleted successfully');
-      queryClient.invalidateQueries({queryKey: ['admins']});
+      queryClient.invalidateQueries({ queryKey: ['admins'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete admin');
