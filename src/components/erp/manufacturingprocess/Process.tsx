@@ -12,13 +12,13 @@ import PageHeader from '@/components/Forms/Common/PageHeader';
 import { manufacturingStore } from '@/utils/manufacturingStore';
 
 // Import all department components
-import MeltingDept from './MeltingDept';
-import AddTar from './AddTar';
-import BoxDept from './BoxDept';
-import SolderingDept from './SolderingDept';
-import JointDept from './JointDept';
-import CuttingDept from './CuttingDept';
-import SKundaDept from './SKundaDept';
+import MeltingDept from './melting/MeltingDept';
+import AddTar from './tar/AddTar';
+import BoxDept from './boxdept/BoxDept';
+import SolderingDept from './soldering/SolderingDept';
+import JointDept from './joint/JointDept';
+import CuttingDept from './cutting/CuttingDept';
+import SKundaDept from './skunda/SKundaDept';
 
 interface ProcessStep {
   id: string;

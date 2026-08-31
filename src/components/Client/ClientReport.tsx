@@ -1,12 +1,12 @@
-import { useNavigate, useParams } from '@tanstack/react-router';
-import { Route } from '../../routes/_app/client/clientreport.$id';
-import { useState, useRef, useEffect, type FC } from 'react';
-import { ArrowLeft, Search, Printer, Calendar } from 'lucide-react';
+import {useNavigate, useParams} from '@tanstack/react-router';
+import {Route} from '../../routes/_app/client/clientreport.$id';
+import {useState, useRef, useEffect, type FC} from 'react';
+import {ArrowLeft, Search, Printer, Calendar} from 'lucide-react';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
-import { useGetClientReport } from '@/lib/api/reportapi';
+import {useGetClientReport} from '@/lib/api/reportapi';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
+import {useGetHeader} from '@/lib/api/headerapi';
 
 const formatIndianDate = (date: Date) =>
   date.toLocaleDateString('en-IN', {
@@ -28,7 +28,7 @@ const getCurrentWeekRange = () => {
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
 
-  return { monday, sunday };
+  return {monday, sunday};
 };
 
 interface ClientReportEntry {
@@ -89,7 +89,7 @@ export default function ClientReport() {
   const getpdfheaderdata = useGetHeader();
   const navigate = useNavigate();
   const routeParams = Route.useParams();
-  const rawParams = useParams({ strict: false }) as { id?: string; $id?: string };
+  const rawParams = useParams({strict: false}) as {id?: string; $id?: string};
   const id = routeParams?.id || rawParams?.id || rawParams?.$id || '';
   const [searchTerm, setSearchTerm] = useState('');
   const [reportData, setReportData] = useState<ClientReportEntry[]>([]);
@@ -106,14 +106,14 @@ export default function ClientReport() {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return { monday, sunday };
+    return {monday, sunday};
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const { monday, sunday } = getDefaultWeekRange();
+    const {monday, sunday} = getDefaultWeekRange();
     return [monday, sunday];
   });
-  const { monday: defaultMonday, sunday: defaultSunday } = getCurrentWeekRange();
+  const {monday: defaultMonday, sunday: defaultSunday} = getCurrentWeekRange();
 
   const [fromDate, setFromDate] = useState<Date | null>(defaultMonday);
   const [toDate, setToDate] = useState<Date | null>(defaultSunday);
@@ -203,8 +203,10 @@ export default function ClientReport() {
       items.forEach((item, index) => {
         const isFirstInBill = index === 0;
         const itemName = item.item?.name || 'Gold';
-        const isGold = itemName.trim().toLowerCase() === 'gold' || itemName.trim().toLowerCase().includes('gold');
-        const sizeValue = isGold ? '' : (item.size?.size || '');
+        const isGold =
+          itemName.trim().toLowerCase() === 'gold' ||
+          itemName.trim().toLowerCase().includes('gold');
+        const sizeValue = isGold ? '' : item.size?.size || '';
         const purityValue = isGold
           ? '100'
           : item.purity !== null && item.purity !== undefined
@@ -254,23 +256,25 @@ export default function ClientReport() {
   // Search by complete bill group
   const filteredData = searchTerm
     ? reportData.filter((entry) => {
-      const query = searchTerm.toLowerCase();
+        const query = searchTerm.toLowerCase();
 
-      return reportData.some((groupEntry) => {
-        if (groupEntry.groupId !== entry.groupId) return false;
+        return reportData.some((groupEntry) => {
+          if (groupEntry.groupId !== entry.groupId) return false;
 
-        return (
-          groupEntry.item.toLowerCase().includes(query) ||
-          groupEntry.billNo.toLowerCase().includes(query) ||
-          groupEntry.size.toLowerCase().includes(query) ||
-          groupEntry.remark.toLowerCase().includes(query) ||
-          groupEntry.purity.toLowerCase().includes(query) ||
-          groupEntry.wt.toString().includes(query) ||
-          (groupEntry.chainWt !== null && groupEntry.chainWt.toString().includes(query)) ||
-          (groupEntry.goldWt !== null && groupEntry.goldWt.toString().includes(query))
-        );
-      });
-    })
+          return (
+            groupEntry.item.toLowerCase().includes(query) ||
+            groupEntry.billNo.toLowerCase().includes(query) ||
+            groupEntry.size.toLowerCase().includes(query) ||
+            groupEntry.remark.toLowerCase().includes(query) ||
+            groupEntry.purity.toLowerCase().includes(query) ||
+            groupEntry.wt.toString().includes(query) ||
+            (groupEntry.chainWt !== null &&
+              groupEntry.chainWt.toString().includes(query)) ||
+            (groupEntry.goldWt !== null &&
+              groupEntry.goldWt.toString().includes(query))
+          );
+        });
+      })
     : reportData;
 
   // Calculate totals
@@ -353,7 +357,7 @@ export default function ClientReport() {
     `;
     document.body.appendChild(printContainer);
 
-    const printGroupedData: { [key: string]: ClientReportEntry[] } = {};
+    const printGroupedData: {[key: string]: ClientReportEntry[]} = {};
     filteredData.forEach((entry) => {
       if (!printGroupedData[entry.groupId]) {
         printGroupedData[entry.groupId] = [];
@@ -370,12 +374,20 @@ export default function ClientReport() {
         rows += `
                 <tr>
                     ${entry.isFirstInGroup ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;vertical-align:middle;" rowspan="${entry.groupRowSpan}">${entry.srNo}</td>` : ''}
-                    ${entry.isFirstInGroup ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;vertical-align:middle;" rowspan="${entry.groupRowSpan}">
+                    ${
+                      entry.isFirstInGroup
+                        ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;vertical-align:middle;" rowspan="${entry.groupRowSpan}">
                         ${entry.dateTime || ' '}
-                    </td>` : ''}
-                    ${entry.isFirstInGroup ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;vertical-align:middle;font-weight:${entry.billNo !== 'N/A' && entry.billNo !== '' ? 'bold' : 'normal'};" rowspan="${entry.groupRowSpan}">
+                    </td>`
+                        : ''
+                    }
+                    ${
+                      entry.isFirstInGroup
+                        ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;vertical-align:middle;font-weight:${entry.billNo !== 'N/A' && entry.billNo !== '' ? 'bold' : 'normal'};" rowspan="${entry.groupRowSpan}">
                         ${entry.billNo || ' '}
-                    </td>` : ''}
+                    </td>`
+                        : ''
+                    }
                     <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
                         ${entry.item}${entry.size ? ` (${entry.size})` : ''}
                     </td>
@@ -586,7 +598,7 @@ export default function ClientReport() {
               No settlement records found for this client.
             </p>
             <button
-              onClick={() => navigate({ to: '/client/client' })}
+              onClick={() => navigate({to: ''})}
               className="mt-4 rounded-lg bg-[#785600] px-4 py-2 text-white hover:bg-[#5d4200]"
             >
               Go Back
@@ -604,7 +616,7 @@ export default function ClientReport() {
         <div className="flex flex-col items-center justify-between gap-3 px-3 py-2 sm:flex-row sm:px-4 sm:py-3 md:px-6">
           <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
             <button
-              onClick={() => navigate({ to: '/setlment/settlement' })}
+              onClick={() => navigate({to: '/setlment/settlement'})}
               className="inline-flex items-center justify-center rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
               title="Go Back"
             >
@@ -675,7 +687,8 @@ export default function ClientReport() {
                       className="py-3 pl-4 pr-3 text-left text-xs font-semibold uppercase tracking-wider text-white"
                     >
                       Sr No.
-                    </th> <th
+                    </th>{' '}
+                    <th
                       scope="col"
                       className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white"
                     >
@@ -687,7 +700,6 @@ export default function ClientReport() {
                     >
                       Date Time
                     </th>
-
                     <th
                       scope="col"
                       className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white"
@@ -746,16 +758,12 @@ export default function ClientReport() {
                             rowSpan={entry.groupRowSpan}
                             className="whitespace-nowrap border-r border-[#f4f4f2] px-3 py-3 align-middle text-sm dark:border-slate-700"
                           >
-                            <span
-                              className='font-bold text-base text-black dark:text-[#785600]'
-                            >
+                            <span className="text-base font-bold text-black dark:text-[#785600]">
                               {entry.billNo || 'N/A'}
                             </span>
                           </td>
                         )}
-                        <td
-                          className="px-3 py-3 text-left align-middle text-sm text-[#1a1c1b] dark:text-white"
-                        >
+                        <td className="px-3 py-3 text-left align-middle text-sm text-[#1a1c1b] dark:text-white">
                           <div className="flex flex-col items-start leading-tight">
                             <span>{entry.dateTime.split(' ')[0]}</span>
                             <span>
@@ -763,7 +771,6 @@ export default function ClientReport() {
                             </span>
                           </div>
                         </td>
-
 
                         <td className="px-3 py-3 text-sm">
                           <div className="flex flex-col">
@@ -779,7 +786,9 @@ export default function ClientReport() {
                         </td>
 
                         <td className="font-mono whitespace-nowrap px-3 py-3 text-sm text-[#1a1c1b] dark:text-white">
-                          {entry.purity !== 'N/A' && entry.purity !== '' ? `${entry.purity}%` : 'N/A'}
+                          {entry.purity !== 'N/A' && entry.purity !== ''
+                            ? `${entry.purity}%`
+                            : 'N/A'}
                         </td>
 
                         <td className="whitespace-nowrap px-3 py-3 text-sm">
@@ -793,24 +802,30 @@ export default function ClientReport() {
                         </td>
 
                         <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm font-bold text-[#1a1c1b] dark:text-white">
-                          {entry.chainWt !== null && entry.chainWt !== undefined ? (
+                          {entry.chainWt !== null &&
+                          entry.chainWt !== undefined ? (
                             <span>
                               {entry.chainWt > 0 ? '+' : ''}
                               {formatNumber(entry.chainWt)} G
                             </span>
                           ) : (
-                            <span className="font-normal text-gray-400 dark:text-gray-500">-</span>
+                            <span className="text-gray-400 dark:text-gray-500 font-normal">
+                              -
+                            </span>
                           )}
                         </td>
 
                         <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm font-bold text-[#1a1c1b] dark:text-white">
-                          {entry.goldWt !== null && entry.goldWt !== undefined ? (
+                          {entry.goldWt !== null &&
+                          entry.goldWt !== undefined ? (
                             <span>
                               {entry.goldWt > 0 ? '+' : ''}
                               {formatNumber(entry.goldWt)} G
                             </span>
                           ) : (
-                            <span className="font-normal text-gray-400 dark:text-gray-500">-</span>
+                            <span className="text-gray-400 dark:text-gray-500 font-normal">
+                              -
+                            </span>
                           )}
                         </td>
                       </tr>
