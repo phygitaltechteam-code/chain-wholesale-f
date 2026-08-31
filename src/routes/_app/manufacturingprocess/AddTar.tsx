@@ -1,4 +1,4 @@
-import AddTar from '@/components/erp/manufacturingprocess/AddTar';
+import AddTar from '@/components/erp/manufacturingprocess/tar/AddTar';
 import {createFileRoute} from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_app/manufacturingprocess/AddTar')({

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Search,
   Calendar,
@@ -20,20 +20,21 @@ import {
 } from 'lucide-react';
 
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 
 import toast from 'react-hot-toast';
 
-import { useSubmitSettlement } from '@/lib/api/settlement';
+import {useSubmitSettlement} from '@/lib/api/settlement';
 
-import { Client, useGetClients } from '@/lib/api/client';
-import { useGetHeader } from '@/lib/api/headerapi';
+import {Client, useGetClients} from '@/lib/api/client';
+import {useGetHeader} from '@/lib/api/headerapi';
 
 import GenericInputField from '../Forms/Input/GenericInputField';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
-import { useScaleFocus } from '@/lib/hooks/useScaleFocus';
-import { useNavigate } from '@tanstack/react-router';
+import {useScaleFocus} from '@/lib/hooks/useScaleFocus';
+import {useNavigate} from '@tanstack/react-router';
+import AddClientModal from '../Client/AddClientModal';
 
 // ======================================================
 // TYPES
@@ -153,11 +154,11 @@ const Settlement: React.FC = () => {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return { monday, sunday };
+    return {monday, sunday};
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const { monday, sunday } = getDefaultWeekRange();
+    const {monday, sunday} = getDefaultWeekRange();
     return [monday, sunday];
   });
 
@@ -167,6 +168,7 @@ const Settlement: React.FC = () => {
 
   const [showSettleModal, setShowSettleModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
 
   // ----------------------------------------------------
   // AMOUNT STATE
@@ -459,15 +461,16 @@ const Settlement: React.FC = () => {
             <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
               Settlement Report
             </h2>
-            ${dateRange && dateRange[0] && dateRange[1]
-        ? `
+            ${
+              dateRange && dateRange[0] && dateRange[1]
+                ? `
             <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
               From: ${formatDateForDisplay(dateRange[0])} 
               &nbsp;&nbsp; To: ${formatDateForDisplay(dateRange[1])}
             </div>
             `
-        : `<div style="flex:1;"></div>`
-      }
+                : `<div style="flex:1;"></div>`
+            }
           </div>
 
           <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
@@ -764,7 +767,8 @@ const Settlement: React.FC = () => {
             const billDate = parseDateSafely(billDateStr);
             if (!billDate) return false;
 
-            if (fromDate && billDate.getTime() < fromDate.getTime()) return false;
+            if (fromDate && billDate.getTime() < fromDate.getTime())
+              return false;
             if (toDate && billDate.getTime() > toDate.getTime()) return false;
             return true;
           });
@@ -813,7 +817,7 @@ const Settlement: React.FC = () => {
   const handleRowClick = (client: Client) => {
     const targetId = client?.id || (client as any)?._id;
     if (targetId) {
-      navigate({ to: '/client/clientreport/$id', params: { id: targetId } });
+      navigate({to: '/client/clientreport/$id', params: {id: targetId}});
     }
   };
 
@@ -829,10 +833,11 @@ const Settlement: React.FC = () => {
         handleSettle(item);
       }}
       disabled={item.status === 'settled'}
-      className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${item.status === 'settled'
-        ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'
-        : 'bg-[#785600] text-white hover:bg-[#5d4200]'
-        }`}
+      className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+        item.status === 'settled'
+          ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'
+          : 'bg-[#785600] text-white hover:bg-[#5d4200]'
+      }`}
     >
       {item.status === 'settled' ? (
         <>
@@ -880,15 +885,15 @@ const Settlement: React.FC = () => {
         </span>
       ),
     },
-  {
-  key: 'goldBalance',
-  header: 'Due Balance(G)',
-  render: (item) => (
-    <div className='text-black dark:text-white'>
-      {formatNumber(item.goldBalance)} G
-    </div>
-  ),
-},
+    {
+      key: 'goldBalance',
+      header: 'Due Balance(G)',
+      render: (item) => (
+        <div className="text-black dark:text-white">
+          {formatNumber(item.goldBalance)} G
+        </div>
+      ),
+    },
     {
       key: 'totalBills',
       header: 'Total Bills',
@@ -1000,10 +1005,11 @@ const Settlement: React.FC = () => {
                     inputRef.current?.select();
                   }, 50);
                 }}
-                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'receive'
-                  ? 'border-[#785600] bg-[#785600] text-white'
-                  : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                  }`}
+                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  settlementDetail.settlementType === 'receive'
+                    ? 'border-[#785600] bg-[#785600] text-white'
+                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
               >
                 <Minus className="h-4 w-4" />
                 Receive (-)
@@ -1020,10 +1026,11 @@ const Settlement: React.FC = () => {
                     inputRef.current?.select();
                   }, 50);
                 }}
-                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'give'
-                  ? 'border-[#785600] bg-[#785600] text-white'
-                  : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                  }`}
+                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  settlementDetail.settlementType === 'give'
+                    ? 'border-[#785600] bg-[#785600] text-white'
+                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
               >
                 <Plus className="h-4 w-4" />
                 Give (+)
@@ -1226,7 +1233,7 @@ const Settlement: React.FC = () => {
                     : `Give (+${formatNumber(settlementDetail.settlementAmount)} g)`}
                 </span>
               </div> */}
-              <div className="border-t border-[#d3c4af]/20 pt-2 dark:border-slate-700 flex justify-between text-sm">
+              <div className="flex justify-between border-t border-[#d3c4af]/20 pt-2 text-sm dark:border-slate-700">
                 <span className="font-semibold text-[#4f4535] dark:text-slate-300">
                   New Due Balance:
                 </span>
@@ -1270,7 +1277,7 @@ const Settlement: React.FC = () => {
             subtitle="Manage client settlements and gold balances"
           />
           <GenericButton
-            onClick={() => navigate({ to: '/client/client' })}
+            onClick={() => setShowAddClientModal(true)}
             variant="primary"
           >
             <Plus className="h-4 w-4" />
@@ -1445,6 +1452,11 @@ const Settlement: React.FC = () => {
       {/* MODALS */}
       {renderSettlementModal()}
       {renderConfirmModal()}
+      <AddClientModal
+        isOpen={showAddClientModal}
+        onClose={() => setShowAddClientModal(false)}
+        onSuccess={() => refetchSettlements()}
+      />
     </div>
   );
 };

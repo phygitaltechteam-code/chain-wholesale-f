@@ -1,4 +1,4 @@
-import SolderingDept from '@/components/erp/manufacturingprocess/SolderingDept';
+import SolderingDept from '@/components/erp/manufacturingprocess/soldering/SolderingDept';
 import {createFileRoute} from '@tanstack/react-router';
 
 export const Route = createFileRoute(

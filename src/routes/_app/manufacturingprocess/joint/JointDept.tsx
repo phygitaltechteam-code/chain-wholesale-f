@@ -1,4 +1,4 @@
-import JointDept from '@/components/erp/manufacturingprocess/JointDept';
+import JointDept from '@/components/erp/manufacturingprocess/joint/JointDept';
 import {createFileRoute} from '@tanstack/react-router';
 
 export const Route = createFileRoute(

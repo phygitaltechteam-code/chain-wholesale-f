@@ -27,54 +27,18 @@ import {
   useSubmitMeltingStock,
   useSubmitMeltingScrapStock,
 } from '@/lib/api/melting';
-
-interface MeltingRow {
-  id: string;
-  srNo: number;
-  dateTime: string;
-  createdAt?: string;
-  updatedAt?: string;
-  particular: string;
-  grossWt: number;
-  purity: number;
-  expectedFine: number;
-  fineWeight: number;
-  loss: number;
-  scrapCount: number;
-  isEditing?: boolean;
-  isSaved?: boolean;
-  grossWtRaw?: string;
-  fineWeightRaw?: string;
-  purityRaw?: string;
-  isDirty?: boolean;
-}
-
-interface ScrapCardData {
-  purity: number;
-  totalWeight: number;
-  count: number;
-}
-
-// ======================================================
-// HELPER: Get Current Week Range
-// ======================================================
-const getCurrentWeekRange = () => {
-  const today = new Date();
-  const day = today.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-
-  const monday = new Date(today);
-  monday.setDate(today.getDate() + diffToMonday);
-  monday.setHours(0, 0, 0, 0);
-
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
-
-  return { monday, sunday };
-};
-
-
+import HistoryDept from './HistoryDept';
+import AddDept from './AddDept';
+import {
+  MeltingRow,
+  ScrapCardData,
+  getCurrentWeekRange,
+  calculateExpectedFine,
+  formatNumberDisplay,
+  formatDate,
+  getMeltingColumns,
+  printMeltingHistory
+} from './meltingUtils';
 const MeltingDept: React.FC = () => {
   const getpdfheaderdata = useGetHeader();
   const navigate = useNavigate();
@@ -123,27 +87,6 @@ const MeltingDept: React.FC = () => {
   const modalScaleProps = useScaleFocus((weight) => {
     setScrapWeight(weight.toString());
   });
-
-  // Calculate Expected Fine: (Gross Wt * Purity) / 100
-  const calculateExpectedFine = (grossWt: number, purity: number): number => {
-    if (!grossWt || !purity) return 0;
-    return Math.round(((grossWt * purity) / 100) * 1000) / 1000;
-  };
-
-  // Helper number display
-  const toNumber = (value: unknown): number => {
-    if (value === null || value === undefined || value === '') return 0;
-    const num = Number(value);
-    return Number.isFinite(num) ? num : 0;
-  };
-
-  const formatNumberDisplay = (value: unknown): string => {
-    return new Intl.NumberFormat('en-IN', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 3,
-      useGrouping: true,
-    }).format(toNumber(value));
-  };
 
   const scrapCards: ScrapCardData[] = React.useMemo(() => {
     // First, check if we have scrap data from API
@@ -351,29 +294,6 @@ const MeltingDept: React.FC = () => {
     }
   }, [meltingData, meltingLoading, error]);
 
-
-  // Format date helper for history
-  const formatDate = (dateString: string) => {
-    if (!dateString || dateString === '-') return { date: '-', time: '-' };
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      const parts = String(dateString).split(', ');
-      return { date: parts[0] || dateString, time: parts[1] || '' };
-    }
-    return {
-      date: date.toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      }),
-      time: date.toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      }),
-    };
-  };
-
   // Filter history by fromDate and toDate
   const getFilteredHistory = () => {
     const sourceData =
@@ -537,330 +457,14 @@ const MeltingDept: React.FC = () => {
     }
   };
 
-  // History columns
-  const historyColumns: Column<any>[] = [
-    {
-      key: 'createdAt',
-      header: 'Date & Time',
-      render: (item) => {
-        const { date, time } = formatDate(item.createdAt);
-        return (
-          <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {date}
-            </span>
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {time}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      key: 'particular',
-      header: 'Particular',
-      render: (item) => (
-        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-          {item.particular || 'Scrap Melting'}
-        </span>
-      ),
-    },
-    {
-      key: 'grossWt',
-      header: 'Gross Wt (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.grossWt || item.weight)} G
-        </span>
-      ),
-    },
-    {
-      key: 'purity',
-      header: 'Purity % (टंच)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.purity)}%
-        </span>
-      ),
-    },
-    {
-      key: 'expectedFine',
-      header: 'Expected Fine (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.expectedFine)} G
-        </span>
-      ),
-    },
-    {
-      key: 'fineWeight',
-      header: 'Fine Wt (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.fineWeight)} G
-        </span>
-      ),
-    },
-    {
-      key: 'loss',
-      header: 'Loss (G)',
-      render: (item) => {
-        const expected =
-          item.expectedFine ||
-          calculateExpectedFine(item.grossWt || item.weight, item.purity);
-        const fine = item.fineWeight || 0;
-        const loss =
-          item.loss !== undefined && item.loss !== null
-            ? item.loss
-            : Math.max(0, Math.round((expected - fine) * 1000) / 1000);
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(loss)} G
-          </span>
-        );
-      },
-    },
-    {
-      key: 'updatedAt',
-      header: 'Processed Date & Time',
-      render: (item) => {
-        const { date, time } = formatDate(item.updatedAt);
-        return (
-          <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {date}
-            </span>
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {time}
-            </span>
-          </div>
-        );
-      },
-    },
-  ];
+  // historyColumns removed
 
   // Main Table columns
-  const columns: Column<MeltingRow>[] = [
-    {
-      key: 'dateTime',
-      header: 'Date & Time',
-      render: (item) => {
-        const { date, time } = formatDate(item.createdAt || item.dateTime);
-        return (
-          <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {date}
-            </span>
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {time}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      key: 'particular',
-      header: 'Particular',
-      render: (item) => (
-        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-          {item.particular}
-        </span>
-      ),
-    },
-    {
-      key: 'grossWt',
-      header: 'Gross Wt (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.grossWt)} G
-        </span>
-      ),
-    },
-    {
-      key: 'purity',
-      header: 'Purity % (टंच)',
-      render: (item) => (
-        <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.purity)}%
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: 'expectedFine',
-      header: 'Expected (लगड)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.expectedFine)} G
-        </span>
-      ),
-    },
-    {
-      key: 'fineWeight',
-      header: 'Fine Wt (G)',
-      render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <div className="relative inline-block">
-              <input
-                type="text"
-                inputMode="decimal"
-                {...getScaleProps(index, 'fineWeight')}
-                onChange={(e) =>
-                  handleInlineChange(index, 'fineWeight', e.target.value)
-                }
-                placeholder="0.000"
-                className="font-mono w-28 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-7 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-              />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
-              </span>
-            </div>
-          );
-        }
-        return (
-          <span className="font-mono text-sm font-semibold text-green-700 dark:text-green-400">
-            {formatNumberDisplay(item.fineWeight)} G
-          </span>
-        );
-      },
-    },
-
-    {
-      key: 'loss',
-      header: 'Loss (G)',
-      render: (item) => {
-        const loss = Math.max(0, Math.round((item.expectedFine - item.fineWeight) * 1000) / 1000);
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(loss)} G
-          </span>
-        );
-      },
-    },
-    {
-      key: 'actions',
-      header: 'Action',
-      render: (item: MeltingRow, index: number) => {
-        if (item.isSaved) {
-          return (
-            <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-900/30 dark:text-green-400">
-              Stocked
-            </span>
-          );
-        }
-
-        return (
-          <div className="flex items-center justify-center gap-1.5">
-            {/* Refine Button - Send to Stock */}
-            <GenericButton
-              type="button"
-              onClick={() => handleStockClick(index)}
-              variant="primary"
-              className="flex items-center gap-1 text-xs py-1.5 px-3"
-              title="Send Fine Gold to Stock"
-            >
-              <PackageCheck className="h-3.5 w-3.5" />
-              <span>Refine</span>
-            </GenericButton>
-          </div>
-        );
-      },
-    },
-  ];
+  const columns = getMeltingColumns(getScaleProps, handleInlineChange, handleStockClick);
 
   // Print History Report
   const handlePrintHistory = () => {
-    const data = getFilteredHistory();
-    if (!data || data.length === 0) {
-      toast.error('No history data to print');
-      return;
-    }
-
-    const printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
-
-    const rows = data
-      .map((item: any, idx: number) => {
-        const { date: createDate, time: createTime } = formatDate(item.createdAt);
-        const { date: updateDate, time: updateTime } = formatDate(item.updatedAt);
-        return `
-          <tr>
-            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;">${idx + 1}</td>
-            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;white-space:nowrap;">${createDate} ${createTime}</td>
-            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;">${item.particular || 'Scrap Melting'}</td>
-            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.grossWt || item.weight)}</td>
-            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.purity)}%</td>
-            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.expectedFine)}</td>
-            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;font-weight:bold;">${formatNumberDisplay(item.fineWeight || item.fineWeight)}</td>
-            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.loss !== undefined && item.loss !== null ? item.loss : Math.max(0, Math.round(((item.expectedFine || 0) - (item.fineWeight || 0)) * 1000) / 1000))}</td>
-            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;white-space:nowrap;">${updateDate} ${updateTime}</td>
-          </tr>
-        `;
-      })
-      .join('');
-
-    const headerInfo =
-      getpdfheaderdata?.data?.data ||
-      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation =
-      headerInfo.leftInvocation || '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation =
-      headerInfo.rightInvocation || '॥ श्री साई प्रसन्न ॥';
-    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description =
-      headerInfo.description ||
-      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
-    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers =
-      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
-
-    printContainer.style.cssText =
-      'position:fixed;left:-9999px;top:0;width:100%;background:white;padding:4px;z-index:9999;';
-    document.body.appendChild(printContainer);
-
-    printContainer.innerHTML = `
-      <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;">
-        <div style="text-align:center;border-bottom:2px solid #785600;padding-bottom:4px;margin-bottom:8px;">
-          <div style="display:flex;justify-content:space-between;">
-            <span>${leftInvocation}</span>
-            <h2 style="margin:0;color:#785600;">${factoryName}</h2>
-            <span>${rightInvocation}</span>
-          </div>
-          <div style="font-size:9px;">${description}</div>
-          <div style="font-size:9px;">${proprietorName} - ${phoneNumbers}</div>
-        </div>
-        <h3 style="text-align:center;margin:4px 0 8px 0;font-size:14px;">Melting Department History Report</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:10px;">
-          <thead>
-            <tr style="background:#785600;color:white;">
-              <th style="border:1px solid #785600;padding:2px 3px;">Sr</th>
-              <th style="border:1px solid #785600;padding:2px 3px;">Date & Time</th>
-              <th style="border:1px solid #785600;padding:2px 3px;">Particular</th>
-              <th style="border:1px solid #785600;padding:2px 3px;">Gross Wt (G)</th>
-              <th style="border:1px solid #785600;padding:2px 3px;">Purity %</th>
-              <th style="border:1px solid #785600;padding:2px 3px;">Expected Fine (G)</th>
-              <th style="border:1px solid #785600;padding:2px 3px;">Fine Wt (G)</th>
-              <th style="border:1px solid #785600;padding:2px 3px;">Loss (G)</th>
-              <th style="border:1px solid #785600;padding:2px 3px;">Processed Date & Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => {
-        if (document.body.contains(printContainer)) {
-          document.body.removeChild(printContainer);
-        }
-      }, 1000);
-    }, 500);
+    printMeltingHistory(getFilteredHistory(), fromDate, toDate, getpdfheaderdata);
   };
 
   return (
@@ -1016,60 +620,11 @@ const MeltingDept: React.FC = () => {
           />
         </div>
       ) : (
-        <div>
-          {/* History Summary Cards */}
-          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                  Total Gross Wt
-                </span>
-                <span className="text-lg font-bold text-black dark:text-amber-400">
-                  {formatNumberDisplay(historyTotals.totalGross)} G
-                </span>
-              </div>
-            </div>
-            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                  Total Expected Wt
-                </span>
-                <span className="text-lg font-bold text-black dark:text-blue-400">
-                  {formatNumberDisplay(historyTotals.totalExpected)} G
-                </span>
-              </div>
-            </div>
-            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                  Total Fine Wt
-                </span>
-                <span className="text-lg font-bold text-black dark:text-green-400">
-                  {formatNumberDisplay(historyTotals.totalFine)} G
-                </span>
-              </div>
-            </div>
-            <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                  Total Loss
-                </span>
-                <span className="text-lg font-bold text-black dark:text-red-400">
-                  {formatNumberDisplay(historyTotals.totalLoss)} G
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <GenericTable
-            data={getFilteredHistory()}
-            columns={historyColumns}
-            emptyMessage="No melting history found."
-            isLoading={historyLoading}
-            showSrNo={true}
-            srNoLabel="Sr No."
-          />
-        </div>
+        <HistoryDept
+          historyData={getFilteredHistory()}
+          historyTotals={historyTotals}
+          historyLoading={historyLoading}
+        />
       )}
 
       {/* Confirmation Modal */}
@@ -1135,110 +690,19 @@ const MeltingDept: React.FC = () => {
       )}
 
       {/* Add Scrap Modal */}
-      {showAddScrapModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl border border-[#d3c4af]/30 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-            {/* Modal Header */}
-            <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-slate-800">
-              <h3 className="text-base font-bold text-[#1a1c1b] dark:text-white">
-                Add Melting
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowAddScrapModal(false)}
-                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitAddScrap} className="flex flex-col gap-4">
-              {/* 1. Purity Dropdown */}
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-[#1a1c1b] dark:text-slate-200">
-                  Purity %
-                </label>
-                <select
-                  value={selectedPurity}
-                  onChange={(e) =>
-                    handleSelectPurity(
-                      e.target.value === '' ? '' : Number(e.target.value),
-                    )
-                  }
-                  className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                >
-                  <option value="">Select Purity</option>
-                  {scrapCards.map((c) => (
-                    <option key={c.purity} value={c.purity}>
-                      {c.purity}%
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 2. Weight as per Purity */}
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-[#1a1c1b] dark:text-slate-200">
-                  Weight as per Purity (G)
-                </label>
-                <input
-                  type="text"
-                  readOnly
-                  value={
-                    selectedPurity !== ''
-                      ? `${formatNumberDisplay(availableWeight)} G`
-                      : ''
-                  }
-                  placeholder="0.000 G"
-                  className="font-mono w-full rounded-lg border border-[#d3c4af]/20 bg-amber-50/50 px-2 py-1.5 pr-6 text-sm font-bold text-black outline-none cursor-not-allowed dark:bg-amber-950/20 dark:text-amber-400"
-                />
-              </div>
-
-              {/* 3. One Scrap Weight Input Field */}
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-[#1a1c1b] dark:text-slate-200">
-                  Scrap Weight (G)
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={scrapWeight}
-                    {...modalScaleProps}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (/^\d*\.?\d*$/.test(val)) {
-                        setScrapWeight(val);
-                      }
-                    }}
-                    placeholder="Enter scrap weight"
-                    className="font-mono w-full rounded-lg border border-[#d3c4af]/20 bg-amber-50/50 px-2 py-1.5 pr-6 text-sm font-bold text-black outline-none cursor-not-allowed dark:bg-amber-950/20 dark:text-amber-400"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
-                    G
-                  </span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="mt-2 flex justify-end gap-2 border-t border-gray-100 pt-3 dark:border-slate-800">
-                <GenericButton
-                  type="submit"
-                  variant="primary"
-                  disabled={
-                    !selectedPurity ||
-                    !scrapWeight ||
-                    (parseFloat(scrapWeight) || 0) <= 0 ||
-                    isSubmittingScrap
-                  }
-                >
-                  {isSubmittingScrap ? 'Submitting...' : 'Submit'}
-                </GenericButton>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <AddDept
+        showAddScrapModal={showAddScrapModal}
+        setShowAddScrapModal={setShowAddScrapModal}
+        handleSubmitAddScrap={handleSubmitAddScrap}
+        selectedPurity={selectedPurity}
+        handleSelectPurity={handleSelectPurity}
+        scrapCards={scrapCards}
+        availableWeight={availableWeight}
+        scrapWeight={scrapWeight}
+        setScrapWeight={setScrapWeight}
+        isSubmittingScrap={isSubmittingScrap}
+        modalScaleProps={modalScaleProps}
+      />
     </div>
   );
 };

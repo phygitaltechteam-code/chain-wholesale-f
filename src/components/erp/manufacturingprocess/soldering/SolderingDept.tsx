@@ -1,21 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Save,
-  Scissors,
-  Hammer,
-  History,
   ChevronRight,
   ChevronDown,
   Printer,
   Plus,
   X,
   Layers,
-  Flame,
   Box,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import { GenericTable } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import {
   useGetSoldering,
@@ -24,116 +20,36 @@ import {
   useCreateSoldering,
 } from '@/lib/api/soldering';
 import { useGetItems, Item } from '@/lib/api/items';
-import { useGetSizes, Size } from '@/lib/api/sizes';
+import { useGetSizes } from '@/lib/api/sizes';
 import { useSubmitMoveCutting } from '@/lib/api/cutting';
 import { useGetBox, useGetBoxweight } from '@/lib/api/box';
 import { useGetStock } from '@/lib/api/stock';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
-import { useAddMelting } from '@/lib/api/tar';
 import { useAddSolderingMelting } from '@/lib/api/processmelting';
 
-// ======================================================
-// HELPER: Get Current Week Range
-// ======================================================
-const getCurrentWeekRange = () => {
-  const today = new Date();
-  const day = today.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-
-  const monday = new Date(today);
-  monday.setDate(today.getDate() + diffToMonday);
-  monday.setHours(0, 0, 0, 0);
-
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
-
-  return { monday, sunday };
-};
-
-interface SolderingEntry {
-  id: string;
-  srNo: number;
-  dateTime: string;
-  item: string;
-  size: string;
-  purity: string;
-  fine: number;
-  chainWeight: number;
-  chainReceived: number;
-  powder: number;
-  increase: number;
-  scrap: number;
-  isEditing?: boolean;
-  isSaved?: boolean;
-  chainReceivedRaw?: string;
-  powderRaw?: string;
-  scrapRaw?: string;
-  purityRaw?: string;
-  fineRaw?: string;
-  itemId?: string;
-  sizeId?: string;
-  isCompleted?: boolean;
-  isDirty?: boolean;
-  status?: string;
-  process?: string;
-  isMelting?: boolean;
-  meltingStatus?: boolean;
-}
-
-interface SolderingCardForm {
-  id: string;
-  itemId?: string;
-  sizeId: string;
-  purity: string;
-  chainWeight: string;
-  fine?: string;
-  isSaving?: boolean;
-}
-
-const createNewSolderingCard = (
-  initial?: Partial<SolderingCardForm>,
-): SolderingCardForm => ({
-  id: `soldering-card-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-  itemId: initial?.itemId || '',
-  sizeId: initial?.sizeId || '',
-  purity: initial?.purity || '',
-  chainWeight: initial?.chainWeight || '',
-  fine: initial?.fine || '',
-});
-
-// Helper function to safely get item name
-const getItemName = (item: any): string => {
-  if (!item) return '-';
-  if (typeof item === 'string') return item;
-  if (item.name) return item.name;
-  return '-';
-};
-
-// Helper function to safely get size name
-const getSizeName = (size: any): string => {
-  if (!size) return '-';
-  if (typeof size === 'string') return size;
-  if (size.size) return size.size;
-  return '-';
-};
+import {
+  SolderingEntry,
+  SolderingCardForm,
+  createNewSolderingCard,
+  getCurrentWeekRange,
+  formatNumberDisplay,
+  getSolderingColumns,
+  printSolderingHistory,
+} from './solderingUtils';
+import HistorySoldering from './HistorySoldering';
 
 const SolderingDept: React.FC = () => {
   const getpdfheaderdata = useGetHeader();
   const navigate = useNavigate();
-  const [solderingEntries, setSolderingEntries] = useState<SolderingEntry[]>(
-    [],
-  );
+  const [solderingEntries, setSolderingEntries] = useState<SolderingEntry[]>([]);
   const [meltingLoadingIds, setMeltingLoadingIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [hasEditedRow, setHasEditedRow] = useState(false);
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [actionType, setActionType] = useState<'joint' | 'cutting' | null>(
-    null,
-  );
+  const [actionType, setActionType] = useState<'joint' | 'cutting' | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalCards, setModalCards] = useState<SolderingCardForm[]>([
@@ -143,31 +59,14 @@ const SolderingDept: React.FC = () => {
   const [toDate, setToDate] = useState<Date | null>(null);
 
   // Weighing Scale table focus hook
-  const { getScaleProps } = useTableScaleFocus<
-    'chainReceived' | 'scrap'
-  >((index, field, weight) => {
-    handleInlineChange(index, field, weight.toString());
-  });
+  const { getScaleProps } = useTableScaleFocus<'chainReceived' | 'scrap'>(
+    (index, field, weight) => {
+      handleInlineChange(index, field, weight.toString());
+    },
+  );
 
   const isInitialMount = useRef(true);
-  const getDefaultWeekRange = () => {
-    const now = new Date();
-    const day = now.getDay(); // 0 = Sun, 1 = Mon, ...
-    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now);
-    monday.setDate(diffToMonday);
-    monday.setHours(0, 0, 0, 0);
 
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
-    return { monday, sunday };
-  };
-  const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const { monday, sunday } = getDefaultWeekRange();
-    return [monday, sunday];
-  });
   // Fetch data from API
   const {
     data: solderingData = [],
@@ -195,10 +94,9 @@ const SolderingDept: React.FC = () => {
   const submitSoldering = useSubmitSoldering();
   const createSoldering = useCreateSoldering();
   const submitCutting = useSubmitMoveCutting();
-
   const submitMelting = useAddSolderingMelting();
+
   const handleMelting = async (entry: SolderingEntry) => {
-    // Add this entry ID to loading set
     setMeltingLoadingIds((prev) => new Set(prev).add(entry.id));
 
     try {
@@ -223,7 +121,6 @@ const SolderingDept: React.FC = () => {
         'Failed to process melting';
       toast.error(errorMessage);
     } finally {
-      // Remove this entry ID from loading set
       setMeltingLoadingIds((prev) => {
         const newSet = new Set(prev);
         newSet.delete(entry.id);
@@ -232,15 +129,6 @@ const SolderingDept: React.FC = () => {
     }
   };
 
-  // Helper to check if item has melting status
-  const hasMeltingStatus = (item: any): boolean => {
-    const s = String(item?.status || item?.process || '').toUpperCase();
-    return (
-      s === 'MELTING' ||
-      item?.isMelting === true ||
-      item?.meltingStatus === true
-    );
-  };
   // Weighing Scale modal focus hook
   const { getScaleProps: getModalScaleProps } = useTableScaleFocus<'chainWeight'>(
     (cardIndex, field, weight) => {
@@ -263,9 +151,7 @@ const SolderingDept: React.FC = () => {
           (typeof item.size === 'string' ? item.size : '') ||
           'Box';
         const p = Number(item.purity || 0);
-        const wt = Number(
-          item.tarWeight || item.chainWeight || item.weight || 0,
-        );
+        const wt = Number(item.tarWeight || item.chainWeight || item.weight || 0);
         return {
           id: item.id,
           sizeId: item.sizeId || item.size?.id,
@@ -334,9 +220,7 @@ const SolderingDept: React.FC = () => {
       );
       if (purity && parseFloat(purity) > 0) {
         const pNum = parseFloat(purity);
-        filtered = filtered.filter(
-          (b: any) => parseFloat(b.purity) === pNum,
-        );
+        filtered = filtered.filter((b: any) => parseFloat(b.purity) === pNum);
       }
       const total = filtered.reduce((sum: number, b: any) => {
         const wt = Number(b.tarWeight || b.chainWeight || b.weight || 0);
@@ -353,9 +237,7 @@ const SolderingDept: React.FC = () => {
       );
       if (purity && parseFloat(purity) > 0) {
         const pNum = parseFloat(purity);
-        filtered = filtered.filter(
-          (b: any) => parseFloat(b.purity) === pNum,
-        );
+        filtered = filtered.filter((b: any) => parseFloat(b.purity) === pNum);
       }
       const total = filtered.reduce((sum: number, b: any) => {
         const wt = Number(b.chainWeight || 0);
@@ -372,9 +254,7 @@ const SolderingDept: React.FC = () => {
       );
       if (purity && parseFloat(purity) > 0) {
         const pNum = parseFloat(purity);
-        filtered = filtered.filter(
-          (s: any) => parseFloat(s.purity) === pNum,
-        );
+        filtered = filtered.filter((s: any) => parseFloat(s.purity) === pNum);
       }
       const total = filtered.reduce((sum: number, s: any) => {
         const wt = Number(s.weight ?? s.stockQty ?? 0);
@@ -390,13 +270,6 @@ const SolderingDept: React.FC = () => {
   const handleSizeSelect = (cardIndex: number, selectedSizeId: string) => {
     const sizePurities = getPuritiesForSize(selectedSizeId);
     const chosenPurity = sizePurities.length > 0 ? String(sizePurities[0]) : '';
-
-    const stockMatch = boxStockList.find(
-      (b: any) =>
-        (String(b.sizeId) === String(selectedSizeId) || String(b.size?.id) === String(selectedSizeId)) &&
-        (chosenPurity ? String(b.purity) === chosenPurity : true) &&
-        Number(b.tarWeight || b.chainWeight || b.weight || 0) > 0,
-    );
 
     setModalCards((prev) =>
       prev.map((c, idx) => {
@@ -425,24 +298,17 @@ const SolderingDept: React.FC = () => {
       const entries: SolderingEntry[] = solderingData.map(
         (soldering: any, index: number) => {
           const itemName = soldering.item?.name || soldering.itemId || 'N/A';
-
           const sizeName = soldering.size?.size || soldering.sizeId || 'N/A';
-
           const chainWeight = soldering.chainWeight || 0;
           const purity = soldering.purity;
           const fine =
             soldering.fine !== undefined && soldering.fine !== null
               ? soldering.fine
-              : Math.round(
-                ((chainWeight * (parseFloat(purity) || 0)) / 100) * 1000,
-              ) / 1000;
+              : Math.round(((chainWeight * (parseFloat(purity) || 0)) / 100) * 1000) / 1000;
           const chainReceived = soldering.chainReceived || 0;
           const powder =
             chainReceived > 0
-              ? Math.max(
-                0,
-                Math.round((chainReceived - chainWeight) * 1000) / 1000,
-              )
+              ? Math.max(0, Math.round((chainReceived - chainWeight) * 1000) / 1000)
               : soldering.powder || 0;
           const increase =
             powder > 0 && chainReceived > 0
@@ -457,7 +323,6 @@ const SolderingDept: React.FC = () => {
           return {
             id: soldering.id,
             srNo: index + 1,
-
             dateTime: new Date(soldering.createdAt).toLocaleString('en-IN', {
               day: '2-digit',
               month: '2-digit',
@@ -466,36 +331,27 @@ const SolderingDept: React.FC = () => {
               minute: '2-digit',
               hour12: true,
             }),
-
             item: itemName,
             size: sizeName,
             purity: soldering.purity || '',
             fine: fine,
-
             chainWeight: chainWeight,
             chainReceived: chainReceived,
             powder: powder,
-
             increase: increase,
-
             scrap: soldering.scrap || 0,
-
             isEditing: !isSaved,
             isSaved: isSaved,
-
             chainReceivedRaw: soldering.chainReceived
               ? soldering.chainReceived.toString()
               : '',
-
             powderRaw: soldering.powder ? soldering.powder.toString() : '',
-
             scrapRaw: soldering.scrap ? soldering.scrap.toString() : '',
             purityRaw:
               soldering.purity !== null && soldering.purity !== undefined
                 ? soldering.purity.toString()
                 : '',
             fineRaw: fine > 0 ? fine.toString() : '',
-
             itemId: soldering.itemId,
             sizeId: soldering.sizeId,
             isCompleted: soldering.isCompleted || false,
@@ -513,57 +369,6 @@ const SolderingDept: React.FC = () => {
       setSolderingEntries([]);
     }
   }, [solderingData, solderingLoading]);
-
-  // Format date helper for history
-  const formatDate = (dateString: string) => {
-    if (!dateString) {
-      return {
-        date: '-',
-        time: '-',
-      };
-    }
-
-    const date = new Date(dateString);
-
-    return {
-      date: date.toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      }),
-
-      time: date.toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      }),
-    };
-  };
-
-  // Format number helper for history
-  const formatNumber = (value: any) => {
-    if (value === null || value === undefined) {
-      return '0';
-    }
-
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-
-    if (isNaN(num)) {
-      return '0';
-    }
-
-    return num.toFixed(0);
-  };
-
-  // Format number for display
-  const formatNumberDisplay = (value: unknown): string => {
-    if (value === null || value === undefined || value === '') return '0';
-    const num = Number(value);
-    if (!Number.isFinite(num)) return '0';
-    const str = num.toFixed(3);
-    return str.replace(/\.?0+$/, '');
-  };
-
 
   // Filter history by date
   const getFilteredHistory = () => {
@@ -592,460 +397,15 @@ const SolderingDept: React.FC = () => {
 
   // Print History Function
   const handlePrintHistory = () => {
-    const filteredData = getFilteredHistory();
-
-    if (!filteredData || filteredData.length === 0) {
-      toast.error(
-        'No history records available to print for the selected date range',
-      );
-      return;
+    const success = printSolderingHistory(getFilteredHistory(), fromDate, toDate, getpdfheaderdata);
+    if (!success) {
+      toast.error('No history records available to print for the selected date range');
     }
-
-    // Create a hidden div for printing
-    const printContainer = document.createElement('div');
-
-    printContainer.id = 'print-container';
-
-    printContainer.style.cssText = `
-        position: fixed;
-        left: -9999px;
-        top: 0;
-        width: 100%;
-        background: white;
-        padding: 4px;
-        z-index: 9999;
-    `;
-
-    document.body.appendChild(printContainer);
-
-    // Build the table rows
-    // Build the table rows
-    const rows = filteredData
-      .map((item: any, index: number) => {
-        const { date, time } = formatDate(item?.createdAt);
-        const { date: proceedDate, time: proceedTime } = formatDate(
-          item?.updatedAt,
-        );
-        const isMelting = hasMeltingStatus(item);
-
-        return `
-      <tr style="${isMelting ? 'opacity:0.6;background-color:#fafafa;' : ''}">
-        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-          ${index + 1}
-        </td>
-        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
-          ${date} ${time}
-        </td>
-        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-          ${getItemName(item?.item)}
-        </td>
-        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-          ${getSizeName(item?.size)}
-        </td>
-        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">
-          ${item?.purity || '-'}%
-        </td>
-        ${isMelting
-            ? `<td colspan="5" style="border:1px solid #000;padding:1px 2px;text-align:center;font-weight:bold;font-size:11px;color:#785600;background-color:#fffbeb;">Melting</td>`
-            : `
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-              ${formatNumber(item?.chainWeight)}
-            </td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-              ${formatNumber(item?.chainReceived)}
-            </td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-              ${formatNumber(item?.powder)}
-            </td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-              ${formatNumberDisplay(item?.increase)}%
-            </td>
-            <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-family:monospace;font-size:11px;color:#000;">
-              ${formatNumber(item?.scrap)}
-            </td>
-          `}
-        <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
-          ${proceedDate} ${proceedTime}
-        </td>
-      </tr>
-    `;
-      })
-      .join('');
-
-    const headerInfo =
-      getpdfheaderdata?.data?.data ||
-      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation =
-      headerInfo.leftInvocation ||
-      headerInfo.leftInovation ||
-      '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation =
-      headerInfo.rightInvocation ||
-      headerInfo.rightInovation ||
-      '॥ श्री साई प्रसन्न ॥';
-    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description =
-      headerInfo.description ||
-      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
-    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers =
-      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
-    const invocationColor = headerInfo.invocationColor || '#a84b20';
-    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
-    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
-    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
-    const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize
-      ? `${headerInfo.factoryFontSize}px`
-      : '20px';
-    const descriptionFontSize = headerInfo.descriptionFontSize
-      ? `${headerInfo.descriptionFontSize}px`
-      : '9px';
-    const proprietorFontSize = headerInfo.proprietorFontSize
-      ? `${headerInfo.proprietorFontSize}px`
-      : '9px';
-    const phoneFontSize = headerInfo.phoneFontSize
-      ? `${headerInfo.phoneFontSize}px`
-      : '9px';
-
-    // Set print content
-    printContainer.innerHTML = `
-     <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
-        <div>
-          <!-- Header Section -->
-          <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
-              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
-              <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
-              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
-            </div>
-            <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
-              ${description}
-            </div>
-            <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
-              ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
-            </div>
-            <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
-          </div>
-
-          <!-- Title -->
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
-
-            <div style="flex:1;"></div>
-
-            <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
-              Soldering History Report
-            </h2>
-            ${fromDate && toDate
-        ? `
-            <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
-              From: ${formatDate(fromDate.toISOString()).date} &nbsp; To: ${formatDate(toDate.toISOString()).date}
-            </div>
-          `
-        : `
-            <div style="flex:1;"></div>
-          `
-      }
-          </div>
-
-          <!-- Table -->
-          <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
-
-            <thead>
-
-              <tr style="background:#785600;color:white;font-weight:600;">
-
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Sr
-                </th>
-
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Date & Time
-                </th>
-
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Item
-                </th>
-
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Size
-                </th>
-
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Purity %
-                </th>
-
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Chain Given
-                </th>
-
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Chain Rec
-                </th>
-
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Powder Given
-                </th>
-
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Increase %
-                </th>
-
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Scrap
-                </th>
-
-                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">
-                  Proceed
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-              ${rows}
-            </tbody>
-
-          </table>
-
-        </div>
-
-     </div>
-    `;
-
-    // Add print styles
-    const style = document.createElement('style');
-
-    style.textContent = `
-        @page {
-            margin: 3mm;
-        }
-
-        @media print {
-
-            body * {
-                visibility: hidden;
-            }
-
-            #print-container,
-            #print-container * {
-                visibility: visible;
-            }
-
-            #print-container {
-                position: fixed !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                background: white !important;
-                padding: 4px !important;
-                overflow: auto !important;
-                z-index: 9999 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-
-            #print-container table {
-                width: 100% !important;
-            }
-
-            #print-container tr {
-                page-break-inside: avoid !important;
-            }
-
-            #print-container thead tr {
-                background: #785600 !important;
-                color: white !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-
-            #print-container thead tr th {
-                background: #785600 !important;
-                color: white !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-
-        }
-    `;
-
-    document.head.appendChild(style);
-
-    // Trigger print
-    setTimeout(() => {
-      window.print();
-
-      // Clean up after print
-      setTimeout(() => {
-        if (document.body.contains(printContainer)) {
-          document.body.removeChild(printContainer);
-        }
-
-        if (document.head.contains(style)) {
-          document.head.removeChild(style);
-        }
-      }, 1000);
-    }, 500);
   };
-
-  // History table columns
-  const historyColumns: Column<any>[] = [
-    {
-      key: 'createdAt',
-      header: 'Date & Time',
-      render: (item) => {
-        const { date, time } = formatDate(item.createdAt);
-        return (
-          <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {date}
-            </span>
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {time}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      key: 'itemName',
-      header: 'Item',
-      render: (item) => (
-        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-          {item?.item?.name}
-        </span>
-      ),
-    },
-    {
-      key: 'sizeName',
-      header: 'Size',
-      render: (item) => (
-        <span className="text-sm text-[#1a1c1b] dark:text-white">
-          {item?.size?.size}
-        </span>
-      ),
-    },
-    {
-      key: 'purity',
-      header: 'Purity % (टंच)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.purity)}%
-        </span>
-      ),
-    },
-    {
-      key: 'chainWeight',
-      header: 'Chain Given (G)',
-      colSpan: (item) => (hasMeltingStatus(item) ? 5 : 1),
-      render: (item) => {
-        if (hasMeltingStatus(item)) {
-          return (
-            <div className="flex items-center justify-center py-0.5">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                Melting
-              </span>
-            </div>
-          );
-        }
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.chainWeight)} G
-          </span>
-        );
-      },
-    },
-    {
-      key: 'chainReceived',
-      header: 'Chain Received (G)',
-      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
-      render: (item) => {
-        if (hasMeltingStatus(item)) {
-          return null;
-        }
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.chainReceived)} G
-          </span>
-        );
-      },
-    },
-    {
-      key: 'powder',
-      header: 'Powder Given (G)',
-      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
-      render: (item) => {
-        if (hasMeltingStatus(item)) {
-          return null;
-        }
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.powder)} G
-          </span>
-        );
-      },
-    },
-    {
-      key: 'increase',
-      header: 'Increase %',
-      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
-      render: (item) => {
-        if (hasMeltingStatus(item)) {
-          return null;
-        }
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.increase)} %
-          </span>
-        );
-      },
-    },
-    {
-      key: 'scrap',
-      header: 'Scrap (स्क्रॅप)',
-      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
-      render: (item) => {
-        if (hasMeltingStatus(item)) {
-          return null;
-        }
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.scrap)} G
-          </span>
-        );
-      },
-    },
-    {
-      key: 'updatedAt',
-      header: 'Proceed Date & Time',
-      render: (item) => {
-        const { date, time } = formatDate(item.updatedAt);
-        return (
-          <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {date}
-            </span>
-            <span className="text-gray-500 dark:text-gray-400 text-sm">
-              {time}
-            </span>
-          </div>
-        );
-      },
-    },
-  ];
 
   // Handle inline field change
   const handleInlineChange = useCallback(
-    (
-      index: number,
-      field: 'chainReceived' | 'scrap' | 'purity',
-      value: string,
-    ) => {
-      // Show Action column when user edits an input
+    (index: number, field: 'chainReceived' | 'scrap' | 'purity', value: string) => {
       setHasEditedRow(true);
 
       setSolderingEntries((prev) =>
@@ -1063,20 +423,16 @@ const SolderingDept: React.FC = () => {
                 updated.chainReceived = 0;
               } else {
                 const numValue = parseFloat(value);
-
                 updated.chainReceived = isNaN(numValue) ? 0 : numValue;
               }
 
               // Auto calculate: Powder Given = Chain Received - Chain Given
-              const autoPowder =
-                Math.max(
-                  0,
-                  Math.round((updated.chainReceived - entry.chainWeight) * 1000) /
-                  1000,
-                );
+              const autoPowder = Math.max(
+                0,
+                Math.round((updated.chainReceived - entry.chainWeight) * 1000) / 1000,
+              );
               updated.powder = autoPowder;
-              updated.powderRaw =
-                autoPowder > 0 ? autoPowder.toString() : '0';
+              updated.powderRaw = autoPowder > 0 ? autoPowder.toString() : '0';
             } else if (field === 'scrap') {
               updated.scrapRaw = value;
 
@@ -1084,7 +440,6 @@ const SolderingDept: React.FC = () => {
                 updated.scrap = 0;
               } else {
                 const numValue = parseFloat(value);
-
                 updated.scrap = isNaN(numValue) ? 0 : numValue;
               }
             }
@@ -1092,9 +447,7 @@ const SolderingDept: React.FC = () => {
             // Auto calculate: Increase % = (Powder Given / Chain Received) * 100
             if (updated.powder > 0 && updated.chainReceived > 0) {
               updated.increase =
-                Math.round(
-                  ((updated.powder / updated.chainReceived) * 100) * 1000,
-                ) / 1000;
+                Math.round(((updated.powder / updated.chainReceived) * 100) * 1000) / 1000;
             } else {
               updated.increase = 0;
             }
@@ -1102,7 +455,6 @@ const SolderingDept: React.FC = () => {
             updated.isDirty = true;
             return updated;
           }
-
           return entry;
         }),
       );
@@ -1141,7 +493,6 @@ const SolderingDept: React.FC = () => {
     try {
       await submitSoldering.mutateAsync({
         id: entry.id,
-
         data: {
           chainReceived: entry.chainReceived,
           powder: entry.powder,
@@ -1155,31 +506,18 @@ const SolderingDept: React.FC = () => {
       setSolderingEntries((prev) =>
         prev.map((s, i) =>
           i === index
-            ? {
-              ...s,
-              isEditing: false,
-              isSaved: true,
-              isCompleted: true,
-            }
+            ? { ...s, isEditing: false, isSaved: true, isCompleted: true }
             : s,
         ),
       );
 
       setHasEditedRow(false);
-
       setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
       setActionType(null);
 
       await refetch();
-
-      // navigate({
-      //   to: '/manufacturingprocess/process',
-      //   state: {
-      //     selectedTab: 'joint',
-      //   },
-      // });
     } catch (error: any) {
       console.error('Error saving soldering:', error);
       const errorMessage =
@@ -1196,7 +534,7 @@ const SolderingDept: React.FC = () => {
       setSaveIndex(null);
       setActionType(null);
     }
-  }, [saveIndex, solderingEntries, submitSoldering, navigate, refetch]);
+  }, [saveIndex, solderingEntries, submitSoldering, refetch]);
 
   // Confirm and save - Cutting
   const confirmSaveCutting = useCallback(async () => {
@@ -1213,7 +551,6 @@ const SolderingDept: React.FC = () => {
       // First save the soldering entry
       await submitSoldering.mutateAsync({
         id: entry.id,
-
         data: {
           chainReceived: entry.chainReceived,
           powder: entry.powder,
@@ -1227,7 +564,6 @@ const SolderingDept: React.FC = () => {
       // Then submit to Cutting API
       await submitCutting.mutateAsync({
         id: entry.id,
-
         data: {
           chainReceived: entry.chainReceived,
           powder: entry.powder,
@@ -1241,31 +577,18 @@ const SolderingDept: React.FC = () => {
       setSolderingEntries((prev) =>
         prev.map((s, i) =>
           i === index
-            ? {
-              ...s,
-              isEditing: false,
-              isSaved: true,
-              isCompleted: true,
-            }
+            ? { ...s, isEditing: false, isSaved: true, isCompleted: true }
             : s,
         ),
       );
 
       setHasEditedRow(false);
-
       setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
       setActionType(null);
 
       await refetch();
-
-      // navigate({
-      //   to: '/manufacturingprocess/process',
-      //   state: {
-      //     selectedTab: 'cutting',
-      //   },
-      // });
     } catch (error: any) {
       console.error('Error saving soldering:', error);
       const errorMessage =
@@ -1282,14 +605,7 @@ const SolderingDept: React.FC = () => {
       setSaveIndex(null);
       setActionType(null);
     }
-  }, [
-    saveIndex,
-    solderingEntries,
-    submitSoldering,
-    submitCutting,
-    navigate,
-    refetch,
-  ]);
+  }, [saveIndex, solderingEntries, submitSoldering, submitCutting, refetch]);
 
   const handleCardChange = (
     cardIndex: number,
@@ -1344,8 +660,7 @@ const SolderingDept: React.FC = () => {
 
     const chainWeightVal = parseFloat(card.chainWeight) || 0;
     const purityVal = parseFloat(card.purity) || 0;
-    const fineVal =
-      Math.round(((chainWeightVal * purityVal) / 100) * 1000) / 1000;
+    const fineVal = Math.round(((chainWeightVal * purityVal) / 100) * 1000) / 1000;
 
     if (chainWeightVal <= 0) {
       toast.error(`Please enter a valid Chain Weight`);
@@ -1378,7 +693,7 @@ const SolderingDept: React.FC = () => {
         fine: fineVal,
         chainWeight: chainWeightVal,
       };
-      console.log(payload, 'pay');
+      
       await createSoldering.mutateAsync(payload);
       toast.success(`Soldering Item added successfully`);
 
@@ -1405,266 +720,27 @@ const SolderingDept: React.FC = () => {
         'Failed to save soldering entry';
       toast.error(backendMessage);
       setModalCards((prev) =>
-        prev.map((c, idx) =>
-          idx === cardIndex ? { ...c, isSaving: false } : c,
-        ),
+        prev.map((c, idx) => (idx === cardIndex ? { ...c, isSaving: false } : c)),
       );
     }
   };
 
-  // A row is edited only when the user has entered a value.
   const hasEditableValues = (entry: SolderingEntry): boolean => {
     return Boolean(entry.isDirty);
   };
 
-  // The whole Action column is conditional.
-  const showActionColumn = solderingEntries.some(
-    (entry) => !entry.isSaved && Boolean(entry.isDirty),
-  );
-
-  // Define columns for GenericTable
-  const columns: Column<SolderingEntry>[] = [
-    {
-      key: 'dateTime',
-      header: 'Date & Time',
-
-      render: (item) => {
-        const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
-
-        const datePart = parts[0] || '';
-
-        const timePart = parts.slice(1).join(' ') || '';
-
-        return (
-          <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {datePart}
-            </span>
-
-            <span className="text-sm text-[#4f4535] dark:text-slate-400">
-              {timePart}
-            </span>
-          </div>
-        );
-      },
-    },
-
-    {
-      key: 'item',
-      header: 'Item',
-
-      render: (item) => (
-        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-          {typeof item?.item === 'object'
-            ? (item?.item?.name ?? '-')
-            : (item?.item ?? '-')}
-        </span>
-      ),
-    },
-
-    {
-      key: 'size',
-      header: 'Size',
-
-      render: (item) => (
-        <span className="text-sm text-[#1a1c1b] dark:text-white">
-          {typeof item?.size === 'object'
-            ? (item?.size?.size ?? '-')
-            : (item?.size ?? '-')}
-        </span>
-      ),
-    },
-    {
-      key: 'purity',
-      header: 'Purity % (टंच)',
-      render: (item) => (
-        <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap  bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.purity)}%
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: 'chainWeight',
-      header: 'Chain Given(G)',
-
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.chainWeight)} G
-        </span>
-      ),
-    },
-
-    {
-      key: 'chainReceived',
-      header: 'Chain Received(G)',
-
-      render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <div className="relative inline-block">
-              <input
-                type="text"
-                value={
-                  item.chainReceivedRaw !== undefined
-                    ? item.chainReceivedRaw
-                    : item.chainReceived === 0
-                      ? ''
-                      : item.chainReceived
-                }
-                {...getScaleProps(index, 'chainReceived')}
-                onChange={(e) =>
-                  handleInlineChange(index, 'chainReceived', e.target.value)
-                }
-                placeholder="0.000"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-              />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
-              </span>
-            </div>
-          );
-        }
-
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.chainReceived)} G
-          </span>
-        );
-      },
-    },
-
-    {
-      key: 'powder',
-      header: 'Powder Given(G)',
-
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.powder)} G
-        </span>
-      ),
-    },
-
-    {
-      key: 'increase',
-      header: 'Increase %',
-
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.increase)} %
-        </span>
-      ),
-    },
-
-    {
-      key: 'scrap',
-      header: 'Scrap (स्क्रॅप)',
-
-      render: (item, index) => {
-        if (item.isEditing) {
-          return (
-            <div className="relative inline-block">
-              <input
-                type="text"
-                value={
-                  item.scrapRaw !== undefined
-                    ? item.scrapRaw
-                    : item.scrap === 0
-                      ? ''
-                      : item.scrap
-                }
-                {...getScaleProps(index, 'scrap')}
-                onChange={(e) =>
-                  handleInlineChange(index, 'scrap', e.target.value)
-                }
-                placeholder="0.000"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-              />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
-              </span>
-            </div>
-          );
-        }
-
-        return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(item.scrap)} G
-          </span>
-        );
-      },
-    },
-
-    {
-      key: 'actions',
-      header: 'Action',
-      render: (item: SolderingEntry, index: number) => {
-        const isMeltingLoading = meltingLoadingIds.has(item.id);
-
-        return (
-          <div className="flex items-center justify-center gap-1.5">
-            {/* Joint Button - Only show if entry is not saved and has editable values */}
-            {!item.isSaved && hasEditableValues(item) && (
-              <button
-                type="button"
-                onClick={() => handleSaveClick(index, 'joint')}
-                disabled={isLoading || isSubmitting || isMeltingLoading}
-                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                title="Go to Joint"
-              >
-                <Hammer className="h-3.5 w-3.5" />
-                <span>Joint</span>
-              </button>
-            )}
-
-            {/* Cutting Button - Only show if entry is not saved and has editable values */}
-            {!item.isSaved && hasEditableValues(item) && (
-              <button
-                type="button"
-                onClick={() => handleSaveClick(index, 'cutting')}
-                disabled={isLoading || isSubmitting || isMeltingLoading}
-                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                title="Go to Cutting"
-              >
-                <Scissors className="h-3.5 w-3.5" />
-                <span>Cutting</span>
-              </button>
-            )}
-
-            {/* Melting Button - Always visible for all entries */}
-            <button
-              type="button"
-              onClick={() => handleMelting(item)}
-              disabled={isLoading || isSubmitting || isMeltingLoading}
-              className={`inline-flex items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold uppercase tracking-wider shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
-                  ? 'bg-gray-300 text-gray-600 cursor-wait dark:bg-gray-600 dark:text-gray-300'
-                  : 'bg-amber-200 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60'
-                }`}
-              title="Send to Melting"
-            >
-              {isMeltingLoading ? (
-                <>
-                  <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span>Processing...</span>
-                </>
-              ) : (
-                <>
-                  <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                  <span>Melting</span>
-                </>
-              )}
-            </button>
-          </div>
-        );
-      },
-    } as Column<SolderingEntry>,
-  ];
-
   const isSubmitting = submitSoldering.isPending || submitCutting.isPending;
+
+  const columns = getSolderingColumns(
+    getScaleProps,
+    handleInlineChange,
+    handleSaveClick,
+    handleMelting,
+    isLoading,
+    isSubmitting,
+    meltingLoadingIds,
+    hasEditableValues
+  );
 
   const toggleHistory = () => {
     if (showHistory) {
@@ -1674,15 +750,12 @@ const SolderingDept: React.FC = () => {
       refetch();
     } else {
       setShowHistory(true);
-      // Set default dates when showing history
       const { monday, sunday } = getCurrentWeekRange();
       setFromDate(monday);
       setToDate(sunday);
       refetchHistory();
     }
   };
-
-
 
   return (
     <div className="flex flex-col gap-4">
@@ -1696,7 +769,6 @@ const SolderingDept: React.FC = () => {
             </span>
           </div>
 
-          {/* Scrollable Container */}
           <div className="flex gap-2 overflow-x-auto pb-2 pt-1 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-[#785600]/40 dark:scrollbar-track-slate-800 dark:scrollbar-thumb-slate-600">
             {boxCards.map((card, idx) => (
               <div
@@ -1772,22 +844,14 @@ const SolderingDept: React.FC = () => {
           )}
 
           {!showHistory && (
-            <GenericButton
-              type="button"
-              onClick={handleOpenModal}
-              variant="primary"
-            >
+            <GenericButton type="button" onClick={handleOpenModal} variant="primary">
               <Plus className="h-4 w-4" />
               <span>Add Soldering</span>
             </GenericButton>
           )}
 
           {/* History Toggle Button */}
-          <GenericButton
-            type="button"
-            onClick={toggleHistory}
-            variant="primary"
-          >
+          <GenericButton type="button" onClick={toggleHistory} variant="primary">
             {showHistory ? (
               <ChevronRight className="h-4 w-4" />
             ) : (
@@ -1812,30 +876,12 @@ const SolderingDept: React.FC = () => {
           />
         </div>
       ) : (
-        <div>
-          <GenericTable
-            data={getFilteredHistory()}
-            columns={historyColumns}
-            emptyMessage={
-              fromDate && toDate
-                ? `No history records found for the selected date range (${new Date(
-                  fromDate,
-                ).toLocaleDateString()} to ${new Date(
-                  toDate,
-                ).toLocaleDateString()})`
-                : 'No history records found. Complete a soldering process to see history.'
-            }
-            isLoading={historyLoading}
-            showSrNo={true}
-            srNoLabel="Sr No."
-            className="shadow-sm"
-            rowClassName={(item) =>
-              hasMeltingStatus(item)
-                ? 'opacity-60 bg-gray-50/70 text-gray-500 hover:bg-gray-100/70 dark:bg-slate-900/40 dark:text-slate-400'
-                : ''
-            }
-          />
-        </div>
+        <HistorySoldering
+          filteredData={getFilteredHistory()}
+          historyLoading={historyLoading}
+          fromDate={fromDate}
+          toDate={toDate}
+        />
       )}
 
       {/* Confirmation Modal */}
@@ -1868,11 +914,7 @@ const SolderingDept: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={
-                    actionType === 'joint'
-                      ? confirmSaveJoint
-                      : confirmSaveCutting
-                  }
+                  onClick={actionType === 'joint' ? confirmSaveJoint : confirmSaveCutting}
                   disabled={isLoading}
                   className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -1883,12 +925,14 @@ const SolderingDept: React.FC = () => {
           </div>
         </div>
       )}
+
       {/* Add Soldering Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
           <div
-            className={`w-full ${modalCards.length > 1 ? 'max-w-4xl' : 'max-w-lg'
-              } flex max-h-[90vh] flex-col rounded-2xl bg-white shadow-2xl transition-all dark:bg-slate-900 border border-[#d3c4af]/30 dark:border-slate-700`}
+            className={`w-full ${
+              modalCards.length > 1 ? 'max-w-4xl' : 'max-w-lg'
+            } flex max-h-[90vh] flex-col rounded-2xl bg-white shadow-2xl transition-all dark:bg-slate-900 border border-[#d3c4af]/30 dark:border-slate-700`}
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-[#d3c4af]/20 p-4 dark:border-slate-800">
@@ -1901,11 +945,7 @@ const SolderingDept: React.FC = () => {
                     Add Soldering Process
                   </h3>
                   <p className="text-xs text-[#4f4535] dark:text-slate-400">
-                    {modalCards.length}{' '}
-                    {modalCards.length === 1
-                      ? 'soldering item'
-                      : 'soldering items'}{' '}
-                    to configure
+                    {modalCards.length} {modalCards.length === 1 ? 'soldering item' : 'soldering items'} to configure
                   </p>
                 </div>
               </div>
@@ -1921,12 +961,7 @@ const SolderingDept: React.FC = () => {
 
             {/* Modal Body - Cards Container */}
             <div className="flex-1 overflow-y-auto p-4">
-              <div
-                className={`grid gap-4 ${modalCards.length > 1
-                  ? 'grid-cols-1 md:grid-cols-2'
-                  : 'grid-cols-1'
-                  }`}
-              >
+              <div className={`grid gap-4 ${modalCards.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
                 {modalCards.map((card, idx) => {
                   const isCardSaving = card.isSaving || false;
                   const availableQty = getAvailableBoxQty(card.sizeId, card.purity);
@@ -1950,33 +985,25 @@ const SolderingDept: React.FC = () => {
 
                       {/* Card Inputs */}
                       <div className="space-y-3">
-                        {/* Row 1: Size, Purity, Available Qty in one line */}
                         <div className="grid grid-cols-3 gap-2">
-                          {/* Size */}
                           <div>
                             <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                               Size <span className="text-red-500">*</span>
                             </label>
                             <select
                               value={card.sizeId}
-                              onChange={(e) =>
-                                handleSizeSelect(idx, e.target.value)
-                              }
+                              onChange={(e) => handleSizeSelect(idx, e.target.value)}
                               className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                             >
                               <option value="">Select</option>
-                              {sizes.map((size) => {
-                                const stock = boxCards.find((b: any) => b.sizeId === size.id);
-                                return (
-                                  <option key={size.id} value={size.id}>
-                                    {size.size || JSON.stringify(size)}
-                                  </option>
-                                );
-                              })}
+                              {sizes.map((size) => (
+                                <option key={size.id} value={size.id}>
+                                  {size.size || JSON.stringify(size)}
+                                </option>
+                              ))}
                             </select>
                           </div>
 
-                          {/* Purity (%) Dropdown */}
                           <div>
                             <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                               Purity (%) <span className="text-red-500">*</span>
@@ -1987,12 +1014,7 @@ const SolderingDept: React.FC = () => {
                                 const newPurity = e.target.value;
                                 setModalCards((prev) =>
                                   prev.map((c, i) =>
-                                    i === idx
-                                      ? {
-                                        ...c,
-                                        purity: newPurity,
-                                      }
-                                      : c,
+                                    i === idx ? { ...c, purity: newPurity } : c,
                                   ),
                                 );
                               }}
@@ -2007,7 +1029,6 @@ const SolderingDept: React.FC = () => {
                             </select>
                           </div>
 
-                          {/* Available Qty */}
                           <div>
                             <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                               Available Qty (G)
@@ -2026,26 +1047,19 @@ const SolderingDept: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Row 2: Item and Chain Weight */}
                         <div className="grid grid-cols-2 gap-2">
-                          {/* Item */}
                           <div>
                             <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                               Item <span className="text-red-500">*</span>
                             </label>
                             <select
                               value={card.itemId}
-                              onChange={(e) =>
-                                handleCardChange(idx, 'itemId', e.target.value)
-                              }
+                              onChange={(e) => handleCardChange(idx, 'itemId', e.target.value)}
                               className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                             >
                               <option value="">Select Item</option>
                               {itemsList
-                                .filter(
-                                  (item) =>
-                                    item?.name?.trim().toLowerCase() !== 'gold',
-                                )
+                                .filter((item) => item?.name?.trim().toLowerCase() !== 'gold')
                                 .map((item) => (
                                   <option key={item.id} value={item.id}>
                                     {item.name || JSON.stringify(item)}
@@ -2054,7 +1068,6 @@ const SolderingDept: React.FC = () => {
                             </select>
                           </div>
 
-                          {/* Chain Weight */}
                           <div>
                             <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                               Chain Weight (G) <span className="text-red-500">*</span>
@@ -2066,11 +1079,7 @@ const SolderingDept: React.FC = () => {
                                 value={card.chainWeight}
                                 {...getModalScaleProps(idx, 'chainWeight')}
                                 onChange={(e) =>
-                                  handleCardChange(
-                                    idx,
-                                    'chainWeight',
-                                    e.target.value,
-                                  )
+                                  handleCardChange(idx, 'chainWeight', e.target.value)
                                 }
                                 placeholder="0.000"
                                 className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 pr-6 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
@@ -2083,7 +1092,6 @@ const SolderingDept: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Card Action Button */}
                       <div className="mt-4 border-t border-[#d3c4af]/20 pt-3 dark:border-slate-700">
                         <button
                           type="button"
@@ -2092,9 +1100,7 @@ const SolderingDept: React.FC = () => {
                           className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] py-2 text-xs font-semibold text-white shadow-sm transition-all hover:scale-[1.01] hover:shadow active:scale-[0.99] disabled:opacity-50"
                         >
                           <Save className="h-3.5 w-3.5" />
-                          <span>
-                            {isCardSaving ? 'Saving...' : 'Save'}
-                          </span>
+                          <span>{isCardSaving ? 'Saving...' : 'Save'}</span>
                         </button>
                       </div>
                     </div>
@@ -2110,4 +1116,3 @@ const SolderingDept: React.FC = () => {
 };
 
 export default SolderingDept;
-
