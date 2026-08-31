@@ -57,19 +57,15 @@ export const getAdminByIdApi = async (id: string) => {
     const response = await api.get(`/superAdmin/admin/${id}`);
     return response.data?.data || response.data;
   } catch (error: any) {
-    try {
-      const fallback = await api.get(`/users/${id}`);
-      return fallback.data?.data || fallback.data;
-    } catch {
-      if (error?.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      }
-      if (error instanceof Error) {
-        throw new Error(error.message || 'Failed to fetch admin details');
-      }
-      throw error;
+    if (error?.response?.data?.message) {
+      throw new Error(error.response.data.message);
     }
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to fetch admin details');
+    }
+    throw error;
   }
+}
 };
 
 // Hook to fetch single admin by ID
@@ -112,33 +108,17 @@ export const useCreateAdmin = () => {
   });
 };
 
-// API call to update an admin
 export const updateAdminApi = async ({
   id,
-  userId,
   data,
 }: {
   id: string;
-  userId?: string;
   data: AdminPayload;
 }) => {
   try {
     const response = await api.put(`/superAdmin/admin/${id}`, data);
     return response.data;
   } catch (error: any) {
-    if (userId && userId !== id) {
-      try {
-        const fallback1 = await api.put(`/superAdmin/admin/${userId}`, data);
-        return fallback1.data;
-      } catch {
-        try {
-          const fallback2 = await api.put(`/users/${userId}`, data);
-          return fallback2.data;
-        } catch {
-          // ignore fallback failures and throw original
-        }
-      }
-    }
     if (error?.response?.data?.message) {
       throw new Error(error.response.data.message);
     }
@@ -164,31 +144,11 @@ export const useUpdateAdmin = () => {
   });
 };
 
-// API call to delete an admin
-export const deleteAdminApi = async (
-  param: string | { id: string; userId?: string },
-) => {
-  const id = typeof param === 'string' ? param : param.id;
-  const userId = typeof param === 'object' ? param.userId : undefined;
-
+export const deleteAdminApi = async (id: string) => {
   try {
     const response = await api.delete(`/superAdmin/admin/${id}`);
     return response.data;
   } catch (error: any) {
-    // If FK constraint or error occurs and userId is available, try fallback endpoints with userId
-    if (userId && userId !== id) {
-      try {
-        const fallback1 = await api.delete(`/superAdmin/admin/${userId}`);
-        return fallback1.data;
-      } catch {
-        try {
-          const fallback2 = await api.delete(`/users/${id}`);
-          return fallback2.data;
-        } catch {
-          // ignore fallback failures and throw original
-        }
-      }
-    }
     if (error?.response?.data?.message) {
       throw new Error(error.response.data.message);
     }
