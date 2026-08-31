@@ -1,5 +1,5 @@
-import {api} from '@/utils/axios';
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import { api } from '@/utils/axios';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export interface ProfilePayload {
@@ -53,7 +53,7 @@ export const useUpdateProfile = () => {
     mutationFn: updateProfileApi,
     onSuccess: () => {
       toast.success('Profile updated successfully');
-      queryClient.invalidateQueries({queryKey: ['user-profile']});
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update profile');
@@ -62,7 +62,7 @@ export const useUpdateProfile = () => {
 };
 
 // API call to activate / submit key
-export const activateKeyApi = async (keyData: {key: string}) => {
+export const activateKeyApi = async (keyData: { key: string }) => {
   try {
     const response = await api.post('/admin/profile/expiry', keyData);
     return response.data;
@@ -83,7 +83,7 @@ export const useActivateKey = () => {
     mutationFn: activateKeyApi,
     onSuccess: (data) => {
       toast.success(data?.message || 'License key activated successfully!');
-      queryClient.invalidateQueries({queryKey: ['user-profile']});
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to activate key');

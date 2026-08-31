@@ -759,11 +759,7 @@ const AdminCreate: React.FC = () => {
     }
   };
 
-  const handleGenerateKey = () => {
-    const newKey = generateKey();
-    setFormData((prev) => ({...prev, key: newKey}));
-    toast.success('Offline access key generated!');
-  };
+
 
   const handleCopyKey = (keyVal?: string) => {
     const val = keyVal || formData.key;
@@ -822,72 +818,72 @@ const AdminCreate: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (!validateForm()) {
-      toast.error('Please fix all form validation errors');
-      return;
+  if (!validateForm()) {
+    toast.error('Please fix all form validation errors');
+    return;
+  }
+
+  // Format expiry date to YYYY-MM-DD HH:mm:ss if provided
+  let formattedExpiry = formData.expiryDate;
+  if (formattedExpiry && formattedExpiry.includes('T')) {
+    formattedExpiry = formattedExpiry.replace('T', ' ');
+    if (formattedExpiry.length === 16) {
+      formattedExpiry += ':00';
     }
+  }
 
-    // Format expiry date to YYYY-MM-DD HH:mm:ss if provided
-    let formattedExpiry = formData.expiryDate;
-    if (formattedExpiry && formattedExpiry.includes('T')) {
-      formattedExpiry = formattedExpiry.replace('T', ' ');
-      if (formattedExpiry.length === 16) {
-        formattedExpiry += ':00';
-      }
-    }
-
-    const payload: AdminPayload = {
-      fullname: formData.fullname.trim(),
-      shopName: formData.shopName.trim(),
-      email: formData.email.trim(),
-      username: formData.username.trim() || formData.phoneNumber.trim(),
-      phoneNumber: formData.phoneNumber.trim(),
-      secondaryPhoneNumber: formData.secondaryPhoneNumber.trim() || undefined,
-      pincode: formData.pincode.trim() || undefined,
-      city: formData.city.trim() || undefined,
-      district: formData.district.trim() || undefined,
-      state: formData.state.trim() || undefined,
-      address: formData.address.trim(),
-      accessType: formData.accessType.toUpperCase(),
-      amount: formData.amount
-        ? Number(formData.amount) || formData.amount
-        : undefined,
-      renewalAmount: formData.renewalAmount
-        ? Number(formData.renewalAmount) || formData.renewalAmount
-        : undefined,
-      expiryDate: formattedExpiry || undefined,
-      key: formData.accessType === 'OFFLINE' ? formData.key : '12345',
-      role: formData.role || 'ADMIN',
-      extendKey:
-        formData.extendKey && formData.extendKey.trim()
-          ? formData.extendKey.trim()
-          : null,
-      extendDays:
-        formData.extendDays !== '' &&
-        formData.extendDays !== null &&
-        formData.extendDays !== undefined
-          ? Number(formData.extendDays) || null
-          : null,
-    };
-
-    if (formData.password) {
-      payload.password = formData.password;
-    }
-
-    try {
-      if (editingAdmin) {
-        await updateAdmin.mutateAsync({id: editingAdmin.id, data: payload});
-      } else {
-        await createAdmin.mutateAsync(payload);
-      }
-      setIsModalOpen(false);
-    } catch (err: any) {
-      console.error('Submit Admin Error:', err);
-    }
+  const basePayload: AdminPayload = {
+    fullname: formData.fullname.trim(),
+    shopName: formData.shopName.trim(),
+    email: formData.email.trim(),
+    username: formData.username.trim() || formData.phoneNumber.trim(),
+    phoneNumber: formData.phoneNumber.trim(),
+    secondaryPhoneNumber: formData.secondaryPhoneNumber.trim() || undefined,
+    pincode: formData.pincode.trim() || undefined,
+    city: formData.city.trim() || undefined,
+    district: formData.district.trim() || undefined,
+    state: formData.state.trim() || undefined,
+    address: formData.address.trim(),
+    accessType: formData.accessType.toUpperCase(),
+    amount: formData.amount
+      ? Number(formData.amount) || formData.amount
+      : undefined,
+    renewalAmount: formData.renewalAmount
+      ? Number(formData.renewalAmount) || formData.renewalAmount
+      : undefined,
+    expiryDate: formattedExpiry || undefined,
+    key: formData.accessType === 'OFFLINE' ? formData.key : '12345',
+    role: formData.role || 'ADMIN',
   };
+
+  // Only include extend fields if accessType is OFFLINE and values are provided
+  if (formData.accessType === 'OFFLINE') {
+    if (formData.extendKey && formData.extendKey.trim()) {
+      basePayload.extendKey = formData.extendKey.trim();
+    }
+    if (formData.extendDays !== '' && formData.extendDays !== null && formData.extendDays !== undefined) {
+      basePayload.extendDays = Number(formData.extendDays) || null;
+    }
+  }
+
+  if (formData.password) {
+    basePayload.password = formData.password;
+  }
+
+  try {
+    if (editingAdmin) {
+      await updateAdmin.mutateAsync({id: editingAdmin.id, data: basePayload});
+    } else {
+      await createAdmin.mutateAsync(basePayload);
+    }
+    setIsModalOpen(false);
+  } catch (err: any) {
+    console.error('Submit Admin Error:', err);
+  }
+};
 
   // Table Columns Definition as requested
   const columns: Column<AdminItem>[] = [
@@ -1087,7 +1083,7 @@ const AdminCreate: React.FC = () => {
       key: 'renewalAmount',
       header: 'Renewal Charges',
       render: (item) => (
-        <span className="text-sm font-semibold text-[#785600] dark:text-amber-400">
+        <span className="text-sm font-semibold text-black dark:text-amber-400">
           {item.renewalAmount !== undefined &&
           item.renewalAmount !== null &&
           item.renewalAmount !== ''

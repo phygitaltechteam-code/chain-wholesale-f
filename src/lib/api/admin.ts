@@ -1,5 +1,5 @@
-import {api} from '@/utils/axios';
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import { api } from '@/utils/axios';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export interface AdminPayload {
@@ -57,18 +57,13 @@ export const getAdminByIdApi = async (id: string) => {
     const response = await api.get(`/superAdmin/admin/${id}`);
     return response.data?.data || response.data;
   } catch (error: any) {
-    try {
-      const fallback = await api.get(`/users/${id}`);
-      return fallback.data?.data || fallback.data;
-    } catch {
-      if (error?.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      }
-      if (error instanceof Error) {
-        throw new Error(error.message || 'Failed to fetch admin details');
-      }
-      throw error;
+    if (error?.response?.data?.message) {
+      throw new Error(error.response.data.message);
     }
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to fetch admin details');
+    }
+    throw error;
   }
 };
 
@@ -104,7 +99,7 @@ export const useCreateAdmin = () => {
     mutationFn: createAdminApi,
     onSuccess: () => {
       toast.success('Admin created successfully');
-      queryClient.invalidateQueries({queryKey: ['admins']});
+      queryClient.invalidateQueries({ queryKey: ['admins'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create admin');
@@ -112,33 +107,17 @@ export const useCreateAdmin = () => {
   });
 };
 
-// API call to update an admin
 export const updateAdminApi = async ({
   id,
-  userId,
   data,
 }: {
   id: string;
-  userId?: string;
   data: AdminPayload;
 }) => {
   try {
     const response = await api.put(`/superAdmin/admin/${id}`, data);
     return response.data;
   } catch (error: any) {
-    if (userId && userId !== id) {
-      try {
-        const fallback1 = await api.put(`/superAdmin/admin/${userId}`, data);
-        return fallback1.data;
-      } catch {
-        try {
-          const fallback2 = await api.put(`/users/${userId}`, data);
-          return fallback2.data;
-        } catch {
-          // ignore fallback failures and throw original
-        }
-      }
-    }
     if (error?.response?.data?.message) {
       throw new Error(error.response.data.message);
     }
@@ -156,7 +135,7 @@ export const useUpdateAdmin = () => {
     mutationFn: updateAdminApi,
     onSuccess: () => {
       toast.success('Admin updated successfully');
-      queryClient.invalidateQueries({queryKey: ['admins']});
+      queryClient.invalidateQueries({ queryKey: ['admins'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update admin');
@@ -164,31 +143,11 @@ export const useUpdateAdmin = () => {
   });
 };
 
-// API call to delete an admin
-export const deleteAdminApi = async (
-  param: string | {id: string; userId?: string},
-) => {
-  const id = typeof param === 'string' ? param : param.id;
-  const userId = typeof param === 'object' ? param.userId : undefined;
-
+export const deleteAdminApi = async (id: string) => {
   try {
     const response = await api.delete(`/superAdmin/admin/${id}`);
     return response.data;
   } catch (error: any) {
-    // If FK constraint or error occurs and userId is available, try fallback endpoints with userId
-    if (userId && userId !== id) {
-      try {
-        const fallback1 = await api.delete(`/superAdmin/admin/${userId}`);
-        return fallback1.data;
-      } catch {
-        try {
-          const fallback2 = await api.delete(`/users/${userId}`);
-          return fallback2.data;
-        } catch {
-          // ignore fallback failures and throw original error
-        }
-      }
-    }
     if (error?.response?.data?.message) {
       throw new Error(error.response.data.message);
     }
@@ -206,7 +165,7 @@ export const useDeleteAdmin = () => {
     mutationFn: deleteAdminApi,
     onSuccess: () => {
       toast.success('Admin deleted successfully');
-      queryClient.invalidateQueries({queryKey: ['admins']});
+      queryClient.invalidateQueries({ queryKey: ['admins'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete admin');
