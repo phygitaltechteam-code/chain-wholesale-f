@@ -18,6 +18,7 @@ import {
   useGetSolderingHistory,
   useSubmitSoldering,
   useCreateSoldering,
+  getBackendErrorMessage,
 } from '@/lib/api/soldering';
 import { useGetItems, Item } from '@/lib/api/items';
 import { useGetSizes } from '@/lib/api/sizes';
@@ -111,15 +112,7 @@ const SolderingDept: React.FC = () => {
       await refetch();
     } catch (error: any) {
       console.error('Error in melting:', error);
-      const errorMessage =
-        (Array.isArray(error?.response?.data?.message)
-          ? error.response.data.message.join(', ')
-          : error?.response?.data?.message) ||
-        error?.response?.data?.error ||
-        error?.data?.message ||
-        error?.message ||
-        'Failed to process melting';
-      toast.error(errorMessage);
+      toast.error(getBackendErrorMessage(error, 'Failed to process melting'));
     } finally {
       setMeltingLoadingIds((prev) => {
         const newSet = new Set(prev);
@@ -152,16 +145,44 @@ const SolderingDept: React.FC = () => {
           'Box';
         const p = Number(item.purity || 0);
         const wt = Number(item.tarWeight || item.chainWeight || item.weight || 0);
+        const truncate3Dec = (val: number): number => {
+          if (!val || isNaN(val) || !Number.isFinite(val)) return 0;
+          const str = val.toString();
+          if (str.includes('.')) {
+            const [intPart, decPart] = str.split('.');
+            return Number(`${intPart}.${decPart.slice(0, 3)}`);
+          }
+          return val;
+        };
         return {
           id: item.id,
           sizeId: item.sizeId || item.size?.id,
           size: sizeLabel,
           purity: p,
-          totalWeight: Math.round(wt * 1000) / 1000,
+          totalWeight: truncate3Dec(wt),
         };
       })
       .filter((c: any) => c.totalWeight > 0);
   }, [boxStockList]);
+
+  // Unique available sizes present in the Box Cards
+  const availableSizesInCards = React.useMemo(() => {
+    const cardSizeIds = new Set<string>();
+    const cardSizeNames = new Set<string>();
+
+    boxCards.forEach((c: any) => {
+      if (c.sizeId) cardSizeIds.add(String(c.sizeId));
+      if (c.size) cardSizeNames.add(String(c.size).trim().toLowerCase());
+    });
+
+    const filtered = sizes.filter(
+      (s: any) =>
+        cardSizeIds.has(String(s.id)) ||
+        cardSizeNames.has(String(s.size).trim().toLowerCase()),
+    );
+
+    return filtered.length > 0 ? filtered : sizes;
+  }, [boxCards, sizes]);
 
   // Unique available purities from Box Stock (or standard defaults)
   const availablePurities = React.useMemo(() => {
@@ -226,7 +247,16 @@ const SolderingDept: React.FC = () => {
         const wt = Number(b.tarWeight || b.chainWeight || b.weight || 0);
         return sum + (isNaN(wt) ? 0 : wt);
       }, 0);
-      return Math.round(total * 1000) / 1000;
+      const truncate3Dec = (val: number): number => {
+        if (!val || isNaN(val) || !Number.isFinite(val)) return 0;
+        const str = val.toString();
+        if (str.includes('.')) {
+          const [intPart, decPart] = str.split('.');
+          return Number(`${intPart}.${decPart.slice(0, 3)}`);
+        }
+        return val;
+      };
+      return truncate3Dec(total);
     }
 
     if (Array.isArray(boxData) && boxData.length > 0) {
@@ -243,7 +273,7 @@ const SolderingDept: React.FC = () => {
         const wt = Number(b.chainWeight || 0);
         return sum + (isNaN(wt) ? 0 : wt);
       }, 0);
-      return Math.round(total * 1000) / 1000;
+      return truncate3Dec(total);
     }
 
     if (Array.isArray(stockData) && stockData.length > 0) {
@@ -260,7 +290,7 @@ const SolderingDept: React.FC = () => {
         const wt = Number(s.weight ?? s.stockQty ?? 0);
         return sum + (isNaN(wt) ? 0 : wt);
       }, 0);
-      return Math.round(total * 1000) / 1000;
+      return truncate3Dec(total);
     }
 
     return 0;
@@ -301,18 +331,28 @@ const SolderingDept: React.FC = () => {
           const sizeName = soldering.size?.size || soldering.sizeId || 'N/A';
           const chainWeight = soldering.chainWeight || 0;
           const purity = soldering.purity;
+          const truncate3Dec = (val: number): number => {
+            if (!val || isNaN(val)) return 0;
+            const str = val.toString();
+            if (str.includes('.')) {
+              const [intPart, decPart] = str.split('.');
+              return Number(`${intPart}.${decPart.slice(0, 3)}`);
+            }
+            return val;
+          };
+
           const fine =
             soldering.fine !== undefined && soldering.fine !== null
               ? soldering.fine
-              : Math.round(((chainWeight * (parseFloat(purity) || 0)) / 100) * 1000) / 1000;
+              : truncate3Dec((chainWeight * (parseFloat(purity) || 0)) / 100);
           const chainReceived = soldering.chainReceived || 0;
           const powder =
             chainReceived > 0
-              ? Math.max(0, Math.round((chainReceived - chainWeight) * 1000) / 1000)
+              ? Math.max(0, truncate3Dec(chainReceived - chainWeight))
               : soldering.powder || 0;
           const increase =
             powder > 0 && chainReceived > 0
-              ? Math.round(((powder / chainReceived) * 100) * 1000) / 1000
+              ? truncate3Dec((powder / chainReceived) * 100)
               : soldering.increase || 0;
 
           const isSaved =
@@ -427,9 +467,19 @@ const SolderingDept: React.FC = () => {
               }
 
               // Auto calculate: Powder Given = Chain Received - Chain Given
+              const truncate3Dec = (val: number): number => {
+                if (!val || isNaN(val)) return 0;
+                const str = val.toString();
+                if (str.includes('.')) {
+                  const [intPart, decPart] = str.split('.');
+                  return Number(`${intPart}.${decPart.slice(0, 3)}`);
+                }
+                return val;
+              };
+
               const autoPowder = Math.max(
                 0,
-                Math.round((updated.chainReceived - entry.chainWeight) * 1000) / 1000,
+                truncate3Dec(updated.chainReceived - entry.chainWeight),
               );
               updated.powder = autoPowder;
               updated.powderRaw = autoPowder > 0 ? autoPowder.toString() : '0';
@@ -446,8 +496,16 @@ const SolderingDept: React.FC = () => {
 
             // Auto calculate: Increase % = (Powder Given / Chain Received) * 100
             if (updated.powder > 0 && updated.chainReceived > 0) {
-              updated.increase =
-                Math.round(((updated.powder / updated.chainReceived) * 100) * 1000) / 1000;
+              const truncate3Dec = (val: number): number => {
+                if (!val || isNaN(val) || !Number.isFinite(val)) return 0;
+                const str = val.toString();
+                if (str.includes('.')) {
+                  const [intPart, decPart] = str.split('.');
+                  return Number(`${intPart}.${decPart.slice(0, 3)}`);
+                }
+                return val;
+              };
+              updated.increase = truncate3Dec((updated.powder / updated.chainReceived) * 100);
             } else {
               updated.increase = 0;
             }
@@ -467,10 +525,10 @@ const SolderingDept: React.FC = () => {
     (index: number, action: 'joint' | 'cutting') => {
       const entry = solderingEntries[index];
 
-      if (!entry.chainReceived || entry.chainReceived <= 0) {
-        toast.error('Please enter a valid chain received weight');
-        return;
-      }
+      // if (!entry.chainReceived || entry.chainReceived <= 0) {
+      //   toast.error('Please enter a valid chain received weight');
+      //   return;
+      // }
 
       setSaveIndex(index);
       setActionType(action);
@@ -520,14 +578,7 @@ const SolderingDept: React.FC = () => {
       await refetch();
     } catch (error: any) {
       console.error('Error saving soldering:', error);
-      const errorMessage =
-        (Array.isArray(error?.response?.data?.message)
-          ? error.response.data.message.join(', ')
-          : error?.response?.data?.message) ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Failed to save soldering entry';
-      toast.error(errorMessage);
+      toast.error(getBackendErrorMessage(error, 'Failed to save soldering entry'));
 
       setIsLoading(false);
       setShowConfirmModal(false);
@@ -548,20 +599,7 @@ const SolderingDept: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // First save the soldering entry
-      await submitSoldering.mutateAsync({
-        id: entry.id,
-        data: {
-          chainReceived: entry.chainReceived,
-          powder: entry.powder,
-          increase: entry.increase,
-          scrap: entry.scrap,
-          purity: entry.purity,
-          isCompleted: true,
-        },
-      });
-
-      // Then submit to Cutting API
+      // Submit directly to Cutting API (PUT /admin/soldering/cutting/${id})
       await submitCutting.mutateAsync({
         id: entry.id,
         data: {
@@ -591,21 +629,14 @@ const SolderingDept: React.FC = () => {
       await refetch();
     } catch (error: any) {
       console.error('Error saving soldering:', error);
-      const errorMessage =
-        (Array.isArray(error?.response?.data?.message)
-          ? error.response.data.message.join(', ')
-          : error?.response?.data?.message) ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Failed to save soldering entry';
-      toast.error(errorMessage);
+      toast.error(getBackendErrorMessage(error, 'Failed to save soldering entry'));
 
       setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
       setActionType(null);
     }
-  }, [saveIndex, solderingEntries, submitSoldering, submitCutting, refetch]);
+  }, [saveIndex, solderingEntries, submitCutting, refetch]);
 
   const handleCardChange = (
     cardIndex: number,
@@ -624,9 +655,7 @@ const SolderingDept: React.FC = () => {
     );
   };
 
-  const handleAddCard = () => {
-    setModalCards((prev) => [...prev, createNewSolderingCard()]);
-  };
+
 
   const handleRemoveCard = (cardIndex: number) => {
     setModalCards((prev) => {
@@ -660,7 +689,16 @@ const SolderingDept: React.FC = () => {
 
     const chainWeightVal = parseFloat(card.chainWeight) || 0;
     const purityVal = parseFloat(card.purity) || 0;
-    const fineVal = Math.round(((chainWeightVal * purityVal) / 100) * 1000) / 1000;
+    const truncate3Dec = (val: number): number => {
+      if (!val || isNaN(val)) return 0;
+      const str = val.toString();
+      if (str.includes('.')) {
+        const [intPart, decPart] = str.split('.');
+        return Number(`${intPart}.${decPart.slice(0, 3)}`);
+      }
+      return val;
+    };
+    const fineVal = truncate3Dec((chainWeightVal * purityVal) / 100);
 
     if (chainWeightVal <= 0) {
       toast.error(`Please enter a valid Chain Weight`);
@@ -693,9 +731,9 @@ const SolderingDept: React.FC = () => {
         fine: fineVal,
         chainWeight: chainWeightVal,
       };
-      
+
       await createSoldering.mutateAsync(payload);
-      toast.success(`Soldering Item added successfully`);
+      // toast.success(`Soldering Item added successfully`);
 
       setModalCards((prev) => {
         const next = prev.filter((_, idx) => idx !== cardIndex);
@@ -710,15 +748,7 @@ const SolderingDept: React.FC = () => {
       await refetch();
     } catch (error: any) {
       console.error('Error saving soldering card:', error);
-      const backendMessage =
-        (Array.isArray(error?.response?.data?.message)
-          ? error.response.data.message.join(', ')
-          : error?.response?.data?.message) ||
-        error?.response?.data?.error ||
-        error?.data?.message ||
-        error?.message ||
-        'Failed to save soldering entry';
-      toast.error(backendMessage);
+      toast.error(getBackendErrorMessage(error, 'Failed to save soldering entry'));
       setModalCards((prev) =>
         prev.map((c, idx) => (idx === cardIndex ? { ...c, isSaving: false } : c)),
       );
@@ -773,12 +803,12 @@ const SolderingDept: React.FC = () => {
             {boxCards.map((card, idx) => (
               <div
                 key={card.id || idx}
-                className="flex min-w-[90px] flex-col rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+                className="flex min-w-[110px] flex-col rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-900"
               >
-                <span className="font-mono text-[11px] font-bold text-black dark:text-white">
+                <span className="font-mono text-sm font-bold text-black dark:text-white">
                   {card.size} ({card.purity}%)
                 </span>
-                <span className="font-mono text-[11px] font-bold text-black dark:text-white">
+                <span className="font-mono text-base font-bold text-black dark:text-white">
                   {formatNumberDisplay(card.totalWeight)} G
                 </span>
               </div>
@@ -930,9 +960,8 @@ const SolderingDept: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
           <div
-            className={`w-full ${
-              modalCards.length > 1 ? 'max-w-4xl' : 'max-w-lg'
-            } flex max-h-[90vh] flex-col rounded-2xl bg-white shadow-2xl transition-all dark:bg-slate-900 border border-[#d3c4af]/30 dark:border-slate-700`}
+            className={`w-full ${modalCards.length > 1 ? 'max-w-4xl' : 'max-w-lg'
+              } flex max-h-[90vh] flex-col rounded-2xl bg-white shadow-2xl transition-all dark:bg-slate-900 border border-[#d3c4af]/30 dark:border-slate-700`}
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-[#d3c4af]/20 p-4 dark:border-slate-800">
@@ -996,7 +1025,7 @@ const SolderingDept: React.FC = () => {
                               className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                             >
                               <option value="">Select</option>
-                              {sizes.map((size) => (
+                              {availableSizesInCards.map((size) => (
                                 <option key={size.id} value={size.id}>
                                   {size.size || JSON.stringify(size)}
                                 </option>

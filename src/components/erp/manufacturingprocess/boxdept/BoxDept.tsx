@@ -156,7 +156,10 @@ const BoxDept: React.FC = () => {
                 const chainWeight = box.chainWeight || 0;
                 const tarWeight = box.tarWeight || 0;
                 const scrap = box.scrap || 0;
-                const loss = tarWeight - chainWeight - scrap;
+                const loss = (chainWeight > 0 || scrap > 0)
+                    ? Math.max(0, Math.round((tarWeight - chainWeight - scrap) * 1000) / 1000)
+                    : 0;
+
 
                 const isSaved =
                     box.isCompleted === true &&
@@ -379,10 +382,15 @@ const BoxDept: React.FC = () => {
                                 updated.purity = isNaN(numValue) ? 0 : numValue;
                             }
                         }
-                        updated.loss = Math.max(
-                            0,
-                            Math.round((entry.tarWeight - updated.chainWeight - updated.scrap) * 1000) / 1000,
-                        );
+                        if (updated.chainWeight > 0 || updated.scrap > 0) {
+                            updated.loss = Math.max(
+                                0,
+                                Math.round((entry.tarWeight - updated.chainWeight - updated.scrap) * 1000) / 1000,
+                            );
+                        } else {
+                            updated.loss = 0;
+                        }
+
 
                         updated.isDirty = true;
                         return updated;
@@ -624,12 +632,12 @@ const BoxDept: React.FC = () => {
                         {tarCards.map((card, idx) => (
                             <div
                                 key={idx}
-                                className="flex min-w-[90px] flex-col rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+                                className="flex min-w-[110px] flex-col rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-900"
                             >
-                                <span className="font-mono text-[11px] font-bold text-black dark:text-white">
+                                <span className="font-mono text-sm font-bold text-black dark:text-white">
                                     Tar ({card.purity}%)
                                 </span>
-                                <span className="font-mono text-[11px] font-bold text-black dark:text-white">
+                                <span className="font-mono text-base font-bold text-black dark:text-white">
                                     {formatNumberDisplay(card.totalWeight)} G
                                 </span>
                             </div>

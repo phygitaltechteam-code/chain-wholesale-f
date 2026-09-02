@@ -52,7 +52,7 @@ const HistoryDept: React.FC<HistoryDeptProps> = ({
       header: 'Gross Wt (G)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.grossWt || item.weight)} G
+          {formatNumberDisplay(item.grossWeight ?? item.grossWt ?? item.weight)} G
         </span>
       ),
     },
@@ -70,7 +70,7 @@ const HistoryDept: React.FC<HistoryDeptProps> = ({
       header: 'Expected Fine (G)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.expectedFine)} G
+          {formatNumberDisplay(item.expected ?? item.expectedFine)} G
         </span>
       ),
     },
@@ -88,8 +88,9 @@ const HistoryDept: React.FC<HistoryDeptProps> = ({
       header: 'Loss (G)',
       render: (item) => {
         const expected =
-          item.expectedFine ||
-          calculateExpectedFine(item.grossWt || item.weight, item.purity);
+          item.expected ??
+          item.expectedFine ??
+          calculateExpectedFine(item.grossWeight ?? item.grossWt ?? item.weight, item.purity);
         const fine = item.fineWeight || 0;
         const loss =
           item.loss !== undefined && item.loss !== null

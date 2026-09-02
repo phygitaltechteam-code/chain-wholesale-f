@@ -501,7 +501,7 @@ export const getJointColumns = (
           <span className="text-sm text-[#1a1c1b] dark:text-white">
             {datePart}
           </span>
-          <span className="text-sm text-[#4f4535] dark:text-slate-400">
+         <span className="text-sm text-[#1a1c1b] dark:text-white">
             {timePart}
           </span>
         </div>

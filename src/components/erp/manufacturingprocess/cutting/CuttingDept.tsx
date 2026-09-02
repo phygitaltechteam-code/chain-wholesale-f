@@ -6,6 +6,9 @@ import {
   Printer,
   Calendar,
   Flame,
+  Box,
+  Layers,
+  X,
 } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
@@ -20,8 +23,7 @@ import {
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
-import { useAddMelting } from '@/lib/api/tar';
-import { useAddCuttingMelting } from '@/lib/api/processmelting';
+import { useAddCuttingMelting, useGetCuttingScrap, getBackendErrorMessage, useAddCuttingScrap } from '@/lib/api/processmelting';
 
 import {
   CuttingEntry,
@@ -32,8 +34,10 @@ import {
   printCuttingHistory,
   toNumber,
   formatNumberDisplay,
+  formatNoTrailingZeros3Dec,
 } from './cuttingUtils';
 import HistoryCutting from './HistoryCutting';
+import MeltingPopup from './MeltingPopup';
 
 const CuttingDept: React.FC = () => {
   const getpdfheaderdata = useGetHeader();
@@ -46,6 +50,15 @@ const CuttingDept: React.FC = () => {
   const [actionType, setActionType] = useState<'stock' | 'kunda' | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [meltingLoadingIds, setMeltingLoadingIds] = useState<Set<string>>(new Set());
+
+  // Scrap selection and modal states
+  const [selectedScrapIds, setSelectedScrapIds] = useState<Set<string>>(new Set());
+  const [isScrapModalOpen, setIsScrapModalOpen] = useState(false);
+  const [scrapModalItems, setScrapModalItems] = useState<
+    { id: string; purity: number; availableWeight: number; sendWeight: string }[]
+  >([]);
+  const [isMeltingSubmitting, setIsMeltingSubmitting] = useState(false);
+
   // Weighing Scale table focus hook
   const { getScaleProps } = useTableScaleFocus<'chainReceived' | 'scrap'>(
     (index, field, weight) => {
@@ -56,7 +69,7 @@ const CuttingDept: React.FC = () => {
   // Helper function to get week start (Monday 00:00) and end (Sunday 23:59:59)
   const getDefaultWeekRange = () => {
     const now = new Date();
-    const day = now.getDay(); // 0 = Sun, 1 = Mon, ...
+    const day = now.getDay();
     const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(now);
     monday.setDate(diffToMonday);
@@ -91,8 +104,134 @@ const CuttingDept: React.FC = () => {
   const submitCutting = useSubmitCutting();
   const submitMoveKunda = useSubmitMoveKunda();
   const submitMelting = useAddCuttingMelting();
+  const { data: cuttingScrapData, refetch: refetchCuttingScrap } = useGetCuttingScrap();
+  const receivedscrap = useAddCuttingScrap();
+
+  const scrapList = React.useMemo(() => {
+    const list = Array.isArray(cuttingScrapData?.data)
+      ? cuttingScrapData.data
+      : Array.isArray(cuttingScrapData)
+        ? cuttingScrapData
+        : [];
+    return list;
+  }, [cuttingScrapData]);
+
+  // Toggle selection of a scrap card (clicking card ONLY toggles selection border, NO popup opens)
+  const toggleSelectScrapCard = (id: string) => {
+    setSelectedScrapIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  // Open Scrap Modal ONLY when clicking "Received Scrap" button
+  const openScrapModal = () => {
+    if (!scrapList || scrapList.length === 0) {
+      toast.error('No cutting scrap available');
+      return;
+    }
+
+    if (selectedScrapIds.size === 0) {
+      toast.error('Please select at least one scrap card');
+      return;
+    }
+
+    const itemsToLoad = scrapList.filter((item: any) => selectedScrapIds.has(item.id));
+
+    setScrapModalItems(
+      itemsToLoad.map((item: any) => ({
+        id: item.id,
+        purity: Number(item.purity) || 0,
+        availableWeight: Number(item.weight) || 0,
+        sendWeight: '',
+      })),
+    );
+
+    setIsScrapModalOpen(true);
+  };
+
+  const handleModalWeightChange = (index: number, val: string) => {
+    setScrapModalItems((prev) =>
+      prev.map((item, idx) => (idx === index ? { ...item, sendWeight: val } : item)),
+    );
+  };
+
+  const scrapCalculations = React.useMemo(() => {
+    let totalEnteredWeight = 0;
+    let totalAvailableWeight = 0;
+    let weightedPuritySum = 0;
+    let activeWeightSum = 0;
+
+    const itemBreakdown = scrapModalItems.map((item) => {
+      const entered = parseFloat(item.sendWeight) || 0;
+      const avail = item.availableWeight || 0;
+      const p = item.purity || 0;
+
+      // Use typed sendWeight if > 0, otherwise use availableWeight for weighted average calculation
+      const effectiveWeight = entered > 0 ? entered : avail;
+
+      totalEnteredWeight += entered;
+      totalAvailableWeight += avail;
+      weightedPuritySum += effectiveWeight * p;
+      activeWeightSum += effectiveWeight;
+
+      return {
+        ...item,
+        entered,
+        avail,
+        effectiveWeight,
+        p,
+      };
+    });
+
+    const finalPurity = activeWeightSum > 0 ? weightedPuritySum / activeWeightSum : 0;
+
+    return {
+      itemBreakdown,
+      totalEnteredWeight,
+      totalAvailableWeight,
+      finalPurity,
+    };
+  }, [scrapModalItems]);
+
+  const handleProcessMelting = async () => {
+    const itemsToProcess = scrapCalculations.itemBreakdown.filter((item) => item.entered > 0);
+
+    if (itemsToProcess.length === 0) {
+      toast.error('Please enter weight to melt');
+      return;
+    }
+
+    try {
+      await receivedscrap.mutateAsync({
+        data: {
+          items: itemsToProcess.map((item) => ({
+            cuttingId: item.id,
+            purity: item.p,
+            weight: item.entered
+          })),
+
+          avgPurity: Number(scrapCalculations.finalPurity.toFixed(3)),
+          avgWeight: Number(scrapCalculations.totalEnteredWeight.toFixed(3)),
+
+        },
+      });
+
+      setIsScrapModalOpen(false);
+      setSelectedScrapIds(new Set());
+      await refetchCuttingScrap();
+      await refetch();
+    } catch (error: any) {
+      console.error('Error in melting scrap:', error);
+    }
+  };
+
   const handleMelting = async (entry: CuttingEntry) => {
-    // Add this entry ID to loading set
     setMeltingLoadingIds((prev) => new Set(prev).add(entry.id));
 
     try {
@@ -100,25 +239,16 @@ const CuttingDept: React.FC = () => {
         id: entry.id,
         data: {
           purity: entry.purity || 0,
-          chainWeight: entry.chainGiven || entry.chainReceived || 0,
+          chainReceived: entry.chainReceived || 0,
           cuttingId: entry.id,
-
         },
       });
+      await refetchCuttingScrap();
       await refetch();
     } catch (error: any) {
       console.error('Error in melting:', error);
-      const errorMessage =
-        (Array.isArray(error?.response?.data?.message)
-          ? error.response.data.message.join(', ')
-          : error?.response?.data?.message) ||
-        error?.response?.data?.error ||
-        error?.data?.message ||
-        error?.message ||
-        'Failed to process melting';
-      toast.error(errorMessage);
+      toast.error(getBackendErrorMessage(error, 'Failed to process melting'));
     } finally {
-      // Remove this entry ID from loading set
       setMeltingLoadingIds((prev) => {
         const newSet = new Set(prev);
         newSet.delete(entry.id);
@@ -126,40 +256,44 @@ const CuttingDept: React.FC = () => {
       });
     }
   };
+
   // Load data from API
   useEffect(() => {
     if (cuttingLoading) {
       return;
     }
 
-    if (error) {
-      console.error('Error fetching cutting data:', error);
-      setCuttingEntries([]);
-      return;
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
     }
 
-    if (cuttingData && cuttingData.length > 0) {
+    if (cuttingData.length > 0) {
       const entries: CuttingEntry[] = cuttingData.map(
         (cutting: any, index: number) => {
           const itemName = cutting.item?.name || cutting.itemId || 'N/A';
           const sizeName = cutting.size?.size || cutting.sizeId || 'N/A';
 
+          const chainGiven =
+            cutting.chainWeight !== undefined && cutting.chainWeight !== null
+              ? cutting.chainWeight
+              : (cutting.chainGiven || 0);
+          const chainReceived = cutting.chainReceived || 0;
+          const scrap = cutting.scrap || 0;
+
           const isSaved =
             cutting.isCompleted === true &&
             cutting.chainReceived !== null &&
-            cutting.chainReceived !== undefined &&
-            cutting.purity !== null &&
-            cutting.purity !== undefined;
+            cutting.chainReceived !== undefined;
 
-          const chainGiven = cutting.chainWeight || cutting.chainGiven || 0;
-          const chainReceived = isSaved ? cutting.chainReceived || 0 : 0;
-          const scrap = isSaved ? cutting.scrap || 0 : 0;
-          const loss =
-            isSaved && chainReceived > 0
-              ? cutting.loss !== undefined && cutting.loss !== null
-                ? cutting.loss
-                : calculateLoss(chainGiven, chainReceived, scrap)
-              : 0;
+          let calculatedLoss = 0;
+          if (
+            isSaved ||
+            (cutting.chainReceived !== null &&
+              cutting.chainReceived !== undefined &&
+              cutting.chainReceived > 0)
+          ) {
+            calculatedLoss = calculateLoss(chainGiven, chainReceived, scrap);
+          }
 
           return {
             id: cutting.id,
@@ -174,20 +308,25 @@ const CuttingDept: React.FC = () => {
             }),
             item: itemName,
             size: sizeName,
-            purity: cutting.purity || 0,
+            purity: cutting.purity || '',
+            chainWeight: chainGiven,
             chainGiven: chainGiven,
             chainReceived: chainReceived,
             scrap: scrap,
-            loss: loss,
+            loss: calculatedLoss,
             isEditing: !isSaved,
             isSaved: isSaved,
-            chainGivenRaw: chainGiven > 0 ? chainGiven.toString() : '',
-            chainReceivedRaw:
-              isSaved && cutting.chainReceived
-                ? cutting.chainReceived.toString()
+            chainGivenRaw: cutting.chainGiven
+              ? cutting.chainGiven.toString()
+              : '',
+            chainReceivedRaw: cutting.chainReceived
+              ? cutting.chainReceived.toString()
+              : '',
+            scrapRaw: cutting.scrap ? cutting.scrap.toString() : '',
+            purityRaw:
+              cutting.purity !== null && cutting.purity !== undefined
+                ? cutting.purity.toString()
                 : '',
-            scrapRaw: isSaved && cutting.scrap ? cutting.scrap.toString() : '',
-            purityRaw: cutting.purity ? cutting.purity.toString() : '',
             itemId: cutting.itemId,
             sizeId: cutting.sizeId,
             isCompleted: cutting.isCompleted || false,
@@ -199,52 +338,40 @@ const CuttingDept: React.FC = () => {
           };
         },
       );
+
       setCuttingEntries(entries);
     } else {
       setCuttingEntries([]);
     }
-  }, [cuttingData, cuttingLoading, error]);
+  }, [cuttingData, cuttingLoading]);
 
-  // Filter history by selected From-To date range.
+  // Filter history by date range
   const getFilteredHistory = () => {
-    let filtered = cuttingHistory;
+    if (!dateRange || dateRange.length === 0) return cuttingHistory;
 
-    if (dateRange && dateRange.length > 0) {
-      if (dateRange[0]) {
-        const from = new Date(dateRange[0]);
-        from.setHours(0, 0, 0, 0);
-        filtered = filtered.filter((item: any) => {
-          if (!item?.createdAt) return false;
-          const itemDate = new Date(item.createdAt);
-          if (Number.isNaN(itemDate.getTime())) return false;
-          return itemDate >= from;
-        });
-      }
-      if (dateRange[1]) {
-        const to = new Date(dateRange[1]);
-        to.setHours(23, 59, 59, 999);
-        filtered = filtered.filter((item: any) => {
-          if (!item?.createdAt) return false;
-          const itemDate = new Date(item.createdAt);
-          if (Number.isNaN(itemDate.getTime())) return false;
-          return itemDate <= to;
-        });
-      }
-    }
+    const [from, to] = dateRange;
 
-    return filtered;
+    return cuttingHistory.filter((item: any) => {
+      if (!item.createdAt) return false;
+      const itemDate = new Date(item.createdAt);
+
+      if (from && to) {
+        return itemDate >= from && itemDate <= to;
+      }
+      if (from) {
+        return itemDate >= from;
+      }
+      if (to) {
+        return itemDate <= to;
+      }
+
+      return true;
+    });
   };
 
-  // Calculate history totals
-  const filteredHistory = getFilteredHistory();
-  const historyTotals = filteredHistory.reduce(
+  const totals = cuttingEntries.reduce(
     (
-      acc: {
-        totalGiven: number;
-        totalReceived: number;
-        totalScrap: number;
-        totalLoss: number;
-      },
+      acc,
       item: any,
     ) => ({
       totalGiven: acc.totalGiven + toNumber(item?.chainWeight),
@@ -262,7 +389,6 @@ const CuttingDept: React.FC = () => {
       field: 'chainGiven' | 'chainReceived' | 'scrap' | 'purity',
       value: string,
     ) => {
-      // Show Action column as soon as the user edits any input
       setHasEditedRow(true);
 
       setCuttingEntries((prev) =>
@@ -323,7 +449,6 @@ const CuttingDept: React.FC = () => {
               updated.loss = 0;
             }
 
-            // Mark row as dirty so only this row shows the action button
             updated.isDirty = true;
             return updated;
           }
@@ -349,11 +474,6 @@ const CuttingDept: React.FC = () => {
         return;
       }
 
-      if (!entry.purity || entry.purity < 0 || entry.purity > 100) {
-        toast.error('Please enter a valid purity percentage (1-100)');
-        return;
-      }
-
       setSaveIndex(index);
       setActionType(target);
       setShowConfirmModal(true);
@@ -361,9 +481,9 @@ const CuttingDept: React.FC = () => {
     [cuttingEntries],
   );
 
-  // Confirm and save for Stock
-  const confirmSaveStock = useCallback(async () => {
-    if (saveIndex === null) return;
+  // Confirm and save
+  const confirmSave = useCallback(async () => {
+    if (saveIndex === null || !actionType) return;
 
     const index = saveIndex;
     const entry = cuttingEntries[index];
@@ -371,17 +491,29 @@ const CuttingDept: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await submitCutting.mutateAsync({
-        id: entry.id,
-        data: {
-          chainGiven: entry.chainGiven,
-          chainReceived: entry.chainReceived,
-          scrap: entry.scrap,
-          purity: entry.purity,
-          loss: entry.loss,
-          isCompleted: true,
-        },
-      });
+      if (actionType === 'stock') {
+        await submitCutting.mutateAsync({
+          id: entry.id,
+          data: {
+            chainGiven: entry.chainGiven,
+            chainReceived: entry.chainReceived,
+            scrap: entry.scrap,
+            purity: entry.purity,
+            isCompleted: true,
+          },
+        });
+      } else if (actionType === 'kunda') {
+        await submitMoveKunda.mutateAsync({
+          id: entry.id,
+          data: {
+            chainGiven: entry.chainGiven,
+            chainReceived: entry.chainReceived,
+            scrap: entry.scrap,
+            purity: entry.purity,
+            isCompleted: true,
+          },
+        });
+      }
 
       setCuttingEntries((prev) =>
         prev.map((s, i) =>
@@ -391,107 +523,37 @@ const CuttingDept: React.FC = () => {
         ),
       );
 
-      setIsLoading(false);
+      setHasEditedRow(false);
+      setIsLoading(true);
       setShowConfirmModal(false);
       setSaveIndex(null);
       setActionType(null);
-      setHasEditedRow(false);
-      await refetch();
 
-      toast.success('Cutting entry saved to Stock successfully!');
-      // navigate({
-      //   to: '/Stocks/stockpage',
-      // });
+      await refetch();
     } catch (error: any) {
-      console.error('Error saving cutting to Stock:', error);
-      const errorMessage =
-        (Array.isArray(error?.response?.data?.message)
-          ? error.response.data.message.join(', ')
-          : error?.response?.data?.message) ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Failed to save cutting entry';
-      toast.error(errorMessage);
+      console.error('Error saving cutting:', error);
+      toast.error(getBackendErrorMessage(error, 'Failed to save cutting entry'));
+
       setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
       setActionType(null);
     }
-  }, [saveIndex, cuttingEntries, submitCutting, navigate, refetch]);
+  }, [saveIndex, actionType, cuttingEntries, submitCutting, submitMoveKunda, refetch]);
 
-  // Confirm and save for S Kunda
-  const confirmSaveKunda = useCallback(async () => {
-    if (saveIndex === null) return;
+  const isSubmitting = submitCutting.isPending || submitMoveKunda.isPending;
 
-    const index = saveIndex;
-    const entry = cuttingEntries[index];
+  const columns = getCuttingColumns({
+    getScaleProps,
+    handleInlineChange,
+    handleSaveClick,
+    handleMelting,
+    isLoading,
+    isSubmitting,
+    submitMoveKundaIsPending: submitMoveKunda.isPending,
+    meltingLoadingIds,
+  });
 
-    setIsLoading(true);
-
-    try {
-      await submitMoveKunda.mutateAsync({
-        id: entry.id,
-        data: {
-          chainGiven: entry.chainGiven,
-          chainReceived: entry.chainReceived,
-          scrap: entry.scrap,
-          purity: entry.purity,
-          loss: entry.loss,
-          isCompleted: true,
-        },
-      });
-
-      setCuttingEntries((prev) =>
-        prev.map((s, i) =>
-          i === index
-            ? { ...s, isEditing: false, isSaved: true, isCompleted: true }
-            : s,
-        ),
-      );
-
-      setIsLoading(false);
-      setShowConfirmModal(false);
-      setSaveIndex(null);
-      setActionType(null);
-      setHasEditedRow(false);
-      await refetch();
-
-      toast.success('Cutting entry moved to S Kunda successfully!');
-      // navigate({
-      //   to: '/manufacturingprocess/process',
-      //   state: { selectedTab: 'kunda' },
-      // });
-    } catch (error: any) {
-      console.error('Error moving cutting entry to S Kunda:', error);
-      const errorMessage =
-        (Array.isArray(error?.response?.data?.message)
-          ? error.response.data.message.join(', ')
-          : error?.response?.data?.message) ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Failed to move to S Kunda';
-      toast.error(errorMessage);
-      setIsLoading(false);
-      setShowConfirmModal(false);
-      setSaveIndex(null);
-      setActionType(null);
-    }
-  }, [saveIndex, cuttingEntries, submitMoveKunda, navigate, refetch]);
-
-
-  const isSubmitting = submitCutting.isPending;
-  const submitMoveKundaIsPending = submitMoveKunda.isPending;
-
-  const columns = getCuttingColumns(
-      getScaleProps,
-      handleInlineChange,
-      handleSaveClick,
-      handleMelting,
-      isLoading,
-      isSubmitting,
-      submitMoveKundaIsPending,
-      meltingLoadingIds
-  );
   const toggleHistory = () => {
     if (showHistory) {
       setShowHistory(false);
@@ -504,6 +566,56 @@ const CuttingDept: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4">
+
+      {scrapList.length > 0 && !showHistory && (
+        <div className="w-full">
+          <div className="mb-2 flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <Box className="h-4 w-4 text-[#785600] dark:text-amber-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-300">
+                Available Cutting Scrap
+              </span>
+            </div>
+            {/* Received Scrap Button - Only show when at least one card is selected */}
+            {selectedScrapIds.size > 0 && (
+              <GenericButton
+                type="button"
+                onClick={openScrapModal}
+                variant="primary"
+                className="text-xs"
+              >
+                <span>Received</span>
+              </GenericButton>
+            )}
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-2 pt-1 scrollbar-thin">
+            {scrapList.map((scrap: any, idx: number) => {
+              const isSelected = selectedScrapIds.has(scrap.id);
+              return (
+                <button
+                  key={scrap.id || idx}
+                  type="button"
+                  onClick={() => toggleSelectScrapCard(scrap.id)}
+                  className={`flex min-w-[140px] flex-col items-start rounded-xl border px-4 py-3 shadow-sm transition-all ${isSelected
+                      ? 'border-2 border-[#785600] bg-amber-50 shadow-md ring-2 ring-[#785600]/20 dark:border-amber-400 dark:bg-amber-950/50'
+                      : 'border-[#d3c4af]/30 bg-white hover:border-[#785600]/60 dark:border-slate-700 dark:bg-slate-900'
+                    }`}
+                >
+                  <div className="flex w-full items-center justify-between gap-2">
+                    <span className="font-mono text-sm font-bold text-black dark:text-white">
+                      Scrap ({scrap.purity}%)
+                    </span>
+                  </div>
+                  <span className="font-mono text-base font-bold text-black dark:text-white">
+                    {formatNumberDisplay(scrap.weight)} G
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* Header Controls */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
@@ -515,7 +627,6 @@ const CuttingDept: React.FC = () => {
           {/* Weekly Date Filter - Only show when viewing history */}
           {showHistory && (
             <div className="flex flex-wrap items-center gap-2">
-              {/* From Date - Defaults to Monday */}
               <GenericWeeklyDatePicker
                 id="from-date-box"
                 placeholder="DD/MM/YYYY"
@@ -533,7 +644,6 @@ const CuttingDept: React.FC = () => {
                 className="w-32 sm:w-36 md:w-40"
               />
 
-              {/* To Date - Defaults to Sunday */}
               <GenericWeeklyDatePicker
                 id="to-date-box"
                 placeholder="DD/MM/YYYY"
@@ -552,6 +662,8 @@ const CuttingDept: React.FC = () => {
               />
             </div>
           )}
+
+
 
           {/* Print History Button */}
           {showHistory && (
@@ -600,11 +712,9 @@ const CuttingDept: React.FC = () => {
         </div>
       ) : (
         <HistoryCutting
-            historyData={getFilteredHistory()}
-            historyTotals={historyTotals}
-            historyLoading={historyLoading}
-            dateRange={dateRange}
-            historyColumns={getHistoryCuttingColumns()}
+          filteredData={getFilteredHistory()}
+          historyLoading={historyLoading}
+          dateRange={dateRange}
         />
       )}
 
@@ -614,15 +724,17 @@ const CuttingDept: React.FC = () => {
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl dark:bg-slate-900">
             <div className="p-6">
               <h3 className="mb-2 text-center text-lg font-bold text-[#1a1c1b] dark:text-white">
-                Confirm Action
+                Confirm Save
               </h3>
+
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
-                Are you sure you want to save this cutting entry and send it to{' '}
+                Are you sure you want to save this cutting entry and go to the{' '}
                 <strong className="text-[#785600] dark:text-amber-400">
-                  {actionType === 'stock' ? 'Stock' : 'S Kunda'}
-                </strong>
-                ?
+                  S/Kunda
+                </strong>{' '}
+                department?
               </p>
+
               <div className="mt-6 flex justify-center gap-3">
                 <button
                   onClick={() => {
@@ -634,10 +746,9 @@ const CuttingDept: React.FC = () => {
                 >
                   Cancel
                 </button>
+
                 <button
-                  onClick={
-                    actionType === 'stock' ? confirmSaveStock : confirmSaveKunda
-                  }
+                  onClick={confirmSave}
                   disabled={isLoading}
                   className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -648,6 +759,19 @@ const CuttingDept: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Scrap Received Modal */}
+      <MeltingPopup
+        isOpen={isScrapModalOpen}
+        onClose={() => setIsScrapModalOpen(false)}
+        scrapModalItems={scrapModalItems}
+        scrapCalculations={scrapCalculations}
+        refetchCuttingScrap={refetchCuttingScrap}
+        refetch={refetch}
+        onSuccess={() => {
+          setSelectedScrapIds(new Set());
+        }}
+      />
     </div>
   );
 };

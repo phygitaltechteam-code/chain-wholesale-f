@@ -23,7 +23,7 @@ import {
 } from 'react-icons/md';
 import {useAuthContext} from '@/context/AuthContext';
 import {EPinIcon} from '@/icons';
-import { TrendingDown } from 'lucide-react';
+import { TrendingDown, Calculator } from 'lucide-react';
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
@@ -128,10 +128,16 @@ const Sidebar = ({
       roles: ['ADMIN'],
     },
     {
-      label:'Loss Report',
-      path:'/lossreportdata',
-      icon:<TrendingDown  size={22} />,
-      roles:['ADMIN'],
+      label: 'Loss Report',
+      path: '/lossreportdata',
+      icon: <TrendingDown size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
+      label: 'Purity Management',
+      path: '/puritymanagement',
+      icon: <Calculator size={22} />,
+      roles: ['ADMIN'],
     },
     {
       label: 'Add Admin',
@@ -139,6 +145,7 @@ const Sidebar = ({
       icon: <MdPersonAdd size={22} />,
       roles: ['SUPERADMIN'],
     },
+    
     // {
     //   label: 'E-PIN Request',
     //   path: '/epinrequest',

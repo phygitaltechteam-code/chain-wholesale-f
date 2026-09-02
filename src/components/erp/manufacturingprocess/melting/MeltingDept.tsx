@@ -29,6 +29,7 @@ import {
 } from '@/lib/api/melting';
 import HistoryDept from './HistoryDept';
 import AddDept from './AddDept';
+import MeltingPopup, { ScrapModalItem } from '../cutting/MeltingPopup';
 import {
   MeltingRow,
   ScrapCardData,
@@ -49,6 +50,10 @@ const MeltingDept: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [fromDate, setFromDate] = useState<Date | null>(null);
   const [toDate, setToDate] = useState<Date | null>(null);
+
+  // Selected scrap cards state for MeltingPopup
+  const [selectedScrapPurities, setSelectedScrapPurities] = useState<Set<number>>(new Set());
+  const [isScrapModalOpen, setIsScrapModalOpen] = useState(false);
 
   // Add Scrap Modal state
   const [showAddScrapModal, setShowAddScrapModal] = useState(false);
@@ -89,54 +94,79 @@ const MeltingDept: React.FC = () => {
   });
 
   const scrapCards: ScrapCardData[] = React.useMemo(() => {
-    // First, check if we have scrap data from API
     const scrapList = Array.isArray(scrapData?.data) ? scrapData.data :
       Array.isArray(scrapData) ? scrapData : [];
 
-    if (scrapList.length > 0) {
-      const cardMap = new Map<number, { totalWeight: number; count: number }>();
-      scrapList.forEach((item: any) => {
-        const p = Number(item.purity) || 0;
-        const wt = Number(item.weight) || 0;
-        if (p > 0 && wt > 0) {
-          const current = cardMap.get(p) || { totalWeight: 0, count: 0 };
-          cardMap.set(p, {
-            totalWeight: current.totalWeight + wt,
-            count: current.count + 1,
-          });
-        }
-      });
+    // Return empty cards if API returns no scrap
+    if (scrapList.length === 0) return [];
 
-      const calculated = Array.from(cardMap.entries()).map(([purity, data]) => ({
-        purity,
-        totalWeight: Math.round(data.totalWeight * 1000) / 1000,
-        count: data.count,
-      }));
-
-      return calculated;
-    }
-
-    // Fallback to meltingEntries if no scrap data
     const cardMap = new Map<number, { totalWeight: number; count: number }>();
-    meltingEntries?.forEach((entry) => {
-      const p = entry.purity || 0;
-      if (p > 0) {
+    scrapList.forEach((item: any) => {
+      const p = Number(item.purity) || 0;
+      const wt = Number(item.weight) || 0;
+      if (p > 0 && wt > 0) {
         const current = cardMap.get(p) || { totalWeight: 0, count: 0 };
         cardMap.set(p, {
-          totalWeight: current.totalWeight + entry.grossWt,
-          count: current.count + (entry.scrapCount || 1),
+          totalWeight: current.totalWeight + wt,
+          count: current.count + 1,
         });
       }
     });
 
-    const calculated = Array.from(cardMap.entries()).map(([purity, data]) => ({
+    return Array.from(cardMap.entries()).map(([purity, data]) => ({
       purity,
       totalWeight: Math.round(data.totalWeight * 1000) / 1000,
       count: data.count,
     }));
+  }, [scrapData]);
 
-    return calculated;
-  }, [scrapData, meltingEntries]);
+
+  const toggleSelectScrapCard = (purity: number) => {
+    setSelectedScrapPurities((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(purity)) {
+        newSet.delete(purity);
+      } else {
+        newSet.add(purity);
+      }
+      return newSet;
+    });
+  };
+
+  const scrapModalItems: ScrapModalItem[] = React.useMemo(() => {
+    return scrapCards
+      .filter((card) => selectedScrapPurities.has(card.purity))
+      .map((card) => ({
+        id: card.purity.toString(),
+        purity: card.purity,
+        availableWeight: card.totalWeight,
+      }));
+  }, [scrapCards, selectedScrapPurities]);
+
+  const scrapCalculations = React.useMemo(() => {
+    let weightedPuritySum = 0;
+    let totalAvailableWeight = 0;
+
+    scrapModalItems.forEach((item) => {
+      weightedPuritySum += item.availableWeight * item.purity;
+      totalAvailableWeight += item.availableWeight;
+    });
+
+    const finalPurity = totalAvailableWeight > 0 ? weightedPuritySum / totalAvailableWeight : 0;
+
+    return {
+      finalPurity,
+      totalAvailableWeight,
+    };
+  }, [scrapModalItems]);
+
+  const openScrapModal = () => {
+    if (selectedScrapPurities.size === 0) {
+      toast.error('Please select at least one scrap card');
+      return;
+    }
+    setIsScrapModalOpen(true);
+  };
 
   // Handle selecting purity in Add Scrap popup
   const handleSelectPurity = (purityVal: number | '') => {
@@ -318,9 +348,9 @@ const MeltingDept: React.FC = () => {
     const data = getFilteredHistory();
     return data.reduce(
       (acc: any, item: any) => {
-        const gross = item.grossWt || item.weight || item.grossWeight || 0;
-        const expected = item.expectedFine || 0;
-        const fine = item.fineWeight || 0;
+        const gross = Number(item.grossWeight ?? item.grossWt ?? item.weight ?? 0);
+        const expected = Number(item.expected ?? item.expectedFine ?? calculateExpectedFine(gross, item.purity));
+        const fine = Number(item.fineWeight || 0);
         const loss =
           item.loss !== undefined && item.loss !== null
             ? Number(item.loss)
@@ -472,28 +502,52 @@ const MeltingDept: React.FC = () => {
       {/* Top Scrap Cards Bar with Smooth Scrollbar */}
       {scrapCards.length > 0 && !showHistory && (
         <div className="w-full">
-          <div className="mb-2 flex items-center gap-2 px-1">
-            <Flame className="h-4 w-4 text-[#785600] dark:text-amber-400" />
-            <span className="text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-300">
-              Available Scrap for Melting
-            </span>
+          <div className="mb-2 flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <Flame className="h-4 w-4 text-[#785600] dark:text-amber-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-300">
+                Available Scrap for Melting
+              </span>
+            </div>
+
+            {/* Received Scrap Button - Only show when at least one card is selected */}
+            {selectedScrapPurities.size > 0 && (
+              <GenericButton
+                type="button"
+                onClick={openScrapModal}
+                variant="primary"
+                className="text-xs"
+              >
+                <span>Received</span>
+              </GenericButton>
+            )}
           </div>
 
           {/* Scrollable Container */}
           <div className="flex gap-2 overflow-x-auto pb-2 pt-1 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-[#785600]/40 dark:scrollbar-track-slate-800 dark:scrollbar-thumb-slate-600">
-            {scrapCards.map((card, idx) => (
-              <div
-                key={idx}
-                className="flex min-w-[90px] flex-col rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900"
-              >
-                <span className="font-mono text-[11px] font-bold text-black dark:text-white">
-                  Scrap ({card.purity}%)
-                </span>
-                <span className="font-mono text-[11px] font-bold text-black dark:text-white">
-                  {formatNumberDisplay(card.totalWeight)} G
-                </span>
-              </div>
-            ))}
+            {scrapCards.map((card, idx) => {
+              const isSelected = selectedScrapPurities.has(card.purity);
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => toggleSelectScrapCard(card.purity)}
+                  className={`flex min-w-[140px] flex-col items-start rounded-xl border px-4 py-3 shadow-sm transition-all ${isSelected
+                      ? 'border-2 border-[#785600] bg-amber-50 shadow-md ring-2 ring-[#785600]/20 dark:border-amber-400 dark:bg-amber-950/50'
+                      : 'border-[#d3c4af]/30 bg-white hover:border-[#785600]/60 dark:border-slate-700 dark:bg-slate-900'
+                    }`}
+                >
+                  <div className="flex w-full items-center justify-between gap-2">
+                    <span className="font-mono text-sm font-bold text-black dark:text-white">
+                      Scrap ({card.purity}%)
+                    </span>
+                  </div>
+                  <span className="font-mono text-base font-bold text-black dark:text-white">
+                    {formatNumberDisplay(card.totalWeight)} G
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -507,18 +561,6 @@ const MeltingDept: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {!showHistory && (
-            <GenericButton
-              type="button"
-              onClick={() => handleOpenAddScrap()}
-              variant="primary"
-              className="flex items-center gap-1.5"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Melting</span>
-            </GenericButton>
-          )}
-
           {showHistory && (
             <div className="flex flex-wrap items-center gap-2">
               <div>
@@ -689,19 +731,28 @@ const MeltingDept: React.FC = () => {
         </div>
       )}
 
-      {/* Add Scrap Modal */}
-      <AddDept
-        showAddScrapModal={showAddScrapModal}
-        setShowAddScrapModal={setShowAddScrapModal}
-        handleSubmitAddScrap={handleSubmitAddScrap}
-        selectedPurity={selectedPurity}
-        handleSelectPurity={handleSelectPurity}
-        scrapCards={scrapCards}
-        availableWeight={availableWeight}
-        scrapWeight={scrapWeight}
-        setScrapWeight={setScrapWeight}
-        isSubmittingScrap={isSubmittingScrap}
-        modalScaleProps={modalScaleProps}
+      {/* Scrap Received & Melting Modal */}
+      <MeltingPopup
+        isOpen={isScrapModalOpen}
+        onClose={() => setIsScrapModalOpen(false)}
+        scrapModalItems={scrapModalItems}
+        scrapCalculations={scrapCalculations}
+        refetchCuttingScrap={refetch}
+        refetch={refetch}
+        onSuccess={() => {
+          setSelectedScrapPurities(new Set());
+        }}
+        onSubmitScrap={async (payload) => {
+          await submitMeltingScrap.mutateAsync({
+            ...payload,
+            particular: `Scrap Melting ${payload.avgPurity}%`,
+            grossWt: payload.weight,
+            purity: payload.avgPurity,
+            expectedFine: calculateExpectedFine(payload.weight, payload.avgPurity),
+            fineWeight: payload.weight * (payload.receivedPurity / 100),
+            lossWeight: payload.lossFineWeight,
+          });
+        }}
       />
     </div>
   );

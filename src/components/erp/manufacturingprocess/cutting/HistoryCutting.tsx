@@ -1,30 +1,48 @@
 import React from 'react';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
-import { formatNumberDisplay, hasMeltingStatus } from './cuttingUtils';
+import { formatNumberDisplay, hasMeltingStatus, getHistoryCuttingColumns, toNumber } from './cuttingUtils';
 
 interface HistoryCuttingProps {
-    historyData: any[];
-    historyTotals: {
+    filteredData?: any[];
+    historyData?: any[];
+    historyTotals?: {
         totalGiven: number;
         totalReceived: number;
         totalScrap: number;
         totalLoss: number;
     };
-    historyLoading: boolean;
-    dateRange: Date[];
-    historyColumns: Column<any>[];
+    historyLoading?: boolean;
+    dateRange?: Date[];
+    historyColumns?: Column<any>[];
 }
 
 const HistoryCutting: React.FC<HistoryCuttingProps> = ({
+    filteredData,
     historyData,
     historyTotals,
-    historyLoading,
+    historyLoading = false,
     dateRange = [],
     historyColumns,
 }) => {
+    const data = filteredData || historyData || [];
+    const columns = historyColumns || getHistoryCuttingColumns();
+
+    const computedTotals = React.useMemo(() => {
+        if (historyTotals) return historyTotals;
+        return data.reduce(
+            (acc: any, item: any) => ({
+                totalGiven: acc.totalGiven + toNumber(item?.chainGiven || item?.chainWeight),
+                totalReceived: acc.totalReceived + toNumber(item?.chainReceived),
+                totalScrap: acc.totalScrap + toNumber(item?.scrap),
+                totalLoss: acc.totalLoss + toNumber(item?.loss),
+            }),
+            { totalGiven: 0, totalReceived: 0, totalScrap: 0, totalLoss: 0 }
+        );
+    }, [data, historyTotals]);
+
     return (
         <div>
-            {/* History Summary Cards - Updated with Loss */}
+            {/* History Summary Cards */}
             <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
                     <div className="flex flex-col">
@@ -32,7 +50,7 @@ const HistoryCutting: React.FC<HistoryCuttingProps> = ({
                             Chain Given
                         </span>
                         <span className="text-lg font-bold text-black dark:text-amber-400">
-                            {formatNumberDisplay(historyTotals.totalGiven)} G
+                            {formatNumberDisplay(computedTotals.totalGiven)} G
                         </span>
                     </div>
                 </div>
@@ -42,7 +60,7 @@ const HistoryCutting: React.FC<HistoryCuttingProps> = ({
                             Chain Received
                         </span>
                         <span className="text-lg font-bold text-black dark:text-blue-400">
-                            {formatNumberDisplay(historyTotals.totalReceived)} G
+                            {formatNumberDisplay(computedTotals.totalReceived)} G
                         </span>
                     </div>
                 </div>
@@ -52,7 +70,7 @@ const HistoryCutting: React.FC<HistoryCuttingProps> = ({
                             Scrap
                         </span>
                         <span className="text-lg font-bold text-black dark:text-green-400">
-                            {formatNumberDisplay(historyTotals.totalScrap)} G
+                            {formatNumberDisplay(computedTotals.totalScrap)} G
                         </span>
                     </div>
                 </div>
@@ -62,7 +80,7 @@ const HistoryCutting: React.FC<HistoryCuttingProps> = ({
                             Loss
                         </span>
                         <span className="text-lg font-bold text-black dark:text-red-400">
-                            {formatNumberDisplay(historyTotals.totalLoss)} G
+                            {formatNumberDisplay(computedTotals.totalLoss)} G
                         </span>
                     </div>
                 </div>
@@ -70,8 +88,8 @@ const HistoryCutting: React.FC<HistoryCuttingProps> = ({
 
             {/* History Table */}
             <GenericTable
-                data={historyData}
-                columns={historyColumns}
+                data={data}
+                columns={columns}
                 emptyMessage={
                     dateRange.length === 2 && dateRange[0] && dateRange[1]
                         ? `No history records found for the selected date range (${new Date(

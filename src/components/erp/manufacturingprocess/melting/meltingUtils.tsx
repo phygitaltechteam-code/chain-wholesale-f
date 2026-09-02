@@ -246,9 +246,9 @@ export const printMeltingHistory = (
           <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;">${idx + 1}</td>
           <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;white-space:nowrap;">${createDate} ${createTime}</td>
           <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;">${item.particular || 'Scrap Melting'}</td>
-          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.grossWt || item.weight)}</td>
+          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.grossWeight ?? item.grossWt ?? item.weight)}</td>
           <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.purity)}%</td>
-          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.expectedFine)}</td>
+          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.expected ?? item.expectedFine)}</td>
           <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;font-weight:bold;">${formatNumberDisplay(item.fineWeight || item.fineWeight)}</td>
           <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.loss !== undefined && item.loss !== null ? item.loss : Math.max(0, Math.round(((item.expectedFine || 0) - (item.fineWeight || 0)) * 1000) / 1000))}</td>
           <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;white-space:nowrap;">${updateDate} ${updateTime}</td>

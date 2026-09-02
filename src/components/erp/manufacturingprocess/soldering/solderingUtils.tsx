@@ -117,19 +117,26 @@ export const formatDate = (dateString: string) => {
   };
 };
 
-export const formatNumber = (value: any) => {
-  if (value === null || value === undefined) return '0';
-  const num = typeof value === 'string' ? parseFloat(value) : value;
-  if (isNaN(num)) return '0';
-  return num.toFixed(0);
-};
-
-export const formatNumberDisplay = (value: unknown): string => {
+export const truncateTo3DecimalsStr = (value: unknown): string => {
   if (value === null || value === undefined || value === '') return '0';
   const num = Number(value);
   if (!Number.isFinite(num)) return '0';
-  const str = num.toFixed(3);
-  return str.replace(/\.?0+$/, '');
+  const str = num.toString();
+  if (str.includes('.')) {
+    const [intPart, decPart] = str.split('.');
+    const truncatedDec = decPart.slice(0, 3);
+    const res = `${intPart}.${truncatedDec}`.replace(/\.?0+$/, '');
+    return res || '0';
+  }
+  return str;
+};
+
+export const formatNumber = (value: any) => {
+  return truncateTo3DecimalsStr(value);
+};
+
+export const formatNumberDisplay = (value: unknown): string => {
+  return truncateTo3DecimalsStr(value);
 };
 
 export const toNumber = (val: any): number => {
@@ -275,15 +282,14 @@ export const printSolderingHistory = (
             <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
               Soldering History Report
             </h2>
-            ${
-              fromDate && toDate
-                ? `
+            ${fromDate && toDate
+      ? `
             <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
               From: ${formatDate(fromDate.toISOString()).date} &nbsp; To: ${formatDate(toDate.toISOString()).date}
             </div>
           `
-                : `<div style="flex:1;"></div>`
-            }
+      : `<div style="flex:1;"></div>`
+    }
           </div>
 
           <!-- Table -->
@@ -509,219 +515,218 @@ export const getSolderingColumns = (
   meltingLoadingIds: Set<string>,
   hasEditableValues: (entry: SolderingEntry) => boolean
 ): Column<SolderingEntry>[] => [
-  {
-    key: 'dateTime',
-    header: 'Date & Time',
-    render: (item) => {
-      const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
-      const datePart = parts[0] || '';
-      const timePart = parts.slice(1).join(' ') || '';
-      return (
-        <div className="flex flex-col items-center">
-          <span className="text-sm text-[#1a1c1b] dark:text-white">{datePart}</span>
-          <span className="text-sm text-[#4f4535] dark:text-slate-400">{timePart}</span>
+    {
+      key: 'dateTime',
+      header: 'Date & Time',
+      render: (item) => {
+        const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
+        const datePart = parts[0] || '';
+        const timePart = parts.slice(1).join(' ') || '';
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">{datePart}</span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">{timePart}</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'item',
+      header: 'Item',
+      render: (item) => (
+        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
+          {typeof item?.item === 'object' ? (item?.item as any)?.name ?? '-' : item?.item ?? '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'size',
+      header: 'Size',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {typeof item?.size === 'object' ? (item?.size as any)?.size ?? '-' : item?.size ?? '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'purity',
+      header: 'Purity % (टंच)',
+      render: (item) => (
+        <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.purity)}%
+          </span>
         </div>
-      );
+      ),
     },
-  },
-  {
-    key: 'item',
-    header: 'Item',
-    render: (item) => (
-      <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-        {typeof item?.item === 'object' ? (item?.item as any)?.name ?? '-' : item?.item ?? '-'}
-      </span>
-    ),
-  },
-  {
-    key: 'size',
-    header: 'Size',
-    render: (item) => (
-      <span className="text-sm text-[#1a1c1b] dark:text-white">
-        {typeof item?.size === 'object' ? (item?.size as any)?.size ?? '-' : item?.size ?? '-'}
-      </span>
-    ),
-  },
-  {
-    key: 'purity',
-    header: 'Purity % (टंच)',
-    render: (item) => (
-      <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+    {
+      key: 'chainWeight',
+      header: 'Chain Given(G)',
+      render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.purity)}%
+          {formatNumberDisplay(item.chainWeight)} G
         </span>
-      </div>
-    ),
-  },
-  {
-    key: 'chainWeight',
-    header: 'Chain Given(G)',
-    render: (item) => (
-      <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-        {formatNumberDisplay(item.chainWeight)} G
-      </span>
-    ),
-  },
-  {
-    key: 'chainReceived',
-    header: 'Chain Received(G)',
-    render: (item, index) => {
-      if (item.isEditing) {
+      ),
+    },
+    {
+      key: 'chainReceived',
+      header: 'Chain Received(G)',
+      render: (item, index) => {
+        if (item.isEditing) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                value={
+                  item.chainReceivedRaw !== undefined
+                    ? item.chainReceivedRaw
+                    : item.chainReceived === 0
+                      ? ''
+                      : item.chainReceived
+                }
+                {...getScaleProps(index, 'chainReceived')}
+                onChange={(e) => handleInlineChange(index, 'chainReceived', e.target.value)}
+                placeholder="0.000"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                G
+              </span>
+            </div>
+          );
+        }
         return (
-          <div className="relative inline-block">
-            <input
-              type="text"
-              value={
-                item.chainReceivedRaw !== undefined
-                  ? item.chainReceivedRaw
-                  : item.chainReceived === 0
-                  ? ''
-                  : item.chainReceived
-              }
-              {...getScaleProps(index, 'chainReceived')}
-              onChange={(e) => handleInlineChange(index, 'chainReceived', e.target.value)}
-              placeholder="0.000"
-              className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
-            <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-              G
-            </span>
-          </div>
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.chainReceived)} G
+          </span>
         );
-      }
-      return (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.chainReceived)} G
-        </span>
-      );
+      },
     },
-  },
-  {
-    key: 'powder',
-    header: 'Powder Given(G)',
-    render: (item) => (
-      <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-        {formatNumberDisplay(item.powder)} G
-      </span>
-    ),
-  },
-  {
-    key: 'increase',
-    header: 'Increase %',
-    render: (item) => (
-      <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-        {formatNumberDisplay(item.increase)} %
-      </span>
-    ),
-  },
-  {
-    key: 'scrap',
-    header: 'Scrap (स्क्रॅप)',
-    render: (item, index) => {
-      if (item.isEditing) {
+    {
+      key: 'powder',
+      header: 'Powder Given(G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.powder)} G
+        </span>
+      ),
+    },
+    {
+      key: 'increase',
+      header: 'Increase %',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.increase)} %
+        </span>
+      ),
+    },
+    {
+      key: 'scrap',
+      header: 'Scrap (स्क्रॅप)',
+      render: (item, index) => {
+        if (item.isEditing) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                value={
+                  item.scrapRaw !== undefined
+                    ? item.scrapRaw
+                    : item.scrap === 0
+                      ? ''
+                      : item.scrap
+                }
+                {...getScaleProps(index, 'scrap')}
+                onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
+                placeholder="0.000"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                G
+              </span>
+            </div>
+          );
+        }
         return (
-          <div className="relative inline-block">
-            <input
-              type="text"
-              value={
-                item.scrapRaw !== undefined
-                  ? item.scrapRaw
-                  : item.scrap === 0
-                  ? ''
-                  : item.scrap
-              }
-              {...getScaleProps(index, 'scrap')}
-              onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
-              placeholder="0.000"
-              className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
-            <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-              G
-            </span>
-          </div>
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.scrap)} G
+          </span>
         );
-      }
-      return (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.scrap)} G
-        </span>
-      );
+      },
     },
-  },
-  {
-    key: 'actions',
-    header: 'Action',
-    render: (item: SolderingEntry, index: number) => {
-      const isMeltingLoading = meltingLoadingIds.has(item.id);
-      return (
-        <div className="flex items-center justify-center gap-1.5">
-          {/* Joint Button - Only show if entry is not saved and has editable values */}
-          {!item.isSaved && hasEditableValues(item) && (
-            <button
-              type="button"
-              onClick={() => handleSaveClick(index, 'joint')}
-              disabled={isLoading || isSubmitting || isMeltingLoading}
-              className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-              title="Go to Joint"
-            >
-              <Hammer className="h-3.5 w-3.5" />
-              <span>Joint</span>
-            </button>
-          )}
-          {/* Cutting Button - Only show if entry is not saved and has editable values */}
-          {!item.isSaved && hasEditableValues(item) && (
-            <button
-              type="button"
-              onClick={() => handleSaveClick(index, 'cutting')}
-              disabled={isLoading || isSubmitting || isMeltingLoading}
-              className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-              title="Go to Cutting"
-            >
-              <Scissors className="h-3.5 w-3.5" />
-              <span>Cutting</span>
-            </button>
-          )}
-          {/* Melting Button - Always visible for all entries */}
-          <button
-            type="button"
-            onClick={() => handleMelting(item)}
-            disabled={isLoading || isSubmitting || isMeltingLoading}
-            className={`inline-flex items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold uppercase tracking-wider shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
-              isMeltingLoading
-                ? 'bg-gray-300 text-gray-600 cursor-wait dark:bg-gray-600 dark:text-gray-300'
-                : 'bg-amber-200 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60'
-            }`}
-            title="Send to Melting"
-          >
-            {isMeltingLoading ? (
-              <>
-                <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                <span>Processing...</span>
-              </>
-            ) : (
-              <>
-                <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                <span>Melting</span>
-              </>
+    {
+      key: 'actions',
+      header: 'Action',
+      render: (item: SolderingEntry, index: number) => {
+        const isMeltingLoading = meltingLoadingIds.has(item.id);
+        return (
+          <div className="flex items-center justify-center gap-1.5">
+            {/* Joint Button - Only show if entry is not saved and has editable values */}
+            {!item.isSaved && hasEditableValues(item) && (
+              <button
+                type="button"
+                onClick={() => handleSaveClick(index, 'joint')}
+                disabled={isLoading || isSubmitting || isMeltingLoading}
+                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#d97706] to-[#92400e] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                title="Go to Joint"
+              >
+                <Hammer className="h-3.5 w-3.5" />
+                <span>Joint</span>
+              </button>
             )}
-          </button>
-        </div>
-      );
-    },
-  } as Column<SolderingEntry>,
-];
+            {/* Cutting Button - Only show if entry is not saved and has editable values */}
+            {!item.isSaved && hasEditableValues(item) && (
+              <button
+                type="button"
+                onClick={() => handleSaveClick(index, 'cutting')}
+                disabled={isLoading || isSubmitting || isMeltingLoading}
+                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2.5 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                title="Go to Cutting"
+              >
+                <Scissors className="h-3.5 w-3.5" />
+                <span>Cutting</span>
+              </button>
+            )}
+            {/* Melting Button - Always visible for all entries */}
+            <button
+              type="button"
+              onClick={() => handleMelting(item)}
+              disabled={isLoading || isSubmitting || isMeltingLoading}
+              className={`inline-flex items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold uppercase tracking-wider shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
+                  ? 'bg-gray-300 text-gray-600 cursor-wait dark:bg-gray-600 dark:text-gray-300'
+                  : 'bg-amber-200 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60'
+                }`}
+              title="Send to Melting"
+            >
+              {isMeltingLoading ? (
+                <>
+                  <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                  <span>Melting</span>
+                </>
+              )}
+            </button>
+          </div>
+        );
+      },
+    } as Column<SolderingEntry>,
+  ];
