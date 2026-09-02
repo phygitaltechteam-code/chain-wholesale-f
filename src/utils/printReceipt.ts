@@ -28,19 +28,22 @@ export interface ReceiptPrintData {
   customerWeight?: number | string;
   pending?: number | string;
   total?: number | string;
+  dueBalance?: number | string;
+  remainingBalance?: number | string;
   headerInfo?: any;
 }
 
 const format3Decimals = (value: number | string | undefined | null): string => {
   const num = Number(value);
-  if (isNaN(num) || num === 0) return '0.000';
-  return num.toFixed(3);
+  if (isNaN(num) || num === 0) return '0';
+  // Remove trailing zeros after decimal
+  return parseFloat(num.toFixed(3)).toString();
 };
 
 const format2Decimals = (value: number | string | undefined | null): string => {
   const num = Number(value);
-  if (isNaN(num) || num === 0) return '0.00';
-  return num.toFixed(2);
+  if (isNaN(num) || num === 0) return '0';
+  return parseFloat(num.toFixed(2)).toString();
 };
 
 export const printReceipt = (
@@ -88,17 +91,19 @@ export const printReceipt = (
         ? Number(receiptData.customerWeight)
         : 0;
 
-  const total =
-    receiptData.total !== undefined
-      ? Number(receiptData.total)
+  const dueBalance =
+    receiptData.dueBalance !== undefined
+      ? Number(receiptData.dueBalance)
+      : 0;
+
+  const remainingBalance =
+    receiptData.remainingBalance !== undefined
+      ? Number(receiptData.remainingBalance)
       : receiptData.pending !== undefined
         ? Number(receiptData.pending)
-        : 0;
-
-  const pending =
-    receiptData.pending !== undefined && receiptData.total !== undefined
-      ? Number(receiptData.pending)
-      : Math.round(Math.abs(total + receive - totalFineWt) * 1000) / 1000;
+        : receiptData.total !== undefined
+          ? Number(receiptData.total)
+          : 0;
 
   let itemsRows = '';
   items.forEach((item) => {
@@ -292,22 +297,22 @@ export const printReceipt = (
 
           <!-- PAYMENT SUMMARY -->
           <div style="display:flex;justify-content:flex-end;margin-top:2px;">
-            <div style="width:35%;min-width:180px;border:1px solid #d6c08a;border-radius:4px;background:#fffdf7 !important;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+            <div style="width:38%;min-width:200px;border:1px solid #d6c08a;border-radius:4px;background:#fffdf7 !important;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
               <div style="display:flex;justify-content:space-between;padding:3px 8px;border-bottom:1px dashed #dddddd;font-size:10px;">
                 <span style="font-weight:bold;color:#666666;">Total Fine Wt</span>
                 <span style="font-family:monospace;font-weight:bold;color:#111111;">${format3Decimals(totalFineWt)} G</span>
               </div>
               <div style="display:flex;justify-content:space-between;padding:3px 8px;border-bottom:1px dashed #dddddd;font-size:10px;">
-                <span style="font-weight:bold;color:#666666;">Receive</span>
+                <span style="font-weight:bold;color:#666666;">Advance</span>
                 <span style="font-family:monospace;font-weight:bold;color:#111111;">${format3Decimals(receive)} G</span>
               </div>
               <div style="display:flex;justify-content:space-between;padding:3px 8px;border-bottom:1px dashed #dddddd;font-size:10px;">
-                <span style="font-weight:bold;color:#666666;">Pending</span>
-                <span style="font-family:monospace;font-weight:bold;color:#111111;">${format3Decimals(pending)} G</span>
+                <span style="font-weight:bold;color:#666666;">Due Balance</span>
+                <span style="font-family:monospace;font-weight:bold;color:#111111;">${format3Decimals(dueBalance)} G</span>
               </div>
               <div style="display:flex;justify-content:space-between;padding:4px 8px;background:#f4f0e5 !important;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                <span style="font-weight:bold;color:#111111;">Total</span>
-                <span style="font-family:monospace;font-weight:bold;color:#785600;">${format3Decimals(total)} G</span>
+                <span style="font-weight:bold;color:#111111;">Total Balance</span>
+                <span style="font-family:monospace;font-weight:bold;color:#785600;">${format3Decimals(remainingBalance)} G</span>
               </div>
             </div>
           </div>

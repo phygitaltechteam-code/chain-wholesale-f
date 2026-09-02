@@ -761,6 +761,8 @@ const BillEdit: React.FC = () => {
   };
   const handlePrintReceipt = (group: BillGroup) => {
     if (!group) return;
+    const client = clients.find((c: any) => c.id === formData.clientId);
+    const clientDue = getClientDueBalance(client);
     printReceipt(
       {
         clientName: group.clientName,
@@ -769,7 +771,8 @@ const BillEdit: React.FC = () => {
         items: group.items,
         totalFineWt: group.totalFinWt,
         receive: group.receive,
-        total: group.pending,
+        dueBalance: clientDue,
+        remainingBalance: group.pending,
       },
       getpdfheaderdata,
     );

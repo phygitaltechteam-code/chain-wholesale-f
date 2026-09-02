@@ -66,6 +66,7 @@ interface ReceiptData {
     phoneNumber: string;
     address: string;
     openingBalance: number;
+    due?: number;
   };
   receiptItems: ReceiptItem[];
 }
@@ -103,6 +104,7 @@ interface BillGroup {
   displaySRP: string;
   totalFinWt: number;
   totalSRP: number;
+  dueBalance: number;
 }
 
 const Billing: React.FC = () => {
@@ -304,6 +306,9 @@ const Billing: React.FC = () => {
             phoneNumber: receipt.client?.phoneNumber || 'N/A',
             receive: receipt.customerWeight || 0,
             pending: receipt.remainingWeight || 0,
+            dueBalance: receipt.client?.due !== undefined && receipt.client?.due !== null
+              ? Number(receipt.client.due)
+              : Number(receipt.client?.openingBalance) || 0,
             type:
               (receipt.type as 'DRAFT' | 'BILL') ||
               (receipt.remainingWeight === 0 ? 'BILL' : 'DRAFT'),
@@ -406,7 +411,8 @@ const Billing: React.FC = () => {
         items: group.items,
         totalFineWt: group.totalFinWt,
         receive: group.receive,
-        total: group.pending,
+        dueBalance: group.dueBalance,
+        remainingBalance: group.pending,
       },
       getpdfheaderdata,
     );
