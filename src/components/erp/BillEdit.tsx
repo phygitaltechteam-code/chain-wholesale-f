@@ -56,6 +56,7 @@ interface ReceiptFormData {
   date: string;
   items: ReceiptItem[];
   customerWeight: number | string;
+   remainingWeight: number | string;
   totalFine: number | string;
   goldInfo: {
     karat: string;
@@ -115,6 +116,7 @@ const BillEdit: React.FC = () => {
   const [formData, setFormData] = useState<ReceiptFormData>({
     clientId: '',
     clientName: '',
+    remainingWeight: 0,
     date: new Date().toISOString().split('T')[0],
     items: [],
     customerWeight: 0,
@@ -1419,7 +1421,7 @@ const BillEdit: React.FC = () => {
                 Remaining Balance
               </span>
               <span className="font-mono text-base font-bold text-black dark:text-black">
-                {formatNumberThreeDecimals(calculateRemainingWeight())} G
+                {formatNumberThreeDecimals(savedRemaining ?? 0)} G
               </span>
             </div>
           </div>

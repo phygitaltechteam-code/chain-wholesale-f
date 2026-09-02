@@ -595,10 +595,7 @@ const BoxDept: React.FC = () => {
         return Boolean(entry.isDirty);
     };
 
-    // Action column is shown only when at least one unsaved row is edited.
-    const showActionColumn = boxEntries.some(
-        (entry) => !entry.isSaved && Boolean(entry.isDirty),
-    );
+    
 
     const isSubmitting = submitBox.isPending;
 

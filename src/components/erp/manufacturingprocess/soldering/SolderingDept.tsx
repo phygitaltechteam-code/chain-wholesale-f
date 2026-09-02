@@ -24,7 +24,6 @@ import { useGetItems, Item } from '@/lib/api/items';
 import { useGetSizes } from '@/lib/api/sizes';
 import { useSubmitMoveCutting } from '@/lib/api/cutting';
 import { useGetBox, useGetBoxweight } from '@/lib/api/box';
-import { useGetStock } from '@/lib/api/stock';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
@@ -36,6 +35,7 @@ import {
   createNewSolderingCard,
   getCurrentWeekRange,
   formatNumberDisplay,
+  truncate3Dec,
   getSolderingColumns,
   printSolderingHistory,
 } from './solderingUtils';
@@ -89,7 +89,6 @@ const SolderingDept: React.FC = () => {
       : [];
   const { data: sizes = [], isLoading: sizesLoading } = useGetSizes();
   const { data: boxData = [] } = useGetBox();
-  const { data: stockData = [] } = useGetStock();
   const { data: tarData = [], isLoading: tarLoading, refetch: tarRefetch } = useGetBoxweight();
 
   const submitSoldering = useSubmitSoldering();
@@ -129,11 +128,9 @@ const SolderingDept: React.FC = () => {
     },
   );
 
-  const boxStockList = Array.isArray(tarData?.data)
-    ? tarData.data
-    : Array.isArray(tarData)
-      ? tarData
-      : [];
+  const boxStockList = Array.isArray(tarData)
+    ? tarData
+    : [];
 
   // Top Box Cards for Soldering Department (from /admin/box/stock)
   const boxCards = React.useMemo(() => {
@@ -145,15 +142,6 @@ const SolderingDept: React.FC = () => {
           'Box';
         const p = Number(item.purity || 0);
         const wt = Number(item.tarWeight || item.chainWeight || item.weight || 0);
-        const truncate3Dec = (val: number): number => {
-          if (!val || isNaN(val) || !Number.isFinite(val)) return 0;
-          const str = val.toString();
-          if (str.includes('.')) {
-            const [intPart, decPart] = str.split('.');
-            return Number(`${intPart}.${decPart.slice(0, 3)}`);
-          }
-          return val;
-        };
         return {
           id: item.id,
           sizeId: item.sizeId || item.size?.id,
@@ -165,7 +153,7 @@ const SolderingDept: React.FC = () => {
       .filter((c: any) => c.totalWeight > 0);
   }, [boxStockList]);
 
-  // Unique available sizes present in the Box Cards
+  // Unique available sizes present in the Box Cards + boxData (no fallback to all sizes)
   const availableSizesInCards = React.useMemo(() => {
     const cardSizeIds = new Set<string>();
     const cardSizeNames = new Set<string>();
@@ -175,26 +163,46 @@ const SolderingDept: React.FC = () => {
       if (c.size) cardSizeNames.add(String(c.size).trim().toLowerCase());
     });
 
-    const filtered = sizes.filter(
+    // Also include sizes from boxData — only where sizeId and purity are not null
+    const bList = Array.isArray((boxData as any)?.data)
+      ? (boxData as any).data
+      : Array.isArray(boxData)
+        ? boxData
+        : [];
+    bList.forEach((s: any) => {
+      if (s.sizeId && s.purity) cardSizeIds.add(String(s.sizeId));
+    });
+
+    // Return only sizes that have actual stock — empty if nothing available
+    return sizes.filter(
       (s: any) =>
         cardSizeIds.has(String(s.id)) ||
         cardSizeNames.has(String(s.size).trim().toLowerCase()),
     );
+  }, [boxCards, sizes, boxData]);
 
-    return filtered.length > 0 ? filtered : sizes;
-  }, [boxCards, sizes]);
-
-  // Unique available purities from Box Stock (or standard defaults)
+  // Unique available purities from Box Stock / boxData (no static defaults)
   const availablePurities = React.useMemo(() => {
     const pSet = new Set<number>();
+
+    // From boxCards (box/stock)
     boxCards.forEach((c) => {
       if (c.purity && c.purity > 0) pSet.add(c.purity);
     });
-    if (pSet.size === 0) {
-      return [92, 90, 84, 75];
-    }
+
+    // From boxData — only entries with valid sizeId AND purity
+    const bList = Array.isArray((boxData as any)?.data)
+      ? (boxData as any).data
+      : Array.isArray(boxData)
+        ? boxData
+        : [];
+    bList.forEach((s: any) => {
+      const p = Number(s.purity || 0);
+      if (p > 0 && s.sizeId) pSet.add(p);
+    });
+
     return Array.from(pSet).sort((a, b) => b - a);
-  }, [boxCards]);
+  }, [boxCards, boxData]);
 
   // Helper to get purities that actually have available stock for the selected size
   const getPuritiesForSize = (sizeId?: string): number[] => {
@@ -224,6 +232,22 @@ const SolderingDept: React.FC = () => {
       });
     }
 
+    // Also check boxData
+    if (pSet.size === 0) {
+      const bList = Array.isArray((boxData as any)?.data)
+        ? (boxData as any).data
+        : Array.isArray(boxData)
+          ? boxData
+          : [];
+      bList.forEach((s: any) => {
+        const sSizeId = String(s.sizeId || '');
+        const p = Number(s.purity || 0);
+        if (sSizeId === String(sizeId) && p > 0) {
+          pSet.add(p);
+        }
+      });
+    }
+
     return Array.from(pSet).sort((a, b) => b - a);
   };
 
@@ -247,15 +271,6 @@ const SolderingDept: React.FC = () => {
         const wt = Number(b.tarWeight || b.chainWeight || b.weight || 0);
         return sum + (isNaN(wt) ? 0 : wt);
       }, 0);
-      const truncate3Dec = (val: number): number => {
-        if (!val || isNaN(val) || !Number.isFinite(val)) return 0;
-        const str = val.toString();
-        if (str.includes('.')) {
-          const [intPart, decPart] = str.split('.');
-          return Number(`${intPart}.${decPart.slice(0, 3)}`);
-        }
-        return val;
-      };
       return truncate3Dec(total);
     }
 
@@ -276,29 +291,46 @@ const SolderingDept: React.FC = () => {
       return truncate3Dec(total);
     }
 
-    if (Array.isArray(stockData) && stockData.length > 0) {
-      let filtered = stockData.filter(
-        (s: any) =>
-          (String(s.sizeId) === String(sizeId) || String(s.size?.id) === String(sizeId)) &&
-          Number(s.weight ?? s.stockQty ?? 0) > 0,
-      );
-      if (purity && parseFloat(purity) > 0) {
-        const pNum = parseFloat(purity);
-        filtered = filtered.filter((s: any) => parseFloat(s.purity) === pNum);
-      }
-      const total = filtered.reduce((sum: number, s: any) => {
-        const wt = Number(s.weight ?? s.stockQty ?? 0);
-        return sum + (isNaN(wt) ? 0 : wt);
-      }, 0);
-      return truncate3Dec(total);
-    }
+
 
     return 0;
   };
 
   // When a size is selected in the modal, automatically prefill purity and chain weight from box stock
   const handleSizeSelect = (cardIndex: number, selectedSizeId: string) => {
-    const sizePurities = getPuritiesForSize(selectedSizeId);
+    let sizePurities = getPuritiesForSize(selectedSizeId);
+
+    // Fallback: scan boxStockList directly if boxCards lookup returned nothing
+    if (sizePurities.length === 0 && selectedSizeId) {
+      const pSet = new Set<number>();
+      boxStockList.forEach((b: any) => {
+        const bSizeId = String(b.sizeId || b.size?.id || '');
+        const p = Number(b.purity || 0);
+        if (bSizeId === String(selectedSizeId) && p > 0) {
+          pSet.add(p);
+        }
+      });
+      sizePurities = Array.from(pSet).sort((a, b) => b - a);
+    }
+
+    // Fallback: scan boxData which has sizeId + purity
+    if (sizePurities.length === 0 && selectedSizeId) {
+      const bList = Array.isArray((boxData as any)?.data)
+        ? (boxData as any).data
+        : Array.isArray(boxData)
+          ? boxData
+          : [];
+      const pSet = new Set<number>();
+      bList.forEach((s: any) => {
+        const sSizeId = String(s.sizeId || '');
+        const p = Number(s.purity || 0);
+        if (sSizeId === String(selectedSizeId) && p > 0) {
+          pSet.add(p);
+        }
+      });
+      sizePurities = Array.from(pSet).sort((a, b) => b - a);
+    }
+
     const chosenPurity = sizePurities.length > 0 ? String(sizePurities[0]) : '';
 
     setModalCards((prev) =>
@@ -331,16 +363,6 @@ const SolderingDept: React.FC = () => {
           const sizeName = soldering.size?.size || soldering.sizeId || 'N/A';
           const chainWeight = soldering.chainWeight || 0;
           const purity = soldering.purity;
-          const truncate3Dec = (val: number): number => {
-            if (!val || isNaN(val)) return 0;
-            const str = val.toString();
-            if (str.includes('.')) {
-              const [intPart, decPart] = str.split('.');
-              return Number(`${intPart}.${decPart.slice(0, 3)}`);
-            }
-            return val;
-          };
-
           const fine =
             soldering.fine !== undefined && soldering.fine !== null
               ? soldering.fine
@@ -466,17 +488,6 @@ const SolderingDept: React.FC = () => {
                 updated.chainReceived = isNaN(numValue) ? 0 : numValue;
               }
 
-              // Auto calculate: Powder Given = Chain Received - Chain Given
-              const truncate3Dec = (val: number): number => {
-                if (!val || isNaN(val)) return 0;
-                const str = val.toString();
-                if (str.includes('.')) {
-                  const [intPart, decPart] = str.split('.');
-                  return Number(`${intPart}.${decPart.slice(0, 3)}`);
-                }
-                return val;
-              };
-
               const autoPowder = Math.max(
                 0,
                 truncate3Dec(updated.chainReceived - entry.chainWeight),
@@ -494,17 +505,7 @@ const SolderingDept: React.FC = () => {
               }
             }
 
-            // Auto calculate: Increase % = (Powder Given / Chain Received) * 100
             if (updated.powder > 0 && updated.chainReceived > 0) {
-              const truncate3Dec = (val: number): number => {
-                if (!val || isNaN(val) || !Number.isFinite(val)) return 0;
-                const str = val.toString();
-                if (str.includes('.')) {
-                  const [intPart, decPart] = str.split('.');
-                  return Number(`${intPart}.${decPart.slice(0, 3)}`);
-                }
-                return val;
-              };
               updated.increase = truncate3Dec((updated.powder / updated.chainReceived) * 100);
             } else {
               updated.increase = 0;
@@ -689,15 +690,6 @@ const SolderingDept: React.FC = () => {
 
     const chainWeightVal = parseFloat(card.chainWeight) || 0;
     const purityVal = parseFloat(card.purity) || 0;
-    const truncate3Dec = (val: number): number => {
-      if (!val || isNaN(val)) return 0;
-      const str = val.toString();
-      if (str.includes('.')) {
-        const [intPart, decPart] = str.split('.');
-        return Number(`${intPart}.${decPart.slice(0, 3)}`);
-      }
-      return val;
-    };
     const fineVal = truncate3Dec((chainWeightVal * purityVal) / 100);
 
     if (chainWeightVal <= 0) {

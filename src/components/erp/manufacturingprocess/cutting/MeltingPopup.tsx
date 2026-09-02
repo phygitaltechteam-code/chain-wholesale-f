@@ -183,7 +183,7 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
 
         {/* Received (%) / Wt / Loss Inputs */}
         <div className="overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-[#f9f9f7] dark:border-slate-800 dark:bg-slate-950">
-          <div className="grid grid-cols-3 gap-3 p-4">
+          <div className="grid grid-cols-4 gap-3 p-4">
             {/* Received (%) */}
             <div>
               <label className="mb-2 block text-center text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -230,13 +230,32 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
                 <span className="text-xs text-slate-500">g</span>
               </div>
             </div>
+            {/* Fine Wt (auto-calculated, read-only) */}
+            <div>
+              <label className="mb-2 block text-center text-xs font-bold text-slate-700 dark:text-slate-300">
+                Fine Wt (G)
+              </label>
+              <div className="flex items-center gap-1">
+                <div className="w-full rounded-lg border border-[#d3c4af]/50 bg-[#fffdf6] px-2 py-2 text-right font-mono text-sm font-semibold text-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400">
+                  {(() => {
+                    const w = parseFloat(weight);
+                    const p = parseFloat(receivedPurity);
+                    if (!isNaN(w) && !isNaN(p) && w > 0 && p > 0) {
+                      const fine = Math.round(((w * p) / 100) * 1000) / 1000;
+                      return fine > 0 ? formatNoTrailingZeros3Dec(fine) : '—';
+                    }
+                    return '—';
+                  })()}
+                </div>
+                <span className="text-xs text-slate-500">g</span>
+              </div>
+            </div>
 
             {/* Loss Fine Wt */}
             <div>
               <label className="mb-2 block text-center text-xs font-bold text-slate-700 dark:text-slate-300">
                 Loss (Fine Wt) G
               </label>
-
               <div className="flex items-center gap-1">
                 <input
                   type="number"

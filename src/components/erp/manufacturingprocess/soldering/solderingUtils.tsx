@@ -82,6 +82,18 @@ export const hasMeltingStatus = (item: any): boolean => {
   );
 };
 
+export const truncate3Dec = (val: number | string | undefined | null): number => {
+  if (val === undefined || val === null || val === '') return 0;
+  const num = typeof val === 'string' ? parseFloat(val) : val;
+  if (!Number.isFinite(num) || isNaN(num)) return 0;
+  const str = num.toString();
+  if (str.includes('.')) {
+    const [intPart, decPart] = str.split('.');
+    return Number(`${intPart}.${decPart.slice(0, 3)}`);
+  }
+  return num;
+};
+
 export const getCurrentWeekRange = () => {
   const today = new Date();
   const day = today.getDay();
