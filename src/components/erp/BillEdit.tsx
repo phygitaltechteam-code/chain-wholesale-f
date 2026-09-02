@@ -718,7 +718,7 @@ const BillEdit: React.FC = () => {
     return calculateTotalSRP() + calculateTotalLabor();
   };
 
-  // Get Client Due Balance from client.due or client.openingBalance (Positive value)
+  // Get Client Due Balance from client.due or client.openingBalance
   const getClientDueBalance = (client: any) => {
     if (!client) return 0;
     const due =
@@ -726,16 +726,13 @@ const BillEdit: React.FC = () => {
         ? Number(client.due)
         : NaN;
     if (!isNaN(due)) {
-      return Math.round(Math.abs(due) * 1000) / 1000;
+      return Math.round(due * 1000) / 1000;
     }
     const openingBalance = Number(client?.openingBalance) || 0;
-    return Math.round(Math.abs(openingBalance) * 1000) / 1000;
+    return Math.round(openingBalance * 1000) / 1000;
   };
 
   const calculateRemainingWeight = () => {
-    if (isReadOnly && savedRemaining !== null) {
-      return Math.round(savedRemaining * 1000) / 1000;
-    }
     const client = clients.find((c: any) => c.id === formData.clientId);
     const dueBalance = getClientDueBalance(client);
     const advance = Number(formData.customerWeight) || 0;
@@ -750,10 +747,10 @@ const BillEdit: React.FC = () => {
     const remaining = totalFineWeight + dueBalance - advance;
     return Math.round(remaining * 1000) / 1000;
   };
-
   const formatNumberThreeDecimals = (value: number) => {
     if (value === 0 || !value) return '0';
-    return Number(Math.abs(value).toFixed(3)).toString();
+    const formatted = Number(value.toFixed(3)).toString();
+    return formatted;
   };
 
   const formatNumberWith2Decimals = (value: number) => {
@@ -1400,7 +1397,7 @@ const BillEdit: React.FC = () => {
             </div>
 
             {/* Due Balance (Client Due - Read Only) */}
-            {/* <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-4 py-2.5 dark:border-slate-700">
+            <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-4 py-2.5 dark:border-slate-700">
               <span className="text-sm font-medium text-[#4f4535] dark:text-slate-300">
                 Due Balance
               </span>
@@ -1414,7 +1411,7 @@ const BillEdit: React.FC = () => {
                 )}{' '}
                 G
               </span>
-            </div> */}
+            </div>
 
             {/* Remaining Balance */}
             <div className="flex items-center justify-between bg-[#f4f0e5] px-4 py-3 dark:bg-slate-800">

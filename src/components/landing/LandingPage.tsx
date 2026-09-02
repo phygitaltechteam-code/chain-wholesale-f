@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {useNavigate} from '@tanstack/react-router';
+import toast from 'react-hot-toast';
 import {
   Gem,
   Flame,
@@ -24,6 +25,10 @@ import {
   Check,
   Menu,
   X,
+  User,
+  Phone,
+  MapPin,
+  Send,
 } from 'lucide-react';
 
 // ─── 7-Stage Manufacturing Process Data ───────────────────────────────────────
@@ -203,54 +208,23 @@ const erpModules = [
   },
 ];
 
-// ─── Pricing Plans ───────────────────────────────────────────────────────────
-const pricingPlans = [
+// ─── Demo & Trial Features ───────────────────────────────────────────────────
+const demoFeatures = [
   {
-    name: 'Trial Edition',
-    duration: '7 Days Free Access',
-    price: '₹0',
-    desc: 'Experience full gold chain manufacturing and billing capabilities for your workshop.',
-    features: [
-      'All 7 Manufacturing Departments',
-      'Fine Weight & Loss Calculations',
-      'Smart Invoicing & Bill Generator',
-      'Single Workshop Admin Account',
-      'Standard Thermal & A4 Printing',
-    ],
-    highlighted: false,
-    cta: 'Start Free Trial',
+    title: '7-Stage Production Loss Tracking',
+    desc: 'Melting to S-Kunda real-time scrap balance & yield logs.',
   },
   {
-    name: 'Cloud Standard',
-    duration: 'Annual Subscription',
-    price: '₹14,999',
-    desc: 'Complete cloud-connected ERP suite for growing jewelry chain manufacturers and traders.',
-    features: [
-      'Unlimited Manufacturing Orders & Batches',
-      'Multi-User Roles & Permissions',
-      'Real-Time Vault & Metal Balances',
-      'Automated WhatsApp & Print Invoices',
-      'Cloud Backup & Audit History',
-      'Priority Technical Support',
-    ],
-    highlighted: true,
-    cta: 'Get Cloud Standard',
+    title: 'Live Karat & Fine Gold Ledger',
+    desc: 'Automatic fine gold conversion down to 0.001g precision.',
   },
   {
-    name: 'Factory Enterprise',
-    duration: 'Custom Multi-Shop',
-    price: '₹29,999',
-    desc: 'Heavy-duty multi-branch factory solution with offline edge sync and custom reporting.',
-    features: [
-      'Multi-Branch & Super Admin Suite',
-      'Offline-First Local Edge Resiliency',
-      'Custom BIS Hallmark & Barcode Templates',
-      'Automated E-PIN Licensing Generator',
-      'Dedicated Account Manager',
-      'On-Site / Video Training & Customization',
-    ],
-    highlighted: false,
-    cta: 'Contact Enterprise Sales',
+    title: 'Smart Invoicing & Thermal Printing',
+    desc: 'Instant GST tax invoices and customer metal debit/credit ledgers.',
+  },
+  {
+    title: 'Instant 7-Day Cloud Access',
+    desc: 'Zero setup hurdles, zero obligations, no credit card required.',
   },
 ];
 
@@ -288,6 +262,111 @@ export const LandingPage: React.FC = () => {
   >('manufacturing');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Demo & Trial Form State (Name, Number, Address only)
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    address: '',
+  });
+  const [formErrors, setFormErrors] = useState<{
+    name?: string;
+    phone?: string;
+    address?: string;
+  }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
+    const {name, value} = e.target;
+    setFormData((prev) => ({...prev, [name]: value}));
+    if (formErrors[name as keyof typeof formErrors]) {
+      setFormErrors((prev) => ({...prev, [name]: undefined}));
+    }
+    if (saveSuccessMsg) {
+      setSaveSuccessMsg(null);
+    }
+  };
+
+  const validateForm = () => {
+    const errors: {name?: string; phone?: string; address?: string} = {};
+    if (!formData.name.trim()) {
+      errors.name = 'Please enter your name.';
+    } else if (formData.name.trim().length < 2) {
+      errors.name = 'Name must be at least 2 characters.';
+    }
+
+    if (!formData.phone.trim()) {
+      errors.phone = 'Please enter your mobile or phone number.';
+    } else if (!/^[0-9+() -]{7,16}$/.test(formData.phone.trim())) {
+      errors.phone = 'Please enter a valid phone number (min 7 digits).';
+    }
+
+    if (!formData.address.trim()) {
+      errors.address = 'Please enter your workshop address or city.';
+    } else if (formData.address.trim().length < 3) {
+      errors.address = 'Address must be at least 3 characters.';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSaveDemoTrial = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) {
+      toast.error('Please fill in your name, phone number, and address.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSaveSuccessMsg(null);
+
+    setTimeout(() => {
+      try {
+        const refId = `GC-DEMO-${Math.floor(100000 + Math.random() * 900000)}`;
+        const existing = JSON.parse(
+          localStorage.getItem('goldchain_demo_requests') || '[]',
+        );
+        const newEntry = {
+          ...formData,
+          refId,
+          createdAt: new Date().toISOString(),
+        };
+        existing.push(newEntry);
+        localStorage.setItem(
+          'goldchain_demo_requests',
+          JSON.stringify(existing),
+        );
+
+        // Reset form immediately on save - don't show submitted data
+        setFormData({
+          name: '',
+          phone: '',
+          address: '',
+        });
+        setFormErrors({});
+        setSaveSuccessMsg('Demo trial request saved! Our team will contact you shortly.');
+        toast.success('Demo trial request saved successfully!');
+      } catch (err) {
+        console.error('Error saving demo trial:', err);
+        setFormData({
+          name: '',
+          phone: '',
+          address: '',
+        });
+        setFormErrors({});
+        setSaveSuccessMsg('Demo trial request saved! Our team will contact you shortly.');
+        toast.success('Demo trial request saved!');
+      } finally {
+        setIsSubmitting(false);
+      }
+    }, 500);
+  };
 
   const handleGoToLogin = () => {
     setIsMobileMenuOpen(false);
@@ -354,10 +433,10 @@ export const LandingPage: React.FC = () => {
               System Preview
             </button>
             <button
-              onClick={() => scrollToSection('pricing')}
+              onClick={() => scrollToSection('trial')}
               className="transition-colors hover:text-[#785600]"
             >
-              Licensing
+              Demo Trial
             </button>
             <button
               onClick={() => scrollToSection('faq')}
@@ -423,10 +502,10 @@ export const LandingPage: React.FC = () => {
                 System Preview
               </button>
               <button
-                onClick={() => scrollToSection('pricing')}
+                onClick={() => scrollToSection('trial')}
                 className="rounded-lg p-2.5 text-left hover:bg-[#fff9ed] hover:text-[#785600]"
               >
-                Licensing
+                Demo Trial
               </button>
               <button
                 onClick={() => scrollToSection('faq')}
@@ -1061,84 +1140,229 @@ export const LandingPage: React.FC = () => {
           </div>
         </section>
 
-        {/* ─── 6. Pricing & Licensing Plans ──────────────────────────────────── */}
+        {/* ─── 6. Demo & Trial Request Section (Replaces Pricing) ─────────────── */}
         <section
-          id="pricing"
+          id="trial"
           className="mx-auto max-w-7xl scroll-mt-20 px-4 sm:px-6 lg:px-8"
         >
-          <div className="mx-auto mb-8 max-w-3xl text-center sm:mb-12">
-            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-[#785600]/20 bg-[#785600]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#785600] sm:mb-3 sm:text-xs">
-              Deployment & Licensing
+          {/* Legacy anchor support so any #pricing link scrolls smoothly here */}
+          <span id="pricing" className="-mt-20 block h-0" />
+
+          <div className="mx-auto mb-6 max-w-3xl text-center sm:mb-8">
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-[#785600]/20 bg-[#785600]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#785600] sm:text-xs">
+              <Sparkles className="h-3 w-3 text-[#785600]" />
+              Free Demo & 7-Day Trial
             </div>
             <h2 className="text-2xl font-black text-[#1a1c1b] sm:text-3xl md:text-4xl">
-              Flexible Plans for Every Workshop Size
+              Experience GoldChain Live In Your Workshop
             </h2>
-            <p className="mt-2 text-xs text-[#4f4535] sm:mt-3 sm:text-sm md:text-base">
-              Activate instantly via our automated cryptographic E-PIN key
-              system with zero setup hurdles.
+            <p className="mt-1.5 text-xs text-[#4f4535] sm:text-sm">
+              Activate your 7-day unrestricted trial with zero setup hurdles.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 items-stretch gap-5 sm:gap-8 md:grid-cols-3">
-            {pricingPlans.map((plan, idx) => (
-              <div
-                key={idx}
-                className={`flex flex-col justify-between rounded-3xl p-6 transition-all sm:p-8 ${
-                  plan.highlighted
-                    ? 'relative border-2 border-[#785600] bg-gradient-to-b from-[#fffdf9] via-white to-[#fff9ed] shadow-xl md:-translate-y-2'
-                    : 'border border-[#d3c4af]/50 bg-white shadow-md hover:border-[#785600]/30'
-                }`}
-              >
+          <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12 lg:gap-8">
+            {/* Left Side: Clean, Concise Information */}
+            <div className="flex lg:col-span-6">
+              <div className="flex h-full w-full flex-col justify-between rounded-3xl border border-[#d3c4af]/50 bg-gradient-to-br from-white via-[#fffdfa] to-[#fff9ed] p-6 shadow-lg shadow-[#785600]/5 sm:p-8">
                 <div>
-                  {plan.highlighted && (
-                    <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#785600] to-[#986d00] px-3 py-1 text-[9px] font-extrabold uppercase text-white shadow-md sm:text-[10px]">
-                      Most Popular
+                  <div className="flex items-center justify-between">
+                    <span className="inline-block rounded-md bg-[#785600]/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#785600] sm:text-xs">
+                      Zero Obligation
                     </span>
-                  )}
-
-                  <h3 className="text-lg font-bold text-[#1a1c1b] sm:text-xl">
-                    {plan.name}
+                    <span className="rounded-full border border-[#785600]/20 bg-white px-2.5 py-0.5 text-[10px] font-bold text-[#785600]">
+                      7-Day Trial
+                    </span>
+                  </div>
+                  <h3 className="mt-3.5 text-xl font-extrabold leading-snug text-[#1a1c1b] sm:text-2xl">
+                    Take Complete Control Over Shop-Floor Metal Loss
                   </h3>
-                  <div className="mt-1 text-xs font-bold text-[#785600]">
-                    {plan.duration}
-                  </div>
-                  <p className="mt-2.5 text-xs text-[#4f4535]">{plan.desc}</p>
+                  <p className="mt-2 text-xs leading-relaxed text-[#4f4535] sm:text-sm">
+                    Track every milligram of gold across manufacturing with automated fine karat balances and zero unaccounted loss.
+                  </p>
 
-                  <div className="mb-4 mt-4 sm:mb-6 sm:mt-6">
-                    <span className="text-3xl font-extrabold text-[#1a1c1b] sm:text-4xl">
-                      {plan.price}
-                    </span>
-                    {plan.price !== '₹0' && (
-                      <span className="text-xs font-normal text-[#817563]">
-                        {' '}
-                        / year
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="space-y-2.5 border-t border-[#d3c4af]/30 pt-3.5 text-xs text-[#4f4535]">
-                    {plan.features.map((f, fIdx) => (
-                      <div key={fIdx} className="flex items-center gap-2">
-                        <Check className="h-3.5 w-3.5 shrink-0 font-bold text-[#785600]" />
-                        <span>{f}</span>
+                  {/* Features List with Gold Checkmarks */}
+                  <div className="mt-5 space-y-3.5 border-t border-[#d3c4af]/30 pt-4">
+                    {demoFeatures.map((item, idx) => (
+                      <div key={idx} className="flex items-start gap-3">
+                        <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#785600]/15 text-[#785600]">
+                          <Check className="h-3.5 w-3.5 font-bold" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-[#1a1c1b] sm:text-sm">
+                            {item.title}
+                          </h4>
+                          <p className="mt-0.5 text-xs text-[#817563]">
+                            {item.desc}
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <button
-                  onClick={handleGoToLogin}
-                  className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold transition-all sm:mt-8 ${
-                    plan.highlighted
-                      ? 'bg-gradient-to-r from-[#785600] to-[#986d00] text-white shadow-md hover:opacity-95'
-                      : 'border border-[#d3c4af]/50 bg-[#f9f9f7] text-[#4f4535] hover:bg-[#fff9ed] hover:text-[#785600]'
-                  }`}
-                >
-                  <span>{plan.cta}</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
+                <div className="mt-5 border-t border-[#d3c4af]/30 pt-3 text-[11px] font-medium text-[#817563]">
+                  ⚡ Instant account activation with full cloud & offline factory floor access.
+                </div>
               </div>
-            ))}
+            </div>
+
+            {/* Right Side: Demo & Trial Registration Form (Always visible, resets on save) */}
+            <div className="flex lg:col-span-6">
+              <div className="flex h-full w-full flex-col justify-between rounded-3xl border border-[#d3c4af]/60 bg-white p-6 shadow-xl shadow-[#785600]/10 sm:p-8 md:p-9">
+                <form onSubmit={handleSaveDemoTrial} noValidate className="flex h-full flex-col justify-between space-y-4 sm:space-y-5">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#785600]">
+                        Live Onboarding Request
+                      </span>
+                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                        Instant Access
+                      </span>
+                    </div>
+                    <h3 className="mt-1 text-xl font-black text-[#1a1c1b] sm:text-2xl">
+                      Register for Free Demo & Trial
+                    </h3>
+                    <p className="mt-1 text-xs text-[#817563]">
+                      Enter your workshop details below to save your trial registration.
+                    </p>
+
+                    {saveSuccessMsg && (
+                      <div className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-semibold text-emerald-800 animate-in fade-in">
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                        <span>{saveSuccessMsg}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Name Field */}
+                    <div>
+                      <label
+                        htmlFor="demo-name"
+                        className="mb-1.5 block text-xs font-bold text-[#1a1c1b]"
+                      >
+                        Your Full Name <span className="text-rose-600">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#817563]">
+                          <User className="h-4 w-4" />
+                        </div>
+                        <input
+                          id="demo-name"
+                          name="name"
+                          type="text"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Rajesh Soni"
+                          className={`w-full rounded-xl border py-2.5 pl-10 pr-3 text-xs sm:text-sm text-[#1a1c1b] placeholder:text-[#a59986] focus:outline-none focus:ring-2 ${
+                            formErrors.name
+                              ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-rose-200'
+                              : 'border-[#d3c4af]/70 bg-[#fffdfa] focus:border-[#785600] focus:ring-[#785600]/20'
+                          }`}
+                        />
+                      </div>
+                      {formErrors.name && (
+                        <p className="mt-1 text-[11px] font-medium text-rose-600">
+                          {formErrors.name}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Phone Number Field */}
+                    <div>
+                      <label
+                        htmlFor="demo-phone"
+                        className="mb-1.5 block text-xs font-bold text-[#1a1c1b]"
+                      >
+                        Mobile / WhatsApp Number <span className="text-rose-600">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#817563]">
+                          <Phone className="h-4 w-4" />
+                        </div>
+                        <input
+                          id="demo-phone"
+                          name="phone"
+                          type="tel"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          placeholder="e.g. +91 98765 43210"
+                          className={`w-full rounded-xl border py-2.5 pl-10 pr-3 text-xs sm:text-sm text-[#1a1c1b] placeholder:text-[#a59986] focus:outline-none focus:ring-2 ${
+                            formErrors.phone
+                              ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-rose-200'
+                              : 'border-[#d3c4af]/70 bg-[#fffdfa] focus:border-[#785600] focus:ring-[#785600]/20'
+                          }`}
+                        />
+                      </div>
+                      {formErrors.phone && (
+                        <p className="mt-1 text-[11px] font-medium text-rose-600">
+                          {formErrors.phone}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Address Field */}
+                    <div>
+                      <label
+                        htmlFor="demo-address"
+                        className="mb-1.5 block text-xs font-bold text-[#1a1c1b]"
+                      >
+                        Workshop / Store Address <span className="text-rose-600">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="pointer-events-none absolute left-0 top-3 flex items-start pl-3.5 text-[#817563]">
+                          <MapPin className="h-4 w-4" />
+                        </div>
+                        <textarea
+                          id="demo-address"
+                          name="address"
+                          rows={2}
+                          value={formData.address}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Shop 24, Zaveri Bazaar, Kalbadevi, Mumbai - 400002"
+                          className={`w-full rounded-xl border py-2.5 pl-10 pr-3 text-xs sm:text-sm text-[#1a1c1b] placeholder:text-[#a59986] focus:outline-none focus:ring-2 ${
+                            formErrors.address
+                              ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-rose-200'
+                              : 'border-[#d3c4af]/70 bg-[#fffdfa] focus:border-[#785600] focus:ring-[#785600]/20'
+                          }`}
+                        />
+                      </div>
+                      {formErrors.address && (
+                        <p className="mt-1 text-[11px] font-medium text-rose-600">
+                          {formErrors.address}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    {/* Save / Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#785600] via-[#8c6400] to-[#986d00] py-3.5 text-xs sm:text-sm font-bold text-white shadow-xl shadow-[#785600]/25 transition-all hover:opacity-95 hover:shadow-2xl active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-75"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          <span>Saving Your Demo Trial...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4" />
+                          <span>Save & Book Free Demo Trial</span>
+                        </>
+                      )}
+                    </button>
+
+                    <p className="mt-2 text-center text-[11px] text-[#817563]">
+                      🔒 Your contact information is kept strictly confidential and used solely to provision your demo account.
+                    </p>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1251,10 +1475,10 @@ export const LandingPage: React.FC = () => {
               7-Stage Process
             </button>
             <button
-              onClick={() => scrollToSection('pricing')}
+              onClick={() => scrollToSection('trial')}
               className="transition-colors hover:text-[#785600]"
             >
-              Licensing
+              Demo Trial
             </button>
             <button
               onClick={handleGoToLogin}

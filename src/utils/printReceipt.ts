@@ -203,6 +203,7 @@ export const printReceipt = (
               background: white !important;
               padding: 0 !important;
               margin: 0 !important;
+              display: block !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }

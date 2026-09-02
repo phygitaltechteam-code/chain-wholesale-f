@@ -758,7 +758,7 @@ const Billing: React.FC = () => {
 
   const renderActions = (item: BillGroup, index: number) => (
     <div className="flex items-center justify-center gap-1">
-      {item.type === 'DRAFT' && (
+      {/* {item.type === 'DRAFT' && (
         <>
           <button
             onClick={(e) => {
@@ -771,7 +771,7 @@ const Billing: React.FC = () => {
             <Factory className="h-4 w-4" />
           </button>
         </>
-      )}
+      )} */}
       <button
         onClick={(e) => {
           e.stopPropagation();

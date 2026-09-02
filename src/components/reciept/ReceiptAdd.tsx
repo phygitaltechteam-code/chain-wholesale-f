@@ -288,7 +288,7 @@ const ReceiptAdd: React.FC = () => {
       });
 
       let weight = 0;
-      
+
 
       // Extract weight
       if (
@@ -503,38 +503,43 @@ const ReceiptAdd: React.FC = () => {
     );
   };
 
-  
-const getClientDueBalance = (client: any) => {
-  if (!client) return 0;
-  const due = client?.due !== null && client?.due !== undefined 
-    ? Number(client.due) 
-    : Number(client?.openingBalance) || 0;
-  return Math.round(due * 1000) / 1000;
-};
+
+  const getClientDueBalance = (client: any) => {
+    if (!client) return 0;
+    const due =
+      client?.due !== null && client?.due !== undefined
+        ? Number(client.due)
+        : NaN;
+    if (!isNaN(due)) {
+      return Math.round(due * 1000) / 1000;
+    }
+    const openingBalance = Number(client?.openingBalance) || 0;
+    return Math.round(openingBalance * 1000) / 1000;
+  };
 
 
 
-const calculateRemainingWeight = () => {
-  const client = clients.find((c: any) => c.id === formData.clientId);
-  const dueBalance = getClientDueBalance(client);
-  const advance = Number(formData.customerWeight) || 0;
-  const totalFineWeight =
-    formData.totalFine !== undefined && formData.totalFine !== ''
-      ? Number(formData.totalFine) || 0
-      : formData.items.reduce(
+  const calculateRemainingWeight = () => {
+    const client = clients.find((c: any) => c.id === formData.clientId);
+    const dueBalance = getClientDueBalance(client);
+    const advance = Number(formData.customerWeight) || 0;
+    const totalFineWeight =
+      formData.totalFine !== undefined && formData.totalFine !== ''
+        ? Number(formData.totalFine) || 0
+        : formData.items.reduce(
           (sum, item) => sum + (Number(item.fineWt) || 0),
           0,
         );
-  // Remaining Balance = Total Fine Wt + Due Balance - Advance
-  const remaining = totalFineWeight + dueBalance - advance;
-  return Math.round(remaining * 1000) / 1000;
-};
+    // Remaining Balance = Total Fine Wt + Due Balance - Advance
+    const remaining = totalFineWeight + dueBalance - advance;
+    return Math.round(remaining * 1000) / 1000;
+  };
 
-const formatNumberThreeDecimals = (value: number) => {
-  if (value === 0 || !value) return '0';
-  const formatted = Number(value.toFixed(3)).toString();
-  return formatted;
-};
+  const formatNumberThreeDecimals = (value: number) => {
+    if (value === 0 || !value) return '0';
+    const formatted = Number(value.toFixed(3)).toString();
+    return formatted;
+  };
 
 
 
