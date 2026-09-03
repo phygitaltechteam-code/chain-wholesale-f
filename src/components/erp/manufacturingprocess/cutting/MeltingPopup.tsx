@@ -242,9 +242,9 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
                     const p = parseFloat(receivedPurity);
                     if (!isNaN(w) && !isNaN(p) && w > 0 && p > 0) {
                       const fine = Math.round(((w * p) / 100) * 1000) / 1000;
-                      return fine > 0 ? formatNoTrailingZeros3Dec(fine) : '—';
+                      return fine > 0 ? formatNoTrailingZeros3Dec(fine) : '0.0';
                     }
-                    return '—';
+                    return '0.0';
                   })()}
                 </div>
                 <span className="text-xs text-slate-500">g</span>

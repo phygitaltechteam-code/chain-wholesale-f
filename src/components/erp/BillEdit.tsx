@@ -146,6 +146,7 @@ const BillEdit: React.FC = () => {
   const [billNo, setBillNo] = useState<string>('');
   const [savedRemaining, setSavedRemaining] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingType, setSubmittingType] = useState<'draft' | 'bill' | null>(null);
   const isSubmittingRef = useRef(false);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -759,20 +760,67 @@ const BillEdit: React.FC = () => {
     if (value === 0 || !value) return '0';
     return Number(Math.abs(value).toFixed(2)).toString();
   };
-  const handlePrintReceipt = (group: BillGroup) => {
-    if (!group) return;
-    const client = clients.find((c: any) => c.id === formData.clientId);
+  const handlePrintReceipt = (responseData?: any) => {
+    const client = clients.find(
+      (c: any) => String(c.id) === String(formData.clientId),
+    );
     const clientDue = getClientDueBalance(client);
+
+    const now = new Date();
+    const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours() % 12 || 12).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'pm' : 'am'}`;
+
+    const advance =
+      Number(
+        responseData?.customerWeight ??
+          responseData?.receive ??
+          formData.customerWeight,
+      ) || 0;
+
+    const remaining =
+      Number(
+        responseData?.remainingWeight ??
+          responseData?.pending ??
+          savedRemaining ??
+          calculateRemainingWeight(),
+      ) || 0;
+
+    const itemsList =
+      Array.isArray(responseData?.items) &&
+      responseData.items.length > 0 &&
+      responseData.items[0]?.item
+        ? responseData.items
+        : formData.items.map((item) => ({
+            item: item.item || '-',
+            size: item.size || '-',
+            purity: Number(item.purity) || 0,
+            grossWeight: Number(item.grossWt) || 0,
+            srp: Number(item.srp) || 0,
+            finWt: Number(item.fineWt) || 0,
+            laborRate: Number(item.laborRate) || 0,
+          }));
+
+    const totalFineWt =
+      Number(responseData?.totalFineWt ?? responseData?.totalFinWt) ||
+      itemsList.reduce(
+        (sum: number, i: any) => sum + (Number(i.finWt) || 0),
+        0,
+      );
+
     printReceipt(
       {
-        clientName: group.clientName,
-        phoneNumber: group.phoneNumber,
-        dateTime: group.dateTime,
-        items: group.items,
-        totalFineWt: group.totalFinWt,
-        receive: group.receive,
+        clientName:
+          responseData?.clientName ||
+          formData.clientName ||
+          client?.fullName ||
+          'N/A',
+        phoneNumber:
+          responseData?.phoneNumber || client?.phoneNumber || 'N/A',
+        dateTime: responseData?.dateTime || dateStr,
+        items: itemsList,
+        totalFineWt,
+        receive: advance,
         dueBalance: clientDue,
-        remainingBalance: group.pending,
+        remainingBalance: remaining,
       },
       getpdfheaderdata,
     );
@@ -796,6 +844,7 @@ const BillEdit: React.FC = () => {
 
     isSubmittingRef.current = true;
     setIsSubmitting(true);
+    setSubmittingType('draft');
 
     try {
       const totalGrossWt = calculateTotalGrossWt();
@@ -830,6 +879,7 @@ const BillEdit: React.FC = () => {
     } catch (error) {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
+      setSubmittingType(null);
       console.error('Error saving draft:', error);
       toast.error('Failed to save draft');
     }
@@ -856,6 +906,7 @@ const BillEdit: React.FC = () => {
 
     isSubmittingRef.current = true;
     setIsSubmitting(true);
+    setSubmittingType('bill');
 
     try {
       const totalGrossWt = calculateTotalGrossWt();
@@ -884,12 +935,12 @@ const BillEdit: React.FC = () => {
         type: 'BILL',
       };
 
-      await updateBill.mutateAsync({ id, data: billData });
+      const response = await updateBill.mutateAsync({ id, data: billData });
       // toast.success('Bill updated successfully!');
 
       // Print the receipt after successful update
       setTimeout(() => {
-        handlePrintReceipt(billData);
+        handlePrintReceipt(response?.data || billData);
       }, 500);
 
       // Navigate after print
@@ -899,6 +950,7 @@ const BillEdit: React.FC = () => {
     } catch (error: any) {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
+      setSubmittingType(null);
       console.error('Error updating receipt:', error);
 
       const backendMessage =
@@ -1440,12 +1492,12 @@ const BillEdit: React.FC = () => {
                 disabled={isSubmitting || updateBill.isPending}
                 className="hover:!bg-gray-700 !bg-gradient-to-br from-[#d97706] to-[#92400e] !text-white"
               >
-                {isSubmitting || updateBill.isPending ? (
+                {submittingType === 'draft' ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
                   <FileText className="h-5 w-5" />
                 )}
-                {isSubmitting || updateBill.isPending ? 'Saving...' : 'Save as Draft'}
+                {submittingType === 'draft' ? 'Saving...' : 'Save as Draft'}
               </GenericButton>
 
               <GenericButton
@@ -1453,12 +1505,12 @@ const BillEdit: React.FC = () => {
                 onClick={handleUpdateReceipt}
                 disabled={isSubmitting || updateBill.isPending}
               >
-                {isSubmitting || updateBill.isPending ? (
+                {submittingType === 'bill' ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
                   <Save className="h-5 w-5" />
                 )}
-                {isSubmitting || updateBill.isPending ? 'Updating...' : 'Update Bill'}
+                {submittingType === 'bill' ? 'Updating...' : 'Update Bill'}
               </GenericButton>
             </div>
           </div>

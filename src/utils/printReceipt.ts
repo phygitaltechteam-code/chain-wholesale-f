@@ -182,30 +182,28 @@ export const printReceipt = (
           body {
             font-family: Arial, Helvetica, sans-serif;
             background: #ffffff;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
           .receipt-container {
             width: 100%;
-            max-width: 800px;
+            max-width: 120mm;
+            margin: 0 auto !important;
             background: #ffffff;
-            padding: 4mm 6mm;
+            padding: 2mm 3mm 5mm 3mm;
             box-sizing: border-box;
             color: #111111;
           }
           @page {
             size: portrait;
-            margin: 4mm;
+            margin: 4mm auto;
           }
           @media print {
             body {
-              background: white !important;
+              background: #ffffff !important;
               padding: 0 !important;
               margin: 0 !important;
               display: block !important;
@@ -214,9 +212,10 @@ export const printReceipt = (
             }
             .receipt-container {
               width: 100% !important;
-              max-width: 100% !important;
-              padding: 2mm 4mm !important;
-              margin: 0 !important;
+              max-width: 120mm !important;
+              padding: 1mm 0 3mm 0 !important;
+              margin: 0 auto !important;
+              box-shadow: none !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
@@ -248,29 +247,29 @@ export const printReceipt = (
               </span>
             </div>
 
-            <div style="margin:3px 0 0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
+            <div style="margin:4px 0 0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
               ${description}
             </div>
 
-            <div style="margin:3px 0 0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
+            <div style="margin:4px 0 0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
               ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
             </div>
 
-            <div style="border-bottom:2px solid ${factoryNameColor};margin:4px 0 6px;"></div>
+            <div style="border-bottom:2px solid ${factoryNameColor};margin:6px 0 8px;"></div>
           </div>
 
           <!-- RECEIPT TITLE -->
-          <div style="display:flex;align-items:center;justify-content:center;margin:0 0 4px;">
+          <div style="display:flex;align-items:center;justify-content:center;margin:0 0 6px;">
             <h2 style="margin:0;text-align:center;font-size:15px;font-weight:bold;letter-spacing:2px;color:#111111;">
               RECEIPT
             </h2>
           </div>
 
-          <!-- SIMPLE RECEIPT INFO -->
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 6px;padding:0 2px;font-size:11px;line-height:1.3;">
+          <!-- CLIENT & RECEIPT INFO -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 8px;padding:0 2px;font-size:11px;line-height:1.4;">
             <div>
               <span style="font-weight:bold;">Client:</span> ${receiptData.clientName || 'N/A'}
-              <span style="margin-left:16px;font-weight:bold;">Phone:</span> ${phoneNumber}
+              <span style="margin-left:20px;font-weight:bold;">Phone:</span> ${phoneNumber}
             </div>
             <div style="text-align:right;">
               <span style="font-weight:bold;">Date:</span> ${dateFormatted}
@@ -278,16 +277,16 @@ export const printReceipt = (
           </div>
 
           <!-- ITEM TABLE -->
-          <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0 0 6px;">
+          <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0 0 8px;">
             <thead>
               <tr style="background:#785600 !important;color:#ffffff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">Item</th>
-                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">Size</th>
-                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">Purity (%)</th>
-                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">Gross Wt (G)</th>
-                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">SRP (G)</th>
-                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">Fine Wt (G)</th>
-                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9px;color:#ffffff;background:#785600 !important;">Labor Rate (G)</th>
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9.5px;color:#ffffff;background:#785600 !important;">Item</th>
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9.5px;color:#ffffff;background:#785600 !important;">Size</th>
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9.5px;color:#ffffff;background:#785600 !important;">Purity (%)</th>
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9.5px;color:#ffffff;background:#785600 !important;">Gross Wt (G)</th>
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9.5px;color:#ffffff;background:#785600 !important;">SRP (G)</th>
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9.5px;color:#ffffff;background:#785600 !important;">Fine Wt (G)</th>
+                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9.5px;color:#ffffff;background:#785600 !important;">Labor Rate (G)</th>
               </tr>
             </thead>
             <tbody>
@@ -296,8 +295,8 @@ export const printReceipt = (
           </table>
 
           <!-- PAYMENT SUMMARY -->
-          <div style="display:flex;justify-content:flex-end;margin-top:2px;">
-            <div style="width:38%;min-width:200px;border:1px solid #d6c08a;border-radius:4px;background:#fffdf7 !important;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+          <div style="display:flex;justify-content:flex-end;margin-top:4px;">
+            <div style="width:45%;min-width:210px;border:1px solid #d6c08a;border-radius:4px;background:#fffdf7 !important;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
               <div style="display:flex;justify-content:space-between;padding:3px 8px;border-bottom:1px dashed #dddddd;font-size:10px;">
                 <span style="font-weight:bold;color:#666666;">Total Fine Wt</span>
                 <span style="font-family:monospace;font-weight:bold;color:#111111;">${format3Decimals(totalFineWt)} G</span>
@@ -335,7 +334,7 @@ export const printReceipt = (
     </html>
   `;
 
-  const printWindow = window.open('', '_blank', 'width=460,height=800');
+  const printWindow = window.open('', '_blank', 'width=1100,height=800');
   if (printWindow) {
     printWindow.document.write(receiptHtml);
     printWindow.document.close();

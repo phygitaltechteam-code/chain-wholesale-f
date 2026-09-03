@@ -1,6 +1,6 @@
 // components/Sidebar.tsx
-import React, {useState, useEffect, useMemo} from 'react';
-import {Link, useLocation} from '@tanstack/react-router';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useLocation } from '@tanstack/react-router';
 import {
   MdInventory2,
   MdPrecisionManufacturing,
@@ -21,8 +21,8 @@ import {
   MdAccountCircle,
   MdPictureAsPdf,
 } from 'react-icons/md';
-import {useAuthContext} from '@/context/AuthContext';
-import {EPinIcon} from '@/icons';
+import { useAuthContext } from '@/context/AuthContext';
+import { EPinIcon } from '@/icons';
 import { TrendingDown, Calculator } from 'lucide-react';
 
 interface SidebarProps {
@@ -56,8 +56,8 @@ const Sidebar = ({
   setSidebarOpen,
 }: SidebarProps) => {
   const location = useLocation();
-  const {pathname} = location;
-  const {user, isAuthenticated} = useAuthContext();
+  const { pathname } = location;
+  const { user, isAuthenticated } = useAuthContext();
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
@@ -134,6 +134,12 @@ const Sidebar = ({
       roles: ['ADMIN'],
     },
     {
+      label: 'Business 360 Report',
+      path: '/reports/stockreport',
+      icon: <MdAssessment size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
       label: 'Purity Management',
       path: '/puritymanagement',
       icon: <Calculator size={22} />,
@@ -145,7 +151,7 @@ const Sidebar = ({
       icon: <MdPersonAdd size={22} />,
       roles: ['SUPERADMIN'],
     },
-    
+
     // {
     //   label: 'E-PIN Request',
     //   path: '/epinrequest',
@@ -351,9 +357,8 @@ const Sidebar = ({
 
   const MobileOverlay = () => (
     <div
-      className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-all duration-300 md:hidden ${
-        isMobileMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
-      }`}
+      className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-all duration-300 md:hidden ${isMobileMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
+        }`}
       onClick={toggleMobileMenu}
     />
   );
@@ -378,11 +383,10 @@ const Sidebar = ({
                 toggleSubmenu(item.label);
               }
             }}
-            className={`group flex w-full items-center justify-between rounded-lg transition-all duration-200 ${
-              isItemActive || isAnySubrouteActive
+            className={`group flex w-full items-center justify-between rounded-lg transition-all duration-200 ${isItemActive || isAnySubrouteActive
                 ? 'bg-[#B8860B]/10 text-[#B8860B]'
                 : 'text-slate-400 hover:bg-white/5 hover:text-white'
-            } ${isActuallyCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}`}
+              } ${isActuallyCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}`}
             title={isActuallyCollapsed ? item.label : ''}
           >
             <div
@@ -399,9 +403,8 @@ const Sidebar = ({
             </div>
             {!isActuallyCollapsed && (
               <MdExpandMore
-                className={`transform transition-transform duration-200 ${
-                  isExpanded ? 'rotate-180' : ''
-                }`}
+                className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
+                  }`}
                 size={18}
               />
             )}
@@ -420,11 +423,10 @@ const Sidebar = ({
                       onClick={() => {
                         if (isMobileDevice) toggleMobileMenu();
                       }}
-                      className={`flex items-center gap-2 rounded-lg py-2 pl-4 pr-3 text-sm transition-all duration-200 ${
-                        isSubActive
+                      className={`flex items-center gap-2 rounded-lg py-2 pl-4 pr-3 text-sm transition-all duration-200 ${isSubActive
                           ? 'bg-[#B8860B]/10 text-[#B8860B]'
                           : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                      }`}
+                        }`}
                     >
                       <span className="shrink-0">{subroute.icon}</span>
                       <span>{subroute.label}</span>
@@ -445,11 +447,10 @@ const Sidebar = ({
           onClick={() => {
             if (isMobileDevice) toggleMobileMenu();
           }}
-          className={`group flex items-center rounded-lg transition-all duration-200 ${
-            isActive(item.path!)
+          className={`group flex items-center rounded-lg transition-all duration-200 ${isActive(item.path!)
               ? 'bg-[#B8860B]/10 text-[#B8860B]'
               : 'text-slate-400 hover:bg-white/5 hover:text-white'
-          } ${isActuallyCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}`}
+            } ${isActuallyCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}`}
           title={isActuallyCollapsed ? item.label : ''}
         >
           <span className={`shrink-0 ${isActuallyCollapsed ? '' : 'mr-3'}`}>
@@ -477,9 +478,8 @@ const Sidebar = ({
     <>
       <div
         onClick={toggleCollapse}
-        className={`mb-6 mt-6 cursor-pointer select-none transition-all duration-300 ${
-          isMobileDevice ? 'px-4' : isCollapsed ? 'px-2' : 'px-4'
-        }`}
+        className={`mb-6 mt-6 cursor-pointer select-none transition-all duration-300 ${isMobileDevice ? 'px-4' : isCollapsed ? 'px-2' : 'px-4'
+          }`}
         title={isCollapsed ? 'Click to expand sidebar' : 'Click to collapse sidebar'}
         role="button"
         tabIndex={0}
@@ -547,11 +547,10 @@ const Sidebar = ({
       <div className="border-t border-white/5 px-2 py-3">
         <button
           onClick={handleLogout}
-          className={`flex w-full items-center rounded-lg transition-all duration-200 ${
-            isCollapsed && !isMobileDevice
+          className={`flex w-full items-center rounded-lg transition-all duration-200 ${isCollapsed && !isMobileDevice
               ? 'justify-center px-2 py-3'
               : 'px-3 py-2.5 md:px-4 md:py-3'
-          } text-slate-400 hover:bg-white/5 hover:text-white`}
+            } text-slate-400 hover:bg-white/5 hover:text-white`}
           title={isCollapsed && !isMobileDevice ? 'Logout' : ''}
         >
           <MdLogout
@@ -584,11 +583,10 @@ const Sidebar = ({
       <MobileOverlay />
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-full flex-col bg-[#1a1a2e] shadow-2xl transition-all duration-300 ease-in-out ${getSidebarWidth()} ${
-          isMobileDevice && !isMobileMenuOpen
+        className={`fixed left-0 top-0 z-50 flex h-full flex-col bg-[#1a1a2e] shadow-2xl transition-all duration-300 ease-in-out ${getSidebarWidth()} ${isMobileDevice && !isMobileMenuOpen
             ? '-translate-x-full'
             : 'translate-x-0'
-        }`}
+          }`}
       >
         <SidebarContent />
       </aside>
