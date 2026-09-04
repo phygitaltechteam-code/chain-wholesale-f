@@ -90,3 +90,30 @@ export const useActivateKey = () => {
     },
   });
 };
+
+
+export const useAccessForBackup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: accessPassword,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+    },
+  });
+};
+
+export const accessPassword = async (data: ProfilePayload) => {
+  try {
+    const res: any = await api.post('admin/password', data);
+    // Axios interceptor returns response.data directly
+    if (res?.data !== true) {
+      throw new Error(res?.message || 'Password is incorrect');
+    }
+    return res;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to verify password');
+    }
+    throw error;
+  }
+}; 

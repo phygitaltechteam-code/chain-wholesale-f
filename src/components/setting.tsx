@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Lock, Loader2, CheckCircle2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useAccessForBackup, useUpdateProfile } from '@/lib/api/profile';
 import AdminProfile from './AdminProfile';
 import HeaderPdfDesign from './HeaderPdfDesign';
 import BackupAndRestorePage from './Backup&RestorePage';
@@ -9,18 +12,101 @@ export const Settings = () => {
     'profile' | 'header' | 'backup' | 'scale'
   >('profile');
 
+  const [isBackupUnlocked, setIsBackupUnlocked] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  const updateProfileMutation = useAccessForBackup();
+
+  // Automatically call the API to verify password as user enters it
+  useEffect(() => {
+    const trimmed = adminPassword.trim();
+    if (!trimmed || isBackupUnlocked) return;
+
+    const timer = setTimeout(async () => {
+      setIsVerifying(true);
+      try {
+        const res: any = await updateProfileMutation.mutateAsync({
+          password: trimmed,
+        });
+
+        if (res?.data !== true) {
+          toast.error(res?.message || 'Password is incorrect', {
+            id: 'password-verify',
+          });
+          return;
+        }
+
+        setIsBackupUnlocked(true);
+        setActiveTab('backup');
+        setAdminPassword('');
+        toast.success('Access granted: Backup & Restore tab unlocked!', {
+          id: 'password-verify',
+        });
+      } catch (error: any) {
+        toast.error(error?.message || 'Password is incorrect', {
+          id: 'password-verify',
+        });
+      } finally {
+        setIsVerifying(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [adminPassword, isBackupUnlocked]);
+
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const trimmed = adminPassword.trim();
+      if (!trimmed) return;
+
+      setIsVerifying(true);
+      try {
+        const res: any = await updateProfileMutation.mutateAsync({
+          password: trimmed,
+        });
+
+        if (res?.data !== true) {
+          toast.error(res?.message || 'Password is incorrect', {
+            id: 'password-verify',
+          });
+          return;
+        }
+
+        setIsBackupUnlocked(true);
+        setActiveTab('backup');
+        setAdminPassword('');
+        toast.success('Access granted: Backup & Restore tab unlocked!', {
+          id: 'password-verify',
+        });
+      } catch (error: any) {
+        toast.error(error?.message || 'Password is incorrect', {
+          id: 'password-verify',
+        });
+      } finally {
+        setIsVerifying(false);
+      }
+    }
+  };
+
+  const tabs = [
+    { id: 'profile', label: 'Admin Profile' },
+    { id: 'header', label: 'Bill Header' },
+    ...(isBackupUnlocked
+      ? [{ id: 'backup', label: 'Backup & Restore Data' }]
+      : []),
+    { id: 'scale', label: 'Weight Scale' },
+  ];
+
   return (
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       <div className="mx-auto px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
-        {/* Simple Underline Tab Bar */}
-        <div className="mb-5 border-b border-slate-200 dark:border-slate-700">
+        {/* Tab Bar Header with Top-Right Small Password Field */}
+        <div className="mb-5 flex flex-col gap-3 border-b border-slate-200 pb-2 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700">
+          {/* Tab Navigation */}
           <div className="flex gap-6 overflow-x-auto">
-            {[
-              { id: 'profile', label: 'Admin Profile' },
-              { id: 'header', label: 'Bill Header' },
-              { id: 'backup', label: 'Backup & Restore Data' },
-              { id: 'scale', label: 'Weight Scale' },
-            ].map((tab) => (
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() =>
@@ -28,15 +114,55 @@ export const Settings = () => {
                     tab.id as 'profile' | 'header' | 'backup' | 'scale',
                   )
                 }
-                className={`whitespace-nowrap border-b-2 pb-2.5 text-sm font-semibold transition-colors duration-150 ${
-                  activeTab === tab.id
-                    ? 'border-[#785600] text-[#785600]'
-                    : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                }`}
+                className={`whitespace-nowrap border-b-2 pb-2.5 text-sm font-semibold transition-colors duration-150 ${activeTab === tab.id
+                  ? 'border-[#785600] text-[#785600] dark:border-amber-400 dark:text-amber-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                  }`}
               >
                 {tab.label}
               </button>
             ))}
+          </div>
+
+          {/* Right Top Corner Small Password Field (No Button, Auto-Verifies) */}
+          <div className="self-end sm:self-auto">
+            {!isBackupUnlocked ? (
+              <div className="relative flex items-center">
+                <input
+                  type="password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="h-8 w-32 rounded-lg border border-[#d3c4af]/50 bg-white px-2.5 pr-7 text-xs text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600] dark:border-slate-700 dark:bg-slate-900 dark:text-white sm:w-36"
+                />
+                {isVerifying && (
+                  <div className="absolute right-2 flex items-center">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#785600] dark:text-amber-400" />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Backup Unlocked
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsBackupUnlocked(false);
+                    if (activeTab === 'backup') {
+                      setActiveTab('profile');
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+                  title="Lock Backup Tab"
+                >
+                  <Lock className="h-3 w-3" />
+                  <span>Lock</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -44,11 +170,10 @@ export const Settings = () => {
         <div>
           {activeTab === 'profile' && <AdminProfile />}
           {activeTab === 'header' && <HeaderPdfDesign />}
-          {activeTab === 'backup' && <BackupAndRestorePage />}
+          {activeTab === 'backup' && isBackupUnlocked && <BackupAndRestorePage />}
           {activeTab === 'scale' && <ScaleSetting />}
         </div>
       </div>
     </div>
   );
 };
-
