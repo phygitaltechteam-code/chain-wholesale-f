@@ -322,276 +322,1526 @@ export default function StockLedgerReport() {
     return formatDateForDisplay(new Date());
   }, [appliedFromDate, appliedToDate]);
 
-  // Print function matching the company's PDF Header format
   const handlePrint = () => {
-    const printContainer = document.createElement('div');
-    printContainer.id = 'stock-ledger-print-container';
+    // ============================================================
+    // REMOVE EXISTING PRINT CONTAINER / STYLE
+    // ============================================================
+
+    const existingContainer = document.getElementById(
+      "stock-ledger-print-container"
+    );
+
+    if (existingContainer) {
+      existingContainer.remove();
+    }
+
+    const existingStyle = document.getElementById(
+      "stock-ledger-print-style"
+    );
+
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+
+    // ============================================================
+    // CREATE PRINT CONTAINER
+    // ============================================================
+
+    const printContainer = document.createElement("div");
+
+    printContainer.id = "stock-ledger-print-container";
+
     printContainer.style.cssText = `
-      position: fixed;
-      left: -9999px;
-      top: 0;
-      width: 100%;
-      background: white;
-      padding: 6px;
-      z-index: 9999;
-    `;
+    position: fixed;
+    left: -9999px;
+    top: 0;
+    width: 210mm;
+    background: white;
+    padding: 0;
+    margin: 0 auto;
+    z-index: 999999;
+    overflow: visible;
+    display: block;
+    box-sizing: border-box;
+  `;
+
     document.body.appendChild(printContainer);
+
+    // ============================================================
+    // HEADER DATA
+    // ============================================================
 
     const headerInfo =
       getpdfheaderdata?.data?.data ||
-      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation = headerInfo.leftInvocation || '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation = headerInfo.rightInvocation || '॥ श्री साई प्रसन्न ॥';
-    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
-    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
-    const invocationColor = headerInfo.invocationColor || '#a84b20';
-    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
-    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
-    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
-    const phoneColor = headerInfo.phoneColor || '#a84b20';
+      (getpdfheaderdata?.data?.factoryName
+        ? getpdfheaderdata.data
+        : {});
+
+    const leftInvocation =
+      headerInfo.leftInvocation || "॥ श्री गणेश प्रसन्न ॥";
+
+    const rightInvocation =
+      headerInfo.rightInvocation || "॥ श्री साई प्रसन्न ॥";
+
+    const factoryName =
+      headerInfo.factoryName || "मातोश्री चेन फॅक्टरी, मिरज";
+
+    const description =
+      headerInfo.description ||
+      "आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.";
+
+    const proprietorName =
+      headerInfo.proprietorName || "प्रो. नितीन खरात";
+
+    const phoneNumbers =
+      headerInfo.phoneNumbers || "मो. ९३७०२४७०३५ / ७३८७२३५१८४";
+
+    const invocationColor =
+      headerInfo.invocationColor || "#a84b20";
+
+    const factoryNameColor =
+      headerInfo.factoryNameColor || "#c43d5c";
+
+    const descriptionColor =
+      headerInfo.descriptionColor || "#8b451f";
+
+    const proprietorColor =
+      headerInfo.proprietorColor || "#a84b20";
+
+    const phoneColor =
+      headerInfo.phoneColor || "#a84b20";
+
+    // ============================================================
+    // TOTALS
+    // ============================================================
+
+    const rawTotalOpening = filteredRawStock.reduce(
+      (sum, item) => sum + (item.opening || 0),
+      0
+    );
+
+    const rawTotalClosing = filteredRawStock.reduce(
+      (sum, item) => sum + (item.closing || 0),
+      0
+    );
+
+    const rawTotalDifference = filteredRawStock.reduce(
+      (sum, item) => sum + (item.due || 0),
+      0
+    );
+
+    const chainTotalOpening = filteredChainStock.reduce(
+      (sum, item) => sum + (item.opening || 0),
+      0
+    );
+
+    const chainTotalClosing = filteredChainStock.reduce(
+      (sum, item) => sum + (item.closing || 0),
+      0
+    );
+
+    const chainTotalDifference = filteredChainStock.reduce(
+      (sum, item) => sum + (item.due || 0),
+      0
+    );
+
+    const clientTotalOpening = filteredClient.reduce(
+      (sum, item) => sum + (item.opening || 0),
+      0
+    );
+
+    const clientTotalClosing = filteredClient.reduce(
+      (sum, item) => sum + (item.closing || 0),
+      0
+    );
+
+    const clientTotalDifference = filteredClient.reduce(
+      (sum, item) => sum + (item.difference || 0),
+      0
+    );
+
+    // ============================================================
+    // MANUFACTURING STOCK ROWS
+    // ============================================================
+
+    const rawRows =
+      filteredRawStock.length > 0
+        ? filteredRawStock
+          .map(
+            (item) => `
+              <tr class="data-row">
+                <td class="center-cell name-cell">${item.name}</td>
+                <td class="center-cell number-cell">${formatNumberDisplay(
+              item.opening
+            )}</td>
+                <td class="center-cell number-cell">${formatNumberDisplay(
+              item.closing
+            )}</td>
+                <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
+              item.due
+            )}</td>
+              </tr>
+            `
+          )
+          .join("")
+        : `
+          <tr>
+            <td colspan="4" class="no-data">No data</td>
+          </tr>
+        `;
+
+    // ============================================================
+    // CHAIN STOCK ROWS
+    // ============================================================
+
+    const chainRows =
+      filteredChainStock.length > 0
+        ? filteredChainStock
+          .map(
+            (item) => `
+              <tr class="data-row">
+                <td class="center-cell name-cell">${item.name}</td>
+                <td class="center-cell number-cell">${formatNumberDisplay(
+              item.opening
+            )}</td>
+                <td class="center-cell number-cell">${formatNumberDisplay(
+              item.closing
+            )}</td>
+                <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
+              item.due
+            )}</td>
+              </tr>
+            `
+          )
+          .join("")
+        : `
+          <tr>
+            <td colspan="4" class="no-data">No data</td>
+          </tr>
+        `;
+
+    // ============================================================
+    // CLIENT ROWS
+    // ============================================================
+
+    const clientRows =
+      filteredClient.length > 0
+        ? filteredClient
+          .map(
+            (item) => `
+              <tr class="data-row">
+                <td class="center-cell name-cell">${item.name}</td>
+                <td class="center-cell number-cell">${formatNumberDisplay(
+              item.opening
+            )}</td>
+                <td class="center-cell number-cell">${formatNumberDisplay(
+              item.closing
+            )}</td>
+                <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
+              item.difference
+            )}</td>
+              </tr>
+            `
+          )
+          .join("")
+        : `
+          <tr>
+            <td colspan="4" class="no-data">No data</td>
+          </tr>
+        `;
+
+    // ============================================================
+    // INWARD / OUTWARD HISTORY ROWS
+    // ============================================================
+
+    const movementRows =
+      filteredMovement.length > 0
+        ? filteredMovement
+          .map(
+            (item) => `
+              <tr class="movement-row">
+                <td class="movement-name center-cell">
+                  <div class="movement-main">
+                    ${item.inwardName || "-"}
+                  </div>
+
+                  ${item.inwardSubtext
+                ? `<div class="movement-subtext">${item.inwardSubtext}</div>`
+                : ""
+              }
+                </td>
+
+                <td class="movement-number center-cell inward-number">
+                  ${item.inwardName &&
+                item.inward != null &&
+                item.inward > 0
+                ? formatNumberDisplay(item.inward)
+                : "-"
+              }
+                </td>
+
+                <td class="movement-name center-cell">
+                  <div class="movement-main">
+                    ${item.outwardName || "-"}
+                  </div>
+
+                  ${item.outwardSubtext
+                ? `<div class="movement-subtext">${item.outwardSubtext}</div>`
+                : ""
+              }
+                </td>
+
+                <td class="movement-number center-cell outward-number">
+                  ${item.outwardName &&
+                item.outward != null &&
+                item.outward > 0
+                ? formatNumberDisplay(item.outward)
+                : "-"
+              }
+                </td>
+              </tr>
+            `
+          )
+          .join("")
+        : `
+          <tr>
+            <td colspan="4" class="no-data">No data</td>
+          </tr>
+        `;
+
+    // ============================================================
+    // COMPLETE PRINT HTML
+    // ============================================================
 
     printContainer.innerHTML = `
-      <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 8mm;box-sizing:border-box;color:#000;">
-        <!-- PDF Header -->
-        <div style="width:100%;text-align:center;margin:0 0 8px 0;padding:0;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
-            <span style="font-size:22px;font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
-            <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
-          </div>
-          <div style="margin:2px 0 0 0;font-size:10px;font-weight:bold;color:${descriptionColor};">
-            ${description}
-          </div>
-          <div style="margin:2px 0 0 0;font-size:10px;font-weight:bold;color:${proprietorColor};">
-            ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};">${phoneNumbers}</span>
-          </div>
-          <div style="border-bottom:2px solid ${factoryNameColor};margin:4px 0 8px 0;"></div>
+    <div class="print-page">
+
+      <!-- COMPANY HEADER -->
+      <div class="company-header">
+
+        <div class="company-header-row">
+
+          <span class="invocation">
+            ${leftInvocation}
+          </span>
+
+          <span class="factory-name">
+            ${factoryName}
+          </span>
+
+          <span class="invocation">
+            ${rightInvocation}
+          </span>
+
         </div>
 
-        <!-- Banner Title -->
-        <div style="text-align:center;margin-bottom:8px;">
-          <div style="font-weight:bold;font-size:15px;letter-spacing:1px;color:#000;">
-            BUSINESS 360 REPORT
-          </div>
-          <div style="margin-top:2px;">
-            <span style="font-size:11px;font-weight:bold;color:#444;">
-              Date: ${dateRangeLabel}
-            </span>
-          </div>
+        <div class="description">
+          ${description}
         </div>
 
-        <!-- Opening / Closing Summary -->
-        <table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:11px;">
-          <thead>
-            <tr style="background:#785600;color:white;">
-              <th style="width:50%;border:1px solid #785600;padding:4px 6px;text-align:left;font-weight:bold;">OPENING</th>
-              <th style="width:50%;border:1px solid #785600;padding:4px 6px;text-align:left;font-weight:bold;">CLOSING</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="border:1px solid #ccc;padding:4px;vertical-align:top;">
-                <table style="width:100%;border-collapse:collapse;">
-                  <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:2px 4px;font-weight:500;color:#000;">Gold Stock</td><td style="padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(summaryData.opening.gold)}</td></tr>
-                  <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:2px 4px;font-weight:500;color:#000;">Manufacturing</td><td style="padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(summaryData.opening.raw)}</td></tr>
-                  <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:2px 4px;font-weight:500;color:#000;">Chain Stock</td><td style="padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(summaryData.opening.openingChain)}</td></tr>
-                  <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:2px 4px;font-weight:500;color:#000;">Client Due</td><td style="padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(summaryData.opening.openingClientDue)}</td></tr>
-                  <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:2px 4px;font-weight:500;color:#000;">SRP</td><td style="padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(summaryData.opening.srp)}</td></tr>
-                  <tr style="border-top:1.5px solid #000;background:#fef3c7;"><td style="padding:3px 4px;font-weight:bold;color:#000;">Inward</td><td style="padding:3px 4px;text-align:right;font-weight:bold;font-family:monospace;color:#16a34a;">${formatNumberDisplay(summaryData.opening.inward)}</td></tr>
-                </table>
-              </td>
-              <td style="border:1px solid #ccc;padding:4px;vertical-align:top;">
-                <table style="width:100%;border-collapse:collapse;">
-                  <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:2px 4px;font-weight:500;color:#000;">Gold Stock</td><td style="padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(summaryData.closing.gold)}</td></tr>
-                  <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:2px 4px;font-weight:500;color:#000;">Manufacturing</td><td style="padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(summaryData.closing.raw)}</td></tr>
-                  <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:2px 4px;font-weight:500;color:#000;">Chain Stock</td><td style="padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(summaryData.closing.closingChain)}</td></tr>
-                  <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:2px 4px;font-weight:500;color:#000;">Client Due</td><td style="padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(summaryData.closing.closingClientDue)}</td></tr>
-                  <tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:2px 4px;font-weight:500;color:#000;">Loss</td><td style="padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(summaryData.closing.loss)}</td></tr>
-                  <tr style="border-top:1.5px solid #000;background:#fef3c7;"><td style="padding:3px 4px;font-weight:bold;color:#000;">Outward</td><td style="padding:3px 4px;text-align:right;font-weight:bold;font-family:monospace;color:#b45309;">${formatNumberDisplay(summaryData.closing.outward)}</td></tr>
-                  <tr style="border-top:1px solid #000;background:#ecfdf5;"><td style="padding:3px 4px;font-weight:bold;color:#065f46;">Profit / Loss</td><td style="padding:3px 4px;text-align:right;font-weight:bold;font-family:monospace;color:#047857;">${formatNumberDisplay(summaryData.closing.profitLoss ?? 0)}</td></tr>
-                </table>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- RAW STOCK, CHAIN STOCK & CLIENT in ONE ROW -->
-        <div style="display:flex;gap:6px;margin-bottom:12px;align-items:flex-start;">
-          <!-- MANUFACTURING STOCK -->
-          <div style="flex:1;">
-            <div style="text-align:center;margin:4px 0 2px 0;">
-              <span style="font-weight:bold;font-size:11px;letter-spacing:0.5px;color:#000;">MANUFACTURING STOCK</span>
-            </div>
-            <table style="width:100%;border-collapse:collapse;font-size:10px;">
-              <thead>
-                <tr style="border-bottom:1.5px solid #000;background:#f9f9f7;">
-                  <th style="padding:3px 2px;text-align:left;font-weight:bold;color:#000;">Name</th>
-                  <th style="padding:3px 2px;text-align:right;font-weight:bold;color:#000;">Opening</th>
-                  <th style="padding:3px 2px;text-align:right;font-weight:bold;color:#000;">Closing</th>
-                  <th style="padding:3px 2px;text-align:right;font-weight:bold;color:#000;">Difference</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${filteredRawStock.length > 0 ? filteredRawStock
-        .map(
-          (item) => `
-                  <tr style="border-bottom:1px solid #e2e8f0;">
-                    <td style="padding:3px 2px;font-weight:500;color:#000;">${item.name}</td>
-                    <td style="padding:3px 2px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(item.opening)}</td>
-                    <td style="padding:3px 2px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(item.closing)}</td>
-                    <td style="padding:3px 2px;text-align:right;font-family:monospace;font-weight:bold;color:#000;">${formatNumberDisplay(item.due)}</td>
-                  </tr>
-                `,
-        )
-        .join('') : `<tr><td colspan="4" style="padding:4px;text-align:center;color:#666;">No data</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- CHAIN STOCK -->
-          <div style="flex:1;">
-            <div style="text-align:center;margin:4px 0 2px 0;">
-              <span style="font-weight:bold;font-size:11px;letter-spacing:0.5px;color:#000;">CHAIN STOCK</span>
-            </div>
-            <table style="width:100%;border-collapse:collapse;font-size:10px;">
-              <thead>
-                <tr style="border-bottom:1.5px solid #000;background:#f9f9f7;">
-                  <th style="padding:3px 2px;text-align:left;font-weight:bold;color:#000;">Name</th>
-                  <th style="padding:3px 2px;text-align:right;font-weight:bold;color:#000;">Opening</th>
-                  <th style="padding:3px 2px;text-align:right;font-weight:bold;color:#000;">Closing</th>
-                  <th style="padding:3px 2px;text-align:right;font-weight:bold;color:#000;">Difference</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${filteredChainStock.length > 0 ? filteredChainStock
-        .map(
-          (item) => `
-                  <tr style="border-bottom:1px solid #e2e8f0;">
-                    <td style="padding:3px 2px;color:#000;">${item.name}</td>
-                    <td style="padding:3px 2px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(item.opening)}</td>
-                    <td style="padding:3px 2px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(item.closing)}</td>
-                    <td style="padding:3px 2px;text-align:right;font-family:monospace;font-weight:bold;color:#000;">${formatNumberDisplay(item.due)}</td>
-                  </tr>
-                `,
-        )
-        .join('') : `<tr><td colspan="4" style="padding:4px;text-align:center;color:#666;">No data</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- CLIENT -->
-          <div style="flex:1;">
-            <div style="text-align:center;margin:4px 0 2px 0;">
-              <span style="font-weight:bold;font-size:11px;letter-spacing:0.5px;color:#000;">CLIENT</span>
-            </div>
-            <table style="width:100%;border-collapse:collapse;font-size:10px;">
-              <thead>
-                <tr style="border-bottom:1.5px solid #000;background:#f9f9f7;">
-                  <th style="padding:3px 2px;text-align:left;font-weight:bold;color:#000;">Name</th>
-                  <th style="padding:3px 2px;text-align:right;font-weight:bold;color:#000;">Opening</th>
-                  <th style="padding:3px 2px;text-align:right;font-weight:bold;color:#000;">Closing</th>
-                  <th style="padding:3px 2px;text-align:right;font-weight:bold;color:#000;">Difference</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${filteredClient.length > 0 ? filteredClient
-        .map(
-          (item) => `
-                  <tr style="border-bottom:1px solid #e2e8f0;">
-                    <td style="padding:3px 2px;color:#000;">${item.name}</td>
-                    <td style="padding:3px 2px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(item.opening)}</td>
-                    <td style="padding:3px 2px;text-align:right;font-family:monospace;color:#000;">${formatNumberDisplay(item.closing)}</td>
-                    <td style="padding:3px 2px;text-align:right;font-family:monospace;font-weight:bold;color:#000;">${formatNumberDisplay(item.difference)}</td>
-                  </tr>
-                `,
-        )
-        .join('') : `<tr><td colspan="4" style="padding:4px;text-align:center;color:#666;">No data</td></tr>`}
-              </tbody>
-            </table>
-          </div>
+        <div class="proprietor">
+          ${proprietorName}
+          &nbsp;&nbsp;
+          <span class="phone">
+            ${phoneNumbers}
+          </span>
         </div>
 
-        <!-- INWARD OUTWARD HISTORY Section -->
-        <div style="text-align:center;margin:10px 0 4px 0;">
-          <span style="font-weight:bold;font-size:12px;letter-spacing:1px;color:#000;">INWARD OUTWARD HISTORY</span>
-        </div>
-        <table style="width:100%;border-collapse:collapse;font-size:11px;">
-          <thead>
-            <tr style="border-bottom:1.5px solid #000;background:#f9f9f7;">
-              <th style="padding:4px;text-align:left;font-weight:bold;color:#000;">INWARD NAME</th>
-              <th style="padding:4px;text-align:right;font-weight:bold;color:#000;">INWARD</th>
-              <th style="padding:4px;text-align:left;font-weight:bold;color:#000;">OUTWARD NAME</th>
-              <th style="padding:4px;text-align:right;font-weight:bold;color:#000;">OUTWARD</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filteredMovement
-        .map(
-          (item) => `
-              <tr style="border-bottom:1px solid #e2e8f0;">
-                <td style="padding:4px;">
-                  <div style="font-weight:bold;color:#000;">${item.inwardName ? item.inwardName : '-'}</div>
-                  ${item.inwardSubtext ? `<div style="font-size:9px;color:#555;">${item.inwardSubtext}</div>` : ''}
-                </td>
-                <td style="padding:4px;text-align:right;font-family:monospace;font-weight:bold;color:#16a34a;">${item.inwardName && item.inward != null && item.inward > 0 ? formatNumberDisplay(item.inward) : '-'}</td>
-                <td style="padding:4px;">
-                  <div style="font-weight:bold;color:#000;">${item.outwardName ? item.outwardName : '-'}</div>
-                  ${item.outwardSubtext ? `<div style="font-size:9px;color:#555;">${item.outwardSubtext}</div>` : ''}
-                </td>
-                <td style="padding:4px;text-align:right;font-family:monospace;font-weight:bold;color:#b45309;">${item.outwardName && item.outward != null && item.outward > 0 ? formatNumberDisplay(item.outward) : '-'}</td>
-              </tr>
-            `,
-        )
-        .join('')}
-          </tbody>
-        </table>
+        <div class="header-line"></div>
+
       </div>
-    `;
 
-    const style = document.createElement('style');
+      <!-- REPORT TITLE -->
+      <div class="report-title">
+
+        <div class="report-title-main">
+          BUSINESS 360 REPORT
+        </div>
+
+        <div class="report-date">
+          Date: ${dateRangeLabel}
+        </div>
+
+      </div>
+
+      <!-- SUMMARY SECTION -->
+      <div class="summary-section">
+
+        <table class="summary-table">
+
+          <thead>
+            <tr>
+              <th class="summary-heading">
+                OPENING
+              </th>
+
+              <th class="summary-heading">
+                CLOSING
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            <tr>
+
+              <!-- OPENING -->
+              <td class="summary-column">
+
+                <table class="summary-inner-table">
+
+                  <tbody>
+
+                    <tr>
+                      <td class="summary-label">
+                        Gold Stock
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(
+      summaryData.opening.gold
+    )}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">
+                        Manufacturing
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(
+      summaryData.opening.raw
+    )}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">
+                        Chain Stock
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(
+      summaryData.opening.openingChain
+    )}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">
+                        Client Due
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(
+      summaryData.opening.openingClientDue
+    )}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">
+                        SRP
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(
+      summaryData.opening.srp
+    )}
+                      </td>
+                    </tr>
+
+                    <tr class="summary-total-row">
+
+                      <td class="summary-label bold">
+                        Inward
+                      </td>
+
+                      <td class="summary-value green bold">
+                        ${formatNumberDisplay(
+      summaryData.opening.inward
+    )}
+                      </td>
+
+                    </tr>
+
+                  </tbody>
+
+                </table>
+
+              </td>
+
+              <!-- CLOSING -->
+              <td class="summary-column">
+
+                <table class="summary-inner-table">
+
+                  <tbody>
+
+                    <tr>
+                      <td class="summary-label">
+                        Gold Stock
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(
+      summaryData.closing.gold
+    )}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">
+                        Manufacturing
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(
+      summaryData.closing.raw
+    )}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">
+                        Chain Stock
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(
+      summaryData.closing.closingChain
+    )}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">
+                        Client Due
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(
+      summaryData.closing.closingClientDue
+    )}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">
+                        Loss
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(
+      summaryData.closing.loss
+    )}
+                      </td>
+                    </tr>
+
+                    <tr class="summary-total-row">
+
+                      <td class="summary-label bold">
+                        Outward
+                      </td>
+
+                      <td class="summary-value orange bold">
+                        ${formatNumberDisplay(
+      summaryData.closing.outward
+    )}
+                      </td>
+
+                    </tr>
+
+                    <tr class="profit-loss-row">
+
+                      <td class="summary-label profit">
+                        Profit / Loss
+                      </td>
+
+                      <td class="summary-value profit">
+                        ${formatNumberDisplay(
+      summaryData.closing.profitLoss ?? 0
+    )}
+                      </td>
+
+                    </tr>
+
+                  </tbody>
+
+                </table>
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <!-- THREE STOCK TABLES -->
+      <div class="three-stock-wrapper">
+
+        <!-- MANUFACTURING STOCK -->
+        <div class="stock-column stock-column-left">
+
+          <div class="stock-title">
+            MANUFACTURING STOCK
+          </div>
+
+          <table class="stock-table">
+
+            <thead>
+              <tr>
+
+                <th class="stock-header">
+                  Name
+                </th>
+
+                <th class="stock-header">
+                  Opening
+                </th>
+
+                <th class="stock-header">
+                  Closing
+                </th>
+
+                <th class="stock-header">
+                  Diff
+                </th>
+
+              </tr>
+            </thead>
+
+            <tbody>
+
+              ${rawRows}
+
+              <tr class="total-row">
+
+                <td class="center-cell total-cell">
+                  TOTAL
+                </td>
+
+                <td class="center-cell total-cell">
+                  ${formatNumberDisplay(rawTotalOpening)}
+                </td>
+
+                <td class="center-cell total-cell">
+                  ${formatNumberDisplay(rawTotalClosing)}
+                </td>
+
+                <td class="center-cell total-cell">
+                  ${formatNumberDisplay(rawTotalDifference)}
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+        <!-- CHAIN STOCK -->
+        <div class="stock-column stock-column-middle">
+
+          <div class="stock-title">
+            CHAIN STOCK
+          </div>
+
+          <table class="stock-table">
+
+            <thead>
+              <tr>
+
+                <th class="stock-header">
+                  Name
+                </th>
+
+                <th class="stock-header">
+                  Opening
+                </th>
+
+                <th class="stock-header">
+                  Closing
+                </th>
+
+                <th class="stock-header">
+                  Diff
+                </th>
+
+              </tr>
+            </thead>
+
+            <tbody>
+
+              ${chainRows}
+
+              <tr class="total-row">
+
+                <td class="center-cell total-cell">
+                  TOTAL
+                </td>
+
+                <td class="center-cell total-cell">
+                  ${formatNumberDisplay(chainTotalOpening)}
+                </td>
+
+                <td class="center-cell total-cell">
+                  ${formatNumberDisplay(chainTotalClosing)}
+                </td>
+
+                <td class="center-cell total-cell">
+                  ${formatNumberDisplay(chainTotalDifference)}
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+        <!-- CLIENT -->
+        <div class="stock-column stock-column-right">
+
+          <div class="stock-title">
+            CLIENT
+          </div>
+
+          <table class="stock-table">
+
+            <thead>
+              <tr>
+
+                <th class="stock-header">
+                  Name
+                </th>
+
+                <th class="stock-header">
+                  Opening
+                </th>
+
+                <th class="stock-header">
+                  Closing
+                </th>
+
+                <th class="stock-header">
+                  Diff
+                </th>
+
+              </tr>
+            </thead>
+
+            <tbody>
+
+              ${clientRows}
+
+              <tr class="total-row">
+
+                <td class="center-cell total-cell">
+                  TOTAL
+                </td>
+
+                <td class="center-cell total-cell">
+                  ${formatNumberDisplay(clientTotalOpening)}
+                </td>
+
+                <td class="center-cell total-cell">
+                  ${formatNumberDisplay(clientTotalClosing)}
+                </td>
+
+                <td class="center-cell total-cell">
+                  ${formatNumberDisplay(clientTotalDifference)}
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+      <!-- INWARD / OUTWARD HISTORY -->
+      <div class="movement-section">
+
+        <div class="movement-title">
+          INWARD OUTWARD HISTORY
+        </div>
+
+        <table class="movement-table">
+
+          <thead>
+
+            <tr>
+
+              <th class="movement-header movement-inward-name">
+                INWARD NAME
+              </th>
+
+              <th class="movement-header movement-inward-value">
+                INWARD
+              </th>
+
+              <th class="movement-header movement-outward-name">
+                OUTWARD NAME
+              </th>
+
+              <th class="movement-header movement-outward-value">
+                OUTWARD
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            ${movementRows}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+  `;
+
+    // ============================================================
+    // PRINT STYLE
+    // ============================================================
+
+    const style = document.createElement("style");
+
+    style.id = "stock-ledger-print-style";
+
     style.textContent = `
-      @page {
-        size: A4 portrait;
-        margin: 5mm;
+    /* ==========================================================
+       A4 PAGE
+    ========================================================== */
+
+    @page {
+      size: A4 portrait;
+      margin: 3mm;
+    }
+
+    /* ==========================================================
+       PRINT CONTAINER
+    ========================================================== */
+
+    #stock-ledger-print-container {
+      width: 100%;
+      min-height: 100%;
+      height: auto;
+      background: white;
+      overflow: visible;
+      box-sizing: border-box;
+    }
+
+    #stock-ledger-print-container * {
+      box-sizing: border-box;
+    }
+
+    /* ==========================================================
+       MAIN PAGE
+    ========================================================== */
+
+    .print-page {
+      width: 100%;
+      max-width: 210mm;
+
+      /*
+       * Same type of spacing as Loss Report.
+       * LEFT padding is reduced so right-side columns
+       * get more available space.
+       */
+      margin: 0 auto;
+      padding: 3mm 2mm 3mm 1mm;
+
+      background: white;
+      color: #000;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 9px;
+      line-height: 1.15;
+      box-sizing: border-box;
+    }
+
+    /* ==========================================================
+       COMPANY HEADER
+    ========================================================== */
+
+    .company-header {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 5px;
+    }
+
+    .company-header-row {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .invocation {
+      font-size: 10px;
+      font-weight: bold;
+      color: ${invocationColor};
+      white-space: nowrap;
+    }
+
+    .factory-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: ${factoryNameColor};
+      white-space: nowrap;
+    }
+
+    .description {
+      margin-top: 2px;
+      font-size: 9px;
+      font-weight: bold;
+      color: ${descriptionColor};
+    }
+
+    .proprietor {
+      margin-top: 2px;
+      font-size: 9px;
+      font-weight: bold;
+      color: ${proprietorColor};
+    }
+
+    .phone {
+      color: ${phoneColor};
+    }
+
+    .header-line {
+      border-bottom: 2px solid ${factoryNameColor};
+      margin: 4px 0 5px 0;
+    }
+
+    /* ==========================================================
+       REPORT TITLE
+    ========================================================== */
+
+    .report-title {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .report-title-main {
+      font-size: 14px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      color: #000;
+    }
+
+    .report-date {
+      margin-top: 1px;
+      font-size: 10px;
+      font-weight: bold;
+      color: #444;
+    }
+
+    /* ==========================================================
+       SUMMARY
+    ========================================================== */
+
+    .summary-section {
+      width: 100%;
+      margin-bottom: 7px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 9px;
+    }
+
+    .summary-table th,
+    .summary-table td {
+      border: 1px solid #ccc;
+    }
+
+    .summary-heading {
+      width: 50%;
+      padding: 3px 6px;
+      background: #785600;
+      color: white;
+      text-align: center;
+      font-weight: bold;
+      font-size: 8px;
+    }
+
+    .summary-column {
+      padding: 3px;
+      vertical-align: top;
+    }
+
+    .summary-inner-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8px;
+    }
+
+    .summary-inner-table td {
+      border: 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .summary-label {
+      padding: 2px 4px;
+      color: #000;
+      text-align: left;
+      font-weight: 500;
+    }
+
+    .summary-value {
+      padding: 2px 4px;
+      color: #000;
+      text-align: center;
+      font-family: monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .summary-total-row td {
+      border-top: 1.5px solid #000 !important;
+      background: #fef3c7;
+    }
+
+    .profit-loss-row td {
+      border-top: 1px solid #000 !important;
+      background: #ecfdf5;
+    }
+
+    .bold {
+      font-weight: bold;
+    }
+
+    .green {
+      color: #16a34a !important;
+    }
+
+    .orange {
+      color: #b45309 !important;
+    }
+
+    .profit {
+      color: #047857 !important;
+      font-weight: bold;
+    }
+
+    /* ==========================================================
+       THREE STOCK TABLES
+    ========================================================== */
+
+    .three-stock-wrapper {
+      display: table;
+      width: 100%;
+      margin-bottom: 7px;
+      table-layout: fixed;
+      page-break-inside: auto;
+      break-inside: auto;
+    }
+
+    .stock-column {
+      display: table-cell;
+      vertical-align: top;
+      width: 33.333%;
+    }
+
+    .stock-column-left {
+      padding-right: 4px;
+      border-right: 1px solid #ccc;
+    }
+
+    .stock-column-middle {
+      padding-left: 4px;
+      padding-right: 4px;
+      border-right: 1px solid #ccc;
+    }
+
+    .stock-column-right {
+      padding-left: 4px;
+    }
+
+    .stock-title {
+      text-align: center;
+      margin: 3px 0 2px 0;
+      font-weight: bold;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      color: #000;
+    }
+
+    /* ==========================================================
+       STOCK TABLE
+    ========================================================== */
+
+    .stock-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 8px;
+      page-break-inside: auto;
+      break-inside: auto;
+    }
+
+    .stock-table thead {
+      display: table-header-group;
+    }
+
+    .stock-table tbody {
+      display: table-row-group;
+    }
+
+    .stock-table tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .stock-table th,
+    .stock-table td {
+      border-bottom: 1px solid #ccc;
+      border-right: 1px solid #ddd;
+    }
+
+    .stock-table th:last-child,
+    .stock-table td:last-child {
+      border-right: 0;
+    }
+
+    .stock-header {
+      padding: 3px;
+      text-align: center;
+      font-weight: bold;
+      color: #000;
+      font-size: 8px;
+      background: #f5f5f5;
+      border-bottom: 2px solid #000 !important;
+    }
+
+    .center-cell {
+      text-align: center !important;
+      vertical-align: middle;
+    }
+
+    .name-cell {
+      padding: 3px;
+      color: #000;
+      font-size: 8px;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .number-cell {
+      padding: 3px;
+      color: #000;
+      font-size: 8px;
+      font-family: monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .bold-cell {
+      font-weight: bold;
+    }
+
+    .data-row {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .total-row {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      background: #fef3c7;
+      font-weight: bold;
+      border-top: 2px solid #000 !important;
+    }
+
+    .total-cell {
+      padding: 3px;
+      color: #000;
+      font-size: 8px;
+      font-family: monospace;
+      font-variant-numeric: tabular-nums;
+      font-weight: bold;
+      border-bottom: 0 !important;
+    }
+
+    /* ==========================================================
+       MOVEMENT HISTORY
+    ========================================================== */
+
+    .movement-section {
+      width: 100%;
+      margin-top: 8px;
+
+      /*
+       * IMPORTANT:
+       * Do NOT prevent this section from splitting.
+       * This allows the history table to continue
+       * naturally onto Page 2, Page 3, etc.
+       */
+      page-break-inside: auto !important;
+      break-inside: auto !important;
+    }
+
+    .movement-title {
+      text-align: center;
+      margin: 6px 0 4px 0;
+      font-weight: bold;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: #000;
+      border-bottom: 2px solid #000;
+      padding-bottom: 2px;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    .movement-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 8px;
+
+      /*
+       * Allow table to continue across pages.
+       */
+      page-break-inside: auto !important;
+      break-inside: auto !important;
+    }
+
+    /*
+     * Repeat the history header on every printed page.
+     */
+    .movement-table thead {
+      display: table-header-group !important;
+    }
+
+    .movement-table tbody {
+      display: table-row-group !important;
+    }
+
+    /*
+     * Keep individual history rows together.
+     */
+    .movement-table tr {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .movement-table th,
+    .movement-table td {
+      border-bottom: 1px solid #ccc;
+      border-right: 1px solid #ddd;
+    }
+
+    .movement-table th:last-child,
+    .movement-table td:last-child {
+      border-right: none;
+    }
+
+    .movement-header {
+      padding: 3px 4px;
+      text-align: center;
+      font-weight: bold;
+      color: #000;
+      font-size: 8px;
+      background: #f5f5f5;
+      border-bottom: 2px solid #000 !important;
+    }
+
+    .movement-inward-name {
+      width: 35%;
+    }
+
+    .movement-inward-value {
+      width: 15%;
+    }
+
+    .movement-outward-name {
+      width: 35%;
+    }
+
+    .movement-outward-value {
+      width: 15%;
+    }
+
+    .movement-row {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .movement-name {
+      padding: 3px 4px;
+      width: 35%;
+      font-size: 8px;
+      text-align: center !important;
+      vertical-align: middle;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .movement-number {
+      padding: 3px 4px;
+      width: 15%;
+      font-family: monospace;
+      font-size: 8px;
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
+      text-align: center !important;
+      vertical-align: middle;
+    }
+
+    .movement-main {
+      font-weight: bold;
+      color: #000;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .movement-subtext {
+      margin-top: 1px;
+      font-size: 7px;
+      color: #666;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .inward-number {
+      color: #16a34a;
+    }
+
+    .outward-number {
+      color: #b45309;
+    }
+
+    .no-data {
+      padding: 4px;
+      text-align: center !important;
+      color: #666;
+      font-size: 9px;
+    }
+
+    /* ==========================================================
+       PRINT MEDIA
+    ========================================================== */
+
+    @media print {
+
+      html {
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
       }
-      @media print {
-        body * {
-          visibility: hidden !important;
-        }
-        #stock-ledger-print-container, #stock-ledger-print-container * {
-          visibility: visible !important;
-        }
-        #stock-ledger-print-container {
-          position: fixed !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
-          background: white !important;
-          padding: 4px !important;
-          overflow: visible !important;
-          z-index: 99999 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
+
+      body {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: white !important;
       }
-    `;
+
+      /*
+       * Hide the complete React application.
+       * Only our print container is visible.
+       */
+      body > *:not(#stock-ledger-print-container) {
+        display: none !important;
+      }
+
+      #stock-ledger-print-container {
+        display: block !important;
+
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        overflow: visible !important;
+
+        background: white !important;
+        visibility: visible !important;
+        z-index: 999999 !important;
+
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      #stock-ledger-print-container,
+      #stock-ledger-print-container * {
+        visibility: visible !important;
+      }
+
+      /*
+       * Same centered A4 layout as Loss Report.
+       * LEFT = 1mm
+       * RIGHT = 2mm
+       */
+      .print-page {
+        width: 100% !important;
+        max-width: 210mm !important;
+
+        margin: 0 auto !important;
+
+        padding: 3mm 2mm 3mm 1mm !important;
+
+        box-sizing: border-box !important;
+        background: white !important;
+      }
+
+      #stock-ledger-print-container,
+      .print-page {
+        overflow: visible !important;
+      }
+
+      /*
+       * Remove all browser scrollbars.
+       */
+      ::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+
+      * {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+      }
+
+      /* ========================================================
+         PAGINATION
+      ======================================================== */
+
+      /*
+       * HISTORY TABLE CAN CONTINUE TO NEXT PAGE.
+       */
+      .movement-section {
+        page-break-inside: auto !important;
+        break-inside: auto !important;
+      }
+
+      .movement-table {
+        page-break-inside: auto !important;
+        break-inside: auto !important;
+        width: 100% !important;
+      }
+
+      /*
+       * REPEAT HISTORY HEADER ON EVERY PAGE.
+       */
+      .movement-table thead {
+        display: table-header-group !important;
+      }
+
+      /*
+       * DO NOT SPLIT INDIVIDUAL ROWS.
+       */
+      .movement-table tbody tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      /* ========================================================
+         STOCK TABLE PAGINATION
+      ======================================================== */
+
+      .stock-table {
+        page-break-inside: auto !important;
+        break-inside: auto !important;
+        width: 100% !important;
+      }
+
+      .stock-table thead {
+        display: table-header-group !important;
+      }
+
+      .stock-table tbody tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      /* ========================================================
+         SUMMARY
+      ======================================================== */
+
+      .summary-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      /* ========================================================
+         NO BODY PSEUDO ELEMENTS
+      ======================================================== */
+
+      body::before,
+      body::after {
+        display: none !important;
+        content: none !important;
+      }
+    }
+  `;
+
     document.head.appendChild(style);
 
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => {
-        if (document.body.contains(printContainer)) {
-          document.body.removeChild(printContainer);
-        }
-        if (document.head.contains(style)) {
-          document.head.removeChild(style);
-        }
-      }, 1000);
-    }, 500);
-  };
+    // ============================================================
+    // CLEANUP
+    // ============================================================
 
+    let cleanedUp = false;
+
+    const cleanupPrint = () => {
+      if (cleanedUp) return;
+
+      cleanedUp = true;
+
+      if (document.body.contains(printContainer)) {
+        printContainer.remove();
+      }
+
+      if (document.head.contains(style)) {
+        style.remove();
+      }
+
+      window.onafterprint = null;
+    };
+
+    // ============================================================
+    // TRIGGER BROWSER PRINT PREVIEW
+    // ============================================================
+
+    window.onafterprint = cleanupPrint;
+
+    setTimeout(() => {
+      window.focus();
+      window.print();
+    }, 300);
+  };
   return (
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       {/* Top Navigation / Filter Bar */}
@@ -599,13 +1849,6 @@ export default function StockLedgerReport() {
         <div className="flex flex-col items-center justify-between gap-3 px-3 py-2.5 sm:flex-row sm:px-4 sm:py-3 md:px-6">
           {/* Back & Title */}
           <div className="flex w-full min-w-0 items-center gap-2.5 sm:w-auto">
-            <button
-              onClick={() => navigate({ to: '/Stocks/stockpage' })}
-              className="inline-flex items-center justify-center rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#b8860b] dark:hover:bg-[#b8860b]/20"
-              title="Back to Stock"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
             <div className="h-5 w-px flex-shrink-0 bg-[#d3c4af]/40 dark:bg-slate-700" />
             <div>
               <h1 className="font-headline text-xl font-black italic tracking-tight text-[#1a1a2e] sm:text-2xl lg:text-3xl dark:text-white">

@@ -580,13 +580,6 @@ export default function ManufacturingReport() {
       <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
         <div className="flex flex-col items-center justify-between gap-3 px-3 py-2 sm:flex-row sm:px-4 sm:py-3 md:px-6">
           <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
-            <button
-              onClick={() => navigate({ to: '/reports/manufacturing' })}
-              className="inline-flex items-center justify-center rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-              title="Go Back"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
             <div className="h-5 w-px flex-shrink-0 bg-[#d3c4af]/30 dark:bg-slate-600" />
             <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
               Manufacturing Report

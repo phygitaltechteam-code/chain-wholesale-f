@@ -240,18 +240,29 @@ export const printMeltingHistory = (
   const rows = data
     .map((item: any, idx: number) => {
       const { date: createDate, time: createTime } = formatDate(item.createdAt);
-      const { date: updateDate, time: updateTime } = formatDate(item.updatedAt);
+      
+      // Better handling for updatedAt - show "Pending" if not available
+      let updateDisplay = 'Pending';
+      let updateStyle = 'color:#999;font-style:italic;';
+      if (item.updatedAt) {
+        const formatted = formatDate(item.updatedAt);
+        if (formatted.date && formatted.time) {
+          updateDisplay = `${formatted.date} ${formatted.time}`;
+          updateStyle = 'color:#000;font-style:normal;';
+        }
+      }
+      
       return `
         <tr>
-          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;">${idx + 1}</td>
-          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;white-space:nowrap;">${createDate} ${createTime}</td>
-          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;">${item.particular || 'Scrap Melting'}</td>
-          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.grossWeight ?? item.grossWt ?? item.weight)}</td>
-          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.purity)}%</td>
-          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.expected ?? item.expectedFine)}</td>
-          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;font-weight:bold;">${formatNumberDisplay(item.fineWeight || item.fineWeight)}</td>
-          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;">${formatNumberDisplay(item.loss !== undefined && item.loss !== null ? item.loss : Math.max(0, Math.round(((item.expectedFine || 0) - (item.fineWeight || 0)) * 1000) / 1000))}</td>
-          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;white-space:nowrap;">${updateDate} ${updateTime}</td>
+          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;color:#000;">${idx + 1}</td>
+          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;white-space:nowrap;color:#000;">${createDate} ${createTime}</td>
+          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;color:#000;">${item.particular || 'Scrap Melting'}</td>
+          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;color:#000;">${formatNumberDisplay(item.grossWeight ?? item.grossWt ?? item.weight)}</td>
+          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;color:#000;">${formatNumberDisplay(item.purity)}%</td>
+          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;color:#000;">${formatNumberDisplay(item.expected ?? item.expectedFine)}</td>
+          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;font-weight:bold;color:#000;">${formatNumberDisplay(item.fineWeight || item.fineWeight)}</td>
+          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;color:#000;">${formatNumberDisplay(item.loss !== undefined && item.loss !== null ? item.loss : Math.max(0, Math.round(((item.expectedFine || 0) - (item.fineWeight || 0)) * 1000) / 1000))}</td>
+          <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;white-space:nowrap;${updateStyle}">${updateDisplay}</td>
         </tr>
       `;
     })
@@ -339,15 +350,15 @@ export const printMeltingHistory = (
       <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
         <thead>
           <tr style="background:#785600;color:white;font-weight:600;">
-            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Sr</th>
-            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Date & Time</th>
-            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Particular</th>
-            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Gross Wt (G)</th>
-            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Purity %</th>
-            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Expected Fine (G)</th>
-            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Fine Wt (G)</th>
-            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Loss (G)</th>
-            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;">Processed Date</th>
+            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;color:white;">Sr</th>
+            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;color:white;">Date & Time</th>
+            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;color:white;">Particular</th>
+            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;color:white;">Gross Wt (G)</th>
+            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;color:white;">Purity %</th>
+            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;color:white;">Expected Fine (G)</th>
+            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;color:white;">Fine Wt (G)</th>
+            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;color:white;">Loss (G)</th>
+            <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;color:white;">Processed Date & Time</th>
           </tr>
         </thead>
         <tbody>
@@ -379,7 +390,7 @@ export const printMeltingHistory = (
         height: 100% !important;
         background: white !important;
         padding: 4px !important;
-        overflow: auto !important;
+        overflow: hidden !important;
         z-index: 9999 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
@@ -402,10 +413,23 @@ export const printMeltingHistory = (
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
+      #print-container tbody td {
+        color: #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
       #print-container tfoot tr {
         background: #f0f0f0 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+      }
+      /* Remove scrollbar */
+      ::-webkit-scrollbar {
+        display: none !important;
+      }
+      * {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
       }
     }
   `;

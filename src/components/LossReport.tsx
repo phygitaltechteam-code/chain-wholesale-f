@@ -234,14 +234,15 @@ const LossReport: React.FC = () => {
         const printContainer = document.createElement('div');
         printContainer.id = 'print-container';
         printContainer.style.cssText = `
-      position: fixed;
-      left: -9999px;
-      top: 0;
-      width: 100%;
-      background: white;
-      padding: 4px;
-      z-index: 9999;
-    `;
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 210mm;
+  background: white;
+  padding: 0;
+  z-index: 9999;
+  box-sizing: border-box;
+`;
         document.body.appendChild(printContainer);
 
         // Build table rows
@@ -317,8 +318,7 @@ const LossReport: React.FC = () => {
         };
 
         printContainer.innerHTML = `
-      <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
-        <div>
+<div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 2mm 6mm 1mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">        <div>
           <!-- Header -->
           <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
@@ -346,22 +346,30 @@ const LossReport: React.FC = () => {
             </div>
           </div>
 
-          <!-- Table -->
-          <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
-            <thead>
-              <tr style="background:#785600;color:white;font-weight:600;">
-                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Sr</th>
-                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Date & Time</th>
-                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Particular</th>
-                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Purity</th>
-                <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Loss (G)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows}
-              ${footerRow}
-            </tbody>
-          </table>
+          <table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
+  <colgroup>
+    <col style="width:8%;" />
+    <col style="width:20%;" />
+    <col style="width:42%;" />
+    <col style="width:13%;" />
+    <col style="width:17%;" />
+  </colgroup>
+
+  <thead>
+    <tr style="background:#785600;color:white;font-weight:600;">
+      <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Sr</th>
+      <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Date & Time</th>
+      <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Particular</th>
+      <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Purity</th>
+      <th style="border:1px solid #785600;padding:3px 4px;text-align:center;font-size:8px;">Loss (G)</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    ${rows}
+    ${footerRow}
+  </tbody>
+</table>
         </div>
       </div>
     `;
@@ -378,22 +386,24 @@ const LossReport: React.FC = () => {
         #print-container, #print-container * {
           visibility: visible;
         }
-        #print-container {
-          position: fixed !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-          background: white !important;
-          padding: 4px !important;
-          overflow: auto !important;
-          z-index: 9999 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        #print-container table {
-          width: 100% !important;
-        }
+       #print-container {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  height: auto !important;
+  background: white !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  z-index: 9999 !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+       #print-container table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  margin: 0 auto !important;
+}
         #print-container tr {
           page-break-inside: avoid !important;
         }
@@ -526,13 +536,6 @@ const LossReport: React.FC = () => {
             <div className="sticky top-0 z-10 border-b border-[#d3c4af]/10 bg-[#f9f9f7] dark:border-slate-700 dark:bg-slate-950">
                 <div className="flex flex-col items-center justify-between gap-3 px-3 py-2 sm:flex-row sm:px-4 sm:py-3 md:px-6">
                     <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
-                        <button
-                            onClick={() => navigate({ to: '/setlment/settlement' })}
-                            className="inline-flex items-center justify-center rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-                            title="Go Back"
-                        >
-                            <ArrowLeft className="h-5 w-5" />
-                        </button>
                         <div className="h-5 w-px flex-shrink-0 bg-[#d3c4af]/30 dark:bg-slate-600" />
                         <div className="flex items-center gap-2">
                             <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">

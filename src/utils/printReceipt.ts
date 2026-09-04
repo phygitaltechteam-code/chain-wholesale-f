@@ -36,7 +36,6 @@ export interface ReceiptPrintData {
 const format3Decimals = (value: number | string | undefined | null): string => {
   const num = Number(value);
   if (isNaN(num) || num === 0) return '0';
-  // Remove trailing zeros after decimal
   return parseFloat(num.toFixed(3)).toString();
 };
 
@@ -50,7 +49,10 @@ export const printReceipt = (
   receiptData: ReceiptPrintData,
   headerDataQuery?: any,
 ) => {
-  if (!receiptData) return;
+  if (!receiptData) {
+    toast.error('No receipt data to print');
+    return;
+  }
 
   const phoneNumber = receiptData.phoneNumber || 'N/A';
 
@@ -75,7 +77,6 @@ export const printReceipt = (
 
   const items = receiptData.items || [];
 
-  // Calculate totals if not directly provided
   const totalFineWt =
     receiptData.totalFineWt !== undefined
       ? Number(receiptData.totalFineWt)
@@ -199,7 +200,7 @@ export const printReceipt = (
           }
           @page {
             size: portrait;
-            margin: 4mm auto;
+            margin: 2mm 3mm;
           }
           @media print {
             body {
@@ -212,8 +213,8 @@ export const printReceipt = (
             }
             .receipt-container {
               width: 100% !important;
-              max-width: 120mm !important;
-              padding: 1mm 0 3mm 0 !important;
+              max-width: 100% !important;
+              padding: 2mm 3mm 3mm 3mm !important;
               margin: 0 auto !important;
               box-shadow: none !important;
               -webkit-print-color-adjust: exact !important;
@@ -321,24 +322,77 @@ export const printReceipt = (
             <div>Contact For Support: 9511640351</div>
           </div>
         </div>
-
-        <script>
-          window.onload = function() {
-            window.print();
-            window.onafterprint = function() {
-              window.close();
-            };
-          };
-        </script>
       </body>
     </html>
   `;
 
-  const printWindow = window.open('', '_blank', 'width=1100,height=800');
-  if (printWindow) {
-    printWindow.document.write(receiptHtml);
-    printWindow.document.close();
-  } else {
-    toast.error('Please allow pop-ups to print the receipt');
+  // Use iframe approach to avoid extra window
+  try {
+    // Remove any existing print iframe
+    const existingIframe = document.getElementById('print-receipt-iframe');
+    if (existingIframe) {
+      document.body.removeChild(existingIframe);
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'print-receipt-iframe';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    iframe.style.zIndex = '-1';
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentWindow?.document;
+    if (iframeDoc) {
+      iframeDoc.open();
+      iframeDoc.write(receiptHtml);
+      iframeDoc.close();
+
+      // Print after content loads
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.print();
+        } catch (e) {
+          // Fallback to window.open if iframe print fails
+          const printWindow = window.open('', '_blank', 'width=1100,height=800');
+          if (printWindow) {
+            printWindow.document.write(receiptHtml);
+            printWindow.document.close();
+          } else {
+            toast.error('Please allow pop-ups to print the receipt');
+          }
+        }
+      }, 500);
+
+      // Clean up iframe after printing
+      const checkPrintDone = setInterval(() => {
+        if (!iframe.contentWindow || iframe.contentWindow.closed) {
+          clearInterval(checkPrintDone);
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }
+      }, 1000);
+
+      // Force cleanup after 10 seconds
+      setTimeout(() => {
+        clearInterval(checkPrintDone);
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 10000);
+    }
+  } catch (error) {
+    // Fallback to window.open
+    const printWindow = window.open('', '_blank', 'width=1100,height=800');
+    if (printWindow) {
+      printWindow.document.write(receiptHtml);
+      printWindow.document.close();
+    } else {
+      toast.error('Please allow pop-ups to print the receipt');
+    }
   }
 };

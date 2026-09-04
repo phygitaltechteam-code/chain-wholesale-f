@@ -418,51 +418,95 @@ const Billing: React.FC = () => {
     );
   };
 
-  // Print Table Report (Matching Tar / Cutting departmental reports)
+  // ============================================================
+  // PRINT TABLE REPORT - A4 PORTRAIT / VERTICAL
+  // ============================================================
   const handlePrintTable = () => {
     if (!filteredGroups || filteredGroups.length === 0) {
       toast.error('No records available to print');
       return;
     }
 
+    // ==========================================================
+    // HEADER DATA
+    // ==========================================================
+
     const headerInfo =
       getpdfheaderdata?.data?.data ||
-      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+      (getpdfheaderdata?.data?.factoryName
+        ? getpdfheaderdata.data
+        : {});
+
     const leftInvocation =
       headerInfo.leftInvocation ||
       headerInfo.leftInovation ||
       '॥ श्री गणेश प्रसन्न ॥';
+
     const rightInvocation =
       headerInfo.rightInvocation ||
       headerInfo.rightInovation ||
       '॥ श्री साई प्रसन्न ॥';
-    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+
+    const factoryName =
+      headerInfo.factoryName ||
+      'मातोश्री चेन फॅक्टरी, मिरज';
+
     const description =
       headerInfo.description ||
       'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
-    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
+
+    const proprietorName =
+      headerInfo.proprietorName ||
+      'प्रो. नितीन खरात';
+
     const phoneNumbers =
-      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
-    const invocationColor = headerInfo.invocationColor || '#a84b20';
-    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
-    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
-    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
-    const phoneColor = headerInfo.phoneColor || '#a84b20';
+      headerInfo.phoneNumbers ||
+      'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+
+    const invocationColor =
+      headerInfo.invocationColor || '#a84b20';
+
+    const factoryNameColor =
+      headerInfo.factoryNameColor || '#c43d5c';
+
+    const descriptionColor =
+      headerInfo.descriptionColor || '#8b451f';
+
+    const proprietorColor =
+      headerInfo.proprietorColor || '#a84b20';
+
+    const phoneColor =
+      headerInfo.phoneColor || '#a84b20';
+
+
+    // ==========================================================
+    // FONT SIZES
+    // ==========================================================
+
     const factoryFontSize = headerInfo.factoryFontSize
       ? `${headerInfo.factoryFontSize}px`
-      : '20px';
+      : '16px';
+
     const descriptionFontSize = headerInfo.descriptionFontSize
       ? `${headerInfo.descriptionFontSize}px`
-      : '9px';
+      : '8px';
+
     const proprietorFontSize = headerInfo.proprietorFontSize
       ? `${headerInfo.proprietorFontSize}px`
-      : '9px';
+      : '8px';
+
     const phoneFontSize = headerInfo.phoneFontSize
       ? `${headerInfo.phoneFontSize}px`
-      : '9px';
+      : '8px';
+
+
+    // ==========================================================
+    // DATE FORMAT
+    // ==========================================================
 
     const formatDateStr = (d: Date | null) => {
       if (!d) return '-';
+
       return d.toLocaleDateString('en-IN', {
         day: '2-digit',
         month: '2-digit',
@@ -470,205 +514,1383 @@ const Billing: React.FC = () => {
       });
     };
 
-    const fromStr = fromDate.length > 0 ? formatDateStr(fromDate[0]) : '';
-    const toStr = toDate.length > 0 ? formatDateStr(toDate[0]) : '';
+    const fromStr =
+      fromDate.length > 0
+        ? formatDateStr(fromDate[0])
+        : '';
+
+    const toStr =
+      toDate.length > 0
+        ? formatDateStr(toDate[0])
+        : '';
+
+
+    // ==========================================================
+    // CREATE TABLE ROWS
+    // ==========================================================
 
     const rows = filteredGroups
       .map((group, index) => {
-        const items = group.items && group.items.length > 0 ? group.items : [
-          {
-            item: group.displayItems || '-',
-            size: group.displaySizes || '-',
-            purity: Number(group.displayPurity) || 0,
-            finWt: group.totalFinWt || 0,
-            srp: group.totalSRP || 0,
-            grossWeight: 0,
-          },
-        ];
+
+        const items =
+          group.items && group.items.length > 0
+            ? group.items
+            : [
+              {
+                item: group.displayItems || '-',
+                size: group.displaySizes || '-',
+                purity: Number(group.displayPurity) || 0,
+                finWt: group.totalFinWt || 0,
+                srp: group.totalSRP || 0,
+                grossWeight: 0,
+              },
+            ];
 
         const rowCount = items.length;
 
+
         return items
           .map((item, itemIdx) => {
+
+            // ==================================================
+            // FIRST ROW
+            // ==================================================
+
             if (itemIdx === 0) {
+
               return `
               <tr>
-                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;vertical-align:middle;">${index + 1}</td>
-                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;vertical-align:middle;">${group.dateTime}</td>
-                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;font-weight:bold;color:#000;vertical-align:middle;">${group.billNo}</td>
-                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;font-size:11px;font-weight:600;color:#000;vertical-align:middle;">${group.clientName}</td>
-                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;vertical-align:middle;">${group.phoneNumber || '-'}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.item || '-'}${item.size ? ` (${item.size})` : ''}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.purity ? `${formatNumberWithDecimals(item.purity)}%` : '-'}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:right;font-family:monospace;font-size:11px;color:#000;font-weight:bold;">${item.finWt !== undefined && item.finWt !== null ? `${formatNumberWithDecimals(item.finWt)}` : '-'}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:right;font-family:monospace;font-size:11px;color:#000;">${item.srp !== undefined && item.srp !== null && Number(item.srp) > 0 ? `${formatNumberWith2Decimals(item.srp)}` : '-'}</td>
-                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;text-align:right;font-family:monospace;font-size:11px;color:#000;vertical-align:middle;">${formatNumberWithDecimals(group.receive)}</td>
-                <td rowspan="${rowCount}" style="border:1px solid #000;padding:1px 2px;text-align:right;font-family:monospace;font-size:11px;color:#000;vertical-align:middle;font-weight:bold;">${formatNumberWithDecimals(group.pending)}</td>
+
+                <!-- SR -->
+                <td
+                  rowspan="${rowCount}"
+                  class="sr-col"
+                >
+                  ${index + 1}
+                </td>
+
+
+                <!-- DATE & TIME -->
+                <td
+                  rowspan="${rowCount}"
+                  class="date-col"
+                >
+                  ${group.dateTime}
+                </td>
+
+
+                <!-- BILL NO -->
+                <td
+                  rowspan="${rowCount}"
+                  class="bill-col"
+                >
+                  ${group.billNo}
+                </td>
+
+
+                <!-- CLIENT NAME -->
+                <td
+                  rowspan="${rowCount}"
+                  class="client-col"
+                >
+                  ${group.clientName}
+                </td>
+
+
+                <!-- PHONE -->
+                <td
+                  rowspan="${rowCount}"
+                  class="phone-col"
+                >
+                  ${group.phoneNumber || '-'}
+                </td>
+
+
+                <!-- ITEM -->
+                <td class="item-col">
+                  ${item.item || '-'}
+                  ${item.size
+                  ? ` (${item.size})`
+                  : ''
+                }
+                </td>
+
+
+                <!-- PURITY -->
+                <td class="purity-col">
+                  ${item.purity
+                  ? `${formatNumberWithDecimals(
+                    item.purity
+                  )}%`
+                  : '-'
+                }
+                </td>
+
+
+                <!-- FINE WEIGHT -->
+                <td class="number-col fine-col">
+                  ${item.finWt !== undefined &&
+                  item.finWt !== null
+                  ? formatNumberWithDecimals(
+                    item.finWt
+                  )
+                  : '-'
+                }
+                </td>
+
+
+                <!-- SRP -->
+                <td class="number-col">
+                  ${item.srp !== undefined &&
+                  item.srp !== null &&
+                  Number(item.srp) > 0
+                  ? formatNumberWith2Decimals(
+                    item.srp
+                  )
+                  : '-'
+                }
+                </td>
+
+
+                <!-- RECEIVE -->
+                <td
+                  rowspan="${rowCount}"
+                  class="number-col"
+                >
+                  ${formatNumberWithDecimals(
+                  group.receive
+                )}
+                </td>
+
+
+                <!-- PENDING -->
+                <td
+                  rowspan="${rowCount}"
+                  class="number-col pending-col"
+                >
+                  ${formatNumberWithDecimals(
+                  group.pending
+                )}
+                </td>
+
               </tr>
             `;
-            } else {
-              return `
-              <tr>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.item || '-'}${item.size ? ` (${item.size})` : ''}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;">${item.purity ? `${formatNumberWithDecimals(item.purity)}%` : '-'}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:right;font-family:monospace;font-size:11px;color:#000;font-weight:bold;">${item.finWt !== undefined && item.finWt !== null ? `${formatNumberWithDecimals(item.finWt)}` : '-'}</td>
-                <td style="border:1px solid #000;padding:1px 2px;text-align:right;font-family:monospace;font-size:11px;color:#000;">${item.srp !== undefined && item.srp !== null && Number(item.srp) > 0 ? `${formatNumberWith2Decimals(item.srp)}` : '-'}</td>
-              </tr>
-            `;
+
             }
+
+
+            // ==================================================
+            // ADDITIONAL ITEM ROW
+            // ==================================================
+
+            return `
+            <tr>
+
+              <!-- ITEM -->
+              <td class="item-col">
+                ${item.item || '-'}
+                ${item.size
+                ? ` (${item.size})`
+                : ''
+              }
+              </td>
+
+
+              <!-- PURITY -->
+              <td class="purity-col">
+                ${item.purity
+                ? `${formatNumberWithDecimals(
+                  item.purity
+                )}%`
+                : '-'
+              }
+              </td>
+
+
+              <!-- FINE WEIGHT -->
+              <td class="number-col fine-col">
+                ${item.finWt !== undefined &&
+                item.finWt !== null
+                ? formatNumberWithDecimals(
+                  item.finWt
+                )
+                : '-'
+              }
+              </td>
+
+
+              <!-- SRP -->
+              <td class="number-col">
+                ${item.srp !== undefined &&
+                item.srp !== null &&
+                Number(item.srp) > 0
+                ? formatNumberWith2Decimals(
+                  item.srp
+                )
+                : '-'
+              }
+              </td>
+
+            </tr>
+          `;
           })
           .join('');
       })
       .join('');
 
-    const totalFineAll = filteredGroups.reduce((s, g) => s + (g.totalFinWt || 0), 0);
-    const totalReceiveAll = filteredGroups.reduce((s, g) => s + (g.receive || 0), 0);
-    const totalPendingAll = filteredGroups.reduce((s, g) => s + (g.pending || 0), 0);
+
+    // ==========================================================
+    // TOTALS
+    // ==========================================================
+
+    const totalFineAll =
+      filteredGroups.reduce(
+        (s, g) =>
+          s + (g.totalFinWt || 0),
+        0
+      );
+
+    const totalReceiveAll =
+      filteredGroups.reduce(
+        (s, g) =>
+          s + (g.receive || 0),
+        0
+      );
+
+    const totalPendingAll =
+      filteredGroups.reduce(
+        (s, g) =>
+          s + (g.pending || 0),
+        0
+      );
+
+
+    // ==========================================================
+    // COMPLETE PRINT HTML
+    // ==========================================================
 
     const reportHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Billing Report</title>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
+    <!DOCTYPE html>
+
+    <html>
+
+      <head>
+
+        <title>Billing Report</title>
+
+        <meta charset="utf-8" />
+
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0"
+        />
+
+
+        <style>
+
+          /* ==================================================
+             GLOBAL RESET
+          ================================================== */
+
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+
+
+          /* ==================================================
+             HTML / BODY
+          ================================================== */
+
+          html,
+          body {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+          }
+
+
+          body {
+            font-family: Arial, sans-serif;
+
+            background: #ffffff;
+
+            -webkit-print-color-adjust: exact !important;
+
+            print-color-adjust: exact !important;
+          }
+
+
+          /* ==================================================
+             A4 PORTRAIT
+          ================================================== */
+
+          @page {
+            size: A4 portrait;
+            margin: 5mm;
+          }
+
+
+          /* ==================================================
+             MAIN CONTAINER
+          ================================================== */
+
+          .report-container {
+            width: 100%;
+
+            max-width: 100%;
+
+            margin: 0 auto;
+
+            padding: 1mm;
+
+            box-sizing: border-box;
+          }
+
+
+          /* ==================================================
+             HEADER
+          ================================================== */
+
+          .header-section {
+            width: 100%;
+
+            text-align: center;
+
+            margin: 0;
+
+            padding: 0;
+          }
+
+
+          .header-top {
+            width: 100%;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            gap: 4px;
+
+            margin: 0 0 1px 0;
+
+            padding: 0;
+          }
+
+
+          .invocation {
+            font-size: 8px;
+
+            font-weight: bold;
+
+            color: ${invocationColor};
+
+            white-space: nowrap;
+
+            flex-shrink: 0;
+          }
+
+
+          .factory-name {
+            font-size: ${factoryFontSize};
+
+            font-weight: bold;
+
+            color: ${factoryNameColor};
+
+            text-align: center;
+
+            white-space: nowrap;
+
+            flex: 1;
+          }
+
+
+          .description {
+            margin: 1px 0 0 0;
+
+            padding: 0;
+
+            font-size: ${descriptionFontSize};
+
+            font-weight: bold;
+
+            color: ${descriptionColor};
+
+            line-height: 1.1;
+          }
+
+
+          .proprietor {
+            margin: 1px 0 0 0;
+
+            padding: 0;
+
+            font-size: ${proprietorFontSize};
+
+            font-weight: bold;
+
+            color: ${proprietorColor};
+
+            line-height: 1.1;
+          }
+
+
+          .phone {
+            color: ${phoneColor};
+
+            font-size: ${phoneFontSize};
+          }
+
+
+          .header-line {
+            border-bottom:
+              1.5px solid ${factoryNameColor};
+
+            margin: 2px 0 3px 0;
+          }
+
+
+          /* ==================================================
+             TITLE
+          ================================================== */
+
+          .title-row {
+            width: 100%;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            margin: 1px 0 3px 0;
+
+            padding: 0;
+          }
+
+
+          .title-left {
+            flex: 1;
+          }
+
+
+          .report-title {
+            flex: 1;
+
+            margin: 0;
+
+            padding: 0;
+
+            font-size: 13px;
+
+            font-weight: bold;
+
+            color: #000;
+
+            text-align: center;
+
+            white-space: nowrap;
+          }
+
+
+          .date-range {
+            flex: 1;
+
+            font-size: 7px;
+
+            color: #000;
+
+            font-weight: bold;
+
+            text-align: right;
+
+            white-space: nowrap;
+          }
+
+
+          /* ==================================================
+             TABLE
+          ================================================== */
+
+          table {
+            width: 100%;
+
+            max-width: 100%;
+
+            border-collapse: collapse;
+
+            border-spacing: 0;
+
+            table-layout: fixed;
+
+            margin: 0;
+
+            padding: 0;
+
+            font-size: 7px;
+          }
+
+
+          /* ==================================================
+             COLUMN WIDTHS
+          ================================================== */
+
+          th:nth-child(1),
+          td:nth-child(1) {
+            width: 4%;
+          }
+
+
+          th:nth-child(2),
+          td:nth-child(2) {
+            width: 10%;
+          }
+
+
+          th:nth-child(3),
+          td:nth-child(3) {
+            width: 10%;
+          }
+
+
+          th:nth-child(4),
+          td:nth-child(4) {
+            width: 12%;
+          }
+
+
+          th:nth-child(5),
+          td:nth-child(5) {
+            width: 11%;
+          }
+
+
+          th:nth-child(6),
+          td:nth-child(6) {
+            width: 14%;
+          }
+
+
+          th:nth-child(7),
+          td:nth-child(7) {
+            width: 7%;
+          }
+
+
+          th:nth-child(8),
+          td:nth-child(8) {
+            width: 8%;
+          }
+
+
+          th:nth-child(9),
+          td:nth-child(9) {
+            width: 7%;
+          }
+
+
+          th:nth-child(10),
+          td:nth-child(10) {
+            width: 8.5%;
+          }
+
+
+          th:nth-child(11),
+          td:nth-child(11) {
+            width: 8.5%;
+          }
+
+
+          /* ==================================================
+             TABLE CELLS
+          ================================================== */
+
+          th,
+          td {
+            border: 1px solid #000;
+
+            padding: 1.5px 2px;
+
+            vertical-align: middle;
+
+            line-height: 1.1;
+
+            overflow: hidden;
+
+            word-break: break-word;
+
+            overflow-wrap: anywhere;
+          }
+
+
+          /* ==================================================
+             TABLE HEADER
+          ================================================== */
+
+          thead {
+            display: table-header-group;
+          }
+
+
+          thead tr {
+            background: #785600;
+
+            color: #ffffff;
+
+            font-weight: 600;
+          }
+
+
+          thead th {
+            border: 1px solid #785600;
+
+            padding: 2px;
+
+            text-align: center;
+
+            font-size: 7px;
+
+            font-weight: bold;
+
+            color: #ffffff;
+
+            white-space: normal;
+
+            vertical-align: middle;
+          }
+
+
+          /* ==================================================
+             TABLE BODY
+          ================================================== */
+
+          tbody td {
+            font-size: 7px;
+
+            color: #000;
+
+            background: #fff;
+          }
+
+
+          .sr-col {
+            text-align: center;
+
+            font-weight: bold;
+          }
+
+
+          .date-col {
+            text-align: center;
+
+            font-size: 6.5px;
+
+            white-space: normal;
+          }
+
+
+          .bill-col {
+            text-align: center;
+
+            font-weight: bold;
+
+            font-size: 6.5px;
+
+            word-break: break-all;
+          }
+
+
+          .client-col {
+            text-align: left;
+
+            font-weight: 600;
+
+            font-size: 7px;
+          }
+
+
+          .phone-col {
+            text-align: center;
+
+            font-size: 6.5px;
+
+            word-break: break-all;
+          }
+
+
+          .item-col {
+            text-align: center;
+
+            font-size: 7px;
+          }
+
+
+          .purity-col {
+            text-align: center;
+
+            font-size: 7px;
+
+            white-space: nowrap;
+          }
+
+
+          .number-col {
+            text-align: right;
+
+            font-family: monospace;
+
+            font-size: 7px;
+
+            white-space: nowrap;
+          }
+
+
+          .fine-col {
+            font-weight: bold;
+          }
+
+
+          .pending-col {
+            font-weight: bold;
+          }
+
+
+          /* ==================================================
+             TOTAL
+          ================================================== */
+
+          tfoot {
+            display: table-footer-group;
+          }
+
+
+          tfoot tr {
+            background: #fef3c7;
+
+            color: #000;
+
+            font-weight: bold;
+
+            font-size: 7px;
+          }
+
+
+          tfoot td {
+            border: 1px solid #000;
+
+            padding: 2px 3px;
+
+            color: #000;
+          }
+
+
+          /* ==================================================
+             PRINT
+          ================================================== */
+
+          @media print {
+
+            html,
             body {
-              font-family: Arial, sans-serif;
-              background: #ffffff;
-              padding: 0;
-              margin: 0;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
+              width: 210mm;
+
+              min-height: 297mm;
+
+              margin: 0 !important;
+
+              padding: 0 !important;
+
+              background: white !important;
             }
+
+
+            body {
+              -webkit-print-color-adjust:
+                exact !important;
+
+              print-color-adjust:
+                exact !important;
+            }
+
+
             .report-container {
-              width: 100%;
-              max-width: 287mm;
-              margin: 0 auto;
-              padding: 6mm 5mm;
-              box-sizing: border-box;
+              width: 100% !important;
+
+              max-width: 100% !important;
+
+              padding: 1mm !important;
+
+              margin: 0 !important;
             }
-            @page {
-              size: A4 landscape;
-              margin: 3mm;
+
+
+            table {
+              width: 100% !important;
+
+              max-width: 100% !important;
+
+              table-layout: fixed !important;
+
+              border-collapse: collapse !important;
             }
-            @media print {
-              body {
-                background: white !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-              }
-              .report-container {
-                width: 100% !important;
-                max-width: 100% !important;
-                padding: 3mm !important;
-                margin: 0 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-              }
-              table {
-                width: 100% !important;
-                border-collapse: collapse !important;
-              }
-              tr {
-                page-break-inside: avoid !important;
-              }
-              thead tr, thead tr th {
-                background: #785600 !important;
-                color: white !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-              }
-              tfoot tr {
-                background: #fef3c7 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-              }
+
+
+            th,
+            td {
+              padding: 1.5px 2px !important;
             }
-          </style>
-        </head>
-        <body>
-          <div class="report-container">
-            <!-- Header Section -->
-            <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
-                <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
-                <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
-                <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
-              </div>
-              <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">${description}</div>
-              <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
-                ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
-              </div>
-              <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
+
+
+            thead {
+              display: table-header-group !important;
+            }
+
+
+            tfoot {
+              display: table-footer-group !important;
+            }
+
+
+            tr {
+              page-break-inside: avoid !important;
+
+              break-inside: avoid !important;
+            }
+
+
+            thead tr,
+            thead tr th {
+              background: #785600 !important;
+
+              color: #ffffff !important;
+
+              -webkit-print-color-adjust:
+                exact !important;
+
+              print-color-adjust:
+                exact !important;
+            }
+
+
+            tfoot tr {
+              background: #fef3c7 !important;
+
+              color: #000 !important;
+
+              -webkit-print-color-adjust:
+                exact !important;
+
+              print-color-adjust:
+                exact !important;
+            }
+
+
+            ::-webkit-scrollbar {
+              display: none !important;
+
+              width: 0 !important;
+
+              height: 0 !important;
+            }
+
+
+            * {
+              scrollbar-width: none !important;
+
+              -ms-overflow-style: none !important;
+            }
+
+          }
+
+        </style>
+
+      </head>
+
+
+      <body>
+
+        <div class="report-container">
+
+
+          <!-- ==================================================
+               HEADER
+          ================================================== -->
+
+          <div class="header-section">
+
+            <div class="header-top">
+
+              <span class="invocation">
+                ${leftInvocation}
+              </span>
+
+
+              <span class="factory-name">
+                ${factoryName}
+              </span>
+
+
+              <span class="invocation">
+                ${rightInvocation}
+              </span>
+
             </div>
 
-            <!-- Title and Date Range -->
-            <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
-              <div style="flex:1;"></div>
-              <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">Billing Report.</h2>
-              <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
-                ${fromStr && toStr ? `From: ${fromStr} &nbsp; To: ${toStr}` : ''}
-              </div>
+
+            <div class="description">
+              ${description}
             </div>
 
-            <!-- Table -->
-            <table style="width:100%;border-collapse:collapse;font-size:11px;margin:0;padding:0;">
-              <thead>
-                <tr style="background:#785600;color:white;font-weight:600;">
-                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:3%;">Sr</th>
-                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:10%;">Date & Time</th>
-                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:8%;">Bill No</th>
-                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:16%;">Client Name</th>
-                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:10%;">Phone</th>
-                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:14%;">Item (Size)</th>
-                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:7%;">Purity</th>
-                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:8%;">Fine Wt</th>
-                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:7%;">SRP</th>
-                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:8%;">Receive</th>
-                  <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:10px;width:9%;">Pending</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows}
-              </tbody>
-              <tfoot>
-                <tr style="background:#fef3c7;font-weight:bold;font-size:11px;">
-                  <td colspan="7" style="border:1px solid #000;padding:2px 4px;text-align:right;color:#000;">TOTAL:</td>
-                  <td style="border:1px solid #000;padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberWithDecimals(totalFineAll)}</td>
-                  <td style="border:1px solid #000;padding:2px 4px;text-align:right;color:#000;">-</td>
-                  <td style="border:1px solid #000;padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberWithDecimals(totalReceiveAll)}</td>
-                  <td style="border:1px solid #000;padding:2px 4px;text-align:right;font-family:monospace;color:#000;">${formatNumberWithDecimals(totalPendingAll)}</td>
-                </tr>
-              </tfoot>
-            </table>
+
+            <div class="proprietor">
+
+              ${proprietorName}
+
+              &nbsp;&nbsp;
+
+              <span class="phone">
+                ${phoneNumbers}
+              </span>
+
+            </div>
+
+
+            <div class="header-line"></div>
+
           </div>
 
-          <script>
-            window.onload = function() {
-              window.print();
-              window.onafterprint = function() {
-                window.close();
-              };
-            };
-          </script>
-        </body>
-      </html>
-    `;
 
-    const printWindow = window.open('', '_blank', 'width=1100,height=800');
-    if (printWindow) {
-      printWindow.document.write(reportHtml);
+          <!-- ==================================================
+               TITLE + DATE
+          ================================================== -->
+
+          <div class="title-row">
+
+            <div class="title-left"></div>
+
+
+            <h2 class="report-title">
+              Billing Report
+            </h2>
+
+
+            <div class="date-range">
+
+              ${fromStr && toStr
+        ? `From: ${fromStr}
+                     &nbsp;&nbsp;
+                     To: ${toStr}`
+        : ''
+      }
+
+            </div>
+
+          </div>
+
+
+          <!-- ==================================================
+               TABLE
+          ================================================== -->
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th>Sr</th>
+
+                <th>Date & Time</th>
+
+                <th>Bill No</th>
+
+                <th>Client Name</th>
+
+                <th>Phone</th>
+
+                <th>Item (Size)</th>
+
+                <th>Purity</th>
+
+                <th>Fine Wt</th>
+
+                <th>SRP</th>
+
+                <th>Receive</th>
+
+                <th>Pending</th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody>
+
+              ${rows}
+
+            </tbody>
+
+
+            <tfoot>
+
+              <tr>
+
+                <td
+                  colspan="7"
+                  style="
+                    border:1px solid #000;
+                    padding:2px 3px;
+                    text-align:right;
+                    color:#000;
+                    font-weight:bold;
+                  "
+                >
+                  TOTAL:
+                </td>
+
+
+                <td
+                  style="
+                    border:1px solid #000;
+                    padding:2px 3px;
+                    text-align:right;
+                    font-family:monospace;
+                    color:#000;
+                    font-weight:bold;
+                  "
+                >
+                  ${formatNumberWithDecimals(
+        totalFineAll
+      )}
+                </td>
+
+
+                <td
+                  style="
+                    border:1px solid #000;
+                    padding:2px 3px;
+                    text-align:right;
+                    color:#000;
+                    font-weight:bold;
+                  "
+                >
+                  -
+                </td>
+
+
+                <td
+                  style="
+                    border:1px solid #000;
+                    padding:2px 3px;
+                    text-align:right;
+                    font-family:monospace;
+                    color:#000;
+                    font-weight:bold;
+                  "
+                >
+                  ${formatNumberWithDecimals(
+        totalReceiveAll
+      )}
+                </td>
+
+
+                <td
+                  style="
+                    border:1px solid #000;
+                    padding:2px 3px;
+                    text-align:right;
+                    font-family:monospace;
+                    color:#000;
+                    font-weight:bold;
+                  "
+                >
+                  ${formatNumberWithDecimals(
+        totalPendingAll
+      )}
+                </td>
+
+              </tr>
+
+            </tfoot>
+
+          </table>
+
+
+        </div>
+
+      </body>
+
+    </html>
+  `;
+
+
+    // ==========================================================
+    // PRINT USING IFRAME
+    // IMPORTANT:
+    // There is ONLY ONE print() call.
+    // ==========================================================
+
+    try {
+
+      // --------------------------------------------------------
+      // Remove old iframe if it exists
+      // --------------------------------------------------------
+
+      const existingIframe =
+        document.getElementById(
+          'print-report-iframe'
+        );
+
+      if (existingIframe) {
+        existingIframe.remove();
+      }
+
+
+      // --------------------------------------------------------
+      // Create iframe
+      // --------------------------------------------------------
+
+      const iframe =
+        document.createElement('iframe');
+
+      iframe.id =
+        'print-report-iframe';
+
+      iframe.style.position =
+        'fixed';
+
+      iframe.style.left =
+        '-10000px';
+
+      iframe.style.top =
+        '0';
+
+      iframe.style.width =
+        '210mm';
+
+      iframe.style.height =
+        '297mm';
+
+      iframe.style.border =
+        '0';
+
+      iframe.style.visibility =
+        'hidden';
+
+      iframe.style.pointerEvents =
+        'none';
+
+
+      document.body.appendChild(
+        iframe
+      );
+
+
+      // --------------------------------------------------------
+      // Get iframe document
+      // --------------------------------------------------------
+
+      const iframeDoc =
+        iframe.contentWindow?.document;
+
+
+      if (!iframeDoc) {
+
+        iframe.remove();
+
+        toast.error(
+          'Unable to prepare print'
+        );
+
+        return;
+      }
+
+
+      // --------------------------------------------------------
+      // Write report HTML
+      // --------------------------------------------------------
+
+      iframeDoc.open();
+
+      iframeDoc.write(
+        reportHtml
+      );
+
+      iframeDoc.close();
+
+
+      // --------------------------------------------------------
+      // Print AFTER content has loaded
+      // --------------------------------------------------------
+
+      setTimeout(() => {
+
+        const printWindow =
+          iframe.contentWindow;
+
+
+        if (!printWindow) {
+
+          iframe.remove();
+
+          return;
+        }
+
+
+        let cleanedUp = false;
+
+
+        // ------------------------------------------------------
+        // Cleanup
+        // ------------------------------------------------------
+
+        const cleanup = () => {
+
+          if (cleanedUp) {
+            return;
+          }
+
+          cleanedUp = true;
+
+
+          setTimeout(() => {
+
+            if (
+              document.body.contains(
+                iframe
+              )
+            ) {
+
+              iframe.remove();
+
+            }
+
+          }, 100);
+
+        };
+
+
+        // ------------------------------------------------------
+        // IMPORTANT:
+        // onafterprint executes after Print OR Cancel
+        // ------------------------------------------------------
+
+        printWindow.onafterprint =
+          () => {
+
+            cleanup();
+
+          };
+
+
+        // ------------------------------------------------------
+        // ONLY ONE PRINT CALL
+        // ------------------------------------------------------
+
+        printWindow.print();
+
+
+        // ------------------------------------------------------
+        // Safety cleanup
+        // Does NOT call print again.
+        // ------------------------------------------------------
+
+        setTimeout(() => {
+
+          cleanup();
+
+        }, 60000);
+
+
+      }, 700);
+
+
+    } catch (error) {
+
+      console.error(
+        'Print error:',
+        error
+      );
+
+
+      // ========================================================
+      // FALLBACK PRINT WINDOW
+      // ========================================================
+
+      const printWindow =
+        window.open(
+          '',
+          '_blank',
+          'width=900,height=1100'
+        );
+
+
+      if (!printWindow) {
+
+        toast.error(
+          'Please allow pop-ups to print the report'
+        );
+
+        return;
+      }
+
+
+      // --------------------------------------------------------
+      // Write HTML
+      // --------------------------------------------------------
+
+      printWindow.document.open();
+
+      printWindow.document.write(
+        reportHtml
+      );
+
       printWindow.document.close();
-    } else {
-      toast.error('Please allow pop-ups to print the report');
+
+
+      // --------------------------------------------------------
+      // Fallback print
+      // ONLY ONE print() CALL
+      // --------------------------------------------------------
+
+      printWindow.onload = () => {
+
+        setTimeout(() => {
+
+          printWindow.onafterprint =
+            () => {
+
+              setTimeout(() => {
+
+                try {
+
+                  printWindow.close();
+
+                } catch (e) {
+
+                  console.error(
+                    'Unable to close print window:',
+                    e
+                  );
+
+                }
+
+              }, 100);
+
+            };
+
+
+          printWindow.print();
+
+        }, 500);
+
+      };
+
     }
   };
 
@@ -788,7 +2010,7 @@ const Billing: React.FC = () => {
       >
         <Printer className="h-4 w-4" />
       </button>
-    
+
       {item.type === 'DRAFT' && (
         <button
           onClick={(e) => {
