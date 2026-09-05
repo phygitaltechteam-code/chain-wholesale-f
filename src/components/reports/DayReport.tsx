@@ -525,9 +525,333 @@ const DayReport: React.FC = () => {
         return { gross, fine, count: filteredStockOutward.length };
     }, [filteredStockOutward]);
 
-    // Print Handler (same as before)
+    // Print Handler
     const handlePrint = () => {
-        // ... (keep your existing print implementation)
+        const headerInfo = getpdfheaderdata?.data?.data || {};
+        const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+        const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
+        const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+        const leftInvocation = headerInfo.leftInvocation || '॥ श्री गणेश प्रसन्न ॥';
+        const rightInvocation = headerInfo.rightInvocation || '॥ श्री साई प्रसन्न ॥';
+        const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+        const invocationColor = headerInfo.invocationColor || '#a84b20';
+        const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
+        const descriptionColor = headerInfo.descriptionColor || '#8b451f';
+        const proprietorColor = headerInfo.proprietorColor || '#a84b20';
+        const phoneColor = headerInfo.phoneColor || '#a84b20';
+        const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
+        const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
+        const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
+        const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+
+        const printContainer = document.createElement('div');
+        printContainer.id = 'print-container';
+
+        // 1. Process Groups Tables HTML
+        let processTablesHtml = '';
+        filteredProcessGroups.forEach(group => {
+            const rowsHtml = group.items.map((item, idx) => `
+                <tr style="border-bottom:1px solid #785600;">
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.item || item.name || '-'} ${item.size ? `(${item.size})` : ''}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${formatNumberDisplay(item.grossweight)}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.purity !== null ? formatNumberDisplay(item.purity, 2) + '%' : '-'}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.fineweight)}</td>
+                </tr>
+            `).join('');
+
+            processTablesHtml += `
+                <div style="margin-bottom:8px;page-break-inside:avoid;">
+                    <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:700;">${group.processName}</span>
+                        <span style="font-size:8.5px;color:#000;">Gross: <b>${formatNumberDisplay(group.totalGrossWeight)} G</b> | Fine: <b>${formatNumberDisplay(group.totalFineWeight)} G</b> | Items: <b>${group.count}</b></span>
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
+                        <thead>
+                            <tr style="background:#785600;color:white;font-weight:600;">
+                                <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Item (Size)</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Gross WT (G)</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:65px;text-align:center;font-size:8px;color:white;">Purity</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Fine WT (G)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml || `<tr><td colspan="5" style="border:1px solid #785600;padding:4px;text-align:center;font-size:8px;color:#666;">No items</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        });
+
+        // 2. Loss Table HTML
+        let lossTableHtml = '';
+        if (filteredLoss.length > 0) {
+            const lossRows = filteredLoss.map((item, idx) => `
+                <tr style="border-bottom:1px solid #785600;">
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.processName || (item as any).particular || 'Loss'}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;color:#b91c1c;">${formatNumberDisplay(item.loss)} G</td>
+                </tr>
+            `).join('');
+
+            lossTableHtml = `
+                <div style="margin-bottom:8px;page-break-inside:avoid;">
+                    <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:700;">Today's Loss</span>
+                        <span style="font-size:8.5px;color:#000;">Total Loss: <b>${formatNumberDisplay(lossTotals.total)} G</b> | Count: <b>${lossTotals.count}</b></span>
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
+                        <thead>
+                            <tr style="background:#785600;color:white;font-weight:600;">
+                                <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Process / Particular</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:100px;text-align:center;font-size:8px;color:white;">Loss (G)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${lossRows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // 3. Stock Inward Table HTML
+        let stockInwardHtml = '';
+        if (filteredStockInward.length > 0) {
+            const inwardRows = filteredStockInward.map((item, idx) => `
+                <tr style="border-bottom:1px solid #785600;">
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.item} ${item.size ? `(${item.size})` : ''}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${formatNumberDisplay(item.grossweight)}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.purity !== null ? formatNumberDisplay(item.purity, 2) + '%' : '-'}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.fineweight)}</td>
+                </tr>
+            `).join('');
+
+            stockInwardHtml = `
+                <div style="margin-bottom:8px;page-break-inside:avoid;">
+                    <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:700;">Stock Inward</span>
+                        <span style="font-size:8.5px;color:#000;">Gross: <b>${formatNumberDisplay(stockInwardTotals.gross)} G</b> | Fine: <b>${formatNumberDisplay(stockInwardTotals.fine)} G</b> | Items: <b>${stockInwardTotals.count}</b></span>
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
+                        <thead>
+                            <tr style="background:#785600;color:white;font-weight:600;">
+                                <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Item (Size)</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Gross WT (G)</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:65px;text-align:center;font-size:8px;color:white;">Purity</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Fine WT (G)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${inwardRows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // 4. Stock Outward Table HTML
+        let stockOutwardHtml = '';
+        if (filteredStockOutward.length > 0) {
+            const outwardRows = filteredStockOutward.map((item, idx) => `
+                <tr style="border-bottom:1px solid #785600;">
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.item} ${item.size ? `(${item.size})` : ''}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${formatNumberDisplay(item.grossweight)}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.purity !== null ? formatNumberDisplay(item.purity, 2) + '%' : '-'}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.fineweight)}</td>
+                </tr>
+            `).join('');
+
+            stockOutwardHtml = `
+                <div style="margin-bottom:8px;page-break-inside:avoid;">
+                    <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:700;">Stock Outward</span>
+                        <span style="font-size:8.5px;color:#000;">Gross: <b>${formatNumberDisplay(stockOutwardTotals.gross)} G</b> | Fine: <b>${formatNumberDisplay(stockOutwardTotals.fine)} G</b> | Items: <b>${stockOutwardTotals.count}</b></span>
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
+                        <thead>
+                            <tr style="background:#785600;color:white;font-weight:600;">
+                                <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Item (Size)</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Gross WT (G)</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:65px;text-align:center;font-size:8px;color:white;">Purity</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Fine WT (G)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${outwardRows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // 5. Client Due / Settlement Table HTML
+        let clientDueHtml = '';
+        if (filteredClientDue.length > 0) {
+            const dueRows = filteredClientDue.map((item, idx) => `
+                <tr style="border-bottom:1px solid #785600;">
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.clientName}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.totalDue)} G</td>
+                </tr>
+            `).join('');
+
+            clientDueHtml = `
+                <div style="margin-bottom:8px;page-break-inside:avoid;">
+                    <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:700;">Client Dues</span>
+                        <span style="font-size:8.5px;color:#000;">Total Due: <b>${formatNumberDisplay(settlementTotals.total)} G</b> | Clients: <b>${settlementTotals.count}</b></span>
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
+                        <thead>
+                            <tr style="background:#785600;color:white;font-weight:600;">
+                                <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Client Name</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:100px;text-align:center;font-size:8px;color:white;">Due Fine WT (G)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${dueRows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        printContainer.innerHTML = `
+            <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+                <div>
+                    <!-- Factory Header -->
+                    <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
+                            <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
+                            <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
+                            <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
+                        </div>
+                        
+                        <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
+                            ${description}
+                        </div>
+                        
+                        <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
+                            ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
+                        </div>
+                        <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
+                    </div>
+
+                    <!-- Title & Date -->
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
+                        <div style="flex:1;"></div>
+                        <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+                            Daily Report
+                        </h2>
+                        <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
+                            Date: ${selectedDate.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                        </div>
+                    </div>
+
+                    <!-- Day Summary Overview Box -->
+                    <div style="display:flex;justify-content:space-around;background:#fff8e6;border:1px solid #785600;padding:5px;margin-bottom:8px;font-size:9.5px;font-weight:bold;color:#000;">
+                        <div>Process Gross: <span style="color:#785600;">${formatNumberDisplay(processTotals.gross)} G</span></div>
+                        <div>Process Fine: <span style="color:#785600;">${formatNumberDisplay(processTotals.fine)} G</span></div>
+                        <div>Total Loss: <span style="color:#b91c1c;">${formatNumberDisplay(lossTotals.total)} G</span></div>
+                        <div>Inward Fine: <span style="color:#785600;">${formatNumberDisplay(stockInwardTotals.fine)} G</span></div>
+                        <div>Client Dues: <span style="color:#785600;">${formatNumberDisplay(settlementTotals.total)} G</span></div>
+                    </div>
+
+                    <!-- Tables -->
+                    ${processTablesHtml}
+                    ${lossTableHtml}
+                    ${stockInwardHtml}
+                    ${stockOutwardHtml}
+                    ${clientDueHtml}
+                </div>
+
+                <!-- Footer -->
+                <div style="width:100%;margin-top:auto;padding-top:4px;">
+                    <div style="border-top:1px solid #785600;padding-top:2px;text-align:center;">
+                        <p style="margin:0;font-size:7px;color:#000;">
+                            This is a computer generated report
+                        </p>
+                        <div style="margin-top:1px;font-size:6.5px;color:#000;display:flex;justify-content:center;gap:10px;">
+                            <span>Powered by Matoshree Gold</span>
+                            <span>|</span>
+                            <span>Generated: ${new Date().toLocaleDateString('en-IN', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                            })} ${new Date().toLocaleTimeString('en-IN', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true,
+                            })}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const style = document.createElement('style');
+        style.textContent = `
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+            @media print {
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    width: 210mm;
+                    height: 297mm;
+                }
+                body * {
+                    visibility: hidden;
+                }
+                #print-container, #print-container * {
+                    visibility: visible;
+                }
+                #print-container {
+                    position: fixed !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 210mm !important;
+                    height: 297mm !important;
+                    background: white !important;
+                    padding: 4px !important;
+                    overflow: auto !important;
+                    z-index: 9999 !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                #print-container table {
+                    width: 100% !important;
+                }
+                #print-container tr {
+                    page-break-inside: avoid !important;
+                }
+                #print-container thead tr {
+                    background: #785600 !important;
+                    color: white !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                #print-container thead tr th {
+                    background: #785600 !important;
+                    color: white !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+            }
+        `;
+
+        document.head.appendChild(style);
+        document.body.appendChild(printContainer);
+
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+                if (document.body.contains(printContainer)) document.body.removeChild(printContainer);
+                if (document.head.contains(style)) document.head.removeChild(style);
+            }, 1000);
+        }, 300);
     };
 
     if (reportLoading) {
