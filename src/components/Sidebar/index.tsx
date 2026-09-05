@@ -20,6 +20,7 @@ import {
   MdDesignServices,
   MdAccountCircle,
   MdPictureAsPdf,
+  MdAutoGraph,
 } from 'react-icons/md';
 import { useAuthContext } from '@/context/AuthContext';
 import { EPinIcon } from '@/icons';
@@ -91,6 +92,12 @@ const Sidebar = ({
   // ALL MENU ITEMS
   // ============================================================
   const allMenuItems: MenuItem[] = [
+    {
+      label: 'Dashboard',
+      path: '/reports/realtimegoldreport',
+      icon: <MdAutoGraph size={22} />,
+      roles: ['ADMIN'],
+    },
     {
       label: 'Billing',
       path: '/billing',
@@ -384,8 +391,8 @@ const Sidebar = ({
               }
             }}
             className={`group flex w-full items-center justify-between rounded-lg transition-all duration-200 ${isItemActive || isAnySubrouteActive
-                ? 'bg-[#B8860B]/10 text-[#B8860B]'
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              ? 'bg-[#B8860B]/10 text-[#B8860B]'
+              : 'text-slate-400 hover:bg-white/5 hover:text-white'
               } ${isActuallyCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}`}
             title={isActuallyCollapsed ? item.label : ''}
           >
@@ -424,8 +431,8 @@ const Sidebar = ({
                         if (isMobileDevice) toggleMobileMenu();
                       }}
                       className={`flex items-center gap-2 rounded-lg py-2 pl-4 pr-3 text-sm transition-all duration-200 ${isSubActive
-                          ? 'bg-[#B8860B]/10 text-[#B8860B]'
-                          : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                        ? 'bg-[#B8860B]/10 text-[#B8860B]'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
                         }`}
                     >
                       <span className="shrink-0">{subroute.icon}</span>
@@ -448,8 +455,8 @@ const Sidebar = ({
             if (isMobileDevice) toggleMobileMenu();
           }}
           className={`group flex items-center rounded-lg transition-all duration-200 ${isActive(item.path!)
-              ? 'bg-[#B8860B]/10 text-[#B8860B]'
-              : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            ? 'bg-[#B8860B]/10 text-[#B8860B]'
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
             } ${isActuallyCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}`}
           title={isActuallyCollapsed ? item.label : ''}
         >
@@ -548,8 +555,8 @@ const Sidebar = ({
         <button
           onClick={handleLogout}
           className={`flex w-full items-center rounded-lg transition-all duration-200 ${isCollapsed && !isMobileDevice
-              ? 'justify-center px-2 py-3'
-              : 'px-3 py-2.5 md:px-4 md:py-3'
+            ? 'justify-center px-2 py-3'
+            : 'px-3 py-2.5 md:px-4 md:py-3'
             } text-slate-400 hover:bg-white/5 hover:text-white`}
           title={isCollapsed && !isMobileDevice ? 'Logout' : ''}
         >
@@ -584,8 +591,8 @@ const Sidebar = ({
 
       <aside
         className={`fixed left-0 top-0 z-50 flex h-full flex-col bg-[#1a1a2e] shadow-2xl transition-all duration-300 ease-in-out ${getSidebarWidth()} ${isMobileDevice && !isMobileMenuOpen
-            ? '-translate-x-full'
-            : 'translate-x-0'
+          ? '-translate-x-full'
+          : 'translate-x-0'
           }`}
       >
         <SidebarContent />

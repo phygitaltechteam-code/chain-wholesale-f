@@ -212,6 +212,15 @@ export const getHistoryCuttingColumns = (): Column<any>[] => [
         },
     },
     {
+        key: 'timeTaken',
+        header: 'Aging',
+        render: (item) => (
+            <span className="font-medium text-sm text-[#1a1c1b] dark:text-white">
+                {item?.timeTaken || '-'}
+            </span>
+        ),
+    },
+    {
         key: 'updatedAt',
         header: 'Proceed Date & Time',
         render: (item) => {

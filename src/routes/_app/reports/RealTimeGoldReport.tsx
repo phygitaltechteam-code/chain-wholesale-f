@@ -1,9 +1,10 @@
+import RealTimeGoldReport from '@/components/reports/RealTImeGoldReport'
 import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/_app/reports/RealTimeGoldReport')({
+export const Route = createFileRoute('/_app/reports/realtimegoldreport')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  return <div>Hello "/_app/reports/RealTimeGoldReport"!</div>
+  return <RealTimeGoldReport />
 }

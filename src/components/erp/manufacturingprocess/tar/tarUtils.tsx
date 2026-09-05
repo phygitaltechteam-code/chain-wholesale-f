@@ -398,6 +398,15 @@ export const getHistoryTarColumns = (): Column<any>[] => [
     ),
   },
   {
+    key: 'timeTaken',
+    header: 'Aging',
+    render: (item) => (
+      <span className="font-medium text-sm text-[#1a1c1b] dark:text-white">
+        {item?.timeTaken || '-'}
+      </span>
+    ),
+  },
+  {
     key: 'updatedAt',
     header: 'Proceed Date & Time',
     render: (item) => {
@@ -425,198 +434,198 @@ export const getTarColumns = (
   isLoading: boolean,
   isSubmitting: boolean
 ): Column<TarEntry>[] => [
-  {
-    key: 'dateTime',
-    header: 'Date & Time',
-    render: (item) => {
-      const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
-      const datePart = parts[0] || '';
-      const timePart = parts.slice(1).join(' ') || '';
+    {
+      key: 'dateTime',
+      header: 'Date & Time',
+      render: (item) => {
+        const parts = item.dateTime ? item.dateTime.split(' ') : ['', ''];
+        const datePart = parts[0] || '';
+        const timePart = parts.slice(1).join(' ') || '';
 
-      return (
-        <div className="flex flex-col items-center">
-          <span className="text-sm text-[#1a1c1b] dark:text-white">
-            {datePart}
-          </span>
-          <span className="text-sm text-[#1a1c1b] dark:text-white">
-            {timePart}
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {datePart}
+            </span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {timePart}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'fine',
+      header: 'Fine (लगड)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.fine)} G
+        </span>
+      ),
+    },
+    {
+      key: 'purity',
+      header: 'Purity % (टंच)',
+      render: (item) => (
+        <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap  bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.purity)}%
           </span>
         </div>
-      );
+      ),
     },
-  },
-  {
-    key: 'fine',
-    header: 'Fine (लगड)',
-    render: (item) => (
-      <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-        {formatNumberDisplay(item.fine)} G
-      </span>
-    ),
-  },
-  {
-    key: 'purity',
-    header: 'Purity % (टंच)',
-    render: (item) => (
-      <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap  bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.purity)}%
-        </span>
-      </div>
-    ),
-  },
-  {
-    key: 'grosswt',
-    header: 'GrossWt (G)',
-    colSpan: (item) => (hasMeltingStatus(item) ? 3 : 1),
-    render: (item, index) => {
-      if (hasMeltingStatus(item)) {
+    {
+      key: 'grosswt',
+      header: 'GrossWt (G)',
+      colSpan: (item) => (hasMeltingStatus(item) ? 3 : 1),
+      render: (item, index) => {
+        if (hasMeltingStatus(item)) {
+          return (
+            <div className="flex items-center justify-center py-0.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                Melting
+              </span>
+            </div>
+          );
+        }
+
+
         return (
-          <div className="flex items-center justify-center py-0.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-              <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.grosswt)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'tar',
+      header: 'Tar (G)',
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item, index) => {
+        if (!item.isSaved) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={
+                  item.tarRaw !== undefined
+                    ? item.tarRaw
+                    : item.tar === 0
+                      ? ''
+                      : item.tar
+                }
+                {...getScaleProps(index, 'tar')}
+                onChange={(e) =>
+                  handleInlineChange(index, 'tar', e.target.value)
+                }
+                placeholder="0.000"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                G
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.tar)} G
+          </span>
+        );
+      },
+    },
+    {
+      key: 'scrap',
+      header: 'Scrap (G)',
+      colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+      render: (item, index) => {
+        if (!item.isSaved) {
+          return (
+            <div className="relative inline-block">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={
+                  item.scrapRaw !== undefined
+                    ? item.scrapRaw
+                    : item.scrap === 0
+                      ? ''
+                      : item.scrap
+                }
+                {...getScaleProps(index, 'scrap')}
+                onChange={(e) =>
+                  handleInlineChange(index, 'scrap', e.target.value)
+                }
+                placeholder="0.000"
+                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+              />
+              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                G
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+            {formatNumberDisplay(item.scrap)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'loss',
+      header: 'Loss (G)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumberDisplay(item.loss)} G
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Action',
+      render: (item: TarEntry, index: number) => {
+        if (hasMeltingStatus(item)) {
+          return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
               Melting
             </span>
-          </div>
-        );
-      }
+          );
+        }
 
-
-      return (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.grosswt)}
-        </span>
-      );
-    },
-  },
-  {
-    key: 'tar',
-    header: 'Tar (G)',
-    colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
-    render: (item, index) => {
-      if (!item.isSaved) {
         return (
-          <div className="relative inline-block">
-            <input
-              type="text"
-              inputMode="decimal"
-              value={
-                item.tarRaw !== undefined
-                  ? item.tarRaw
-                  : item.tar === 0
-                    ? ''
-                    : item.tar
-              }
-              {...getScaleProps(index, 'tar')}
-              onChange={(e) =>
-                handleInlineChange(index, 'tar', e.target.value)
-              }
-              placeholder="0.000"
-              className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
-            <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-              G
-            </span>
-          </div>
-        );
-      }
+          <div className="flex items-center justify-center gap-1.5">
+            {/* Box Button - Only show if entry is not saved and has editable values */}
+            {!item.isSaved && hasEditableValues(item) && (
+              <button
+                type="button"
+                onClick={() => handleSaveClick(index)}
+                disabled={isLoading || isSubmitting}
+                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                title="Move to Box"
+              >
+                <Save className="h-3 w-3" />
+                <span>Box</span>
+              </button>
+            )}
 
-      return (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.tar)} G
-        </span>
-      );
-    },
-  },
-  {
-    key: 'scrap',
-    header: 'Scrap (G)',
-    colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
-    render: (item, index) => {
-      if (!item.isSaved) {
-        return (
-          <div className="relative inline-block">
-            <input
-              type="text"
-              inputMode="decimal"
-              value={
-                item.scrapRaw !== undefined
-                  ? item.scrapRaw
-                  : item.scrap === 0
-                    ? ''
-                    : item.scrap
-              }
-              {...getScaleProps(index, 'scrap')}
-              onChange={(e) =>
-                handleInlineChange(index, 'scrap', e.target.value)
-              }
-              placeholder="0.000"
-              className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-            />
-            <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-              G
-            </span>
-          </div>
-        );
-      }
-
-      return (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.scrap)}
-        </span>
-      );
-    },
-  },
-  {
-    key: 'loss',
-    header: 'Loss (G)',
-    render: (item) => (
-      <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-        {formatNumberDisplay(item.loss)} G
-      </span>
-    ),
-  },
-  {
-    key: 'actions',
-    header: 'Action',
-    render: (item: TarEntry, index: number) => {
-      if (hasMeltingStatus(item)) {
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-            Melting
-          </span>
-        );
-      }
-
-      return (
-        <div className="flex items-center justify-center gap-1.5">
-          {/* Box Button - Only show if entry is not saved and has editable values */}
-          {!item.isSaved && hasEditableValues(item) && (
+            {/* Melting Button - Always visible for all entries */}
             <button
               type="button"
-              onClick={() => handleSaveClick(index)}
+              onClick={() => handleMelting(item)}
               disabled={isLoading || isSubmitting}
-              className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-              title="Move to Box"
+              className="inline-flex items-center justify-center gap-1 rounded-lg bg-amber-200 px-2 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-amber-200 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60"
+              title="Send to Melting"
             >
-              <Save className="h-3 w-3" />
-              <span>Box</span>
+              <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+              <span>Melting</span>
             </button>
-          )}
-
-          {/* Melting Button - Always visible for all entries */}
-          <button
-            type="button"
-            onClick={() => handleMelting(item)}
-            disabled={isLoading || isSubmitting}
-            className="inline-flex items-center justify-center gap-1 rounded-lg bg-amber-200 px-2 py-1 text-xs font-bold uppercase tracking-wider text-amber-800 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-amber-200 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60"
-            title="Send to Melting"
-          >
-            <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-            <span>Melting</span>
-          </button>
-        </div>
-      );
+          </div>
+        );
+      },
     },
-  },
-];
+  ];

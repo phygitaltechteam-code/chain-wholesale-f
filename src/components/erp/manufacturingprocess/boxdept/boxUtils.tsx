@@ -435,6 +435,16 @@ export const getHistoryBoxColumns = (): Column<any>[] => [
         },
     },
     {
+        key: 'timeTaken',
+        header: 'Aging',
+        render: (item) => (
+            <span className="font-medium text-sm text-[#1a1c1b] dark:text-white">
+                {item?.timeTaken || '-'}
+            </span>
+        ),
+    },
+
+    {
         key: 'updatedAt',
         header: 'Proceed Date & Time',
         render: (item) => {
@@ -463,190 +473,190 @@ export const getBoxColumns = (
     isSubmitting: boolean,
     meltingLoadingIds: Set<string>
 ): Column<BoxEntry>[] => [
-    {
-        key: 'dateTime',
-        header: 'Date & Time',
-        render: (item) => {
-            const parts = item.dateTime ? item.dateTime.split(', ') : ['', ''];
-            return (
-                <div className="flex flex-col items-center">
-                    <span className="text-sm text-[#1a1c1b] dark:text-white">
-                        {parts[0] || ''}
-                    </span>
-                    <span className="text-sm text-[#1a1c1b] dark:text-white">
-                        {parts.slice(1).join(', ') || ''}
+        {
+            key: 'dateTime',
+            header: 'Date & Time',
+            render: (item) => {
+                const parts = item.dateTime ? item.dateTime.split(', ') : ['', ''];
+                return (
+                    <div className="flex flex-col items-center">
+                        <span className="text-sm text-[#1a1c1b] dark:text-white">
+                            {parts[0] || ''}
+                        </span>
+                        <span className="text-sm text-[#1a1c1b] dark:text-white">
+                            {parts.slice(1).join(', ') || ''}
+                        </span>
+                    </div>
+                );
+            },
+        },
+        {
+            key: 'sizeName',
+            header: 'Size',
+            render: (item) => (
+                <span className="text-sm text-[#1a1c1b] dark:text-white">
+                    {typeof item?.size === 'object'
+                        ? (item?.size?.size ?? '-')
+                        : (item?.size ?? '-')}
+                </span>
+            ),
+        },
+        {
+            key: 'purity',
+            header: 'Purity % (टंच)',
+            render: (item) => (
+                <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap  bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+                    <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+                        {formatNumberDisplay(item.purity)}%
                     </span>
                 </div>
-            );
+            ),
         },
-    },
-    {
-        key: 'sizeName',
-        header: 'Size',
-        render: (item) => (
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-                {typeof item?.size === 'object'
-                    ? (item?.size?.size ?? '-')
-                    : (item?.size ?? '-')}
-            </span>
-        ),
-    },
-    {
-        key: 'purity',
-        header: 'Purity % (टंच)',
-        render: (item) => (
-            <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap  bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+        {
+            key: 'tarWeight',
+            header: 'Tar(तार)',
+            render: (item) => (
                 <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumberDisplay(item.purity)}%
+                    {formatNumberDisplay(item.tarWeight)} G
                 </span>
-            </div>
-        ),
-    },
-    {
-        key: 'tarWeight',
-        header: 'Tar(तार)',
-        render: (item) => (
-            <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                {formatNumberDisplay(item.tarWeight)} G
-            </span>
-        ),
-    },
-    {
-        key: 'chainWeight',
-        header: 'Chain Weight(G)',
-        render: (item, index) => {
-            if (item.isEditing) {
+            ),
+        },
+        {
+            key: 'chainWeight',
+            header: 'Chain Weight(G)',
+            render: (item, index) => {
+                if (item.isEditing) {
+                    return (
+                        <div className="relative inline-block">
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                value={
+                                    item.chainWeightRaw !== undefined
+                                        ? item.chainWeightRaw
+                                        : item.chainWeight === 0
+                                            ? ''
+                                            : item.chainWeight
+                                }
+                                {...getScaleProps(index, 'chainWeight')}
+                                onChange={(e) =>
+                                    handleInlineChange(index, 'chainWeight', e.target.value)
+                                }
+                                placeholder="0.000"
+                                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                            />
+                            <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                                G
+                            </span>
+                        </div>
+                    );
+                }
+
                 return (
-                    <div className="relative inline-block">
-                        <input
-                            type="text"
-                            inputMode="decimal"
-                            value={
-                                item.chainWeightRaw !== undefined
-                                    ? item.chainWeightRaw
-                                    : item.chainWeight === 0
-                                        ? ''
-                                        : item.chainWeight
-                            }
-                            {...getScaleProps(index, 'chainWeight')}
-                            onChange={(e) =>
-                                handleInlineChange(index, 'chainWeight', e.target.value)
-                            }
-                            placeholder="0.000"
-                            className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                        />
-                        <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                            G
-                        </span>
-                    </div>
+                    <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+                        {formatNumberDisplay(item.chainWeight)} G
+                    </span>
                 );
-            }
-
-            return (
-                <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumberDisplay(item.chainWeight)} G
-                </span>
-            );
+            },
         },
-    },
-    {
-        key: 'scrap',
-        header: 'Scrap (स्क्रॅप)',
-        render: (item, index) => {
-            if (item.isEditing) {
+        {
+            key: 'scrap',
+            header: 'Scrap (स्क्रॅप)',
+            render: (item, index) => {
+                if (item.isEditing) {
+                    return (
+                        <div className="relative inline-block">
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                value={
+                                    item.scrapRaw !== undefined
+                                        ? item.scrapRaw
+                                        : item.scrap === 0
+                                            ? ''
+                                            : item.scrap
+                                }
+                                {...getScaleProps(index, 'scrap')}
+                                onChange={(e) =>
+                                    handleInlineChange(index, 'scrap', e.target.value)
+                                }
+                                placeholder="0.000"
+                                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                            />
+                            <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+                                G
+                            </span>
+                        </div>
+                    );
+                }
+
                 return (
-                    <div className="relative inline-block">
-                        <input
-                            type="text"
-                            inputMode="decimal"
-                            value={
-                                item.scrapRaw !== undefined
-                                    ? item.scrapRaw
-                                    : item.scrap === 0
-                                        ? ''
-                                        : item.scrap
-                            }
-                            {...getScaleProps(index, 'scrap')}
-                            onChange={(e) =>
-                                handleInlineChange(index, 'scrap', e.target.value)
-                            }
-                            placeholder="0.000"
-                            className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
-                        />
-                        <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                            G
-                        </span>
-                    </div>
+                    <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+                        {formatNumberDisplay(item.scrap)} G
+                    </span>
                 );
-            }
-
-            return (
-                <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumberDisplay(item.scrap)} G
-                </span>
-            );
+            },
         },
-    },
-    {
-        key: 'loss',
-        header: 'Loss',
-        render: (item) => (
-            <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                {formatNumberDisplay(item.loss)} G
-            </span>
-        ),
-    },
+        {
+            key: 'loss',
+            header: 'Loss',
+            render: (item) => (
+                <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+                    {formatNumberDisplay(item.loss)} G
+                </span>
+            ),
+        },
 
-    {
-        key: 'actions',
-        header: 'Action',
-        render: (item: BoxEntry, index: number) => {
-            const isMeltingLoading = meltingLoadingIds.has(item.id);
+        {
+            key: 'actions',
+            header: 'Action',
+            render: (item: BoxEntry, index: number) => {
+                const isMeltingLoading = meltingLoadingIds.has(item.id);
 
-            return (
-                <div className="flex items-center justify-center gap-1.5">
-                    {/* Soldering Button - Only show if entry is not saved and has editable values */}
-                    {!item.isSaved && hasEditableValues(item) && (
+                return (
+                    <div className="flex items-center justify-center gap-1.5">
+                        {/* Soldering Button - Only show if entry is not saved and has editable values */}
+                        {!item.isSaved && hasEditableValues(item) && (
+                            <button
+                                type="button"
+                                onClick={() => handleSaveClick(index)}
+                                disabled={isLoading || isSubmitting || isMeltingLoading}
+                                className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                                title="Move to Soldering"
+                            >
+                                <Save className="h-3 w-3" />
+                                <span>Soldering</span>
+                            </button>
+                        )}
+
+                        {/* Melting Button - Always visible for all entries */}
                         <button
                             type="button"
-                            onClick={() => handleSaveClick(index)}
+                            onClick={() => handleMelting(item)}
                             disabled={isLoading || isSubmitting || isMeltingLoading}
-                            className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-2 py-1 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                            title="Move to Soldering"
-                        >
-                            <Save className="h-3 w-3" />
-                            <span>Soldering</span>
-                        </button>
-                    )}
-
-                    {/* Melting Button - Always visible for all entries */}
-                    <button
-                        type="button"
-                        onClick={() => handleMelting(item)}
-                        disabled={isLoading || isSubmitting || isMeltingLoading}
-                        className={`inline-flex items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-bold uppercase tracking-wider shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
+                            className={`inline-flex items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-bold uppercase tracking-wider shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
                                 ? 'bg-gray-300 text-gray-600 cursor-wait dark:bg-gray-600 dark:text-gray-300'
                                 : 'bg-amber-200 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60'
-                            }`}
-                        title="Send to Melting"
-                    >
-                        {isMeltingLoading ? (
-                            <>
-                                <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                </svg>
-                                <span>Processing...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                                <span>Melting</span>
-                            </>
-                        )}
-                    </button>
-                </div>
-            );
-        },
-    }
-];
+                                }`}
+                            title="Send to Melting"
+                        >
+                            {isMeltingLoading ? (
+                                <>
+                                    <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    <span>Processing...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                                    <span>Melting</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                );
+            },
+        }
+    ];

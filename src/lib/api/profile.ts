@@ -9,6 +9,11 @@ export interface ProfilePayload {
   secondaryPhoneNumber?: string;
   address?: string;
   city?: string;
+  workStartTime?: string | null;
+  workEndTime?: string | null;
+  currentPassword?: string;
+  oldPassword?: string;
+  newPassword?: string;
   password?: string;
 }
 
@@ -17,7 +22,10 @@ export const getProfileDataApi = async () => {
   try {
     const response = await api.get('admin/profile');
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
     if (error instanceof Error) {
       throw new Error(error.message || 'Failed to fetch profile data');
     }
@@ -38,7 +46,19 @@ export const updateProfileApi = async (data: ProfilePayload) => {
   try {
     const response = await api.put('admin/profile', data);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.response?.data) {
+      const errData = error.response.data;
+      if (errData.errors && Array.isArray(errData.errors) && errData.errors.length > 0) {
+        const errorDetails = errData.errors
+          .map((e: any) => `${e.field || 'Field'}: ${e.message}`)
+          .join(', ');
+        throw new Error(errorDetails || errData.message || 'Validation failed');
+      }
+      if (errData.message) {
+        throw new Error(errData.message);
+      }
+    }
     if (error instanceof Error) {
       throw new Error(error.message || 'Failed to update profile');
     }

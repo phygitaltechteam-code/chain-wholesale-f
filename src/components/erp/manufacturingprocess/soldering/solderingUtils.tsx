@@ -501,6 +501,15 @@ export const getHistorySolderingColumns = (): Column<any>[] => [
     },
   },
   {
+    key: 'timeTaken',
+    header: 'Aging',
+    render: (item) => (
+      <span className="font-medium text-sm text-[#1a1c1b] dark:text-white">
+        {item?.timeTaken || '-'}
+      </span>
+    ),
+  },
+  {
     key: 'updatedAt',
     header: 'Proceed Date & Time',
     render: (item) => {
@@ -705,8 +714,8 @@ export const getSolderingColumns = (
               onClick={() => handleMelting(item)}
               disabled={isLoading || isSubmitting || isMeltingLoading}
               className={`inline-flex items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold uppercase tracking-wider shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${isMeltingLoading
-                  ? 'bg-gray-300 text-gray-600 cursor-wait dark:bg-gray-600 dark:text-gray-300'
-                  : 'bg-amber-200 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60'
+                ? 'bg-gray-300 text-gray-600 cursor-wait dark:bg-gray-600 dark:text-gray-300'
+                : 'bg-amber-200 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60'
                 }`}
               title="Send to Melting"
             >

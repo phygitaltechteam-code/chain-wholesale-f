@@ -17,7 +17,44 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Clock,
+  Clock8,
 } from 'lucide-react';
+
+// Helpers for converting between "HH:mm" time inputs and ISO Date strings expected by backend
+const formatTimeToISO = (time?: string | null): string | null => {
+  if (!time || !time.trim()) return null;
+  if (time.includes('T') || time.includes('Z')) {
+    const d = new Date(time);
+    return !isNaN(d.getTime()) ? d.toISOString() : null;
+  }
+  const parts = time.split(':').map(Number);
+  if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+    const d = new Date();
+    d.setHours(parts[0], parts[1], parts[2] || 0, 0);
+    return d.toISOString();
+  }
+  return null;
+};
+
+const formatISOToTime = (isoOrTimeString?: string | null): string => {
+  if (!isoOrTimeString) return '';
+  if (/^\d{2}:\d{2}$/.test(isoOrTimeString)) {
+    return isoOrTimeString;
+  }
+  if (/^\d{2}:\d{2}:\d{2}$/.test(isoOrTimeString)) {
+    return isoOrTimeString.slice(0, 5);
+  }
+  try {
+    const d = new Date(isoOrTimeString);
+    if (!isNaN(d.getTime())) {
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+  } catch (e) {}
+  return '';
+};
 
 const AdminProfile: React.FC = () => {
   const { user } = useAuthContext();
@@ -33,17 +70,18 @@ const AdminProfile: React.FC = () => {
     accessType: 'ONLINE',
     key: '',
     expiryDate: '',
+    workStartTime: '',
+    workEndTime: '',
+    workStatus: 'active', // 'active' | 'inactive' | 'on_leave'
   });
 
   // Password change states
   const [passwordData, setPasswordData] = useState({
-    oldPassword: '',
+    currentPassword: '',
     newPassword: '',
-    confirmPassword: '',
   });
-  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (!getdata?.data && !user) return;
@@ -60,10 +98,12 @@ const AdminProfile: React.FC = () => {
       accessType: (resData?.accessType || userObj?.accessType || 'ONLINE').toUpperCase(),
       key: resData?.key !== undefined ? resData.key : user?.key || '',
       expiryDate: resData?.expiryDate || user?.expiryDate || '',
+      workStartTime: formatISOToTime(resData?.workStartTime || userObj?.workStartTime || user?.workStartTime),
+      workEndTime: formatISOToTime(resData?.workEndTime || userObj?.workEndTime || user?.workEndTime),
     });
   }, [getdata?.data, user]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -84,61 +124,28 @@ const AdminProfile: React.FC = () => {
       phoneNumber: formData.phoneNumber,
       secondaryPhoneNumber: formData.secondaryPhoneNumber,
       address: formData.address,
+      workStartTime: formatTimeToISO(formData.workStartTime),
+      workEndTime: formatTimeToISO(formData.workEndTime),
     };
 
     // Check if password fields are filled
-    const hasOldPassword = passwordData.oldPassword.trim() !== '';
+    const hasCurrentPassword = passwordData.currentPassword.trim() !== '';
     const hasNewPassword = passwordData.newPassword.trim() !== '';
-    const hasConfirmPassword = passwordData.confirmPassword.trim() !== '';
 
-    // If any password field is filled, validate all
-    if (hasOldPassword || hasNewPassword || hasConfirmPassword) {
-      // Validate old password
-      if (!hasOldPassword) {
-        toast.error('Please enter your current password');
-        return;
-      }
-
-      // Validate new password
-      if (!hasNewPassword) {
-        toast.error('Please enter a new password');
-        return;
-      }
-
-      if (passwordData.newPassword.length < 6) {
-        toast.error('New password must be at least 6 characters');
-        return;
-      }
-
-      // Validate confirm password
-      if (!hasConfirmPassword) {
-        toast.error('Please confirm your new password');
-        return;
-      }
-
-      if (passwordData.newPassword !== passwordData.confirmPassword) {
-        toast.error('New password and confirm password do not match');
-        return;
-      }
-
-      // Add password fields to payload
-      payload.oldPassword = passwordData.oldPassword;
+    if (hasCurrentPassword || hasNewPassword) {
+      payload.currentPassword = passwordData.currentPassword;
       payload.newPassword = passwordData.newPassword;
     }
 
     try {
       await updateProfile.mutateAsync(payload);
-      toast.success('Profile updated successfully!');
-
       // Clear password fields after successful update
       setPasswordData({
-        oldPassword: '',
+        currentPassword: '',
         newPassword: '',
-        confirmPassword: '',
       });
     } catch (error: any) {
       console.error('Update error:', error);
-      toast.error(error?.message || 'Failed to update profile');
     }
   };
 
@@ -289,7 +296,45 @@ const AdminProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Old Password */}
+            {/* Work Start Time */}
+            <div className="flex items-start gap-3">
+              <div className="mt-1 rounded-lg bg-amber-50 p-2.5 text-[#785600] dark:bg-slate-800 dark:text-amber-400">
+                <Clock className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <label className="text-gray-500 mb-1 block text-xs font-semibold dark:text-slate-400">
+                  Work Start Time
+                </label>
+                <input
+                  type="time"
+                  name="workStartTime"
+                  value={formData.workStartTime}
+                  onChange={handleInputChange}
+                  className="w-full rounded-lg border border-[#d3c4af]/40 bg-white px-3.5 py-2 text-sm font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
+            </div>
+
+            {/* Work End Time */}
+            <div className="flex items-start gap-3">
+              <div className="mt-1 rounded-lg bg-amber-50 p-2.5 text-[#785600] dark:bg-slate-800 dark:text-amber-400">
+                <Clock8 className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <label className="text-gray-500 mb-1 block text-xs font-semibold dark:text-slate-400">
+                  Work End Time
+                </label>
+                <input
+                  type="time"
+                  name="workEndTime"
+                  value={formData.workEndTime}
+                  onChange={handleInputChange}
+                  className="w-full rounded-lg border border-[#d3c4af]/40 bg-white px-3.5 py-2 text-sm font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
+            </div>
+
+            {/* Current Password */}
             <div className="flex items-start gap-3">
               <div className="mt-1 rounded-lg bg-amber-50 p-2.5 text-[#785600] dark:bg-slate-800 dark:text-amber-400">
                 <Lock className="h-5 w-5" />
@@ -300,44 +345,50 @@ const AdminProfile: React.FC = () => {
                 </label>
                 <div className="relative">
                   <input
-                    type={showOldPassword ? 'text' : 'password'}
-                    name="oldPassword"
-                    value={passwordData.oldPassword}
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
                     onChange={handlePasswordChange}
                     placeholder="Enter current password"
                     className="w-full rounded-lg border border-[#d3c4af]/40 bg-white px-3.5 py-2 pr-10 text-sm font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowOldPassword(!showOldPassword)}
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
-                    {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="flex-1">
-              <label className="text-gray-500 mb-1 block text-xs font-semibold dark:text-slate-400">
-                New Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showNewPassword ? 'text' : 'password'}
-                  name="newPassword"
-                  value={passwordData.newPassword}
-                  onChange={handlePasswordChange}
-                  placeholder="Enter new password"
-                  className="w-full rounded-lg border border-[#d3c4af]/40 bg-white px-3.5 py-2 pr-10 text-sm font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+            {/* New Password */}
+            <div className="flex items-start gap-3">
+              <div className="mt-1 rounded-lg bg-amber-50 p-2.5 text-[#785600] dark:bg-slate-800 dark:text-amber-400">
+                <Key className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <label className="text-gray-500 mb-1 block text-xs font-semibold dark:text-slate-400">
+                  New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    name="newPassword"
+                    value={passwordData.newPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Enter new password"
+                    className="w-full rounded-lg border border-[#d3c4af]/40 bg-white px-3.5 py-2 pr-10 text-sm font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:bg-slate-800 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

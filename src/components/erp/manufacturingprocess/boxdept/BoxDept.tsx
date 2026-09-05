@@ -33,6 +33,7 @@ import AddBoxModal from './AddBoxModal';
 const BoxDept: React.FC = () => {
     const getpdfheaderdata = useGetHeader();
     const navigate = useNavigate();
+    const [selectedPurityForModal, setSelectedPurityForModal] = useState<string | null>(null);
     const [boxEntries, setBoxEntries] = useState<BoxEntry[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [saveIndex, setSaveIndex] = useState<number | null>(null);
@@ -512,10 +513,16 @@ const BoxDept: React.FC = () => {
                 };
             }),
         );
+        // Clear the selected purity after setting it
+        setSelectedPurityForModal(null);
     };
 
     const handleOpenModal = () => {
-        setModalCards([createNewBoxCard()]);
+        const newCard = createNewBoxCard();
+        if (selectedPurityForModal) {
+            newCard.purity = selectedPurityForModal;
+        }
+        setModalCards([newCard]);
         setIsModalOpen(true);
     };
 
@@ -595,7 +602,7 @@ const BoxDept: React.FC = () => {
         return Boolean(entry.isDirty);
     };
 
-    
+
 
     const isSubmitting = submitBox.isPending;
 
@@ -614,7 +621,6 @@ const BoxDept: React.FC = () => {
 
     return (
         <div className="flex flex-col gap-4">
-            {/* Top Tar Cards Bar with Smooth Scrollbar */}
             {tarCards.length > 0 && !showHistory && (
                 <div className="w-full">
                     <div className="mb-2 flex items-center gap-2 px-1">
@@ -624,12 +630,15 @@ const BoxDept: React.FC = () => {
                         </span>
                     </div>
 
-                    {/* Scrollable Container */}
                     <div className="flex gap-2 overflow-x-auto pb-2 pt-1 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-[#785600]/40 dark:scrollbar-track-slate-800 dark:scrollbar-thumb-slate-600">
                         {tarCards.map((card, idx) => (
                             <div
                                 key={idx}
-                                className="flex min-w-[110px] flex-col rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+                                onClick={() => {
+                                    setSelectedPurityForModal(card.purity.toString());
+                                    handleOpenModal();
+                                }}
+                                className="flex min-w-[110px] cursor-pointer flex-col rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 shadow-sm transition-all hover:scale-105 hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
                             >
                                 <span className="font-mono text-sm font-bold text-black dark:text-white">
                                     Tar ({card.purity}%)
@@ -702,17 +711,6 @@ const BoxDept: React.FC = () => {
                         >
                             <Printer className="h-4 w-4" />
                             <span>Print</span>
-                        </GenericButton>
-                    )}
-
-                    {!showHistory && (
-                        <GenericButton
-                            type="button"
-                            onClick={handleOpenModal}
-                            variant="primary"
-                        >
-                            <Plus className="h-4 w-4" />
-                            <span>Add Box</span>
                         </GenericButton>
                     )}
 

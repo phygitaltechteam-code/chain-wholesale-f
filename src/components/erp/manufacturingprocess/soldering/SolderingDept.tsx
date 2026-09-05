@@ -56,6 +56,13 @@ const SolderingDept: React.FC = () => {
   const [modalCards, setModalCards] = useState<SolderingCardForm[]>([
     createNewSolderingCard(),
   ]);
+  const [selectedBoxForModal, setSelectedBoxForModal] = useState<{
+    id: string;
+    sizeId: string;
+    size: string;
+    purity: number;
+    totalWeight: number;
+  } | null>(null);
   const [fromDate, setFromDate] = useState<Date | null>(null);
   const [toDate, setToDate] = useState<Date | null>(null);
 
@@ -670,7 +677,17 @@ const SolderingDept: React.FC = () => {
   };
 
   const handleOpenModal = () => {
-    setModalCards([createNewSolderingCard()]);
+    const newCard = createNewSolderingCard();
+
+    // If a box card was clicked, pre-fill size and purity
+    if (selectedBoxForModal) {
+      newCard.sizeId = selectedBoxForModal.sizeId;
+      newCard.purity = String(selectedBoxForModal.purity);
+      // Clear the selected box after using it
+      setSelectedBoxForModal(null);
+    }
+
+    setModalCards([newCard]);
     setIsModalOpen(true);
   };
 
@@ -725,7 +742,6 @@ const SolderingDept: React.FC = () => {
       };
 
       await createSoldering.mutateAsync(payload);
-      // toast.success(`Soldering Item added successfully`);
 
       setModalCards((prev) => {
         const next = prev.filter((_, idx) => idx !== cardIndex);
@@ -795,7 +811,11 @@ const SolderingDept: React.FC = () => {
             {boxCards.map((card, idx) => (
               <div
                 key={card.id || idx}
-                className="flex min-w-[110px] flex-col rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+                onClick={() => {
+                  setSelectedBoxForModal(card);
+                  handleOpenModal();
+                }}
+                className="flex min-w-[110px] cursor-pointer flex-col rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 shadow-sm transition-all hover:scale-105 hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
               >
                 <span className="font-mono text-sm font-bold text-black dark:text-white">
                   {card.size} ({card.purity}%)
