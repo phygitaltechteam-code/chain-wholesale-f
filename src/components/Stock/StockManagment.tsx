@@ -82,12 +82,17 @@ const StockManagment: React.FC = () => {
     { label: 'Less Stock (OUTWARD)', value: 'OUTWARD' },
   ];
 
-  // Get item options - all items available
+  // Get item options - all items available (excluding soldering items with (s))
   const itemOptions = useMemo(() => {
-    return items.map((item: any) => ({
-      label: item.name,
-      value: item.id,
-    }));
+    return items
+      .filter((item: any) => {
+        const name = item?.name?.trim().toLowerCase() || '';
+        return !name.includes('(s)');
+      })
+      .map((item: any) => ({
+        label: item.name,
+        value: item.id,
+      }));
   }, [items]);
 
   // Get size options - all sizes available

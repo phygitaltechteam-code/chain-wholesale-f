@@ -507,6 +507,15 @@ const RealTimeGoldReport: React.FC = () => {
         const leftInvocation = headerInfo.leftInvocation || '॥ श्री गणेश प्रसन्न ॥';
         const rightInvocation = headerInfo.rightInvocation || '॥ श्री साई प्रसन्न ॥';
         const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+        const invocationColor = headerInfo.invocationColor || '#a84b20';
+        const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
+        const descriptionColor = headerInfo.descriptionColor || '#8b451f';
+        const proprietorColor = headerInfo.proprietorColor || '#a84b20';
+        const phoneColor = headerInfo.phoneColor || '#a84b20';
+        const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
+        const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
+        const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
+        const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
 
         const printContainer = document.createElement('div');
         printContainer.id = 'print-container';
@@ -514,31 +523,31 @@ const RealTimeGoldReport: React.FC = () => {
         let categoryTablesHtml = '';
         filteredGroups.forEach(group => {
             const rowsHtml = group.items.map((item, idx) => `
-                <tr>
-                    <td style="border:1px solid #000;padding:4px 6px;text-align:center;">${idx + 1}</td>
-                    <td style="border:1px solid #000;padding:4px 6px;text-align:left;">${item.name}</td>
-                    <td style="border:1px solid #000;padding:4px 6px;text-align:right;">${group.id === 'client-due' ? '-' : formatNumberDisplay(item.grossWeight)}</td>
-                    <td style="border:1px solid #000;padding:4px 6px;text-align:center;">${group.id === 'client-due' || item.purity === null ? '-' : formatNumberDisplay(item.purity, 2) + '%'}</td>
-                    <td style="border:1px solid #000;padding:4px 6px;text-align:right;font-weight:600;">${formatNumberDisplay(item.fineWeight)}</td>
+                <tr style="border-bottom:1px solid #785600;">
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.name}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${group.id === 'client-due' ? '-' : formatNumberDisplay(item.grossWeight)}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${group.id === 'client-due' || item.purity === null ? '-' : formatNumberDisplay(item.purity, 2) + '%'}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.fineWeight)}</td>
                 </tr>
             `).join('');
 
             const catPurity = calculateAvgPurity(group.totalGrossWeight, group.totalFineWeight);
 
             categoryTablesHtml += `
-                <div style="margin-bottom:12px;page-break-inside:avoid;">
-                    <div style="background:#f4f4f2;padding:4px 8px;font-weight:bold;font-size:11px;border:1px solid #000;display:flex;justify-content:space-between;">
-                        <span>${group.name}</span>
-                        <span>${group.id === 'client-due' ? `Due: ${formatNumberDisplay(group.totalFineWeight)} G` : `Gross: ${formatNumberDisplay(group.totalGrossWeight)} G | Avg Purity: ${catPurity}% | Fine: ${formatNumberDisplay(group.totalFineWeight)} G`} | Items: ${group.count}</span>
+                <div style="margin-bottom:8px;page-break-inside:avoid;">
+                    <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:700;">${group.name}</span>
+                        <span style="font-size:8.5px;color:#000;">${group.id === 'client-due' ? `Due: <b>${formatNumberDisplay(group.totalFineWeight)} G</b>` : `Gross: <b>${formatNumberDisplay(group.totalGrossWeight)} G</b> | Avg Purity: <b>${catPurity}%</b> | Fine: <b>${formatNumberDisplay(group.totalFineWeight)} G</b>`} | Items: <b>${group.count}</b></span>
                     </div>
-                    <table style="width:100%;border-collapse:collapse;font-size:10px;margin-top:-1px;">
+                    <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
                         <thead>
-                            <tr style="background:#785600;color:white;">
-                                <th style="border:1px solid #000;padding:3px;width:35px;text-align:center;">#</th>
-                                <th style="border:1px solid #000;padding:3px;text-align:left;">Item Name</th>
-                                <th style="border:1px solid #000;padding:3px;width:80px;text-align:right;">Gross WT (G)</th>
-                                <th style="border:1px solid #000;padding:3px;width:60px;text-align:center;">Purity</th>
-                                <th style="border:1px solid #000;padding:3px;width:80px;text-align:right;">Fine WT (G)</th>
+                            <tr style="background:#785600;color:white;font-weight:600;">
+                                <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Item Name</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Gross WT (G)</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:65px;text-align:center;font-size:8px;color:white;">Purity</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Fine WT (G)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -552,49 +561,124 @@ const RealTimeGoldReport: React.FC = () => {
         const grandPurity = calculateAvgPurity(grandTotals.totalGrossWeight, grandTotals.totalFineWeight);
 
         printContainer.innerHTML = `
-            <div style="width:210mm;margin:0 auto;font-family:Arial,sans-serif;padding:8mm;box-sizing:border-box;">
-                <div style="text-align:center;margin-bottom:12px;border-bottom:2px solid #785600;padding-bottom:6px;">
-                    <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:bold;color:#a84b20;">
-                        <span>${leftInvocation}</span>
-                        <span style="font-size:20px;color:#c43d5c;">${factoryName}</span>
-                        <span>${rightInvocation}</span>
+            <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+                <div>
+                    <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
+                            <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
+                            <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
+                            <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
+                        </div>
+                        
+                        <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
+                            ${description}
+                        </div>
+                        
+                        <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
+                            ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
+                        </div>
+                        <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
                     </div>
-                    <div style="font-size:10px;margin-top:2px;">${description}</div>
-                    <div style="font-size:10px;font-weight:bold;">${proprietorName} &nbsp;&nbsp; ${phoneNumbers}</div>
+
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
+                        <div style="flex:1;"></div>
+                        <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+                            Real Time Gold Report
+                        </h2>
+                        ${fromDate || toDate ? `
+                            <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
+                                ${fromDate ? `From: ${formatDateForDisplay(fromDate)}` : ''} 
+                                ${fromDate && toDate ? '&nbsp;&nbsp;' : ''}
+                                ${toDate ? `To: ${formatDateForDisplay(toDate)}` : ''}
+                            </div>
+                        ` : `
+                            <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
+                                Date: ${new Date().toLocaleDateString('en-IN')}
+                            </div>
+                        `}
+                    </div>
+
+                    <!-- Grand Summary Box -->
+                    <div style="display:flex;justify-content:space-around;background:#fff8e6;border:1px solid #785600;padding:5px;margin-bottom:8px;font-size:9.5px;font-weight:bold;color:#000;">
+                        <div>Total Gross: <span style="color:#785600;">${formatNumberDisplay(grandTotals.totalGrossWeight)} G</span></div>
+                        <div>Avg Purity: <span style="color:#785600;">${grandPurity}%</span></div>
+                        <div>Total Fine: <span style="color:#785600;">${formatNumberDisplay(grandTotals.totalFineWeight)} G</span></div>
+                        <div>Total Items: <span style="color:#785600;">${grandTotals.totalItems}</span></div>
+                    </div>
+
+                    ${categoryTablesHtml}
                 </div>
 
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <h2 style="margin:0;font-size:15px;color:#785600;">Real Time Gold Report</h2>
-                    <div style="font-size:10px;font-weight:bold;">
-                        ${fromDate && toDate ? `Date: ${formatDateForDisplay(fromDate)} - ${formatDateForDisplay(toDate)}` : `Generated: ${new Date().toLocaleDateString('en-IN')}`}
+                <div style="width:100%;margin-top:auto;padding-top:4px;">
+                    <div style="border-top:1px solid #785600;padding-top:2px;text-align:center;">
+                        <p style="margin:0;font-size:7px;color:#000;">
+                            This is a computer generated report
+                        </p>
+                        <div style="margin-top:1px;font-size:6.5px;color:#000;display:flex;justify-content:center;gap:10px;">
+                            <span>Powered by Matoshree Gold</span>
+                            <span>|</span>
+                            <span>Generated: ${new Date().toLocaleDateString('en-IN', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                            })} ${new Date().toLocaleTimeString('en-IN', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true,
+                            })}</span>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Grand Summary Box -->
-                <div style="display:flex;justify-content:space-around;background:#fff8e6;border:1px solid #785600;padding:6px;margin-bottom:12px;font-size:11px;font-weight:bold;">
-                    <div>Grand Total Gross: ${formatNumberDisplay(grandTotals.totalGrossWeight)} G</div>
-                    <div>Avg Purity: ${grandPurity}%</div>
-                    <div>Grand Total Fine: ${formatNumberDisplay(grandTotals.totalFineWeight)} G</div>
-                    <div>Total Items: ${grandTotals.totalItems}</div>
-                </div>
-
-                ${categoryTablesHtml}
             </div>
         `;
 
         const style = document.createElement('style');
         style.textContent = `
-            @page { margin: 4mm; }
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
             @media print {
-                body * { visibility: hidden; }
-                #print-container, #print-container * { visibility: visible; }
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    width: 210mm;
+                    height: 297mm;
+                }
+                body * {
+                    visibility: hidden;
+                }
+                #print-container, #print-container * {
+                    visibility: visible;
+                }
                 #print-container {
-                    position: absolute !important;
+                    position: fixed !important;
                     left: 0 !important;
                     top: 0 !important;
-                    width: 100% !important;
+                    width: 210mm !important;
+                    height: 297mm !important;
                     background: white !important;
-                    z-index: 99999 !important;
+                    padding: 4px !important;
+                    overflow: auto !important;
+                    z-index: 9999 !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                #print-container table {
+                    width: 100% !important;
+                }
+                #print-container tr {
+                    page-break-inside: avoid !important;
+                }
+                #print-container thead tr {
+                    background: #785600 !important;
+                    color: white !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                #print-container thead tr th {
+                    background: #785600 !important;
+                    color: white !important;
                     -webkit-print-color-adjust: exact !important;
                     print-color-adjust: exact !important;
                 }
@@ -641,7 +725,7 @@ const RealTimeGoldReport: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950 pb-12">
+        <div className="min-h-screen bg-white dark:bg-slate-950 pb-12">
             {/* Top Sticky Header */}
             <div className="sticky top-0 z-30 border-b border-[#d3c4af]/30 bg-white/95 px-3 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-4 md:px-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -705,34 +789,34 @@ const RealTimeGoldReport: React.FC = () => {
             <div className="p-3 sm:p-4 md:p-6 space-y-4">
                 {/* Simple Summary Cards */}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                    <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm text-center dark:border-slate-700 dark:bg-slate-900">
+                        <div className="flex flex-col items-center justify-center">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-black dark:text-slate-300">
                                 Total Gross WT
                             </span>
-                            <span className="text-lg font-bold text-black dark:text-white">
+                            <span className="text-lg font-black text-black dark:text-white">
                                 {formatNumberDisplay(grandTotals.totalGrossWeight)} G
                             </span>
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                    <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm text-center dark:border-slate-700 dark:bg-slate-900">
+                        <div className="flex flex-col items-center justify-center">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-black dark:text-slate-300">
                                 Avg Purity
                             </span>
-                            <span className="text-lg font-bold text-black dark:text-white">
+                            <span className="text-lg font-black text-black dark:text-white">
                                 {calculateAvgPurity(grandTotals.totalGrossWeight, grandTotals.totalFineWeight)}%
                             </span>
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                    <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm text-center dark:border-slate-700 dark:bg-slate-900">
+                        <div className="flex flex-col items-center justify-center">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-black dark:text-slate-300">
                                 Total Fine WT
                             </span>
-                            <span className="text-lg font-bold text-[#785600] dark:text-amber-400">
+                            <span className="text-lg font-black text-black dark:text-white">
                                 {formatNumberDisplay(grandTotals.totalFineWeight)} G
                             </span>
                         </div>
@@ -744,24 +828,24 @@ const RealTimeGoldReport: React.FC = () => {
                     {/* 1. GOLD & STOCK Panel */}
                     <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
                         <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-                            <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
+                            <span className="text-xs font-black tracking-widest text-black uppercase dark:text-white">
                                 GOLD & Chain STOCK
                             </span>
                         </div>
                         <div className="overflow-x-auto flex-1 flex flex-col">
-                            <table className="w-full text-left text-xs sm:text-sm">
+                            <table className="w-full text-center text-xs sm:text-sm">
                                 <thead>
-                                    <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                        <th className="w-7 px-2 py-2.5 text-center"></th>
-                                        <th className="px-3 py-2.5">Category</th>
-                                        <th className="px-3 py-2.5 text-right">Gross WT (G)</th>
-                                        <th className="px-3 py-2.5 text-right">Fine WT (G)</th>
+                                    <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-black dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                        <th className="w-8 px-2 py-2.5 text-center text-black dark:text-white"></th>
+                                        <th className="px-3 py-2.5 text-center text-black dark:text-white">Category</th>
+                                        <th className="px-3 py-2.5 text-center text-black dark:text-white">Gross WT (G)</th>
+                                        <th className="px-3 py-2.5 text-center text-black dark:text-white">Fine WT (G)</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
                                     {stockGroups.length === 0 ? (
                                         <tr>
-                                            <td colSpan={4} className="px-3 py-6 text-center text-xs text-gray-500">
+                                            <td colSpan={4} className="px-3 py-6 text-center text-xs font-semibold text-black dark:text-slate-300">
                                                 No stock data found.
                                             </td>
                                         </tr>
@@ -777,7 +861,7 @@ const RealTimeGoldReport: React.FC = () => {
                                                         }`}
                                                     >
                                                         <td className="px-2 py-2.5 text-center">
-                                                            <div className="inline-flex h-4 w-4 items-center justify-center rounded bg-[#785600]/10 text-[#785600] dark:bg-amber-400/20 dark:text-amber-400">
+                                                            <div className="inline-flex h-4 w-4 items-center justify-center rounded bg-[#785600]/10 text-black dark:bg-amber-400/20 dark:text-amber-400">
                                                                 {isExpanded ? (
                                                                     <ChevronDown className="h-3 w-3" />
                                                                 ) : (
@@ -785,13 +869,13 @@ const RealTimeGoldReport: React.FC = () => {
                                                                 )}
                                                             </div>
                                                         </td>
-                                                        <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                                                        <td className="px-3 py-2.5 text-center font-bold text-black dark:text-white">
                                                             {group.name}
                                                         </td>
-                                                        <td className="px-3 py-2.5 text-right font-mono font-bold text-[#1a1c1b] dark:text-slate-100">
+                                                        <td className="px-3 py-2.5 text-center font-mono font-bold text-black dark:text-white">
                                                             {formatNumberDisplay(group.totalGrossWeight)}
                                                         </td>
-                                                        <td className="px-3 py-2.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
+                                                        <td className="px-3 py-2.5 text-center font-mono font-bold text-black dark:text-white">
                                                             {formatNumberDisplay(group.totalFineWeight)}
                                                         </td>
                                                     </tr>
@@ -803,16 +887,16 @@ const RealTimeGoldReport: React.FC = () => {
                                                                 key={item.id || `${group.id}-${itemIdx}`}
                                                                 className="border-b border-[#d3c4af]/10 bg-[#fcfbf9]/60 hover:bg-[#f5f3ef] dark:bg-slate-900/40 dark:hover:bg-slate-800/40 text-xs"
                                                             >
-                                                                <td className="px-2 py-2 text-center text-[#817563] dark:text-slate-400">
+                                                                <td className="px-2 py-2 text-center font-semibold text-black dark:text-slate-300">
                                                                     {itemIdx + 1}
                                                                 </td>
-                                                                <td className="px-3 py-2 text-slate-700 dark:text-slate-300">
+                                                                <td className="px-3 py-2 text-center font-semibold text-black dark:text-slate-200">
                                                                     {item.name}
                                                                 </td>
-                                                                <td className="px-3 py-2 text-right font-mono text-slate-700 dark:text-slate-300">
+                                                                <td className="px-3 py-2 text-center font-mono font-semibold text-black dark:text-slate-200">
                                                                     {formatNumberDisplay(item.grossWeight)}
                                                                 </td>
-                                                                <td className="px-3 py-2 text-right font-mono font-semibold text-[#785600] dark:text-amber-400">
+                                                                <td className="px-3 py-2 text-center font-mono font-bold text-black dark:text-slate-200">
                                                                     {formatNumberDisplay(item.fineWeight)}
                                                                 </td>
                                                             </tr>
@@ -824,13 +908,13 @@ const RealTimeGoldReport: React.FC = () => {
                                 </tbody>
                                 <tfoot>
                                     <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 dark:bg-slate-800/70 font-bold">
-                                        <td colSpan={2} className="px-3 py-2.5 text-[#1a1c1b] dark:text-white">
+                                        <td colSpan={2} className="px-3 py-2.5 text-center font-black text-black dark:text-white">
                                             Total Stock
                                         </td>
-                                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-white">
+                                        <td className="px-3 py-2.5 text-center font-mono font-black text-black dark:text-white">
                                             {formatNumberDisplay(stockTotals.gross)}
                                         </td>
-                                        <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
+                                        <td className="px-3 py-2.5 text-center font-mono font-black text-black dark:text-white">
                                             {formatNumberDisplay(stockTotals.fine)}
                                         </td>
                                     </tr>
@@ -842,24 +926,24 @@ const RealTimeGoldReport: React.FC = () => {
                     {/* 2. MANUFACTURING Panel */}
                     <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
                         <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-                            <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
+                            <span className="text-xs font-black tracking-widest text-black uppercase dark:text-white">
                                 MANUFACTURING Stock
                             </span>
                         </div>
                         <div className="overflow-x-auto flex-1 flex flex-col">
-                            <table className="w-full text-left text-xs sm:text-sm">
+                            <table className="w-full text-center text-xs sm:text-sm">
                                 <thead>
-                                    <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                        <th className="w-7 px-2 py-2.5 text-center"></th>
-                                        <th className="px-3 py-2.5">Process</th>
-                                        <th className="px-3 py-2.5 text-right">Gross WT (G)</th>
-                                        <th className="px-3 py-2.5 text-right">Fine WT (G)</th>
+                                    <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-black dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                        <th className="w-8 px-2 py-2.5 text-center text-black dark:text-white"></th>
+                                        <th className="px-3 py-2.5 text-center text-black dark:text-white">Process</th>
+                                        <th className="px-3 py-2.5 text-center text-black dark:text-white">Gross WT (G)</th>
+                                        <th className="px-3 py-2.5 text-center text-black dark:text-white">Fine WT (G)</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
                                     {processGroups.length === 0 ? (
                                         <tr>
-                                            <td colSpan={4} className="px-3 py-6 text-center text-xs text-gray-500">
+                                            <td colSpan={4} className="px-3 py-6 text-center text-xs font-semibold text-black dark:text-slate-300">
                                                 No manufacturing data found.
                                             </td>
                                         </tr>
@@ -875,7 +959,7 @@ const RealTimeGoldReport: React.FC = () => {
                                                         }`}
                                                     >
                                                         <td className="px-2 py-2.5 text-center">
-                                                            <div className="inline-flex h-4 w-4 items-center justify-center rounded bg-[#785600]/10 text-[#785600] dark:bg-amber-400/20 dark:text-amber-400">
+                                                            <div className="inline-flex h-4 w-4 items-center justify-center rounded bg-[#785600]/10 text-black dark:bg-amber-400/20 dark:text-amber-400">
                                                                 {isExpanded ? (
                                                                     <ChevronDown className="h-3 w-3" />
                                                                 ) : (
@@ -883,13 +967,13 @@ const RealTimeGoldReport: React.FC = () => {
                                                                 )}
                                                             </div>
                                                         </td>
-                                                        <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                                                        <td className="px-3 py-2.5 text-center font-bold text-black dark:text-white">
                                                             {group.name}
                                                         </td>
-                                                        <td className="px-3 py-2.5 text-right font-mono font-bold text-[#1a1c1b] dark:text-slate-100">
+                                                        <td className="px-3 py-2.5 text-center font-mono font-bold text-black dark:text-white">
                                                             {formatNumberDisplay(group.totalGrossWeight)}
                                                         </td>
-                                                        <td className="px-3 py-2.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
+                                                        <td className="px-3 py-2.5 text-center font-mono font-bold text-black dark:text-white">
                                                             {formatNumberDisplay(group.totalFineWeight)}
                                                         </td>
                                                     </tr>
@@ -901,16 +985,16 @@ const RealTimeGoldReport: React.FC = () => {
                                                                 key={item.id || `${group.id}-${itemIdx}`}
                                                                 className="border-b border-[#d3c4af]/10 bg-[#fcfbf9]/60 hover:bg-[#f5f3ef] dark:bg-slate-900/40 dark:hover:bg-slate-800/40 text-xs"
                                                             >
-                                                                <td className="px-2 py-2 text-center text-[#817563] dark:text-slate-400">
+                                                                <td className="px-2 py-2 text-center font-semibold text-black dark:text-slate-300">
                                                                     {itemIdx + 1}
                                                                 </td>
-                                                                <td className="px-3 py-2 text-slate-700 dark:text-slate-300">
+                                                                <td className="px-3 py-2 text-center font-semibold text-black dark:text-slate-200">
                                                                     {item.name}
                                                                 </td>
-                                                                <td className="px-3 py-2 text-right font-mono text-slate-700 dark:text-slate-300">
+                                                                <td className="px-3 py-2 text-center font-mono font-semibold text-black dark:text-slate-200">
                                                                     {formatNumberDisplay(item.grossWeight)}
                                                                 </td>
-                                                                <td className="px-3 py-2 text-right font-mono font-semibold text-[#785600] dark:text-amber-400">
+                                                                <td className="px-3 py-2 text-center font-mono font-bold text-black dark:text-slate-200">
                                                                     {formatNumberDisplay(item.fineWeight)}
                                                                 </td>
                                                             </tr>
@@ -922,13 +1006,13 @@ const RealTimeGoldReport: React.FC = () => {
                                 </tbody>
                                 <tfoot>
                                     <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 dark:bg-slate-800/70 font-bold">
-                                        <td colSpan={2} className="px-3 py-2.5 text-[#1a1c1b] dark:text-white">
+                                        <td colSpan={2} className="px-3 py-2.5 text-center font-black text-black dark:text-white">
                                             Total Process
                                         </td>
-                                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-white">
+                                        <td className="px-3 py-2.5 text-center font-mono font-black text-black dark:text-white">
                                             {formatNumberDisplay(processTotals.gross)}
                                         </td>
-                                        <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
+                                        <td className="px-3 py-2.5 text-center font-mono font-black text-black dark:text-white">
                                             {formatNumberDisplay(processTotals.fine)}
                                         </td>
                                     </tr>
@@ -940,37 +1024,37 @@ const RealTimeGoldReport: React.FC = () => {
                     {/* 3. CLIENT DUE Panel */}
                     <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
                         <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-                            <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
+                            <span className="text-xs font-black tracking-widest text-black uppercase dark:text-white">
                                 Customer DUE
                             </span>
                         </div>
                         <div className="overflow-x-auto flex-1 flex flex-col">
-                            <table className="w-full text-left text-xs sm:text-sm">
+                            <table className="w-full text-center text-xs sm:text-sm">
                                 <thead>
-                                    <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                        <th className="w-8 px-2 py-2.5 text-center">Sr.</th>
-                                        <th className="px-3 py-2.5">Client Name</th>
-                                        <th className="px-3 py-2.5 text-right">Due WT (G)</th>
+                                    <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-black dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                        <th className="w-8 px-2 py-2.5 text-center text-black dark:text-white">Sr.</th>
+                                        <th className="px-3 py-2.5 text-center text-black dark:text-white">Client Name</th>
+                                        <th className="px-3 py-2.5 text-center text-black dark:text-white">Due WT (G)</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
                                     {clientDueGroup && clientDueGroup.items.length > 0 ? (
                                         clientDueGroup.items.map((item, idx) => (
                                             <tr key={item.id || idx} className="hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                                                <td className="px-2 py-2.5 text-center text-xs text-[#817563] dark:text-slate-400">
+                                                <td className="px-2 py-2.5 text-center text-xs font-semibold text-black dark:text-slate-300">
                                                     {idx + 1}
                                                 </td>
-                                                <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                                                <td className="px-3 py-2.5 text-center font-bold text-black dark:text-white">
                                                     {item.name}
                                                 </td>
-                                                <td className="px-3 py-2.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
+                                                <td className="px-3 py-2.5 text-center font-mono font-bold text-black dark:text-white">
                                                     {formatNumberDisplay(item.fineWeight)}
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={3} className="px-3 py-6 text-center text-xs text-gray-500">
+                                            <td colSpan={3} className="px-3 py-6 text-center text-xs font-semibold text-black dark:text-slate-300">
                                                 No client due records found.
                                             </td>
                                         </tr>
@@ -978,10 +1062,10 @@ const RealTimeGoldReport: React.FC = () => {
                                 </tbody>
                                 <tfoot>
                                     <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 dark:bg-slate-800/70 font-bold">
-                                        <td colSpan={2} className="px-3 py-2.5 text-[#1a1c1b] dark:text-white">
+                                        <td colSpan={2} className="px-3 py-2.5 text-center font-black text-black dark:text-white">
                                             Total Due
                                         </td>
-                                        <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
+                                        <td className="px-3 py-2.5 text-center font-mono font-black text-black dark:text-white">
                                             {formatNumberDisplay(clientDueTotal.fine)}
                                         </td>
                                     </tr>

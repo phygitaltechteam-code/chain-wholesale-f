@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
+import logoImg from '@/assets/logo/landingpageLogo.png';
 import {
   Gem,
   Flame,
@@ -388,22 +389,14 @@ export const LandingPage: React.FC = () => {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 lg:px-8">
           {/* Logo Branding */}
           <div
-            className="flex cursor-pointer items-center gap-2.5 sm:gap-3"
+            className="flex cursor-pointer items-center"
             onClick={() => scrollToSection('hero')}
           >
-            <div className="h-9 w-9 shrink-0 rounded-xl bg-gradient-to-br from-[#785600] via-[#986d00] to-[#b8860b] p-0.5 shadow-md shadow-[#785600]/15 sm:h-11 sm:w-11">
-              <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-white">
-                <Gem className="h-4 w-4 text-[#785600] sm:h-6 sm:w-6" />
-              </div>
-            </div>
-            <div>
-              <span className="text-lg font-black tracking-tight text-[#1a1c1b] sm:text-xl">
-                Gold<span className="text-[#785600]">Chain</span>
-              </span>
-              <p className="xs:block hidden text-[9px] font-medium tracking-wider text-[#817563] sm:text-[10px]">
-                Precious Metal Manufacturing Suite
-              </p>
-            </div>
+            <img
+              src={logoImg}
+              alt="FineWt Logo"
+              className="h-8 sm:h-10 md:h-11 w-auto max-w-[160px] sm:max-w-[220px] object-contain"
+            />
           </div>
 
           {/* Desktop Navigation Links */}
@@ -562,11 +555,11 @@ export const LandingPage: React.FC = () => {
           {/* Action CTAs */}
           <div className="mx-auto mt-8 flex max-w-md flex-col items-center justify-center gap-3 sm:mt-10 sm:max-w-none sm:flex-row sm:gap-4">
             <button
-              onClick={handleGoToLogin}
+              onClick={() => scrollToSection('trial')}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#785600] to-[#986d00] px-6 py-3.5 text-xs font-bold text-white shadow-xl shadow-[#785600]/25 transition-all hover:scale-105 active:scale-[0.98] sm:w-auto sm:px-8 sm:py-4 sm:text-sm"
             >
-              <Lock className="h-4 w-4" />
-              <span>Login to ERP</span>
+              <Sparkles className="h-4 w-4" />
+              <span>Free Demo & 7-Day Trial</span>
               <ArrowRight className="h-4 w-4" />
             </button>
 
@@ -810,10 +803,11 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={handleGoToLogin}
+                  onClick={() => scrollToSection('trial')}
                   className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#785600] to-[#986d00] py-2.5 text-xs font-bold text-white shadow-md transition-all hover:opacity-95 sm:mt-5"
                 >
-                  <span>Open in ERP Workspace</span>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>Free Demo & 7-Day Trial</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -1128,11 +1122,11 @@ export const LandingPage: React.FC = () => {
 
                 <div className="flex justify-end pt-1">
                   <button
-                    onClick={handleGoToLogin}
+                    onClick={() => scrollToSection('trial')}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#785600] to-[#986d00] px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:opacity-95"
                   >
-                    <Printer className="h-3.5 w-3.5" />
-                    <span>Open in Billing Workspace</span>
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Get Free Demo & 7-Day Trial</span>
                   </button>
                 </div>
               </div>
@@ -1431,11 +1425,11 @@ export const LandingPage: React.FC = () => {
 
             <div className="w-full shrink-0 md:w-auto">
               <button
-                onClick={handleGoToLogin}
+                onClick={() => scrollToSection('trial')}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-xs font-bold text-[#785600] shadow-2xl transition-all hover:scale-105 hover:bg-[#fff9ed] active:scale-95 sm:px-8 sm:py-4 sm:text-sm md:w-auto"
               >
-                <Lock className="h-4 w-4 text-[#785600]" />
-                <span>Login to ERP Workspace</span>
+                <Sparkles className="h-4 w-4 text-[#785600]" />
+                <span>Free Demo & 7-Day Trial</span>
                 <ArrowRight className="h-4 w-4 text-[#785600]" />
               </button>
             </div>
@@ -1446,19 +1440,15 @@ export const LandingPage: React.FC = () => {
       {/* ─── 9. Footer ───────────────────────────────────────────────────────── */}
       <footer className="border-t border-[#d3c4af]/40 bg-white px-4 py-8 text-xs text-[#817563] sm:px-6 sm:py-12 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 text-center md:flex-row md:text-left">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#785600]/20 bg-[#785600]/10 sm:h-8 sm:w-8">
-              <Gem className="h-3.5 w-3.5 text-[#785600] sm:h-4 sm:w-4" />
-            </div>
-            <div>
-              <span className="text-sm font-extrabold text-[#1a1c1b]">
-                GoldChain
-              </span>
-              <p className="text-[9px] text-[#817563] sm:text-[10px]">
-                © {new Date().getFullYear()} Precision Jewelry Manufacturing
-                System
-              </p>
-            </div>
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 text-center sm:text-left">
+            <img
+              src={logoImg}
+              alt="FineWt Logo"
+              className="h-7 sm:h-8 w-auto max-w-[140px] shrink-0 object-contain"
+            />
+            <p className="text-[9px] text-[#817563] sm:text-[10px] sm:border-l sm:border-[#d3c4af]/60 sm:pl-3">
+              © {new Date().getFullYear()} Precision Jewelry Manufacturing System
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-[#4f4535] sm:gap-6">
@@ -1476,15 +1466,9 @@ export const LandingPage: React.FC = () => {
             </button>
             <button
               onClick={() => scrollToSection('trial')}
-              className="transition-colors hover:text-[#785600]"
-            >
-              Demo Trial
-            </button>
-            <button
-              onClick={handleGoToLogin}
               className="font-bold text-[#785600] transition-colors hover:text-[#986d00]"
             >
-              Login
+              Free Demo & 7-Day Trial
             </button>
           </div>
 

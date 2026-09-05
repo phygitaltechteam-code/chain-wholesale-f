@@ -25,6 +25,7 @@ import {
 import { useAuthContext } from '@/context/AuthContext';
 import { EPinIcon } from '@/icons';
 import { TrendingDown, Calculator } from 'lucide-react';
+import logoImg from '@/assets/logo/logo1.png';
 
 interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
@@ -345,7 +346,7 @@ const Sidebar = ({
   };
 
   const getPortalName = () => {
-    return 'Sona Gold';
+    return 'FineWt';
   };
 
   // Debug logging
@@ -505,20 +506,31 @@ const Sidebar = ({
       >
         {isCollapsed && !isMobileDevice ? (
           <div className="flex justify-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#B8860B]/20 transition-transform duration-200 hover:scale-105 hover:bg-[#B8860B]/30">
-              <span className="font-['Playfair_Display'] text-lg font-bold text-[#B8860B]">
-                {getLogoLetter()}
-              </span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white p-1 shadow-md shadow-black/30 transition-transform duration-200 hover:scale-105">
+              <img
+                src={logoImg}
+                alt="FineWt Logo"
+                className="h-full w-full object-contain rounded-lg"
+              />
             </div>
           </div>
         ) : (
-          <div className="text-center transition-opacity duration-200 hover:opacity-80 md:text-left">
-            <h1 className="font-['Playfair_Display'] text-xl font-bold text-[#B8860B] md:text-2xl">
-              {getPortalName()}
-            </h1>
-            <p className="mt-1 font-['DM_Sans'] text-[8px] uppercase tracking-[0.2em] text-slate-400 md:text-[10px]">
-              Gold Chain Manufacturing ERP
-            </p>
+          <div className="flex items-center gap-3 transition-opacity duration-200 hover:opacity-80">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1 shadow-md shadow-black/30">
+              <img
+                src={logoImg}
+                alt="FineWt Logo"
+                className="h-full w-full object-contain rounded-lg"
+              />
+            </div>
+            <div className="text-left min-w-0">
+              <h1 className="truncate font-['Playfair_Display'] text-lg font-bold text-[#B8860B] md:text-xl">
+                {getPortalName()}
+              </h1>
+              <p className="font-['DM_Sans'] text-[8px] uppercase tracking-[0.15em] text-slate-400 md:text-[9px]">
+                Gold Manufacturing ERP
+              </p>
+            </div>
           </div>
         )}
       </div>

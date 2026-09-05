@@ -153,9 +153,10 @@ const ReceiptAdd: React.FC = () => {
   const { data: rawItems = [] } = useGetItems();
   const items = useMemo(
     () =>
-      (Array.isArray(rawItems) ? rawItems : []).filter(
-        (item: any) => item?.name?.trim().toLowerCase() !== 'gold',
-      ),
+      (Array.isArray(rawItems) ? rawItems : []).filter((item: any) => {
+        const name = item?.name?.trim().toLowerCase() || '';
+        return name !== 'gold' && !name.includes('(s)');
+      }),
     [rawItems],
   );
   const { data: sizes = [] } = useGetSizes();

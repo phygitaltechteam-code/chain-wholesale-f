@@ -1132,7 +1132,10 @@ const SolderingDept: React.FC = () => {
                             >
                               <option value="">Select Item</option>
                               {itemsList
-                                .filter((item) => item?.name?.trim().toLowerCase() !== 'gold')
+                                .filter((item) => {
+                                  const name = item?.name?.trim().toLowerCase() || '';
+                                  return name !== 'gold' && !name.includes('(s)');
+                                })
                                 .map((item) => (
                                   <option key={item.id} value={item.id}>
                                     {item.name || JSON.stringify(item)}

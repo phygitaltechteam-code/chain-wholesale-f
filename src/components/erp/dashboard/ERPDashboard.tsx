@@ -176,9 +176,15 @@ export const ERPDashboard: React.FC = () => {
     <div className="min-h-screen space-y-8 bg-slate-950 p-4 text-slate-100 md:p-8">
       {/* Top Banner Header */}
       <div className="flex flex-col gap-4 border-b border-slate-800 pb-6 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 animate-pulse rounded-full bg-amber-500"></span>
+          <div className="flex items-center gap-3">
+            <img
+              src="/src/assets/logo/logo1.jpeg"
+              alt="Logo"
+              className="h-9 w-9 rounded-lg object-cover border border-amber-500/30 shadow"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
             <h1 className="font-serif text-2xl font-bold tracking-tight text-amber-400 md:text-3xl">
               Gold Chain Manufacturing ERP
             </h1>

@@ -393,6 +393,7 @@ import {useLogin} from '@/lib/api/auth';
 import toast from 'react-hot-toast';
 import {useAuthContext} from '@/context/AuthContext';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
+import logoImg from '@/assets/logo/logo1.png';
 
 const SignIn: React.FC = () => {
   const navigate = useNavigate();
@@ -451,11 +452,13 @@ const SignIn: React.FC = () => {
             className="space-y-5"
           >
             <div className="mb-4 text-center">
-              {/* Icon instead of logo */}
+              {/* Logo */}
               <div className="mx-auto mb-4 flex w-full items-center justify-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#785600] to-[#986d00] shadow-lg shadow-[#785600]/30">
-                  <Gem className="h-10 w-10 text-white" />
-                </div>
+                <img
+                  src={logoImg}
+                  alt="FineWt Logo"
+                  className="h-16 w-16 object-contain sm:h-20 sm:w-20"
+                />
               </div>
 
               <h3 className="text-xl font-semibold text-slate-800">

@@ -21,7 +21,6 @@ import {
   Clock8,
   CalendarDays,
 } from 'lucide-react';
-import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import {
   getSavedWeekCycle,
   saveWeekCycle,
@@ -65,6 +64,14 @@ const formatISOToTime = (isoOrTimeString?: string | null): string => {
   return '';
 };
 
+const formatDateDisplay = (date: Date | null): string => {
+  if (!date) return '';
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 const AdminProfile: React.FC = () => {
   const { user } = useAuthContext();
   const getdata = useGetProfileData();
@@ -99,53 +106,23 @@ const AdminProfile: React.FC = () => {
     return { from: range.fromDate, to: range.toDate };
   });
 
-  const handleWeekFromDateChange = (dates: Date[]) => {
-    if (dates && dates.length > 0) {
-      const selected = new Date(dates[0]);
-      selected.setHours(0, 0, 0, 0);
-      const startDay = selected.getDay();
+  const handleWeeklyCycleDayChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedDay = Number(e.target.value);
 
-      const newTo = new Date(selected);
-      if (weekConfig.startDay === weekConfig.endDay) {
-        newTo.setDate(selected.getDate() + 7);
-      } else {
-        const span = (weekConfig.endDay - startDay + 7) % 7;
-        newTo.setDate(selected.getDate() + (span === 0 ? 6 : span));
-      }
-      newTo.setHours(23, 59, 59, 999);
+    const updated: WeekCycleConfig = {
+      startDay: selectedDay,
+      endDay: selectedDay, // Same day cycle: e.g. Monday to Monday (7-day span)
+      cycleId: 'custom',
+    };
+    setWeekConfig(updated);
+    saveWeekCycle(updated);
 
-      const updated: WeekCycleConfig = {
-        ...weekConfig,
-        startDay,
-        cycleId: 'custom',
-      };
-      setWeekConfig(updated);
-      setWeekRangeDates({ from: selected, to: newTo });
-      saveWeekCycle(updated);
-      const startName = WEEK_DAYS.find((d) => d.value === startDay)?.label;
-      const endName = WEEK_DAYS.find((d) => d.value === updated.endDay)?.label;
-      toast.success(`Week cycle set: ${startName} to ${endName}`);
-    }
-  };
+    // Recalculate the live week range dates
+    const range = getCurrentAppWeekRange();
+    setWeekRangeDates({ from: range.fromDate, to: range.toDate });
 
-  const handleWeekToDateChange = (dates: Date[]) => {
-    if (dates && dates.length > 0) {
-      const selected = new Date(dates[0]);
-      selected.setHours(23, 59, 59, 999);
-      const endDay = selected.getDay();
-
-      const updated: WeekCycleConfig = {
-        ...weekConfig,
-        endDay,
-        cycleId: 'custom',
-      };
-      setWeekConfig(updated);
-      setWeekRangeDates((prev) => ({ ...prev, to: selected }));
-      saveWeekCycle(updated);
-      const startName = WEEK_DAYS.find((d) => d.value === updated.startDay)?.label;
-      const endName = WEEK_DAYS.find((d) => d.value === endDay)?.label;
-      toast.success(`Week cycle set: ${startName} to ${endName}`);
-    }
+    const dayName = WEEK_DAYS.find((d) => d.value === selectedDay)?.label;
+    toast.success(`Weekly cycle set: ${dayName} to ${dayName}`);
   };
 
   useEffect(() => {
@@ -480,44 +457,48 @@ const AdminProfile: React.FC = () => {
                     Default Weekly Date Cycle
                   </h3>
                   <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-[#785600] dark:bg-slate-800 dark:text-amber-300">
-                    <span>Active:</span>
+                    <span>Active Cycle:</span>
                     <span className="font-bold">
-                      {WEEK_DAYS.find((d) => d.value === weekConfig.startDay)?.label} - {WEEK_DAYS.find((d) => d.value === weekConfig.endDay)?.label}
+                      {WEEK_DAYS.find((d) => d.value === weekConfig.startDay)?.label} to {WEEK_DAYS.find((d) => d.value === weekConfig.endDay)?.label}
                     </span>
                   </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                  {/* From Date Picker */}
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 items-center">
+                  {/* Single Weekly Day Dropdown */}
                   <div>
-                    <GenericWeeklyDatePicker
-                      id="admin-week-from-date"
-                      label="Week Start Date (From)"
-                      mode="from"
-                      placeholder="DD/MM/YYYY"
-                      initialDates={weekRangeDates.from ? [weekRangeDates.from] : []}
-                      onDateChange={handleWeekFromDateChange}
-                      className="w-full !text-xs"
-                    />
-                    <p className="mt-0.5 text-[10px] text-[#817563] dark:text-slate-400">
-                      Starts on: <span className="font-semibold text-[#1a1c1b] dark:text-white">{WEEK_DAYS.find((d) => d.value === weekConfig.startDay)?.label || 'Monday'}</span>
-                    </p>
+                    <label className="mb-1 block text-[11px] font-semibold text-gray-500 dark:text-slate-400">
+                      Weekly Day Cycle
+                    </label>
+                    <div className="relative flex items-center">
+                      <CalendarDays className="absolute left-2.5 h-3.5 w-3.5 text-[#785600] dark:text-amber-400 pointer-events-none" />
+                      <select
+                        value={weekConfig.startDay}
+                        onChange={handleWeeklyCycleDayChange}
+                        className="w-full rounded-lg border border-[#d3c4af]/40 bg-white pl-8 pr-2.5 py-1.5 text-xs font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white cursor-pointer"
+                      >
+                        <option value={1}>Monday (Monday to Monday)</option>
+                        <option value={2}>Tuesday (Tuesday to Tuesday)</option>
+                        <option value={3}>Wednesday (Wednesday to Wednesday)</option>
+                        <option value={4}>Thursday (Thursday to Thursday)</option>
+                        <option value={5}>Friday (Friday to Friday)</option>
+                        <option value={6}>Saturday (Saturday to Saturday)</option>
+                        <option value={0}>Sunday (Sunday to Sunday)</option>
+                      </select>
+                    </div>
                   </div>
 
-                  {/* To Date Picker */}
-                  <div>
-                    <GenericWeeklyDatePicker
-                      id="admin-week-to-date"
-                      label="Week End Date (To)"
-                      mode="to"
-                      placeholder="DD/MM/YYYY"
-                      initialDates={weekRangeDates.to ? [weekRangeDates.to] : []}
-                      onDateChange={handleWeekToDateChange}
-                      className="w-full !text-xs"
-                    />
-                    <p className="mt-0.5 text-[10px] text-[#817563] dark:text-slate-400">
-                      Ends on: <span className="font-semibold text-[#1a1c1b] dark:text-white">{WEEK_DAYS.find((d) => d.value === weekConfig.endDay)?.label || 'Sunday'}</span>
-                    </p>
+                  {/* Current Active Date Range Display */}
+                  <div className="rounded-lg border border-[#d3c4af]/30 bg-amber-50/40 p-2.5 dark:bg-slate-800/60 dark:border-slate-700">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[#785600] dark:text-amber-400 block">
+                      Current Cycle Dates:
+                    </span>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-xs font-bold text-[#1a1c1b] dark:text-white">
+                      <Calendar className="h-3.5 w-3.5 text-[#785600] dark:text-amber-400 flex-shrink-0" />
+                      <span>
+                        {formatDateDisplay(weekRangeDates.from)} to {formatDateDisplay(weekRangeDates.to)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
