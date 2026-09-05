@@ -104,6 +104,15 @@ const HistoryDept: React.FC<HistoryDeptProps> = ({
       },
     },
     {
+      key: 'timeTaken',
+      header: 'Aging',
+      render: (item) => (
+        <span className="font-medium text-sm text-[#1a1c1b] dark:text-white">
+          {item?.timeTaken || '-'}
+        </span>
+      ),
+    },
+    {
       key: 'updatedAt',
       header: 'Processed Date & Time',
       render: (item) => {
