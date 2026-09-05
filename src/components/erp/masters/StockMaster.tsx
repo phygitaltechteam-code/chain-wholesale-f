@@ -87,10 +87,6 @@ const StockMaster: React.FC = () => {
         (stock, index) => {
           const item = items.find((i) => i.id === stock.itemId);
           const size = sizes.find((s) => s.id === stock.sizeId);
-
-          // FIX: Gold should be identified as:
-          // 1. sizeId === null AND purity === null (pure gold)
-          // 2. OR if the item name contains 'gold' AND sizeId === null
           const isGold =
             (stock.sizeId === null && stock.purity === null) ||
             (item?.name?.toLowerCase().includes('gold') && stock.sizeId === null);
@@ -114,34 +110,21 @@ const StockMaster: React.FC = () => {
           };
         },
       );
-
-      // Separate gold items (sizeId === null && purity === 100)
       const goldItems = stockEntries.filter(
         (entry) =>
           entry.sizeId === null && entry.purity === 100,
       );
-
       const otherItems = stockEntries.filter(
         (entry) =>
           !(entry.sizeId === null && entry.purity === 100),
       );
-
-      // Sort gold items by item name (A-Z)
       const sortedGold = goldItems.sort((a, b) => a.item.localeCompare(b.item));
-
-      // Sort other items: weight > 0 first, then by item name
       const sortedOther = otherItems.sort((a, b) => {
-        // First: weight > 0 comes before weight === 0
         if (a.grams > 0 && b.grams === 0) return -1;
         if (a.grams === 0 && b.grams > 0) return 1;
-        // If both have weight > 0 or both have weight === 0, sort by item name
         return a.item.localeCompare(b.item);
       });
-
-      // Combine: Gold on top, then other items with weight > 0, then weight === 0
       entries = [...sortedGold, ...sortedOther];
-
-      // Recalculate srNo
       entries = entries.map((entry, index) => ({
         ...entry,
         srNo: index + 1,

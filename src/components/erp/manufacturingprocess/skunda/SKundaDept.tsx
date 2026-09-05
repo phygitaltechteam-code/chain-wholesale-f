@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronRight, ChevronDown, Printer } from 'lucide-react';
+import { ChevronRight, ChevronDown, Printer, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { GenericTable } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import {
+  useAddSKundaInStock,
   useGetKunda,
   useGetKundaHistory,
   useSubmitKunda,
@@ -22,9 +23,11 @@ import {
   getSKundaColumns,
 } from './sKundaUtils';
 import HistorySKunda from './HistorySKunda';
+import SkundaAddInStock from './SkundaAddInStock';
 
 const SKundaDept: React.FC = () => {
   const getpdfheaderdata = useGetHeader();
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [kundaEntries, setKundaEntries] = useState<KundaEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
@@ -49,30 +52,9 @@ const SKundaDept: React.FC = () => {
     refetch: refetchHistory,
   } = useGetKundaHistory();
   const submitKunda = useSubmitKunda();
-  const submitMelting = useAddSkundaMelting();
+  const addStockInward = useAddSKundaInStock();
 
-  const handleMelting = async (entry: KundaEntry) => {
-    try {
-      await submitMelting.mutateAsync({
-        id: entry.id,
-        data: {
-          kundaId: entry.id,
-        },
-      });
-      await refetch();
-    } catch (error: any) {
-      console.error('Error in melting:', error);
-      const errorMessage =
-        (Array.isArray(error?.response?.data?.message)
-          ? error.response.data.message.join(', ')
-          : error?.response?.data?.message) ||
-        error?.response?.data?.error ||
-        error?.data?.message ||
-        error?.message ||
-        'Failed to process melting';
-      toast.error(errorMessage);
-    }
-  };
+
 
   const { getScaleProps } = useTableScaleFocus<
     'kundaGiven' | 'chainReceived' | 'scrap'
@@ -291,7 +273,7 @@ const SKundaDept: React.FC = () => {
             } else {
               updated.loss = 0;
             }
-            
+
             updated.isDirty = true;
             return updated;
           }
@@ -321,6 +303,33 @@ const SKundaDept: React.FC = () => {
     },
     [kundaEntries],
   );
+
+  // Update the handleStockAdded function
+  const handleStockAdded = async (stockData: { id: string; stockId?: string; weight: number }) => {
+    try {
+      const stockId = stockData.stockId || stockData.id;
+      await addStockInward.mutateAsync({
+        id: stockId,
+        data: {
+          stockId: stockId,
+          weight: stockData.weight,
+        },
+      });
+      await refetch();
+      toast.success('Stock added successfully!');
+    } catch (error: any) {
+      console.error('Error adding stock:', error);
+      const errorMessage =
+        (Array.isArray(error?.response?.data?.message)
+          ? error.response.data.message.join(', ')
+          : error?.response?.data?.message) ||
+        error?.response?.data?.error ||
+        error?.data?.message ||
+        error?.message ||
+        'Failed to add stock';
+      toast.error(errorMessage);
+    }
+  };
 
   const confirmStock = useCallback(async () => {
     if (saveIndex === null) return;
@@ -465,7 +474,16 @@ const SKundaDept: React.FC = () => {
               </GenericButton>
             </>
           )}
-
+          {!showHistory && (
+            <GenericButton
+              type="button"
+              onClick={() => setIsAddModalOpen(true)}
+              variant="primary"
+            >
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Add</span>
+            </GenericButton>
+          )}
           <GenericButton
             type="button"
             onClick={toggleHistory}
@@ -504,7 +522,11 @@ const SKundaDept: React.FC = () => {
           historyLoading={historyLoading}
         />
       )}
-
+      <SkundaAddInStock
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={handleStockAdded}
+      />
       {/* Confirmation Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
