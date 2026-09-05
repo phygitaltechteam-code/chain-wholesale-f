@@ -31,9 +31,6 @@ export const Settings = () => {
         });
 
         if (res?.data !== true) {
-          toast.error(res?.message || 'Password is incorrect', {
-            id: 'password-verify',
-          });
           return;
         }
 
@@ -44,9 +41,7 @@ export const Settings = () => {
           id: 'password-verify',
         });
       } catch (error: any) {
-        toast.error(error?.message || 'Password is incorrect', {
-          id: 'password-verify',
-        });
+        // Suppress backend error message as requested
       } finally {
         setIsVerifying(false);
       }
@@ -68,9 +63,6 @@ export const Settings = () => {
         });
 
         if (res?.data !== true) {
-          toast.error(res?.message || 'Password is incorrect', {
-            id: 'password-verify',
-          });
           return;
         }
 
@@ -81,9 +73,7 @@ export const Settings = () => {
           id: 'password-verify',
         });
       } catch (error: any) {
-        toast.error(error?.message || 'Password is incorrect', {
-          id: 'password-verify',
-        });
+        // Suppress backend error message as requested
       } finally {
         setIsVerifying(false);
       }
@@ -133,13 +123,9 @@ export const Settings = () => {
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="h-8 w-32 rounded-lg border border-[#d3c4af]/50 bg-white px-2.5 pr-7 text-xs text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600] dark:border-slate-700 dark:bg-slate-900 dark:text-white sm:w-36"
+                  autoComplete="off"
+                  className="h-8 w-32 rounded-lg border border-[#d3c4af]/50 bg-white px-2.5 text-xs text-transparent caret-transparent selection:bg-transparent selection:text-transparent focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600] dark:border-slate-700 dark:bg-slate-900 sm:w-36"
                 />
-                {isVerifying && (
-                  <div className="absolute right-2 flex items-center">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#785600] dark:text-amber-400" />
-                  </div>
-                )}
               </div>
             ) : (
               <div className="flex items-center gap-2">
