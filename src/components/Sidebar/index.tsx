@@ -147,6 +147,12 @@ const Sidebar = ({
       roles: ['ADMIN'],
     },
     {
+      path: '/reports/todayreport',
+      label: 'Today Report',
+      icon: <MdAssessment size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
       label: 'Purity Management',
       path: '/puritymanagement',
       icon: <Calculator size={22} />,

@@ -502,7 +502,7 @@ export const getHistorySolderingColumns = (): Column<any>[] => [
   },
   {
     key: 'timeTaken',
-    header: 'Aging',
+    header: 'Gold Aging',
     render: (item) => (
       <span className="font-medium text-sm text-[#1a1c1b] dark:text-white">
         {item?.timeTaken || '-'}

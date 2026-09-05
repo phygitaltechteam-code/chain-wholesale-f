@@ -1,15 +1,15 @@
-import {useNavigate, useParams} from '@tanstack/react-router';
-import {useState, useRef, useEffect} from 'react';
-import {ArrowLeft, Search, Printer, Calendar} from 'lucide-react';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
-import {useReactToPrint} from 'react-to-print';
+import { useNavigate, useParams } from '@tanstack/react-router';
+import { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, Search, Printer, Calendar } from 'lucide-react';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import { useReactToPrint } from 'react-to-print';
 import PDFHeader from '@/components/Forms/Common/PDFHeader';
-import {Route} from '@/routes/_app/stock/stockreport.$d';
-import {useGetStockReport} from '@/lib/api/reportapi';
+import { Route } from '@/routes/_app/stock/stockreport.$d';
+import { useGetStockReport } from '@/lib/api/reportapi';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import {useGetHeader} from '@/lib/api/headerapi';
+import { useGetHeader } from '@/lib/api/headerapi';
 
 interface StockReportEntry {
   id: string;
@@ -77,7 +77,7 @@ export default function StockReport() {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    return {monday, sunday};
+    return { monday, sunday };
   };
 
   const [fromDate, setFromDate] = useState<Date | null>(
@@ -87,7 +87,7 @@ export default function StockReport() {
     () => getDefaultWeekRange().sunday,
   );
   const printRef = useRef<HTMLDivElement>(null);
-  const {data: stockData, isLoading, isError, refetch} = useGetStockReport(d);
+  const { data: stockData, isLoading, isError, refetch } = useGetStockReport(d);
 
   const getpdfheaderdata = useGetHeader();
 
@@ -247,7 +247,7 @@ export default function StockReport() {
 
   // Reset to current Monday -> Sunday
   const handleResetDates = () => {
-    const {monday, sunday} = getCurrentWeekRange();
+    const { monday, sunday } = getCurrentWeekRange();
     setFromDate(monday);
     setToDate(sunday);
   };
@@ -257,26 +257,26 @@ export default function StockReport() {
     const remarkLower = remark?.toLowerCase() || '';
 
     if (remarkLower.includes('inward')) {
-      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      return ' text-green-700 dark:bg-green-900/30 dark:text-green-400';
     } else if (remarkLower.includes('outward')) {
-      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+      return ' text-red-700 dark:bg-red-900/30 dark:text-red-400';
     } else if (
       remarkLower.includes('scale') ||
       remarkLower.includes('manufactured')
     ) {
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+      return ' text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
     } else if (remarkLower.includes('received')) {
-      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+      return ' text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
     } else if (remarkLower.includes('given')) {
-      return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+      return ' text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
     } else if (remarkLower.includes('sale')) {
-      return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+      return ' text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
     } else if (remarkLower.includes('settle')) {
-      return 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400';
+      return ' text-teal-700 dark:bg-teal-900/30 dark:text-teal-400';
     } else if (remarkLower.includes('advance')) {
-      return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400';
+      return 'text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400';
     } else {
-      return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
+      return ' text-gray-700 dark:bg-gray-800 dark:text-gray-400';
     }
   };
 
@@ -304,25 +304,25 @@ export default function StockReport() {
     },
     ...(!isGold
       ? [
-          {
-            key: 'item',
-            header: 'Item',
-            render: (item: StockReportEntry) => (
-              <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-                {item.item}
-              </span>
-            ),
-          },
-          {
-            key: 'size',
-            header: 'Size',
-            render: (item: StockReportEntry) => (
-              <span className="text-sm text-[#1a1c1b] dark:text-white">
-                {item.size}
-              </span>
-            ),
-          },
-        ]
+        {
+          key: 'item',
+          header: 'Item',
+          render: (item: StockReportEntry) => (
+            <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
+              {item.item}
+            </span>
+          ),
+        },
+        {
+          key: 'size',
+          header: 'Size',
+          render: (item: StockReportEntry) => (
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {item.size}
+            </span>
+          ),
+        },
+      ]
       : []),
     {
       key: 'purity',
@@ -338,7 +338,7 @@ export default function StockReport() {
       header: 'Remark',
       render: (item) => (
         <span
-          className={`rounded-full px-2 py-1 text-xs font-medium ${getRemarkColor(item.remark)}`}
+          className={` px-2 py-1 text-xs font-medium ${getRemarkColor(item.remark)}`}
         >
           {item.remark}
         </span>
@@ -619,7 +619,7 @@ export default function StockReport() {
               No stock records found for this item.
             </p>
             <button
-              onClick={() => navigate({to: '/Stocks/stockpage'})}
+              onClick={() => navigate({ to: '/Stocks/stockpage' })}
               className="mt-4 rounded-lg bg-[#785600] px-4 py-2 text-white hover:bg-[#5d4200]"
             >
               Go Back
@@ -637,7 +637,7 @@ export default function StockReport() {
         <div className="flex flex-col items-center justify-between gap-3 px-3 py-2 sm:flex-row sm:px-4 sm:py-3 md:px-6">
           <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
             <button
-              onClick={() => navigate({to: '/Stocks/stockpage'})}
+              onClick={() => navigate({ to: '/Stocks/stockpage' })}
               className="inline-flex items-center justify-center rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
               title="Go Back"
             >

@@ -28,7 +28,7 @@ The Catering Management System offers the following key features:
 
 4. Staff Management: Caterers can assign staff members to events, manage their schedules, and track their tasks during events.
 
-5. Communication: The system provides a messaging feature that allows users to communicate with each other, facilitating coordination and collaboration.
+5. Communication: The system provides a messGold Aging feature that allows users to communicate with each other, facilitating coordination and collaboration.
 
 ## Getting Started
 
