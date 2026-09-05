@@ -744,7 +744,7 @@ const RealTimeGoldReport: React.FC = () => {
                     <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
                         <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
                             <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
-                                GOLD & STOCK
+                                GOLD & Chain STOCK
                             </span>
                         </div>
                         <div className="overflow-x-auto flex-1 flex flex-col">
@@ -842,7 +842,7 @@ const RealTimeGoldReport: React.FC = () => {
                     <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
                         <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
                             <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
-                                MANUFACTURING
+                                MANUFACTURING Stock
                             </span>
                         </div>
                         <div className="overflow-x-auto flex-1 flex flex-col">
@@ -940,7 +940,7 @@ const RealTimeGoldReport: React.FC = () => {
                     <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
                         <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
                             <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
-                                CLIENT DUE
+                                Customer DUE
                             </span>
                         </div>
                         <div className="overflow-x-auto flex-1 flex flex-col">

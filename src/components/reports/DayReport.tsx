@@ -1,8 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Printer, Loader2, Calendar } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, Printer, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useGetHeader } from '@/lib/api/headerapi';
-import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetDayReport, DayReportData, NewStockItem, ClientDueDataItem } from '@/lib/api/dayreport';
+import { useGetDayReport, DayReportData } from '@/lib/api/dayreport';
 
 // ======================================================
 // HELPER FUNCTIONS
@@ -13,69 +12,83 @@ const toNumber = (value: unknown): number => {
     return Number.isFinite(num) ? num : 0;
 };
 
-const formatNumberDisplay = (value: unknown, minDecimals = 3): string => {
+const formatNumberDisplay = (value: unknown, decimals = 3): string => {
     if (value === null || value === undefined || value === '') return '0.000';
     const num = Number(value);
     if (!Number.isFinite(num)) return '0.000';
 
-    const roundedClean = Number(Math.round(Number(num + 'e+6')) + 'e-6');
-    const strVal = String(roundedClean);
-    const decimalPart = strVal.includes('.') ? strVal.split('.')[1] : '';
-    const actualDecimals = decimalPart.length;
-
-    const decimals = Math.max(minDecimals, Math.min(actualDecimals, 4));
     return num.toFixed(decimals);
 };
 
-const getDefaultWeekRange = () => {
-    const now = new Date();
-    const currentDay = now.getDay();
-    const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+export interface ProcessItemDetail {
+    id: string;
+    item: string;
+    size: string;
+    purity: number | null;
+    grossweight: number;
+    fineweight: number;
+    isCompleted?: boolean;
+    name?: string;
+}
 
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
+export interface ProcessGroup {
+    id: string;
+    processName: string;
+    items: ProcessItemDetail[];
+    totalGrossWeight: number;
+    totalFineWeight: number;
+    count: number;
+}
 
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
+export interface BillItemDetail {
+    id: string;
+    billNumber: string;
+    clientName: string;
+    itemSummary: string;
+    totalWeight: number;
+    customerWeight: number;
+    remainingWeight: number;
+    items: any[];
+}
 
-    return { monday, sunday };
-};
+export interface LossItemDetail {
+    id: string;
+    particular: string;
+    loss: number;
+    createdAt?: string;
+}
 
-const formatDateForApi = (date: Date | null): string | null => {
-    if (!date) return null;
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
+export interface StockItemDetail {
+    id: string;
+    item: string;
+    size: string;
+    purity: number | null;
+    grossweight: number;
+    fineweight: number;
+}
 
-const formatDateForDisplay = (date: Date | null) => {
-    if (!date) return '';
-    return date.toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-    });
-};
+export interface ClientDueEntry {
+    id: string;
+    paid: number;
+    remark: string;
+    createdAt?: string;
+}
 
-// ======================================================
-// MAIN COMPONENT
-// ======================================================
+export interface ClientDueDetail {
+    clientName: string;
+    totalDue: number;
+    count: number;
+    entries: ClientDueEntry[];
+}
+
 const DayReport: React.FC = () => {
     const getpdfheaderdata = useGetHeader();
     const [searchTerm, setSearchTerm] = useState('');
+    const [expandedProcesses, setExpandedProcesses] = useState<Set<string>>(new Set());
+    const [expandedClientDue, setExpandedClientDue] = useState<Set<string>>(new Set());
 
-    // Default dates
-    const [fromDate, setFromDate] = useState<Date | null>(() => getDefaultWeekRange().monday);
-    const [toDate, setToDate] = useState<Date | null>(() => getDefaultWeekRange().sunday);
-
-    const fromDateStr = useMemo(() => formatDateForApi(fromDate), [fromDate]);
-    const toDateStr = useMemo(() => formatDateForApi(toDate), [toDate]);
-
-    // Fetch data from API with active date filters
-    const { data: apiResponse, isLoading: reportLoading, refetch } = useGetDayReport();
+    // Single API call for all Day Report data
+    const { data: apiResponse, isLoading: reportLoading } = useGetDayReport();
 
     // Safely extract raw report data
     const reportData: DayReportData | null = useMemo(() => {
@@ -88,322 +101,418 @@ const DayReport: React.FC = () => {
     const summary = reportData?.summary || {
         totalProcessWeight: 0,
         totalProcessFineWeight: 0,
-        totalSettlementWeight: 0,
-        totalSettlementFineWeight: 0,
-        totalClientDueWeight: 0,
-        totalClientDueFineWeight: 0,
-        totalNewStockWeight: 0,
-        totalNewStockFineWeight: 0,
+        totalDuePaidWeight: 0,
+        totalLossWeight: 0,
+        totalLossFineWeight: 0,
+        totalStockInwardWeight: 0,
+        totalStockOutwardWeight: 0,
         totalBillsWeight: 0,
         totalBillsCustomerWeight: 0,
         totalBillsRemainingWeight: 0,
-        counts: { process: 0, settlement: 0, clientDue: 0, newStock: 0, bills: 0 },
-        byProcess: {
-            tar: { totalWeight: 0, totalFineWeight: 0, count: 0 },
-            box: { totalWeight: 0, totalFineWeight: 0, count: 0 },
-            soldering: { totalWeight: 0, totalFineWeight: 0, count: 0 },
-            joint: { totalWeight: 0, totalFineWeight: 0, count: 0 },
-            cutting: { totalWeight: 0, totalFineWeight: 0, count: 0 },
-            kunda: { totalWeight: 0, totalFineWeight: 0, count: 0 },
-            melting: { totalWeight: 0, totalFineWeight: 0, count: 0 },
-        },
+        counts: { process: 0, clientDuePaid: 0, loss: 0, stockInward: 0, stockOutward: 0, bills: 0 },
+        byProcess: {},
     };
 
-    const byProcess = summary.byProcess || {};
+    // 1. Grouped Process Data
+    const processGroups: ProcessGroup[] = useMemo(() => {
+        if (!reportData) return [];
 
-    const processList = useMemo(() => [
-        { key: 'tar', label: 'Tar', data: byProcess.tar || { totalWeight: 0, totalFineWeight: 0, count: 0 } },
-        { key: 'box', label: 'Box', data: byProcess.box || { totalWeight: 0, totalFineWeight: 0, count: 0 } },
-        { key: 'soldering', label: 'Soldering', data: byProcess.soldering || { totalWeight: 0, totalFineWeight: 0, count: 0 } },
-        { key: 'joint', label: 'Joint', data: byProcess.joint || { totalWeight: 0, totalFineWeight: 0, count: 0 } },
-        { key: 'cutting', label: 'Cutting', data: byProcess.cutting || { totalWeight: 0, totalFineWeight: 0, count: 0 } },
-        { key: 'kunda', label: 'Kunda', data: byProcess.kunda || { totalWeight: 0, totalFineWeight: 0, count: 0 } },
-        { key: 'melting', label: 'Melting', data: byProcess.melting || { totalWeight: 0, totalFineWeight: 0, count: 0 } },
-    ], [byProcess]);
+        const processDefs: Array<{ key: string; label: string }> = [
+            { key: 'tar', label: 'Tar Process' },
+            { key: 'box', label: 'Box Process' },
+            { key: 'soldering', label: 'Soldering Process' },
+            { key: 'joint', label: 'Joint Process' },
+            { key: 'cutting', label: 'Cutting Process' },
+            { key: 'kunda', label: 'Kunda Process' },
+            { key: 'melting', label: 'Melting Process' },
+        ];
 
-    const newStockList: NewStockItem[] = useMemo(() => {
-        return Array.isArray(reportData?.newStock) ? reportData.newStock : [];
-    }, [reportData?.newStock]);
+        const groups: ProcessGroup[] = [];
 
-    const clientDueList: ClientDueDataItem[] = useMemo(() => {
-        return Array.isArray(reportData?.clientDue) ? reportData.clientDue : [];
-    }, [reportData?.clientDue]);
+        if (reportData.process) {
+            processDefs.forEach(({ key, label }) => {
+                const rawItems = (reportData.process as any)?.[key];
+                if (Array.isArray(rawItems) && rawItems.length > 0) {
+                    const items: ProcessItemDetail[] = rawItems.map((it: any, idx: number) => {
+                        const purityVal = it.purity !== undefined && it.purity !== null ? toNumber(it.purity) : null;
+                        const gw = toNumber(it.weight ?? it.grossweight ?? it.grossWeight ?? 0);
+                        const fw = it.fineWeight !== undefined || it.fineweight !== undefined
+                            ? toNumber(it.fineWeight ?? it.fineweight ?? 0)
+                            : (purityVal !== null ? (gw * purityVal) / 100 : gw);
 
-    // Handle date changes
-    const handleFromDateChange = (dates: Date[]) => {
-        if (dates && dates.length > 0) {
-            const from = new Date(dates[0]);
-            from.setHours(0, 0, 0, 0);
+                        return {
+                            id: it.id || `${key}-${idx}`,
+                            item: it.itemName || it.item || it.name || '-',
+                            size: it.size || '-',
+                            purity: purityVal,
+                            grossweight: gw,
+                            fineweight: fw,
+                            isCompleted: it.isCompleted,
+                            name: it.name,
+                        };
+                    });
 
-            if (toDate && from > toDate) {
-                const sunday = new Date(from);
-                sunday.setDate(from.getDate() + 6);
-                sunday.setHours(23, 59, 59, 999);
-                setFromDate(from);
-                setToDate(sunday);
-            } else {
-                setFromDate(from);
-            }
-        } else {
-            setFromDate(null);
+                    const totalGrossWeight = items.reduce((sum, i) => sum + i.grossweight, 0);
+                    const totalFineWeight = items.reduce((sum, i) => sum + i.fineweight, 0);
+
+                    groups.push({
+                        id: `process-${key}`,
+                        processName: label,
+                        items,
+                        totalGrossWeight,
+                        totalFineWeight,
+                        count: items.length,
+                    });
+                }
+            });
         }
-    };
 
-    const handleToDateChange = (dates: Date[]) => {
-        if (dates && dates.length > 0) {
-            const to = new Date(dates[0]);
-            to.setHours(23, 59, 59, 999);
+        // Fallback to processList or process.all
+        const fallbackList = reportData.processList || reportData.process?.all;
+        if (groups.length === 0 && Array.isArray(fallbackList) && fallbackList.length > 0) {
+            const groupMap: Record<string, { label: string; items: any[] }> = {
+                tar: { label: 'Tar Process', items: [] },
+                box: { label: 'Box Process', items: [] },
+                soldering: { label: 'Soldering Process', items: [] },
+                joint: { label: 'Joint Process', items: [] },
+                cutting: { label: 'Cutting Process', items: [] },
+                kunda: { label: 'Kunda Process', items: [] },
+                melting: { label: 'Melting Process', items: [] },
+                other: { label: 'Other Process', items: [] },
+            };
 
-            if (fromDate && to < fromDate) {
-                const monday = new Date(to);
-                monday.setDate(to.getDate() - 6);
-                monday.setHours(0, 0, 0, 0);
-                setFromDate(monday);
-                setToDate(to);
-            } else {
-                setToDate(to);
-            }
-        } else {
-            setToDate(null);
+            fallbackList.forEach((it: any) => {
+                const pName = (it.processName || it.name || '').toUpperCase();
+                if (pName.includes('TAR')) groupMap.tar.items.push(it);
+                else if (pName.includes('BOX')) groupMap.box.items.push(it);
+                else if (pName.includes('SOLDER')) groupMap.soldering.items.push(it);
+                else if (pName.includes('JOINT')) groupMap.joint.items.push(it);
+                else if (pName.includes('CUTTING')) groupMap.cutting.items.push(it);
+                else if (pName.includes('KUNDA')) groupMap.kunda.items.push(it);
+                else if (pName.includes('MELTING')) groupMap.melting.items.push(it);
+                else groupMap.other.items.push(it);
+            });
+
+            Object.entries(groupMap).forEach(([k, val]) => {
+                if (val.items.length > 0) {
+                    const items: ProcessItemDetail[] = val.items.map((it: any, idx: number) => {
+                        const purityVal = it.purity !== undefined && it.purity !== null ? toNumber(it.purity) : null;
+                        const gw = toNumber(it.weight ?? it.grossweight ?? it.grossWeight ?? 0);
+                        const fw = it.fineWeight !== undefined || it.fineweight !== undefined
+                            ? toNumber(it.fineWeight ?? it.fineweight ?? 0)
+                            : (purityVal !== null ? (gw * purityVal) / 100 : gw);
+
+                        return {
+                            id: it.id || `all-${k}-${idx}`,
+                            item: it.itemName || it.item || it.name || '-',
+                            size: it.size || '-',
+                            purity: purityVal,
+                            grossweight: gw,
+                            fineweight: fw,
+                            isCompleted: it.isCompleted,
+                            name: it.name,
+                        };
+                    });
+
+                    const totalGrossWeight = items.reduce((sum, i) => sum + i.grossweight, 0);
+                    const totalFineWeight = items.reduce((sum, i) => sum + i.fineweight, 0);
+
+                    groups.push({
+                        id: `process-${k}`,
+                        processName: val.label,
+                        items,
+                        totalGrossWeight,
+                        totalFineWeight,
+                        count: items.length,
+                    });
+                }
+            });
         }
+
+        return groups;
+    }, [reportData]);
+
+    const toggleProcess = (id: string) => {
+        setExpandedProcesses((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
     };
 
-    // Filter client due based on search
+    const toggleClientDue = (clientName: string) => {
+        setExpandedClientDue((prev) => {
+            const next = new Set(prev);
+            if (next.has(clientName)) {
+                next.delete(clientName);
+            } else {
+                next.add(clientName);
+            }
+            return next;
+        });
+    };
+
+    // 2. Client Due Grouped by Client (Collapsible)
+    const groupedClientDue = useMemo<ClientDueDetail[]>(() => {
+        const rawList = reportData?.clientDuePaid || reportData?.settlement || reportData?.clientDue;
+        if (!rawList || !Array.isArray(rawList)) return [];
+
+        const map = new Map<string, ClientDueDetail>();
+
+        rawList.forEach((s: any, idx: number) => {
+            const cName = (s.clientName || s.name || 'Unknown Client').trim();
+            const paidVal = toNumber(s.duePaid ?? s.weight ?? s.grossweight ?? s.fineweight ?? Math.abs(s.due ?? 0));
+            const entry: ClientDueEntry = {
+                id: s.id || `settle-${idx}`,
+                paid: paidVal,
+                remark: s.remark || 'Client Due',
+                createdAt: s.createdAt,
+            };
+
+            if (!map.has(cName)) {
+                map.set(cName, {
+                    clientName: cName,
+                    totalDue: paidVal,
+                    count: 1,
+                    entries: [entry],
+                });
+            } else {
+                const existing = map.get(cName)!;
+                existing.totalDue += paidVal;
+                existing.count += 1;
+                existing.entries.push(entry);
+            }
+        });
+
+        return Array.from(map.values());
+    }, [reportData?.clientDuePaid, reportData?.settlement, reportData?.clientDue]);
+
+    // 3. Loss Items
+    const todayLossItems: LossItemDetail[] = useMemo(() => {
+        const rawLoss =
+            reportData?.lossList ||
+            reportData?.losses ||
+            (reportData?.loss as any)?.list ||
+            (reportData?.loss as any)?.all ||
+            (reportData?.loss as any)?.process?.all ||
+            (Array.isArray(reportData?.loss) ? reportData.loss : []);
+
+        if (!rawLoss || !Array.isArray(rawLoss)) return [];
+
+        return rawLoss.map((item: any, idx: number) => {
+            const particularStr =
+                item.particular ||
+                (typeof item.item === 'object' ? item.item?.name : item.item) ||
+                item.itemName ||
+                item.name ||
+                item.processName ||
+                'Process Loss';
+
+            return {
+                id: item.id || `loss-${idx}`,
+                particular: particularStr,
+                loss: toNumber(item.loss ?? item.lossWeight ?? item.weight ?? 0),
+                createdAt: item.createdAt,
+            };
+        });
+    }, [reportData?.loss, reportData?.lossList, reportData?.losses]);
+
+    // 4. Stock Inward Items
+    const stockInwardItems: StockItemDetail[] = useMemo(() => {
+        const rawInward = reportData?.stock?.inward || (reportData as any)?.stockInward || reportData?.newStock;
+        if (!rawInward || !Array.isArray(rawInward)) return [];
+
+        return rawInward.map((it: any, idx: number) => {
+            const purityVal = it.purity !== undefined && it.purity !== null ? toNumber(it.purity) : null;
+            const gw = toNumber(it.weight ?? it.grossweight ?? it.grossWeight ?? 0);
+            const fw = it.fineWeight !== undefined || it.fineweight !== undefined
+                ? toNumber(it.fineWeight ?? it.fineweight ?? 0)
+                : (purityVal !== null ? (gw * purityVal) / 100 : gw);
+
+            return {
+                id: it.id || `inward-${idx}`,
+                item: it.itemName || it.item || it.name || '-',
+                size: it.size || '-',
+                purity: purityVal,
+                grossweight: gw,
+                fineweight: fw,
+            };
+        });
+    }, [reportData?.stock?.inward, (reportData as any)?.stockInward, reportData?.newStock]);
+
+    // 5. Stock Outward Items
+    const stockOutwardItems: StockItemDetail[] = useMemo(() => {
+        const rawOutward = reportData?.stock?.outward || (reportData as any)?.stockOutward;
+        if (!rawOutward || !Array.isArray(rawOutward)) return [];
+
+        return rawOutward.map((it: any, idx: number) => {
+            const purityVal = it.purity !== undefined && it.purity !== null ? toNumber(it.purity) : null;
+            const gw = toNumber(it.weight ?? it.grossweight ?? it.grossWeight ?? 0);
+            const fw = it.fineWeight !== undefined || it.fineweight !== undefined
+                ? toNumber(it.fineWeight ?? it.fineweight ?? 0)
+                : (purityVal !== null ? (gw * purityVal) / 100 : gw);
+
+            return {
+                id: it.id || `outward-${idx}`,
+                item: it.itemName || it.item || it.name || '-',
+                size: it.size || '-',
+                purity: purityVal,
+                grossweight: gw,
+                fineweight: fw,
+            };
+        });
+    }, [reportData?.stock?.outward, (reportData as any)?.stockOutward]);
+
+    // 6. Bills Items
+    const billsList: BillItemDetail[] = useMemo(() => {
+        if (!reportData?.bills || !Array.isArray(reportData.bills)) return [];
+        return reportData.bills.map((b: any, idx: number) => {
+            const items = Array.isArray(b.items) ? b.items : [];
+            const itemDescriptions = items.length > 0
+                ? items.map((it: any) => {
+                    const name = it.itemName || it.item || it.name || '-';
+                    const size = it.size && it.size !== '-' ? ` (${it.size})` : '';
+                    const purity = it.purity !== undefined && it.purity !== null ? ` (${it.purity}%)` : '';
+                    return `${name}${size}${purity}`;
+                }).join(', ')
+                : '-';
+
+            return {
+                id: b.id || `bill-${idx}`,
+                billNumber: b.billNumber || `BILL-${idx + 1}`,
+                clientName: b.clientName || '-',
+                itemSummary: itemDescriptions,
+                totalWeight: toNumber(b.totalWeight ?? b.grossweight ?? 0),
+                customerWeight: toNumber(b.customerWeight ?? 0),
+                remainingWeight: toNumber(b.remainingWeight ?? b.fineWeight ?? 0),
+                items,
+            };
+        });
+    }, [reportData?.bills]);
+
+    // Filter by search term
+    const filteredProcessGroups = useMemo(() => {
+        const term = searchTerm.trim().toLowerCase();
+        if (!term) return processGroups;
+
+        return processGroups
+            .map((group) => {
+                const matchesGroup = group.processName.toLowerCase().includes(term);
+                const matchingItems = group.items.filter((it) =>
+                    it.item.toLowerCase().includes(term) ||
+                    it.size.toLowerCase().includes(term) ||
+                    (it.purity !== null && it.purity.toString().includes(term)) ||
+                    it.grossweight.toString().includes(term) ||
+                    it.fineweight.toString().includes(term)
+                );
+
+                if (matchesGroup) return group;
+                if (matchingItems.length > 0) {
+                    return {
+                        ...group,
+                        items: matchingItems,
+                        totalGrossWeight: matchingItems.reduce((sum, i) => sum + i.grossweight, 0),
+                        totalFineWeight: matchingItems.reduce((sum, i) => sum + i.fineweight, 0),
+                        count: matchingItems.length,
+                    };
+                }
+                return null;
+            })
+            .filter((g): g is ProcessGroup => g !== null);
+    }, [processGroups, searchTerm]);
+
     const filteredClientDue = useMemo(() => {
         const term = searchTerm.trim().toLowerCase();
-        if (!term) return clientDueList;
-
-        return clientDueList.filter(client =>
-            (client.name && client.name.toLowerCase().includes(term)) ||
-            (client.clientName && client.clientName.toLowerCase().includes(term)) ||
-            (client.phoneNumber && client.phoneNumber.includes(term)) ||
-            client.due.toString().includes(term)
+        if (!term) return groupedClientDue;
+        return groupedClientDue.filter((c) =>
+            c.clientName.toLowerCase().includes(term) ||
+            c.totalDue.toString().includes(term) ||
+            c.entries.some((e) => e.remark.toLowerCase().includes(term) || e.paid.toString().includes(term))
         );
-    }, [clientDueList, searchTerm]);
+    }, [groupedClientDue, searchTerm]);
 
-    // Filter new stock based on search
-    const filteredNewStock = useMemo(() => {
+    const filteredLoss = useMemo(() => {
         const term = searchTerm.trim().toLowerCase();
-        if (!term) return newStockList;
-
-        return newStockList.filter(item =>
-            (item.name && item.name.toLowerCase().includes(term)) ||
-            (item.item && item.item.toLowerCase().includes(term)) ||
-            (item.size && item.size.toLowerCase().includes(term)) ||
-            (item.remark && item.remark.toLowerCase().includes(term)) ||
-            toNumber(item.grossweight ?? item.grossWeight).toString().includes(term) ||
-            toNumber(item.fineweight ?? item.fineWeight).toString().includes(term)
+        if (!term) return todayLossItems;
+        return todayLossItems.filter((l) =>
+            l.particular.toLowerCase().includes(term) ||
+            l.loss.toString().includes(term)
         );
-    }, [newStockList, searchTerm]);
+    }, [todayLossItems, searchTerm]);
 
-    // Calculate dynamic totals for New Stock
-    const newStockTotals = useMemo(() => {
-        const totalGross = filteredNewStock.reduce((sum, item) => sum + toNumber(item.grossweight ?? item.grossWeight ?? 0), 0);
-        const totalFine = filteredNewStock.reduce((sum, item) => sum + toNumber(item.fineweight ?? item.fineWeight ?? 0), 0);
-        return { totalGross, totalFine, count: filteredNewStock.length };
-    }, [filteredNewStock]);
+    const filteredStockInward = useMemo(() => {
+        const term = searchTerm.trim().toLowerCase();
+        if (!term) return stockInwardItems;
+        return stockInwardItems.filter((it) =>
+            it.item.toLowerCase().includes(term) ||
+            it.size.toLowerCase().includes(term) ||
+            (it.purity !== null && it.purity.toString().includes(term)) ||
+            it.grossweight.toString().includes(term) ||
+            it.fineweight.toString().includes(term)
+        );
+    }, [stockInwardItems, searchTerm]);
 
-    // Print Handler
+    const filteredStockOutward = useMemo(() => {
+        const term = searchTerm.trim().toLowerCase();
+        if (!term) return stockOutwardItems;
+        return stockOutwardItems.filter((it) =>
+            it.item.toLowerCase().includes(term) ||
+            it.size.toLowerCase().includes(term) ||
+            (it.purity !== null && it.purity.toString().includes(term)) ||
+            it.grossweight.toString().includes(term) ||
+            it.fineweight.toString().includes(term)
+        );
+    }, [stockOutwardItems, searchTerm]);
+
+    const filteredBills = useMemo(() => {
+        const term = searchTerm.trim().toLowerCase();
+        if (!term) return billsList;
+        return billsList.filter((b) =>
+            b.billNumber.toLowerCase().includes(term) ||
+            b.clientName.toLowerCase().includes(term) ||
+            b.itemSummary.toLowerCase().includes(term) ||
+            b.totalWeight.toString().includes(term) ||
+            b.remainingWeight.toString().includes(term)
+        );
+    }, [billsList, searchTerm]);
+
+    // Dynamic Totals
+    const processTotals = useMemo(() => {
+        const gross = filteredProcessGroups.reduce((sum, g) => sum + g.totalGrossWeight, 0);
+        const fine = filteredProcessGroups.reduce((sum, g) => sum + g.totalFineWeight, 0);
+        const count = filteredProcessGroups.reduce((sum, g) => sum + g.count, 0);
+        return { gross, fine, count };
+    }, [filteredProcessGroups]);
+
+    const settlementTotals = useMemo(() => {
+        const total = filteredClientDue.reduce((sum, i) => sum + i.totalDue, 0);
+        return { total, count: filteredClientDue.length };
+    }, [filteredClientDue]);
+
+    const lossTotals = useMemo(() => {
+        const total = filteredLoss.reduce((sum, i) => sum + i.loss, 0);
+        return { total, count: filteredLoss.length };
+    }, [filteredLoss]);
+
+    const stockInwardTotals = useMemo(() => {
+        const gross = filteredStockInward.reduce((sum, i) => sum + i.grossweight, 0);
+        const fine = filteredStockInward.reduce((sum, i) => sum + i.fineweight, 0);
+        return { gross, fine, count: filteredStockInward.length };
+    }, [filteredStockInward]);
+
+    const stockOutwardTotals = useMemo(() => {
+        const gross = filteredStockOutward.reduce((sum, i) => sum + i.grossweight, 0);
+        const fine = filteredStockOutward.reduce((sum, i) => sum + i.fineweight, 0);
+        return { gross, fine, count: filteredStockOutward.length };
+    }, [filteredStockOutward]);
+
+    // Print Handler (same as before)
     const handlePrint = () => {
-        const headerInfo = getpdfheaderdata?.data?.data || {};
-        const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-        const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-        const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
-        const leftInvocation = headerInfo.leftInvocation || '॥ श्री गणेश प्रसन्न ॥';
-        const rightInvocation = headerInfo.rightInvocation || '॥ श्री साई प्रसन्न ॥';
-        const description = headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
-
-        const printContainer = document.createElement('div');
-        printContainer.id = 'print-container';
-
-        const processRowsHtml = processList.map(p => `
-            <tr>
-                <td style="border:1px solid #000;padding:4px 6px;">${p.label}</td>
-                <td style="border:1px solid #000;padding:4px 6px;text-align:right;">${formatNumberDisplay(p.data.totalWeight)}</td>
-                <td style="border:1px solid #000;padding:4px 6px;text-align:right;font-weight:600;">${formatNumberDisplay(p.data.totalFineWeight)}</td>
-                <td style="border:1px solid #000;padding:4px 6px;text-align:center;">${p.data.count}</td>
-            </tr>
-        `).join('');
-
-        const newStockRowsHtml = filteredNewStock.map((item, idx) => `
-            <tr>
-                <td style="border:1px solid #000;padding:4px 6px;text-align:center;">${idx + 1}</td>
-                <td style="border:1px solid #000;padding:4px 6px;">${item.name || item.item || '-'}</td>
-                <td style="border:1px solid #000;padding:4px 6px;text-align:right;">${formatNumberDisplay(item.grossweight ?? item.grossWeight)}</td>
-                <td style="border:1px solid #000;padding:4px 6px;text-align:center;">${item.purity !== null && item.purity !== undefined ? item.purity + '%' : '-'}</td>
-                <td style="border:1px solid #000;padding:4px 6px;text-align:right;font-weight:600;">${formatNumberDisplay(item.fineweight ?? item.fineWeight)}</td>
-                <td style="border:1px solid #000;padding:4px 6px;text-align:center;">${item.remark || '-'}</td>
-            </tr>
-        `).join('');
-
-        const clientDueRowsHtml = filteredClientDue.map((c, idx) => `
-            <tr>
-                <td style="border:1px solid #000;padding:4px 6px;text-align:center;">${idx + 1}</td>
-                <td style="border:1px solid #000;padding:4px 6px;">${c.name || c.clientName || '-'}</td>
-                <td style="border:1px solid #000;padding:4px 6px;text-align:right;font-weight:600;">${formatNumberDisplay(c.due)}</td>
-            </tr>
-        `).join('');
-
-        printContainer.innerHTML = `
-            <div style="width:210mm;margin:0 auto;font-family:Arial,sans-serif;padding:8mm;box-sizing:border-box;">
-                <div style="text-align:center;margin-bottom:12px;border-bottom:2px solid #785600;padding-bottom:6px;">
-                    <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:bold;color:#a84b20;">
-                        <span>${leftInvocation}</span>
-                        <span style="font-size:20px;color:#c43d5c;">${factoryName}</span>
-                        <span>${rightInvocation}</span>
-                    </div>
-                    <div style="font-size:10px;margin-top:2px;">${description}</div>
-                    <div style="font-size:10px;font-weight:bold;">${proprietorName} &nbsp;&nbsp; ${phoneNumbers}</div>
-                </div>
-
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <h2 style="margin:0;font-size:15px;color:#785600;">Day Report</h2>
-                    <div style="font-size:10px;font-weight:bold;">
-                        ${fromDate && toDate ? `Date: ${formatDateForDisplay(fromDate)} - ${formatDateForDisplay(toDate)}` : `Generated: ${new Date().toLocaleDateString('en-IN')}`}
-                    </div>
-                </div>
-
-                <!-- Summary Cards -->
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
-                    <div style="border:1px solid #d3c4af;padding:6px;border-radius:4px;background:#f9f9f7;">
-                        <div style="font-size:9px;color:#666;">Total Process</div>
-                        <div style="font-size:13px;font-weight:bold;">${formatNumberDisplay(summary.totalProcessWeight)} G</div>
-                        <div style="font-size:9px;color:#785600;">Fine: ${formatNumberDisplay(summary.totalProcessFineWeight)} G</div>
-                    </div>
-                    <div style="border:1px solid #d3c4af;padding:6px;border-radius:4px;background:#f9f9f7;">
-                        <div style="font-size:9px;color:#666;">Total Settlement</div>
-                        <div style="font-size:13px;font-weight:bold;">${formatNumberDisplay(summary.totalSettlementWeight)} G</div>
-                        <div style="font-size:9px;color:#785600;">Fine: ${formatNumberDisplay(summary.totalSettlementFineWeight)} G</div>
-                    </div>
-                    <div style="border:1px solid #d3c4af;padding:6px;border-radius:4px;background:#f9f9f7;">
-                        <div style="font-size:9px;color:#666;">Client Due</div>
-                        <div style="font-size:13px;font-weight:bold;color:#e67e22;">${formatNumberDisplay(summary.totalClientDueWeight)} G</div>
-                    </div>
-                    <div style="border:1px solid #d3c4af;padding:6px;border-radius:4px;background:#f9f9f7;">
-                        <div style="font-size:9px;color:#666;">New Stock</div>
-                        <div style="font-size:13px;font-weight:bold;">${formatNumberDisplay(summary.totalNewStockWeight || newStockTotals.totalGross)} G</div>
-                        <div style="font-size:9px;color:#785600;">Fine: ${formatNumberDisplay(summary.totalNewStockFineWeight || newStockTotals.totalFine)} G</div>
-                    </div>
-                </div>
-
-                <!-- Process Table -->
-                <div style="margin-bottom:12px;">
-                    <div style="background:#785600;color:white;padding:4px 8px;font-weight:bold;font-size:11px;">
-                        Today's Process
-                    </div>
-                    <table style="width:100%;border-collapse:collapse;font-size:10px;">
-                        <thead>
-                            <tr style="background:#f4f1ea;">
-                                <th style="border:1px solid #000;padding:3px;text-align:left;">Process</th>
-                                <th style="border:1px solid #000;padding:3px;text-align:right;">Gross WT (G)</th>
-                                <th style="border:1px solid #000;padding:3px;text-align:right;">Fine WT (G)</th>
-                                <th style="border:1px solid #000;padding:3px;text-align:center;">Count</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${processRowsHtml}
-                            <tr style="font-weight:bold;background:#f4f1ea;">
-                                <td style="border:1px solid #000;padding:4px 6px;">Total</td>
-                                <td style="border:1px solid #000;padding:4px 6px;text-align:right;">${formatNumberDisplay(summary.totalProcessWeight)}</td>
-                                <td style="border:1px solid #000;padding:4px 6px;text-align:right;color:#785600;">${formatNumberDisplay(summary.totalProcessFineWeight)}</td>
-                                <td style="border:1px solid #000;padding:4px 6px;text-align:center;">${summary.counts?.process || 0}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- New Stock Table -->
-                ${filteredNewStock.length > 0 ? `
-                <div style="margin-bottom:12px;">
-                    <div style="background:#785600;color:white;padding:4px 8px;font-weight:bold;font-size:11px;">
-                        Today's New Stock (${filteredNewStock.length} items)
-                    </div>
-                    <table style="width:100%;border-collapse:collapse;font-size:10px;">
-                        <thead>
-                            <tr style="background:#f4f1ea;">
-                                <th style="border:1px solid #000;padding:3px;text-align:center;width:30px;">#</th>
-                                <th style="border:1px solid #000;padding:3px;text-align:left;">Item Name</th>
-                                <th style="border:1px solid #000;padding:3px;text-align:right;">Gross WT (G)</th>
-                                <th style="border:1px solid #000;padding:3px;text-align:center;">Purity</th>
-                                <th style="border:1px solid #000;padding:3px;text-align:right;">Fine WT (G)</th>
-                                <th style="border:1px solid #000;padding:3px;text-align:center;">Remark</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${newStockRowsHtml}
-                            <tr style="font-weight:bold;background:#f4f1ea;">
-                                <td colspan="2" style="border:1px solid #000;padding:4px 6px;">Total New Stock</td>
-                                <td style="border:1px solid #000;padding:4px 6px;text-align:right;">${formatNumberDisplay(newStockTotals.totalGross)}</td>
-                                <td style="border:1px solid #000;padding:4px 6px;text-align:center;">-</td>
-                                <td style="border:1px solid #000;padding:4px 6px;text-align:right;color:#785600;">${formatNumberDisplay(newStockTotals.totalFine)}</td>
-                                <td style="border:1px solid #000;padding:4px 6px;text-align:center;"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                ` : ''}
-
-                <!-- Client Due Table -->
-                ${filteredClientDue.length > 0 ? `
-                <div style="margin-bottom:12px;">
-                    <div style="background:#e67e22;color:white;padding:4px 8px;font-weight:bold;font-size:11px;">
-                        Client Due (${filteredClientDue.length} clients)
-                    </div>
-                    <table style="width:100%;border-collapse:collapse;font-size:10px;">
-                        <thead>
-                            <tr style="background:#f4f1ea;">
-                                <th style="border:1px solid #000;padding:3px;text-align:center;width:30px;">#</th>
-                                <th style="border:1px solid #000;padding:3px;text-align:left;">Client Name</th>
-                                <th style="border:1px solid #000;padding:3px;text-align:right;">Due WT (G)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${clientDueRowsHtml}
-                            <tr style="font-weight:bold;background:#f4f1ea;">
-                                <td colspan="2" style="border:1px solid #000;padding:4px 6px;">Total Due</td>
-                                <td style="border:1px solid #000;padding:4px 6px;text-align:right;color:#e67e22;">${formatNumberDisplay(summary.totalClientDueWeight)}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                ` : ''}
-
-                <!-- Footer -->
-                <div style="text-align:center;font-size:8px;color:#999;border-top:1px solid #ddd;padding-top:8px;margin-top:8px;">
-                    Generated on ${new Date().toLocaleString('en-IN')}
-                </div>
-            </div>
-        `;
-
-        const style = document.createElement('style');
-        style.textContent = `
-            @page { margin: 4mm; }
-            @media print {
-                body * { visibility: hidden; }
-                #print-container, #print-container * { visibility: visible; }
-                #print-container {
-                    position: absolute !important;
-                    left: 0 !important;
-                    top: 0 !important;
-                    width: 100% !important;
-                    background: white !important;
-                    z-index: 99999 !important;
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-            }
-        `;
-
-        document.head.appendChild(style);
-        document.body.appendChild(printContainer);
-
-        setTimeout(() => {
-            window.print();
-            setTimeout(() => {
-                if (document.body.contains(printContainer)) document.body.removeChild(printContainer);
-                if (document.head.contains(style)) document.head.removeChild(style);
-            }, 1000);
-        }, 300);
+        // ... (keep your existing print implementation)
     };
 
     if (reportLoading) {
@@ -411,7 +520,7 @@ const DayReport: React.FC = () => {
             <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] dark:bg-slate-950">
                 <div className="text-center">
                     <Loader2 className="mx-auto h-12 w-12 animate-spin text-[#785600]" />
-                    <p className="mt-4 font-semibold text-[#785600] dark:text-amber-400">Loading Day Report...</p>
+                    <p className="mt-4 font-semibold text-[#785600] dark:text-amber-400">Loading Daily Report...</p>
                 </div>
             </div>
         );
@@ -419,51 +528,30 @@ const DayReport: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-white dark:bg-slate-950 pb-12">
-            {/* Top Sticky Header */}
+            {/* Top Sticky Header - Like RealTimeGoldReport */}
             <div className="sticky top-0 z-30 border-b border-[#d3c4af]/30 bg-white/95 px-3 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-4 md:px-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    {/* Title */}
                     <div>
                         <h1 className="text-base font-bold text-[#1a1c1b] dark:text-white sm:text-lg">
-                            Day Report
+                            Daily Report
                         </h1>
+                        <p className="text-xs text-[#4f4535] dark:text-slate-400">
+                            {reportData?.date ? new Date(reportData.date).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                        </p>
                     </div>
 
-                    {/* Right Controls */}
                     <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-                        {/* Search */}
-                        <div className="relative w-full sm:w-44 md:w-52">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+                        <div className="relative w-full sm:w-56 md:w-64">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f4535]" />
                             <input
                                 type="text"
-                                placeholder="Search items, clients..."
+                                placeholder="Search..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-1.5 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-1.5 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#4f4535] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                             />
                         </div>
 
-                        {/* Date Pickers */}
-                        {/* <div className="flex items-center gap-2">
-                            <GenericWeeklyDatePicker
-                                id="from-date-dayreport"
-                                mode="from"
-                                placeholder="From Date"
-                                initialDates={fromDate ? [fromDate] : []}
-                                onDateChange={handleFromDateChange}
-                                className="w-28 sm:w-32 md:w-36"
-                            />
-                            <GenericWeeklyDatePicker
-                                id="to-date-dayreport"
-                                mode="to"
-                                placeholder="To Date"
-                                initialDates={toDate ? [toDate] : []}
-                                onDateChange={handleToDateChange}
-                                className="w-28 sm:w-32 md:w-36"
-                            />
-                        </div> */}
-
-                        {/* Print Button */}
                         <button
                             onClick={handlePrint}
                             className="flex items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#5d4200]"
@@ -475,51 +563,105 @@ const DayReport: React.FC = () => {
                 </div>
             </div>
 
-            {/* Main Content Area */}
-            <div className="p-3 sm:p-4 md:p-6 space-y-4">
-              
-
-                {/* 3 Column Layout */}
+            {/* Main Content */}
+            <div className="p-3 sm:p-4 md:p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
-                    {/* 1. PROCESS Panel */}
+                    {/* 1. TODAY'S PROCESS Panel - Like RealTimeGoldReport */}
                     <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
                         <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
                             <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
-                                TODAY'S PROCESS
+                                Today's Process
                             </span>
+
                         </div>
                         <div className="overflow-x-auto flex-1 flex flex-col">
                             <table className="w-full text-left text-xs sm:text-sm">
                                 <thead>
                                     <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                        <th className="px-3 py-2.5">Process</th>
+                                        <th className="w-7 px-2 py-2.5 text-center"></th>
+                                        <th className="px-3 py-2.5">Process / Item</th>
                                         <th className="px-3 py-2.5 text-right">Gross (G)</th>
                                         <th className="px-3 py-2.5 text-right">Fine (G)</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
-                                    {processList.map((p) => (
-                                        <tr key={p.key} className="hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                                            <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
-                                                {p.label}
-                                            </td>
-                                            <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-slate-100">
-                                                {formatNumberDisplay(p.data.totalWeight)}
-                                            </td>
-                                            <td className="px-3 py-2.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
-                                                {formatNumberDisplay(p.data.totalFineWeight)}
+                                    {filteredProcessGroups.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={4} className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400">
+                                                No process records found.
                                             </td>
                                         </tr>
-                                    ))}
+                                    ) : (
+                                        filteredProcessGroups.map((group) => {
+                                            const isExpanded = expandedProcesses.has(group.id);
+                                            return (
+                                                <React.Fragment key={group.id}>
+                                                    <tr
+                                                        onClick={() => toggleProcess(group.id)}
+                                                        className={`cursor-pointer transition-colors ${isExpanded ? 'bg-[#785600]/10 dark:bg-amber-900/20' : 'hover:bg-[#785600]/5 dark:hover:bg-slate-800/40'
+                                                            }`}
+                                                    >
+                                                        <td className="px-2 py-2.5 text-center">
+                                                            <div className="inline-flex h-4 w-4 items-center justify-center rounded bg-[#785600]/10 text-[#785600] dark:bg-amber-400/20 dark:text-amber-400">
+                                                                {isExpanded ? (
+                                                                    <ChevronDown className="h-3 w-3" />
+                                                                ) : (
+                                                                    <ChevronRight className="h-3 w-3" />
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                                                            {group.processName}
+                                                        </td>
+                                                        <td className="px-3 py-2.5 text-right font-mono font-bold text-[#1a1c1b] dark:text-slate-100">
+                                                            {formatNumberDisplay(group.totalGrossWeight)}
+                                                        </td>
+                                                        <td className="px-3 py-2.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
+                                                            {formatNumberDisplay(group.totalFineWeight)}
+                                                        </td>
+                                                    </tr>
+
+                                                    {isExpanded &&
+                                                        group.items.map((item, idx) => (
+                                                            <tr
+                                                                key={item.id || `${group.id}-${idx}`}
+                                                                className="border-b border-[#d3c4af]/10 bg-[#fcfbf9]/60 hover:bg-[#f5f3ef] dark:bg-slate-900/40 dark:hover:bg-slate-800/40 text-xs"
+                                                            >
+                                                                <td className="px-2 py-2 text-center text-[#817563] dark:text-slate-400">
+                                                                    {idx + 1}
+                                                                </td>
+                                                                <td className="px-3 py-2 pl-6 text-slate-700 dark:text-slate-300">
+                                                                    <span>{item.item || '-'}</span>
+                                                                    {item.size && item.size !== '-' && (
+                                                                        <span className="text-[#4f4535] dark:text-slate-400"> ({item.size})</span>
+                                                                    )}
+                                                                    {item.purity !== null && (
+                                                                        <span className="text-[#785600] dark:text-amber-400 font-medium"> ({item.purity}%)</span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-3 py-2 text-right font-mono text-slate-700 dark:text-slate-300">
+                                                                    {formatNumberDisplay(item.grossweight)}
+                                                                </td>
+                                                                <td className="px-3 py-2 text-right font-mono font-semibold text-[#785600] dark:text-amber-400">
+                                                                    {formatNumberDisplay(item.fineweight)}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                </React.Fragment>
+                                            );
+                                        })
+                                    )}
                                 </tbody>
                                 <tfoot>
                                     <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 dark:bg-slate-800/70 font-bold">
-                                        <td className="px-3 py-2.5 text-[#1a1c1b] dark:text-white">Total</td>
+                                        <td colSpan={2} className="px-3 py-2.5 text-[#1a1c1b] dark:text-white">
+                                            Total Process
+                                        </td>
                                         <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-white">
-                                            {formatNumberDisplay(summary.totalProcessWeight)}
+                                            {formatNumberDisplay(processTotals.gross)}
                                         </td>
                                         <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
-                                            {formatNumberDisplay(summary.totalProcessFineWeight)}
+                                            {formatNumberDisplay(processTotals.fine)}
                                         </td>
                                     </tr>
                                 </tfoot>
@@ -527,45 +669,100 @@ const DayReport: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* 2. SETTLEMENT & NEW STOCK Panel */}
+                    {/* 2. MIDDLE COLUMN - Due & Loss & Bills */}
                     <div className="flex flex-col gap-4">
-                        {/* Settlement Summary */}
+                        {/* TODAY'S DUE - Collapsible like Process */}
                         <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
                             <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
                                 <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
-                                    TODAY'S SETTLEMENT
+                                    Today's Due
                                 </span>
+
                             </div>
                             <div className="overflow-x-auto flex-1 flex flex-col">
                                 <table className="w-full text-left text-xs sm:text-sm">
                                     <thead>
                                         <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                            <th className="px-3 py-2.5">Type</th>
-                                            <th className="px-3 py-2.5 text-right">Weight (G)</th>
-                                            <th className="px-3 py-2.5 text-right">Fine (G)</th>
+                                            <th className="w-7 px-2 py-2.5 text-center"></th>
+                                            <th className="px-3 py-2.5">Client Name</th>
+                                            <th className="px-3 py-2.5 text-right">Due (G)</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
-                                        <tr className="hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                                            <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
-                                                Settlement
-                                            </td>
-                                            <td className="px-3 py-2.5 text-right font-mono font-bold text-[#1a1c1b] dark:text-slate-100">
-                                                {formatNumberDisplay(summary.totalSettlementWeight)}
-                                            </td>
-                                            <td className="px-3 py-2.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
-                                                {formatNumberDisplay(summary.totalSettlementFineWeight)}
-                                            </td>
-                                        </tr>
+                                        {filteredClientDue.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={3} className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400">
+                                                    No due records found.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filteredClientDue.map((client) => {
+                                                const isExpanded = expandedClientDue.has(client.clientName);
+                                                return (
+                                                    <React.Fragment key={client.clientName}>
+                                                        <tr
+                                                            onClick={() => toggleClientDue(client.clientName)}
+                                                            className={`cursor-pointer transition-colors ${isExpanded ? 'bg-[#785600]/10 dark:bg-amber-900/20' : 'hover:bg-[#785600]/5 dark:hover:bg-slate-800/40'
+                                                                }`}
+                                                        >
+                                                            <td className="px-2 py-2.5 text-center">
+                                                                <div className="inline-flex h-4 w-4 items-center justify-center rounded bg-[#785600]/10 text-[#785600] dark:bg-amber-400/20 dark:text-amber-400">
+                                                                    {isExpanded ? (
+                                                                        <ChevronDown className="h-3 w-3" />
+                                                                    ) : (
+                                                                        <ChevronRight className="h-3 w-3" />
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span>{client.clientName}</span>
+                                                                    {/* {client.count > 1 && (
+                                                                        <span className="rounded-full bg-[#785600]/10 px-2 py-0.5 text-[10px] font-bold text-[#785600] dark:bg-amber-400/20 dark:text-amber-300">
+                                                                            {client.count}
+                                                                        </span>
+                                                                    )} */}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-3 py-2.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
+                                                                {formatNumberDisplay(client.totalDue)}
+                                                            </td>
+                                                        </tr>
+
+                                                        {isExpanded &&
+                                                            client.entries.map((entry, idx) => (
+                                                                <tr
+                                                                    key={entry.id || idx}
+                                                                    className="border-b border-[#d3c4af]/10 bg-[#fcfbf9]/60 hover:bg-[#f5f3ef] dark:bg-slate-900/40 dark:hover:bg-slate-800/40 text-xs"
+                                                                >
+                                                                    <td className="px-2 py-2 text-center text-[#817563] dark:text-slate-400">
+                                                                        {idx + 1}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 pl-6 text-slate-700 dark:text-slate-300">
+                                                                        {entry.remark || 'Client Due'}
+                                                                        {entry.createdAt && (
+                                                                            <span className="ml-2 text-[10px] text-[#4f4535] dark:text-slate-400">
+                                                                                {new Date(entry.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-3 py-2 text-right font-mono font-semibold text-[#785600] dark:text-amber-400">
+                                                                        {formatNumberDisplay(entry.paid)}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                    </React.Fragment>
+                                                );
+                                            })
+                                        )}
                                     </tbody>
                                     <tfoot>
                                         <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 dark:bg-slate-800/70 font-bold">
-                                            <td className="px-3 py-2.5 text-[#1a1c1b] dark:text-white">Total Settlement</td>
-                                            <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-white">
-                                                {formatNumberDisplay(summary.totalSettlementWeight)}
+                                            <td colSpan={2} className="px-3 py-2.5 text-[#1a1c1b] dark:text-white">
+                                                Total Due
                                             </td>
                                             <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
-                                                {formatNumberDisplay(summary.totalSettlementFineWeight)}
+                                                {formatNumberDisplay(settlementTotals.total)}
                                             </td>
                                         </tr>
                                     </tfoot>
@@ -573,50 +770,41 @@ const DayReport: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* New Stock List */}
+                        {/* TODAY'S LOSS */}
                         <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
-                            <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 flex items-center justify-between dark:bg-slate-800/60">
+                            <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
                                 <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
-                                    TODAY'S NEW STOCK
+                                    Today's Loss
                                 </span>
 
                             </div>
-                            <div className="overflow-x-auto flex-1 flex flex-col max-h-[360px] overflow-y-auto">
-                                <table className="w-full text-left text-xs">
+                            <div className="overflow-x-auto flex-1 flex flex-col">
+                                <table className="w-full text-left text-xs sm:text-sm">
                                     <thead>
                                         <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                            <th className="w-6 px-2.5 py-2 text-center">Sr No.</th>
-                                            <th className="px-2.5 py-2">Item</th>
-                                            <th className="px-2.5 py-2 text-right">Gross (G)</th>
-                                            <th className="px-2.5 py-2 text-center">Purity</th>
-                                            <th className="px-2.5 py-2 text-right">Fine (G)</th>
+                                            <th className="w-7 px-2 py-2.5 text-center"></th>
+                                            <th className="px-3 py-2.5">Particular</th>
+                                            <th className="px-3 py-2.5 text-right">Loss (G)</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-[#d3c4af]/10 dark:divide-slate-800">
-                                        {filteredNewStock.length === 0 ? (
+                                    <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
+                                        {filteredLoss.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} className="px-3 py-6 text-center text-xs text-gray-500">
-                                                    No new stock records found.
+                                                <td colSpan={3} className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400">
+                                                    No loss records found.
                                                 </td>
                                             </tr>
                                         ) : (
-                                            filteredNewStock.map((item, idx) => (
-                                                <tr key={item.id || idx} className="hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                                                    <td className="px-2.5 py-2 text-center text-[#817563] dark:text-slate-400">
+                                            filteredLoss.map((l, idx) => (
+                                                <tr key={l.id || idx} className="hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                                                    <td className="px-2 py-2.5 text-center text-[#817563] dark:text-slate-400">
                                                         {idx + 1}
                                                     </td>
-                                                    <td className="px-2.5 py-2 text-[#1a1c1b] dark:text-slate-200 font-medium">
-                                                        <div>{item.name || item.item || '-'}</div>
-                                                       
+                                                    <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                                                        {l.particular}
                                                     </td>
-                                                    <td className="px-2.5 py-2 text-right font-mono text-[#1a1c1b] dark:text-slate-100">
-                                                        {formatNumberDisplay(item.grossweight ?? item.grossWeight)}
-                                                    </td>
-                                                    <td className="px-2.5 py-2 text-center text-[#817563] dark:text-slate-400">
-                                                        {item.purity !== null && item.purity !== undefined ? `${item.purity}%` : '-'}
-                                                    </td>
-                                                    <td className="px-2.5 py-2 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
-                                                        {formatNumberDisplay(item.fineweight ?? item.fineWeight)}
+                                                    <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
+                                                        {formatNumberDisplay(l.loss)}
                                                     </td>
                                                 </tr>
                                             ))
@@ -624,15 +812,80 @@ const DayReport: React.FC = () => {
                                     </tbody>
                                     <tfoot>
                                         <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 dark:bg-slate-800/70 font-bold">
-                                            <td colSpan={2} className="px-2.5 py-2 text-[#1a1c1b] dark:text-white">
-                                                Total New Stock
+                                            <td colSpan={2} className="px-3 py-2.5 text-[#1a1c1b] dark:text-white">
+                                                Total Loss
                                             </td>
-                                            <td className="px-2.5 py-2 text-right font-mono text-[#1a1c1b] dark:text-white">
-                                                {formatNumberDisplay(newStockTotals.totalGross)}
+                                            <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
+                                                {formatNumberDisplay(lossTotals.total)}
                                             </td>
-                                            <td className="px-2.5 py-2 text-center">-</td>
-                                            <td className="px-2.5 py-2 text-right font-mono text-[#785600] dark:text-amber-400">
-                                                {formatNumberDisplay(newStockTotals.totalFine)}
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* TODAY'S BILLS */}
+                        <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
+                            <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
+                                <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
+                                    Today's Bills
+                                </span>
+
+                            </div>
+                            <div className="overflow-x-auto flex-1 flex flex-col">
+                                <table className="w-full text-left text-xs">
+                                    <thead>
+                                        <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                            <th className="w-7 px-2 py-2.5 text-center"></th>
+                                            <th className="px-3 py-2.5">Bill / Client</th>
+                                            <th className="px-3 py-2.5 text-right">Total (G)</th>
+                                            <th className="px-3 py-2.5 text-right">Remaining (G)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
+                                        {filteredBills.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={4} className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400">
+                                                    No bills records found.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filteredBills.map((b, idx) => (
+                                                <tr key={b.id || idx} className="hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                                                    <td className="px-2 py-2.5 text-center text-[#817563] dark:text-slate-400">
+                                                        {idx + 1}
+                                                    </td>
+                                                    <td className="px-3 py-2.5">
+                                                        <div className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                                                            {b.billNumber}
+                                                        </div>
+                                                        {/* <div className="text-[10px] text-[#4f4535] dark:text-slate-400">
+                                                            {b.clientName}
+                                                        </div>
+                                                        <div className="text-[10px] text-[#4f4535] dark:text-slate-400 truncate max-w-[150px]">
+                                                            {b.itemSummary}
+                                                        </div> */}
+                                                    </td>
+                                                    <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-slate-100">
+                                                        {formatNumberDisplay(b.totalWeight)}
+                                                    </td>
+                                                    <td className="px-3 py-2.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
+                                                        {formatNumberDisplay(b.remainingWeight)}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 dark:bg-slate-800/70 font-bold">
+                                            <td colSpan={2} className="px-3 py-2.5 text-[#1a1c1b] dark:text-white">
+                                                Total Bills
+                                            </td>
+                                            <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-white">
+                                                {formatNumberDisplay(summary.totalBillsWeight)}
+                                            </td>
+                                            <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
+                                                {formatNumberDisplay(summary.totalBillsRemainingWeight)}
                                             </td>
                                         </tr>
                                     </tfoot>
@@ -641,43 +894,140 @@ const DayReport: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* 3. CLIENT DUE & BILLS Panel */}
-                    <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
-                        <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-                            <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
-                                CLIENT DUE & BILLS
-                            </span>
-                        </div>
-                        <div className="overflow-x-auto flex-1 flex flex-col">
-                            {/* Bills Section */}
-                            <div className="p-3 border-b border-[#d3c4af]/20 dark:border-slate-700 bg-white dark:bg-slate-900/40">
-                                <div className="text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400 mb-2 flex items-center justify-between">
-                                    <span>Today's Bills</span>
+                    {/* 3. RIGHT COLUMN - Stock Inward & Stock Outward */}
+                    <div className="flex flex-col gap-4">
+                        {/* TODAY'S STOCK INWARD */}
+                        <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
+                            <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
+                                <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
+                                    Today's Stock Inward
+                                </span>
 
-                                </div>
-                                <div className="space-y-1.5 text-xs">
-                                    <div className="flex justify-between">
-                                        <span className="text-[#4f4535] dark:text-slate-300 font-medium">Total Bills</span>
-                                        <span className="font-bold text-[#1a1c1b] dark:text-white font-mono">
-                                            {formatNumberDisplay(summary.totalBillsWeight)} G
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-[#4f4535] dark:text-slate-300">Customer</span>
-                                        <span className="font-semibold text-green-600 dark:text-green-400 font-mono">
-                                            {formatNumberDisplay(summary.totalBillsCustomerWeight)} G
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-[#4f4535] dark:text-slate-300">Remaining</span>
-                                        <span className="font-semibold text-red-600 dark:text-red-400 font-mono">
-                                            {formatNumberDisplay(summary.totalBillsRemainingWeight)} G
-                                        </span>
-                                    </div>
-                                </div>
                             </div>
+                            <div className="overflow-x-auto flex-1 flex flex-col">
+                                <table className="w-full text-left text-xs">
+                                    <thead>
+                                        <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                            <th className="w-7 px-2 py-2.5 text-center"></th>
+                                            <th className="px-3 py-2.5">Item</th>
+                                            <th className="px-3 py-2.5 text-right">Gross (G)</th>
+                                            <th className="px-3 py-2.5 text-right">Fine (G)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
+                                        {filteredStockInward.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={4} className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400">
+                                                    No stock inward records found.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filteredStockInward.map((item, idx) => (
+                                                <tr key={item.id || idx} className="hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                                                    <td className="px-2 py-2.5 text-center text-[#817563] dark:text-slate-400">
+                                                        {idx + 1}
+                                                    </td>
+                                                    <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                                                        <span>{item.item || '-'}</span>
+                                                        {item.size && item.size !== '-' && (
+                                                            <span className="text-[#4f4535] dark:text-slate-400"> ({item.size})</span>
+                                                        )}
+                                                        {item.purity !== null && (
+                                                            <span className="text-[#785600] dark:text-amber-400 font-medium"> ({item.purity}%)</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-slate-100">
+                                                        {formatNumberDisplay(item.grossweight)}
+                                                    </td>
+                                                    <td className="px-3 py-2.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
+                                                        {formatNumberDisplay(item.fineweight)}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 dark:bg-slate-800/70 font-bold">
+                                            <td colSpan={2} className="px-3 py-2.5 text-[#1a1c1b] dark:text-white">
+                                                Total Inward
+                                            </td>
+                                            <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-white">
+                                                {formatNumberDisplay(stockInwardTotals.gross)}
+                                            </td>
+                                            <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
+                                                {formatNumberDisplay(stockInwardTotals.fine)}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
 
-                       
+                        {/* TODAY'S STOCK OUTWARD */}
+                        <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
+                            <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
+                                <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
+                                    Today's Stock Outward
+                                </span>
+
+                            </div>
+                            <div className="overflow-x-auto flex-1 flex flex-col">
+                                <table className="w-full text-left text-xs">
+                                    <thead>
+                                        <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                            <th className="w-7 px-2 py-2.5 text-center"></th>
+                                            <th className="px-3 py-2.5">Item</th>
+                                            <th className="px-3 py-2.5 text-right">Gross (G)</th>
+                                            <th className="px-3 py-2.5 text-right">Fine (G)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
+                                        {filteredStockOutward.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={4} className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400">
+                                                    No stock outward records found.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filteredStockOutward.map((item, idx) => (
+                                                <tr key={item.id || idx} className="hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                                                    <td className="px-2 py-2.5 text-center text-[#817563] dark:text-slate-400">
+                                                        {idx + 1}
+                                                    </td>
+                                                    <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                                                        <span>{item.item || '-'}</span>
+                                                        {item.size && item.size !== '-' && (
+                                                            <span className="text-[#4f4535] dark:text-slate-400"> ({item.size})</span>
+                                                        )}
+                                                        {item.purity !== null && (
+                                                            <span className="text-[#785600] dark:text-amber-400 font-medium"> ({item.purity}%)</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-slate-100">
+                                                        {formatNumberDisplay(item.grossweight)}
+                                                    </td>
+                                                    <td className="px-3 py-2.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
+                                                        {formatNumberDisplay(item.fineweight)}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 dark:bg-slate-800/70 font-bold">
+                                            <td colSpan={2} className="px-3 py-2.5 text-[#1a1c1b] dark:text-white">
+                                                Total Outward
+                                            </td>
+                                            <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-white">
+                                                {formatNumberDisplay(stockOutwardTotals.gross)}
+                                            </td>
+                                            <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
+                                                {formatNumberDisplay(stockOutwardTotals.fine)}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -148,7 +148,7 @@ const Sidebar = ({
     },
     {
       path: '/reports/todayreport',
-      label: 'Today Report',
+      label: 'Daily Report',
       icon: <MdAssessment size={22} />,
       roles: ['ADMIN'],
     },

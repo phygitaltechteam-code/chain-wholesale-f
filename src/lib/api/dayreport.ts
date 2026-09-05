@@ -3,13 +3,16 @@ import { useQuery } from '@tanstack/react-query';
 
 export interface NewStockItem {
     id?: string;
-    name: string;
+    name?: string;
+    itemName?: string;
     grossweight?: number;
     grossWeight?: number;
+    weight?: number;
     purity: number | null;
     fineweight?: number;
     fineWeight?: number;
     remark?: string;
+    type?: string;
     isManual?: boolean;
     item?: string;
     size?: string;
@@ -17,11 +20,17 @@ export interface NewStockItem {
 }
 
 export interface ProcessDataItem {
-    id: string;
-    name: string;
-    grossweight: number;
-    purity: number;
-    fineweight: number;
+    id?: string;
+    name?: string;
+    processName?: string;
+    itemName?: string;
+    item?: string;
+    grossweight?: number;
+    grossWeight?: number;
+    weight?: number;
+    purity?: number | null;
+    fineweight?: number;
+    fineWeight?: number;
     isCompleted?: boolean;
     createdAt?: string;
     updatedAt?: string;
@@ -30,50 +39,100 @@ export interface ProcessDataItem {
     loss?: number;
 }
 
-export interface ClientDueDataItem {
-    id: string;
+export interface ClientDuePaidItem {
+    id?: string;
     clientName?: string;
-    name: string;
-    due: number;
+    name?: string;
+    duePaid?: number;
+    due?: number;
+    weight?: number;
     grossweight?: number;
     purity?: number;
     fineweight?: number;
-    phoneNumber?: string;
-    address?: string;
-    pendingReceiptsCount?: number;
-    updatedAt?: string;
+    remark?: string;
+    createdAt?: string;
+}
+
+export interface LossDataItem {
+    id?: string;
+    particular?: string;
+    item?: string | { name?: string };
+    name?: string;
+    processName?: string;
+    purity?: number | null;
+    loss?: number;
+    lossWeight?: number;
+    weight?: number;
+    createdAt?: string;
+}
+
+export interface StockSummaryData {
+    totalInwardWeight?: number;
+    totalOutwardWeight?: number;
+    netWeight?: number;
+    inward?: NewStockItem[];
+    outward?: NewStockItem[];
+}
+
+export interface BillDetailItem {
+    id?: string;
+    itemName?: string;
+    item?: string;
+    name?: string;
+    size?: string;
+    purity?: number | null;
+    weight?: number;
+    grossweight?: number;
+    fineWeight?: number;
+    fineweight?: number;
+    srp?: number;
+    laborRate?: number;
+}
+
+export interface BillDataItem {
+    id?: string;
+    billNumber?: string;
+    clientName?: string;
+    type?: string;
+    totalWeight?: number;
+    customerWeight?: number;
+    remainingWeight?: number;
+    receiptDate?: string;
+    createdAt?: string;
+    items?: BillDetailItem[];
+    itemsCount?: number;
 }
 
 export interface DayReportData {
     date?: string;
     summary?: {
-        totalProcessWeight: number;
-        totalProcessFineWeight: number;
-        totalSettlementWeight: number;
-        totalSettlementFineWeight: number;
-        totalClientDueWeight: number;
-        totalClientDueFineWeight: number;
-        totalNewStockWeight: number;
-        totalNewStockFineWeight: number;
-        totalBillsWeight: number;
-        totalBillsCustomerWeight: number;
-        totalBillsRemainingWeight: number;
-        counts: {
-            process: number;
-            settlement: number;
-            clientDue: number;
-            newStock: number;
-            bills: number;
+        totalProcessWeight?: number;
+        totalProcessFineWeight?: number;
+        totalDuePaidWeight?: number;
+        totalSettlementWeight?: number;
+        totalSettlementFineWeight?: number;
+        totalLossWeight?: number;
+        totalStockInwardWeight?: number;
+        totalStockOutwardWeight?: number;
+        totalClientDueWeight?: number;
+        totalClientDueFineWeight?: number;
+        totalNewStockWeight?: number;
+        totalNewStockFineWeight?: number;
+        totalBillsWeight?: number;
+        totalBillsCustomerWeight?: number;
+        totalBillsRemainingWeight?: number;
+        counts?: {
+            process?: number;
+            clientDuePaid?: number;
+            settlement?: number;
+            clientDue?: number;
+            loss?: number;
+            stockInward?: number;
+            stockOutward?: number;
+            newStock?: number;
+            bills?: number;
         };
-        byProcess: {
-            tar?: { totalWeight: number; totalFineWeight: number; count: number };
-            box?: { totalWeight: number; totalFineWeight: number; count: number };
-            soldering?: { totalWeight: number; totalFineWeight: number; count: number };
-            joint?: { totalWeight: number; totalFineWeight: number; count: number };
-            cutting?: { totalWeight: number; totalFineWeight: number; count: number };
-            kunda?: { totalWeight: number; totalFineWeight: number; count: number };
-            melting?: { totalWeight: number; totalFineWeight: number; count: number };
-        };
+        byProcess?: Record<string, { totalWeight?: number; totalFineWeight?: number; count?: number }>;
     };
     process?: {
         tar?: ProcessDataItem[];
@@ -85,10 +144,17 @@ export interface DayReportData {
         melting?: ProcessDataItem[];
         all?: ProcessDataItem[];
     };
-    settlement?: any[];
-    clientDue?: ClientDueDataItem[];
+    processList?: ProcessDataItem[];
+    clientDue?: ClientDuePaidItem[];
+    clientDuePaid?: ClientDuePaidItem[];
+    settlement?: ClientDuePaidItem[];
+    loss?: LossDataItem[];
+    lossList?: LossDataItem[];
+    todayLoss?: LossDataItem[];
+    losses?: LossDataItem[];
+    stock?: StockSummaryData;
     newStock?: NewStockItem[];
-    bills?: any[];
+    bills?: BillDataItem[];
 }
 
 export interface DayReportResponse {
