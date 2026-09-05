@@ -339,6 +339,10 @@ const SolderingDept: React.FC = () => {
     }
 
     const chosenPurity = sizePurities.length > 0 ? String(sizePurities[0]) : '';
+    const availableQty =
+      selectedSizeId && chosenPurity
+        ? getAvailableBoxQty(selectedSizeId, chosenPurity)
+        : 0;
 
     setModalCards((prev) =>
       prev.map((c, idx) => {
@@ -347,7 +351,25 @@ const SolderingDept: React.FC = () => {
           ...c,
           sizeId: selectedSizeId,
           purity: chosenPurity,
-          chainWeight: '',
+          chainWeight: availableQty > 0 ? availableQty.toString() : '',
+        };
+      }),
+    );
+  };
+
+  // When a purity is selected in the modal, automatically prefill chain weight from box stock
+  const handlePuritySelect = (cardIndex: number, selectedPurity: string) => {
+    setModalCards((prev) =>
+      prev.map((c, idx) => {
+        if (idx !== cardIndex) return c;
+        const availableQty =
+          c.sizeId && selectedPurity
+            ? getAvailableBoxQty(c.sizeId, selectedPurity)
+            : 0;
+        return {
+          ...c,
+          purity: selectedPurity,
+          chainWeight: availableQty > 0 ? availableQty.toString() : '',
         };
       }),
     );
@@ -676,19 +698,35 @@ const SolderingDept: React.FC = () => {
     });
   };
 
-  const handleOpenModal = () => {
-    const newCard = createNewSolderingCard();
+  const handleOpenModal = (boxCard?: {
+    sizeId?: string;
+    purity?: number | string;
+    totalWeight?: number;
+  }) => {
+    const targetBox = boxCard || selectedBoxForModal;
+    const sizeId = targetBox?.sizeId ? String(targetBox.sizeId) : '';
+    const purity =
+      targetBox?.purity !== undefined && targetBox?.purity !== null
+        ? String(targetBox.purity)
+        : '';
+    const availableQty =
+      sizeId && purity ? getAvailableBoxQty(sizeId, purity) : 0;
+    const wt =
+      targetBox?.totalWeight !== undefined
+        ? targetBox.totalWeight.toString()
+        : availableQty > 0
+          ? availableQty.toString()
+          : '';
 
-    // If a box card was clicked, pre-fill size and purity
-    if (selectedBoxForModal) {
-      newCard.sizeId = selectedBoxForModal.sizeId;
-      newCard.purity = String(selectedBoxForModal.purity);
-      // Clear the selected box after using it
-      setSelectedBoxForModal(null);
-    }
+    const newCard = createNewSolderingCard({
+      sizeId,
+      purity,
+      chainWeight: wt,
+    });
 
     setModalCards([newCard]);
     setIsModalOpen(true);
+    setSelectedBoxForModal(null);
   };
 
   const handleSaveCard = async (cardIndex: number) => {
@@ -812,8 +850,7 @@ const SolderingDept: React.FC = () => {
               <div
                 key={card.id || idx}
                 onClick={() => {
-                  setSelectedBoxForModal(card);
-                  handleOpenModal();
+                  handleOpenModal(card);
                 }}
                 className="flex min-w-[110px] cursor-pointer flex-col rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 shadow-sm transition-all hover:scale-105 hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
               >
@@ -885,12 +922,12 @@ const SolderingDept: React.FC = () => {
             </GenericButton>
           )}
 
-          {!showHistory && (
+          {/* {!showHistory && (
             <GenericButton type="button" onClick={handleOpenModal} variant="primary">
               <Plus className="h-4 w-4" />
               <span>Add Soldering</span>
             </GenericButton>
-          )}
+          )} */}
 
           {/* History Toggle Button */}
           <GenericButton type="button" onClick={toggleHistory} variant="primary">
@@ -1051,14 +1088,9 @@ const SolderingDept: React.FC = () => {
                             </label>
                             <select
                               value={card.purity}
-                              onChange={(e) => {
-                                const newPurity = e.target.value;
-                                setModalCards((prev) =>
-                                  prev.map((c, i) =>
-                                    i === idx ? { ...c, purity: newPurity } : c,
-                                  ),
-                                );
-                              }}
+                              onChange={(e) =>
+                                handlePuritySelect(idx, e.target.value)
+                              }
                               className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                             >
                               <option value="">Select</option>

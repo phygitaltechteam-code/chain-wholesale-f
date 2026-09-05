@@ -504,12 +504,14 @@ const BoxDept: React.FC = () => {
     };
 
     const handlePuritySelect = (cardIndex: number, selectedPurity: string) => {
+        const availableTar = selectedPurity ? getAvailableTarQty(selectedPurity) : 0;
         setModalCards((prev) =>
             prev.map((c, idx) => {
                 if (idx !== cardIndex) return c;
                 return {
                     ...c,
                     purity: selectedPurity,
+                    tarWeight: availableTar > 0 ? availableTar.toString() : '',
                 };
             }),
         );
@@ -517,13 +519,17 @@ const BoxDept: React.FC = () => {
         setSelectedPurityForModal(null);
     };
 
-    const handleOpenModal = () => {
-        const newCard = createNewBoxCard();
-        if (selectedPurityForModal) {
-            newCard.purity = selectedPurityForModal;
-        }
+    const handleOpenModal = (purity?: string, tarWeight?: string) => {
+        const p = purity || selectedPurityForModal || '';
+        const availableTar = p ? getAvailableTarQty(p) : 0;
+        const wt = tarWeight !== undefined ? tarWeight : (availableTar > 0 ? availableTar.toString() : '');
+        const newCard = createNewBoxCard({
+            purity: p,
+            tarWeight: wt,
+        });
         setModalCards([newCard]);
         setIsModalOpen(true);
+        setSelectedPurityForModal(null);
     };
 
     const handleSaveCard = async (cardIndex: number) => {
@@ -635,8 +641,10 @@ const BoxDept: React.FC = () => {
                             <div
                                 key={idx}
                                 onClick={() => {
-                                    setSelectedPurityForModal(card.purity.toString());
-                                    handleOpenModal();
+                                    handleOpenModal(
+                                        card.purity.toString(),
+                                        card.totalWeight.toString(),
+                                    );
                                 }}
                                 className="flex min-w-[110px] cursor-pointer flex-col rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 shadow-sm transition-all hover:scale-105 hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
                             >

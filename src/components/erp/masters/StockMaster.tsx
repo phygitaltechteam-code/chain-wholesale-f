@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Plus,
   Save,
@@ -11,19 +11,19 @@ import {
   Eye,
   RefreshCw,
 } from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
-import {useGetItems, Item} from '@/lib/api/items';
-import {useGetSizes, Size} from '@/lib/api/sizes';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import { useGetItems, Item } from '@/lib/api/items';
+import { useGetSizes, Size } from '@/lib/api/sizes';
 import {
   useCreateStock,
   useUpdateStock,
   useDeleteStock,
   useGetStock,
 } from '@/lib/api/stock';
-import {z} from 'zod';
+import { z } from 'zod';
 
 // Zod Schema for validation
 const OpeningStockSchema = z.object({
@@ -60,8 +60,8 @@ const StockMaster: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch items and sizes from API
-  const {data: items = [], isLoading: itemsLoading} = useGetItems();
-  const {data: sizes = [], isLoading: sizesLoading} = useGetSizes();
+  const { data: items = [], isLoading: itemsLoading } = useGetItems();
+  const { data: sizes = [], isLoading: sizesLoading } = useGetSizes();
 
   // Fetch existing stock data
   const {
@@ -75,89 +75,94 @@ const StockMaster: React.FC = () => {
   const updateStock = useUpdateStock();
   const deleteStock = useDeleteStock();
 
-useEffect(() => {
-  if (itemsLoading || sizesLoading || stockLoading) {
-    return;
-  }
+  useEffect(() => {
+    if (itemsLoading || sizesLoading || stockLoading) {
+      return;
+    }
 
-  let entries: OpeningStockEntry[] = [];
+    let entries: OpeningStockEntry[] = [];
 
-  if (stockData.length > 0) {
-    const stockEntries: OpeningStockEntry[] = stockData.map(
-      (stock, index) => {
-        const item = items.find((i) => i.id === stock.itemId);
-        const size = sizes.find((s) => s.id === stock.sizeId);
+    if (stockData.length > 0) {
+      const stockEntries: OpeningStockEntry[] = stockData.map(
+        (stock, index) => {
+          const item = items.find((i) => i.id === stock.itemId);
+          const size = sizes.find((s) => s.id === stock.sizeId);
 
-        // FIX: Gold should be identified as:
-        // 1. sizeId === null AND purity === null (pure gold)
-        // 2. OR if the item name contains 'gold' AND sizeId === null
-        const isGold = 
-          (stock.sizeId === null && stock.purity === null) || 
-          (item?.name?.toLowerCase().includes('gold') && stock.sizeId === null);
+          // FIX: Gold should be identified as:
+          // 1. sizeId === null AND purity === null (pure gold)
+          // 2. OR if the item name contains 'gold' AND sizeId === null
+          const isGold =
+            (stock.sizeId === null && stock.purity === null) ||
+            (item?.name?.toLowerCase().includes('gold') && stock.sizeId === null);
 
-        const weight = stock.weight ? Number(stock.weight) : 0;
-        const purity = isGold ? 100 : stock.purity ? Number(stock.purity) : 0;
+          const weight = stock.weight ? Number(stock.weight) : 0;
+          const purity = isGold ? 100 : stock.purity ? Number(stock.purity) : 0;
 
-        return {
-          id: stock.id,
-          srNo: index + 1,
-          item: item?.name || (isGold ? 'Gold' : ''),
-          size: isGold ? '-' : size?.size || '',
-          purity: purity,
-          grams: weight,
-          isEditing: false,
-          isSaved: true,
-          gramsRaw: formatNumberDisplay(weight, 3),
-          purityRaw: formatNumberDisplay(purity, 3),
-          itemId: stock.itemId,
-          sizeId: stock.sizeId,
-        };
-      },
-    );
+          return {
+            id: stock.id,
+            srNo: index + 1,
+            item: item?.name || (isGold ? 'Gold' : ''),
+            size: isGold ? '-' : size?.size || '',
+            purity: purity,
+            grams: weight,
+            isEditing: false,
+            isSaved: true,
+            gramsRaw: formatNumberDisplay(weight, 3),
+            purityRaw: formatNumberDisplay(purity, 3),
+            itemId: stock.itemId,
+            sizeId: stock.sizeId,
+          };
+        },
+      );
 
-    // Separate gold items
-    const goldItems = stockEntries.filter(
-      (entry) =>
-        // FIX: Only filter entries that are truly gold (sizeId === null)
-        entry.sizeId === null && entry.purity === 100,
-    );
-    
-    const otherItems = stockEntries.filter(
-      (entry) =>
-        // FIX: All non-gold entries (including those with 'gold' in name but with size)
-        !(entry.sizeId === null && entry.purity === 100),
-    );
+      // Separate gold items (sizeId === null && purity === 100)
+      const goldItems = stockEntries.filter(
+        (entry) =>
+          entry.sizeId === null && entry.purity === 100,
+      );
 
-    // Sort gold items to top, then sort by item name
-    const sortedGold = goldItems.sort((a, b) => a.item.localeCompare(b.item));
-    const sortedOther = otherItems.sort((a, b) =>
-      a.item.localeCompare(b.item),
-    );
+      const otherItems = stockEntries.filter(
+        (entry) =>
+          !(entry.sizeId === null && entry.purity === 100),
+      );
 
-    entries = [...sortedGold, ...sortedOther];
+      // Sort gold items by item name (A-Z)
+      const sortedGold = goldItems.sort((a, b) => a.item.localeCompare(b.item));
 
-    // Recalculate srNo
-    entries = entries.map((entry, index) => ({
-      ...entry,
-      srNo: index + 1,
-    }));
-  }
+      // Sort other items: weight > 0 first, then by item name
+      const sortedOther = otherItems.sort((a, b) => {
+        // First: weight > 0 comes before weight === 0
+        if (a.grams > 0 && b.grams === 0) return -1;
+        if (a.grams === 0 && b.grams > 0) return 1;
+        // If both have weight > 0 or both have weight === 0, sort by item name
+        return a.item.localeCompare(b.item);
+      });
 
-  setOpeningEntries(entries);
-}, [stockData, items, sizes, itemsLoading, sizesLoading, stockLoading]);
+      // Combine: Gold on top, then other items with weight > 0, then weight === 0
+      entries = [...sortedGold, ...sortedOther];
+
+      // Recalculate srNo
+      entries = entries.map((entry, index) => ({
+        ...entry,
+        srNo: index + 1,
+      }));
+    }
+
+    setOpeningEntries(entries);
+  }, [stockData, items, sizes, itemsLoading, sizesLoading, stockLoading]);
 
   // Filter data based on search term - search across all fields
   const filteredData = searchTerm
     ? openingEntries.filter((entry) => {
-        const searchLower = searchTerm.toLowerCase().trim();
-        return (
-          entry.item.toLowerCase().includes(searchLower) ||
-          entry.size.toLowerCase().includes(searchLower) ||
-          entry.purity.toString().includes(searchLower) ||
-          entry.grams.toString().includes(searchLower) ||
-          `${entry.grams}`.includes(searchLower)
-        );
-      })
+      const searchLower = searchTerm.toLowerCase().trim();
+      return (
+        entry.item.toLowerCase().includes(searchLower) ||
+        entry.size.toLowerCase().includes(searchLower) ||
+        entry.purity.toString().includes(searchLower) ||
+        entry.grams.toString().includes(searchLower) ||
+        `${entry.grams}`.includes(searchLower)
+      );
+    })
     : openingEntries;
 
   // Validate form data
@@ -182,7 +187,6 @@ useEffect(() => {
       return false;
     }
   };
-
 
   const formatNumberDisplay = (
     value: number | string | null | undefined,
@@ -221,7 +225,7 @@ useEffect(() => {
 
     try {
       if (entry.isSaved) {
-        await updateStock.mutateAsync({id: entry.id, data: stockDataPayload});
+        await updateStock.mutateAsync({ id: entry.id, data: stockDataPayload });
         toast.success('Opening stock updated successfully!');
       } else {
         const result = await createStock.mutateAsync(stockDataPayload);
@@ -253,7 +257,7 @@ useEffect(() => {
 
   const handleRowClick = (entry: OpeningStockEntry) => {
     const id = entry.id;
-    navigate({to: `/stock/stockreport/${entry.id}`});
+    navigate({ to: `/stock/stockreport/${entry.id}` });
   };
 
   // Define columns for GenericTable - NO EDIT/DELETE icons
@@ -279,7 +283,7 @@ useEffect(() => {
       },
     },
     {
-      key:'purity',
+      key: 'purity',
       header: 'Purity (%)',
       render: (item, index) => {
         return (
@@ -290,7 +294,7 @@ useEffect(() => {
       },
     },
     {
-      key:'gramsRaw',
+      key: 'gramsRaw',
       header: 'Weight (G)',
       render: (item, index) => {
         return (
@@ -359,7 +363,7 @@ useEffect(() => {
               {/* Inward / Outward */}
               <GenericButton
                 type="button"
-                onClick={() => navigate({to: '/Stocks/stockmanagement'})}
+                onClick={() => navigate({ to: '/Stocks/stockmanagement' })}
                 variant="primary"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -369,7 +373,7 @@ useEffect(() => {
               {/* Opening Stock */}
               <GenericButton
                 type="button"
-                onClick={() => navigate({to: '/stock/openingstock'})}
+                onClick={() => navigate({ to: '/stock/openingstock' })}
                 variant="primary"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -379,7 +383,7 @@ useEffect(() => {
               {/* Add Item */}
               <GenericButton
                 type="button"
-                onClick={() => navigate({to: '/master/additems'})}
+                onClick={() => navigate({ to: '/master/additems' })}
                 variant="primary"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -389,7 +393,7 @@ useEffect(() => {
               {/* Add Size */}
               <GenericButton
                 type="button"
-                onClick={() => navigate({to: '/master/size'})}
+                onClick={() => navigate({ to: '/master/size' })}
                 variant="primary"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

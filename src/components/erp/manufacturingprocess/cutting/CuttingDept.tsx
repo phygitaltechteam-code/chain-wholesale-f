@@ -279,11 +279,15 @@ const CuttingDept: React.FC = () => {
               : (cutting.chainGiven || 0);
           const chainReceived = cutting.chainReceived || 0;
           const scrap = cutting.scrap || 0;
+          const loss = cutting.loss || 0;
 
           const isSaved =
-            cutting.isCompleted === true &&
-            cutting.chainReceived !== null &&
-            cutting.chainReceived !== undefined;
+            cutting.isCompleted === true ||
+            cutting.status === 'completed' ||
+            cutting.process === 'kunda' ||
+            (cutting.chainReceived !== null &&
+              cutting.chainReceived !== undefined &&
+              cutting.isCompleted === true);
 
           let calculatedLoss = 0;
           if (
@@ -491,6 +495,15 @@ const CuttingDept: React.FC = () => {
     setIsLoading(true);
 
     try {
+      const lossVal =
+        entry.loss !== undefined && entry.loss !== null
+          ? entry.loss
+          : calculateLoss(
+              entry.chainGiven || 0,
+              entry.chainReceived || 0,
+              entry.scrap || 0,
+            );
+
       if (actionType === 'stock') {
         await submitCutting.mutateAsync({
           id: entry.id,
@@ -498,6 +511,7 @@ const CuttingDept: React.FC = () => {
             chainGiven: entry.chainGiven,
             chainReceived: entry.chainReceived,
             scrap: entry.scrap,
+            loss: lossVal,
             purity: entry.purity,
             isCompleted: true,
           },
@@ -509,6 +523,7 @@ const CuttingDept: React.FC = () => {
             chainGiven: entry.chainGiven,
             chainReceived: entry.chainReceived,
             scrap: entry.scrap,
+            loss: lossVal,
             purity: entry.purity,
             isCompleted: true,
           },
@@ -524,7 +539,7 @@ const CuttingDept: React.FC = () => {
       );
 
       setHasEditedRow(false);
-      setIsLoading(true);
+      setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
       setActionType(null);
@@ -700,7 +715,7 @@ const CuttingDept: React.FC = () => {
             data={cuttingEntries}
             columns={columns}
             emptyMessage="No cutting entries found."
-            isLoading={cuttingLoading || isSubmitting}
+            // isLoading={cuttingLoading || isSubmitting}
             showSrNo={true}
             srNoLabel="Sr No."
             rowClassName={(item) =>
@@ -730,7 +745,7 @@ const CuttingDept: React.FC = () => {
               <p className="text-center text-sm text-[#4f4535] dark:text-slate-400">
                 Are you sure you want to save this cutting entry and go to the{' '}
                 <strong className="text-[#785600] dark:text-amber-400">
-                  S/Kunda
+                  {actionType === 'kunda' ? 'S/Kunda' : 'Stock'}
                 </strong>{' '}
                 department?
               </p>

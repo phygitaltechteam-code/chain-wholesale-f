@@ -431,34 +431,34 @@ export const getHistoryJointColumns = (): Column<any>[] => [
       );
     },
   },
-  {
-    key: 'loss',
-    header: 'Loss (G)',
-    colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
-    render: (item) => {
-      if (hasMeltingStatus(item)) {
-        return null;
-      }
-      return (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(
-            item.loss !== undefined && item.loss !== null
-              ? item.loss
-              : Math.max(
-                0,
-                Math.round(
-                  ((item.chainReceived || item.chainWeight || 0) -
-                    (item.powderReceived || 0) -
-                    (item.scrap || 0)) *
-                  1000,
-                ) / 1000,
-              ),
-          )}{' '}
-          G
-        </span>
-      );
-    },
-  },
+  // {
+  //   key: 'loss',
+  //   header: 'Loss (G)',
+  //   colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+  //   render: (item) => {
+  //     if (hasMeltingStatus(item)) {
+  //       return null;
+  //     }
+  //     return (
+  //       <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+  //         {formatNumberDisplay(
+  //           item.loss !== undefined && item.loss !== null
+  //             ? item.loss
+  //             : Math.max(
+  //               0,
+  //               Math.round(
+  //                 ((item.chainReceived || item.chainWeight || 0) -
+  //                   (item.powderReceived || 0) -
+  //                   (item.scrap || 0)) *
+  //                 1000,
+  //               ) / 1000,
+  //             ),
+  //         )}{' '}
+  //         G
+  //       </span>
+  //     );
+  //   },
+  // },
   {
     key: 'timeTaken',
     header: 'Gold Aging',
