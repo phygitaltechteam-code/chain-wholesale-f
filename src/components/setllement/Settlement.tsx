@@ -700,24 +700,23 @@ const Settlement: React.FC = () => {
       const isGive = settlementDetail.settlementType === 'give';
       const receiptDataToPrint = isGive
         ? {
-            clientName: settlementDetail.clientName,
-            phoneNumber: settlementDetail.phoneNumber,
-            address: settlementDetail.address,
-            transactionType: 'give' as const,
-            amount: settlementDetail.settlementAmount,
-            previousBalance: settlementDetail.pendingBalance,
-            newBalance:
-              settlementDetail.pendingBalance + settlementDetail.settlementAmount,
-            remark: settlementDetail.remark || 'Settlement (Given)',
-            dateTime: new Date().toLocaleDateString('en-IN', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true,
-            }),
-          }
+          clientName: settlementDetail.clientName,
+          phoneNumber: settlementDetail.phoneNumber,
+          address: settlementDetail.address,
+          transactionType: 'give' as const,
+          amount: settlementDetail.settlementAmount,
+          previousBalance: settlementDetail.pendingBalance,
+          newBalance: settlementDetail.pendingBalance + settlementDetail.settlementAmount,
+          remark: settlementDetail.remark || 'Settlement (Given)',
+          dateTime: new Date().toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+          }),
+        }
         : null;
 
       await submitSettlementMutation.mutateAsync(settlementData);
@@ -1017,8 +1016,8 @@ const Settlement: React.FC = () => {
                   }, 50);
                 }}
                 className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'receive'
-                    ? 'border-[#785600] bg-[#785600] text-white'
-                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                  ? 'border-[#785600] bg-[#785600] text-white'
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                   }`}
               >
                 <Minus className="h-4 w-4" />
@@ -1037,8 +1036,8 @@ const Settlement: React.FC = () => {
                   }, 50);
                 }}
                 className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'give'
-                    ? 'border-[#785600] bg-[#785600] text-white'
-                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                  ? 'border-[#785600] bg-[#785600] text-white'
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                   }`}
               >
                 <Plus className="h-4 w-4" />

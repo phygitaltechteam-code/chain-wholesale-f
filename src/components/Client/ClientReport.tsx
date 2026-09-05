@@ -316,11 +316,19 @@ export default function ClientReport() {
     const clientName = currentClientName || 'Client';
     const phoneNumber = currentClient.phoneNumber || '';
     const address = currentClient.address || '';
+    const prevDue = Number(
+      currentClient.openingBalance ??
+        currentClient.goldBalance ??
+        currentClient.balance ??
+        0,
+    );
 
     const totalWeight =
       rawItems.length > 0
-        ? rawItems.reduce((acc, it) => acc + (Number(it.weight) || 0), 0)
+        ? Math.abs(rawItems.reduce((acc, it) => acc + (Number(it.weight) || 0), 0))
         : Math.abs(entry.wt || entry.chainWt || entry.goldWt || 0);
+
+    const newDue = Number((prevDue + totalWeight).toFixed(3));
 
     printClientReceipt(
       {
@@ -328,8 +336,10 @@ export default function ClientReport() {
         phoneNumber,
         address,
         billNumber: entry.billNo || undefined,
-        transactionType: entry.isGold && (entry.remark || '').toLowerCase().includes('rec') ? 'receive' : 'give',
+        transactionType: 'give',
         amount: totalWeight,
+        previousBalance: prevDue,
+        newBalance: newDue,
         dateTime: entry.dateTime,
       },
       getpdfheaderdata,
