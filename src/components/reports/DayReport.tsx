@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Printer, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useGetDayReport, DayReportData } from '@/lib/api/dayreport';
+import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
 
 // ======================================================
 // HELPER FUNCTIONS
@@ -53,7 +54,7 @@ export interface BillItemDetail {
 
 export interface LossItemDetail {
     id: string;
-    particular: string;
+    processName: string;
     loss: number;
     createdAt?: string;
 }
@@ -86,9 +87,18 @@ const DayReport: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedProcesses, setExpandedProcesses] = useState<Set<string>>(new Set());
     const [expandedClientDue, setExpandedClientDue] = useState<Set<string>>(new Set());
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-    // Single API call for all Day Report data
-    const { data: apiResponse, isLoading: reportLoading } = useGetDayReport();
+    const formattedDateParam = useMemo(() => {
+        if (!selectedDate) return null;
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }, [selectedDate]);
+
+    // Single API call for all Day Report data with date parameter
+    const { data: apiResponse, isLoading: reportLoading } = useGetDayReport(formattedDateParam);
 
     // Safely extract raw report data
     const reportData: DayReportData | null = useMemo(() => {
@@ -305,7 +315,7 @@ const DayReport: React.FC = () => {
 
         return rawLoss.map((item: any, idx: number) => {
             const particularStr =
-                item.particular ||
+                item.processName ||
                 (typeof item.item === 'object' ? item.item?.name : item.item) ||
                 item.itemName ||
                 item.name ||
@@ -314,7 +324,7 @@ const DayReport: React.FC = () => {
 
             return {
                 id: item.id || `loss-${idx}`,
-                particular: particularStr,
+                processName: particularStr,
                 loss: toNumber(item.loss ?? item.lossWeight ?? item.weight ?? 0),
                 createdAt: item.createdAt,
             };
@@ -371,12 +381,17 @@ const DayReport: React.FC = () => {
     const billsList: BillItemDetail[] = useMemo(() => {
         if (!reportData?.bills || !Array.isArray(reportData.bills)) return [];
         return reportData.bills.map((b: any, idx: number) => {
-            const items = Array.isArray(b.items) ? b.items : [];
-            const itemDescriptions = items.length > 0
-                ? items.map((it: any) => {
-                    const name = it.itemName || it.item || it.name || '-';
-                    const size = it.size && it.size !== '-' ? ` (${it.size})` : '';
-                    const purity = it.purity !== undefined && it.purity !== null ? ` (${it.purity}%)` : '';
+            const rawItems = Array.isArray(b.items) && b.items.length > 0
+                ? b.items
+                : (b.item || b.itemName || b.name ? [b] : []);
+
+            const itemDescriptions = rawItems.length > 0
+                ? rawItems.map((it: any) => {
+                    const name = (typeof it.item === 'object' ? it.item?.name : it.item) || it.itemName || it.name || '-';
+                    const sizeStr = typeof it.size === 'object' ? it.size?.size : it.size;
+                    const size = sizeStr && sizeStr !== '-' ? ` (${sizeStr})` : '';
+                    const purityVal = it.purity !== undefined && it.purity !== null && it.purity !== '' ? it.purity : null;
+                    const purity = purityVal !== null ? ` (${purityVal}%)` : '';
                     return `${name}${size}${purity}`;
                 }).join(', ')
                 : '-';
@@ -384,12 +399,12 @@ const DayReport: React.FC = () => {
             return {
                 id: b.id || `bill-${idx}`,
                 billNumber: b.billNumber || `BILL-${idx + 1}`,
-                clientName: b.clientName || '-',
+                clientName: (typeof b.client === 'object' ? (b.client?.fullName || b.client?.name) : b.clientName) || b.name || '-',
                 itemSummary: itemDescriptions,
-                totalWeight: toNumber(b.totalWeight ?? b.grossweight ?? 0),
+                totalWeight: toNumber(b.totalWeight ?? b.grossweight ?? b.weight ?? 0),
                 customerWeight: toNumber(b.customerWeight ?? 0),
-                remainingWeight: toNumber(b.remainingWeight ?? b.fineWeight ?? 0),
-                items,
+                remainingWeight: toNumber(b.remainingWeight ?? b.fineWeight ?? b.fineweight ?? 0),
+                items: rawItems,
             };
         });
     }, [reportData?.bills]);
@@ -439,7 +454,7 @@ const DayReport: React.FC = () => {
         const term = searchTerm.trim().toLowerCase();
         if (!term) return todayLossItems;
         return todayLossItems.filter((l) =>
-            l.particular.toLowerCase().includes(term) ||
+            (l.processName || (l as any).particular || '').toLowerCase().includes(term) ||
             l.loss.toString().includes(term)
         );
     }, [todayLossItems, searchTerm]);
@@ -536,11 +551,22 @@ const DayReport: React.FC = () => {
                             Daily Report
                         </h1>
                         <p className="text-xs text-[#4f4535] dark:text-slate-400">
-                            {reportData?.date ? new Date(reportData.date).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                            {selectedDate.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         </p>
                     </div>
 
                     <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+                        <GenericDatePicker
+                            id="day-report-date-picker"
+                            initialDate={selectedDate}
+                            onDateChange={(dates) => {
+                                if (dates && dates[0]) {
+                                    setSelectedDate(dates[0]);
+                                }
+                            }}
+                            className="w-32 sm:w-36 md:w-40"
+                        />
+
                         <div className="relative w-full sm:w-56 md:w-64">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f4535]" />
                             <input
@@ -669,13 +695,13 @@ const DayReport: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* 2. MIDDLE COLUMN - Due & Loss & Bills */}
+                    {/* 2. MIDDLE COLUMN - Customer Due & Bills & Loss */}
                     <div className="flex flex-col gap-4">
-                        {/* TODAY'S DUE - Collapsible like Process */}
+                        {/* CUSTOMER TODAY'S DUE */}
                         <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
                             <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
                                 <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
-                                    Today's Due
+                                  Customer Today's Due
                                 </span>
 
                             </div>
@@ -717,11 +743,6 @@ const DayReport: React.FC = () => {
                                                             <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
                                                                 <div className="flex items-center gap-2">
                                                                     <span>{client.clientName}</span>
-                                                                    {/* {client.count > 1 && (
-                                                                        <span className="rounded-full bg-[#785600]/10 px-2 py-0.5 text-[10px] font-bold text-[#785600] dark:bg-amber-400/20 dark:text-amber-300">
-                                                                            {client.count}
-                                                                        </span>
-                                                                    )} */}
                                                                 </div>
                                                             </td>
                                                             <td className="px-3 py-2.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
@@ -770,6 +791,78 @@ const DayReport: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* TODAY'S BILLS - Placed after Customer Due */}
+                        <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
+                            <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
+                                <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
+                                    Today's Bills
+                                </span>
+                            </div>
+                            <div className="overflow-x-auto flex-1 flex flex-col">
+                                <table className="w-full text-left text-xs">
+                                    <thead>
+                                        <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                            <th className="w-7 px-2 py-2.5 text-center"></th>
+                                            <th className="px-3 py-2.5">Bill / Client / Items</th>
+                                            <th className="px-3 py-2.5 text-right">Total (G)</th>
+                                            <th className="px-3 py-2.5 text-right">Remaining (G)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
+                                        {filteredBills.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={4} className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400">
+                                                    No bills records found.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filteredBills.map((b, idx) => (
+                                                <tr key={b.id || idx} className="hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                                                    <td className="px-2 py-2.5 text-center text-[#817563] dark:text-slate-400">
+                                                        {idx + 1}
+                                                    </td>
+                                                    <td className="px-3 py-2.5">
+                                                        <div className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                                                            {b.billNumber}
+                                                        </div>
+                                                        {b.clientName && b.clientName !== '-' && (
+                                                            <div className="text-[11px] font-semibold text-[#785600] dark:text-amber-400">
+                                                                {b.clientName}
+                                                            </div>
+                                                        )}
+                                                        {b.itemSummary && b.itemSummary !== '-' && (
+                                                            <div className="text-[11px] text-[#4f4535] dark:text-slate-400">
+                                                                {b.itemSummary}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-slate-100">
+                                                        {formatNumberDisplay(b.totalWeight)}
+                                                    </td>
+                                                    <td className="px-3 py-2.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
+                                                        {formatNumberDisplay(b.remainingWeight)}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 dark:bg-slate-800/70 font-bold">
+                                            <td colSpan={2} className="px-3 py-2.5 text-[#1a1c1b] dark:text-white">
+                                                Total Bills
+                                            </td>
+                                            <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-white">
+                                                {formatNumberDisplay(summary.totalBillsWeight)}
+                                            </td>
+                                            <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
+                                                {formatNumberDisplay(summary.totalBillsRemainingWeight)}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
                         {/* TODAY'S LOSS */}
                         <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
                             <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
@@ -801,7 +894,7 @@ const DayReport: React.FC = () => {
                                                         {idx + 1}
                                                     </td>
                                                     <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
-                                                        {l.particular}
+                                                        {l.processName}
                                                     </td>
                                                     <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
                                                         {formatNumberDisplay(l.loss)}
@@ -817,75 +910,6 @@ const DayReport: React.FC = () => {
                                             </td>
                                             <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
                                                 {formatNumberDisplay(lossTotals.total)}
-                                            </td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* TODAY'S BILLS */}
-                        <div className="flex flex-col rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
-                            <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-                                <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
-                                    Today's Bills
-                                </span>
-
-                            </div>
-                            <div className="overflow-x-auto flex-1 flex flex-col">
-                                <table className="w-full text-left text-xs">
-                                    <thead>
-                                        <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                            <th className="w-7 px-2 py-2.5 text-center"></th>
-                                            <th className="px-3 py-2.5">Bill / Client</th>
-                                            <th className="px-3 py-2.5 text-right">Total (G)</th>
-                                            <th className="px-3 py-2.5 text-right">Remaining (G)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
-                                        {filteredBills.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={4} className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400">
-                                                    No bills records found.
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            filteredBills.map((b, idx) => (
-                                                <tr key={b.id || idx} className="hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                                                    <td className="px-2 py-2.5 text-center text-[#817563] dark:text-slate-400">
-                                                        {idx + 1}
-                                                    </td>
-                                                    <td className="px-3 py-2.5">
-                                                        <div className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                                                            {b.billNumber}
-                                                        </div>
-                                                        {/* <div className="text-[10px] text-[#4f4535] dark:text-slate-400">
-                                                            {b.clientName}
-                                                        </div>
-                                                        <div className="text-[10px] text-[#4f4535] dark:text-slate-400 truncate max-w-[150px]">
-                                                            {b.itemSummary}
-                                                        </div> */}
-                                                    </td>
-                                                    <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-slate-100">
-                                                        {formatNumberDisplay(b.totalWeight)}
-                                                    </td>
-                                                    <td className="px-3 py-2.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
-                                                        {formatNumberDisplay(b.remainingWeight)}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                    <tfoot>
-                                        <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 dark:bg-slate-800/70 font-bold">
-                                            <td colSpan={2} className="px-3 py-2.5 text-[#1a1c1b] dark:text-white">
-                                                Total Bills
-                                            </td>
-                                            <td className="px-3 py-2.5 text-right font-mono text-[#1a1c1b] dark:text-white">
-                                                {formatNumberDisplay(summary.totalBillsWeight)}
-                                            </td>
-                                            <td className="px-3 py-2.5 text-right font-mono text-[#785600] dark:text-amber-400">
-                                                {formatNumberDisplay(summary.totalBillsRemainingWeight)}
                                             </td>
                                         </tr>
                                     </tfoot>

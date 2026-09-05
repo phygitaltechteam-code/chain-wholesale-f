@@ -164,9 +164,11 @@ export interface DayReportResponse {
     message?: string;
 }
 
-export const getDayReportApi = async () => {
+export const getDayReportApi = async (date?: string | null) => {
     try {
-        const response = await api.get('/admin/stock/today');
+        const params: Record<string, string> = {};
+        if (date) params.date = date;
+        const response = await api.get('/admin/stock/today', { params });
         return response.data;
     } catch (error) {
         console.error('Error in getDayReportApi:', error);
@@ -174,10 +176,10 @@ export const getDayReportApi = async () => {
     }
 };
 
-export const useGetDayReport = () => {
+export const useGetDayReport = (date?: string | null) => {
     return useQuery({
-        queryKey: ['dayReport'],
-        queryFn: () => getDayReportApi(),
+        queryKey: ['dayReport', date],
+        queryFn: () => getDayReportApi(date),
         staleTime: 0,
         gcTime: 0,
         refetchOnMount: 'always',

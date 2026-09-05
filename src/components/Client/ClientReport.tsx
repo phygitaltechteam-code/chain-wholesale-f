@@ -7,6 +7,8 @@ import 'flatpickr/dist/flatpickr.min.css';
 import { useGetClientReport } from '@/lib/api/reportapi';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
+import { useGetClients } from '@/lib/api/client';
+import { printClientReceipt } from '@/utils/printClientReceipt';
 
 const formatIndianDate = (date: Date) =>
   date.toLocaleDateString('en-IN', {
@@ -47,6 +49,7 @@ interface ClientReportEntry {
   groupId: string;
   isFirstInGroup: boolean;
   groupRowSpan: number;
+  rawGroupItems?: ApiDataItem[];
 }
 
 interface ApiResponse {
@@ -94,6 +97,7 @@ export default function ClientReport() {
   const [searchTerm, setSearchTerm] = useState('');
   const [reportData, setReportData] = useState<ClientReportEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const { data: clientsData } = useGetClients();
   const getDefaultWeekRange = () => {
     const now = new Date();
     const day = now.getDay();
@@ -245,6 +249,7 @@ export default function ClientReport() {
           groupId: `group-${groupId}`,
           isFirstInGroup: isFirstInBill,
           groupRowSpan,
+          rawGroupItems: isFirstInBill ? items : undefined,
         });
       });
     });
@@ -296,6 +301,39 @@ export default function ClientReport() {
   // Get remark color - now returns plain style
   const getRemarkStyle = (remark: string) => {
     return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+  };
+
+  const clientList = Array.isArray(clientsData?.data)
+    ? clientsData.data
+    : Array.isArray(clientsData)
+      ? clientsData
+      : [];
+  const currentClient = clientList.find((c: any) => c.id === id) || {};
+  const currentClientName = currentClient.fullName || currentClient.name || '';
+
+  const handleOpenReceipt = (entry: ClientReportEntry) => {
+    const rawItems = entry.rawGroupItems || [];
+    const clientName = currentClientName || 'Client';
+    const phoneNumber = currentClient.phoneNumber || '';
+    const address = currentClient.address || '';
+
+    const totalWeight =
+      rawItems.length > 0
+        ? rawItems.reduce((acc, it) => acc + (Number(it.weight) || 0), 0)
+        : Math.abs(entry.wt || entry.chainWt || entry.goldWt || 0);
+
+    printClientReceipt(
+      {
+        clientName,
+        phoneNumber,
+        address,
+        billNumber: entry.billNo || undefined,
+        transactionType: entry.isGold && (entry.remark || '').toLowerCase().includes('rec') ? 'receive' : 'give',
+        amount: totalWeight,
+        dateTime: entry.dateTime,
+      },
+      getpdfheaderdata,
+    );
   };
 
   // Handle From Date Change
@@ -456,9 +494,11 @@ export default function ClientReport() {
           </div>
 
             <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
-                <div style="flex:1;"></div>
+                <div style="font-size:11px;color:#000;font-weight:bold;flex:1;text-align:left;">
+                    ${currentClientName ? `Client: <span style="font-size:12px;font-weight:bold;">${currentClientName}</span>` : ''}
+                </div>
                 <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
-                    Client Report.
+                    Client Report
                 </h2>
                 <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
                     From: ${formatIndianDate(fromDate)} &nbsp; To: ${formatIndianDate(toDate)}
@@ -622,7 +662,7 @@ export default function ClientReport() {
             </button>
             <div className="h-5 w-px flex-shrink-0 bg-[#d3c4af]/30 dark:bg-slate-600" />
             <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
-              Client Report
+              Client Report {currentClientName ? `- ${currentClientName}` : ''}
             </h2>
           </div>
 
@@ -728,6 +768,12 @@ export default function ClientReport() {
                     >
                       Gold WT (G)
                     </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white"
+                    >
+                      Action
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f4f4f2] dark:divide-slate-700">
@@ -826,6 +872,37 @@ export default function ClientReport() {
                             </span>
                           )}
                         </td>
+
+                        {isFirstRowOfGroup && (
+                          <td
+                            rowSpan={entry.groupRowSpan}
+                            className="whitespace-nowrap border-l border-[#f4f4f2] px-3 py-3 text-center align-middle dark:border-slate-700"
+                          >
+                            {(() => {
+                              const groupWeight =
+                                entry.rawGroupItems && entry.rawGroupItems.length > 0
+                                  ? entry.rawGroupItems.reduce(
+                                      (acc, it) => acc + (Number(it.weight) || 0),
+                                      0,
+                                    )
+                                  : (entry.wt !== undefined && entry.wt !== null ? entry.wt : (entry.chainWt ?? entry.goldWt ?? 0));
+                              const isGiven = groupWeight < 0;
+
+                              if (!isGiven) return null;
+
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenReceipt(entry)}
+                                  title="Print Give Receipt"
+                                  className="inline-flex items-center justify-center rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-amber-400 dark:hover:bg-amber-400/20"
+                                >
+                                  <Printer className="h-4 w-4" />
+                                </button>
+                              );
+                            })()}
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
