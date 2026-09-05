@@ -858,7 +858,7 @@ const SolderingDept: React.FC = () => {
                   {card.size} ({card.purity}%)
                 </span>
                 <span className="font-mono text-base font-bold text-black dark:text-white">
-                  {formatNumberDisplay(card.totalWeight)} G
+                  {(Number(card.totalWeight) || 0).toFixed(3)} G
                 </span>
               </div>
             ))}

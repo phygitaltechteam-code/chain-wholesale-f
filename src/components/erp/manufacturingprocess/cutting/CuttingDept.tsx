@@ -624,7 +624,7 @@ const CuttingDept: React.FC = () => {
                     </span>
                   </div>
                   <span className="font-mono text-base font-bold text-black dark:text-white">
-                    {formatNumberDisplay(scrap.weight)} G
+                    {(Number(scrap.weight) || 0).toFixed(3)} G
                   </span>
                 </button>
               );
