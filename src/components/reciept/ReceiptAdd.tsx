@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   X,
   Save,
@@ -150,7 +150,14 @@ const ReceiptAdd: React.FC = () => {
 
   // Fetch data from API
   const { data: clients = [], refetch: refetchClients } = useGetClients();
-  const { data: items = [] } = useGetItems();
+  const { data: rawItems = [] } = useGetItems();
+  const items = useMemo(
+    () =>
+      (Array.isArray(rawItems) ? rawItems : []).filter(
+        (item: any) => item?.name?.trim().toLowerCase() !== 'gold',
+      ),
+    [rawItems],
+  );
   const { data: sizes = [] } = useGetSizes();
   const createClient = useCreateClient();
 

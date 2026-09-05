@@ -56,7 +56,7 @@ interface ReceiptFormData {
   date: string;
   items: ReceiptItem[];
   customerWeight: number | string;
-   remainingWeight: number | string;
+  remainingWeight: number | string;
   totalFine: number | string;
   goldInfo: {
     karat: string;
@@ -157,7 +157,14 @@ const BillEdit: React.FC = () => {
   } | null>(null);
 
   const { data: clients = [], refetch: refetchClients } = useGetClients();
-  const { data: items = [] } = useGetItems();
+  const { data: rawItems = [] } = useGetItems();
+  const items = useMemo(
+    () =>
+      (Array.isArray(rawItems) ? rawItems : []).filter(
+        (item: any) => item?.name?.trim().toLowerCase() !== 'gold',
+      ),
+    [rawItems],
+  );
   const { data: sizes = [] } = useGetSizes();
   const createClient = useCreateClient();
 
@@ -735,9 +742,26 @@ const BillEdit: React.FC = () => {
     return Math.round(openingBalance * 1000) / 1000;
   };
 
+  const currentClient = useMemo(() => {
+    const list = Array.isArray(clients) ? clients : [];
+    const fromList = list.find(
+      (c: any) => String(c.id) === String(formData.clientId),
+    );
+    if (fromList) return fromList;
+    const billData = billResponse?.data || billResponse?.bill || billResponse;
+    if (
+      billData?.client &&
+      (!formData.clientId ||
+        String(billData.client.id) === String(formData.clientId) ||
+        String(billData.clientID) === String(formData.clientId))
+    ) {
+      return billData.client;
+    }
+    return null;
+  }, [clients, formData.clientId, billResponse]);
+
   const calculateRemainingWeight = () => {
-    const client = clients.find((c: any) => c.id === formData.clientId);
-    const dueBalance = getClientDueBalance(client);
+    const dueBalance = getClientDueBalance(currentClient);
     const advance = Number(formData.customerWeight) || 0;
     const totalFineWeight =
       formData.totalFine !== undefined && formData.totalFine !== ''
@@ -761,10 +785,7 @@ const BillEdit: React.FC = () => {
     return Number(Math.abs(value).toFixed(2)).toString();
   };
   const handlePrintReceipt = (responseData?: any) => {
-    const client = clients.find(
-      (c: any) => String(c.id) === String(formData.clientId),
-    );
-    const clientDue = getClientDueBalance(client);
+    const clientDue = getClientDueBalance(currentClient);
 
     const now = new Date();
     const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours() % 12 || 12).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'pm' : 'am'}`;
@@ -772,32 +793,31 @@ const BillEdit: React.FC = () => {
     const advance =
       Number(
         responseData?.customerWeight ??
-          responseData?.receive ??
-          formData.customerWeight,
+        responseData?.receive ??
+        formData.customerWeight,
       ) || 0;
 
     const remaining =
       Number(
         responseData?.remainingWeight ??
-          responseData?.pending ??
-          savedRemaining ??
-          calculateRemainingWeight(),
+        responseData?.pending ??
+        calculateRemainingWeight(),
       ) || 0;
 
     const itemsList =
       Array.isArray(responseData?.items) &&
-      responseData.items.length > 0 &&
-      responseData.items[0]?.item
+        responseData.items.length > 0 &&
+        responseData.items[0]?.item
         ? responseData.items
         : formData.items.map((item) => ({
-            item: item.item || '-',
-            size: item.size || '-',
-            purity: Number(item.purity) || 0,
-            grossWeight: Number(item.grossWt) || 0,
-            srp: Number(item.srp) || 0,
-            finWt: Number(item.fineWt) || 0,
-            laborRate: Number(item.laborRate) || 0,
-          }));
+          item: item.item || '-',
+          size: item.size || '-',
+          purity: Number(item.purity) || 0,
+          grossWeight: Number(item.grossWt) || 0,
+          srp: Number(item.srp) || 0,
+          finWt: Number(item.fineWt) || 0,
+          laborRate: Number(item.laborRate) || 0,
+        }));
 
     const totalFineWt =
       Number(responseData?.totalFineWt ?? responseData?.totalFinWt) ||
@@ -1459,13 +1479,7 @@ const BillEdit: React.FC = () => {
                 Due Balance
               </span>
               <span className="font-mono text-sm font-semibold text-black dark:text-black">
-                {formatNumberThreeDecimals(
-                  getClientDueBalance(
-                    clients.find(
-                      (client: any) => client.id === formData.clientId,
-                    ),
-                  ),
-                )}{' '}
+                {formatNumberThreeDecimals(getClientDueBalance(currentClient))}{' '}
                 G
               </span>
             </div>
@@ -1476,7 +1490,7 @@ const BillEdit: React.FC = () => {
                 Remaining Balance
               </span>
               <span className="font-mono text-base font-bold text-black dark:text-black">
-                {formatNumberThreeDecimals(savedRemaining ?? 0)} G
+                {formatNumberThreeDecimals(calculateRemainingWeight())} G
               </span>
             </div>
           </div>
