@@ -38,6 +38,17 @@ const SKundaDept: React.FC = () => {
     return [monday, sunday];
   });
 
+  useEffect(() => {
+    const handleWeekCycleUpdate = () => {
+      const { monday, sunday } = getDefaultWeekRange();
+      setDateRange([monday, sunday]);
+    };
+    window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    return () => {
+      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    };
+  }, []);
+
   const isInitialMount = useRef(true);
 
   const {

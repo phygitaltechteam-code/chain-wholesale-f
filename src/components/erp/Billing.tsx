@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useGetProfileData, useActivateKey } from '@/lib/api/profile';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 
 interface ReceiptItem {
   id: string;
@@ -176,25 +177,14 @@ const Billing: React.FC = () => {
     return `${year}-${month}-${day}`;
   };
 
-  // Default date range: current Monday -> current Sunday
+  // Default date range based on admin week configuration
   const getCurrentWeekRange = () => {
-    const today = new Date();
-    const day = today.getDay(); // 0 = Sunday, 1 = Monday, ...
-    const diffToMonday = day === 0 ? -6 : 1 - day;
-
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
+    const { fromDate, toDate, fromStr, toStr } = getCurrentAppWeekRange();
     return {
-      monday,
-      sunday,
-      fromStr: formatToLocalDateString(monday),
-      toStr: formatToLocalDateString(sunday),
+      monday: fromDate,
+      sunday: toDate,
+      fromStr,
+      toStr,
     };
   };
 
@@ -220,6 +210,14 @@ const Billing: React.FC = () => {
 
   useEffect(() => {
     setDefaultDateRange();
+
+    const handleWeekCycleUpdate = () => {
+      setDefaultDateRange();
+    };
+    window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    return () => {
+      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    };
   }, []);
 
   const setDefaultDateRange = () => {

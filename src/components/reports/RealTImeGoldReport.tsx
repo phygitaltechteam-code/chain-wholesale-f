@@ -3,6 +3,7 @@ import { Search, Printer, Loader2, ChevronDown, ChevronRight, Layers } from 'luc
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useGetRealTimeGold } from '@/lib/api/realtimegold';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 
 // ======================================================
 // INTERFACES
@@ -118,19 +119,8 @@ const calculateAvgPurity = (gross: number, fine: number): string => {
 };
 
 const getDefaultWeekRange = () => {
-    const now = new Date();
-    const currentDay = now.getDay();
-    const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
-    return { monday, sunday };
+    const { fromDate, toDate } = getCurrentAppWeekRange();
+    return { monday: fromDate, sunday: toDate };
 };
 
 const formatDateForDisplay = (date: Date | null) => {
@@ -331,9 +321,20 @@ const RealTimeGoldReport: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-    // Default dates
     const [fromDate, setFromDate] = useState<Date | null>(() => getDefaultWeekRange().monday);
     const [toDate, setToDate] = useState<Date | null>(() => getDefaultWeekRange().sunday);
+
+    useEffect(() => {
+        const handleWeekCycleUpdate = () => {
+            const { monday, sunday } = getDefaultWeekRange();
+            setFromDate(monday);
+            setToDate(sunday);
+        };
+        window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+        return () => {
+            window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+        };
+    }, []);
 
     const fromDateStr = useMemo(() => formatDateForApi(fromDate), [fromDate]);
     const toDateStr = useMemo(() => formatDateForApi(toDate), [toDate]);

@@ -7,6 +7,7 @@ import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import { useGetJoint, useGetJointHistory, useSubmitJoint } from '@/lib/api/joint';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 import { useAddJointMelting } from '@/lib/api/processmelting';
 
@@ -29,24 +30,25 @@ const JointDept: React.FC = () => {
   const [meltingLoadingIds, setMeltingLoadingIds] = useState<Set<string>>(new Set());
 
   const getDefaultWeekRange = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now);
-    monday.setDate(diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
-    return { monday, sunday };
+    const { fromDate, toDate } = getCurrentAppWeekRange();
+    return { monday: fromDate, sunday: toDate };
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
     const { monday, sunday } = getDefaultWeekRange();
     return [monday, sunday];
   });
+
+  useEffect(() => {
+    const handleWeekCycleUpdate = () => {
+      const { monday, sunday } = getDefaultWeekRange();
+      setDateRange([monday, sunday]);
+    };
+    window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    return () => {
+      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    };
+  }, []);
 
   const isInitialMount = useRef(true);
 

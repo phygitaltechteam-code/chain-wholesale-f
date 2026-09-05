@@ -28,6 +28,7 @@ import { useGetStock } from '@/lib/api/stock';
 import { useGetItems } from '@/lib/api/items';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 
 import {
@@ -65,21 +66,22 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   const [stockErrorMessage, setStockErrorMessage] = useState('');
 
 
-  const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const now = new Date();
-    const day = now.getDay();
-    const diffToMonday = day === 0 ? -6 : 1 - day;
+  const getDefaultWeekRange = () => {
+    const { fromDate, toDate } = getCurrentAppWeekRange();
+    return [fromDate, toDate];
+  };
 
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
+  const [dateRange, setDateRange] = useState<Date[]>(() => getDefaultWeekRange());
 
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
-    return [monday, sunday];
-  });
+  useEffect(() => {
+    const handleWeekCycleUpdate = () => {
+      setDateRange(getDefaultWeekRange());
+    };
+    window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    return () => {
+      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    };
+  }, []);
 
   const [modalCards, setModalCards] = useState<TarCardForm[]>([
     createNewCard(),

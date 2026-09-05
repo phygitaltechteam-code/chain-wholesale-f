@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import flatpickr from 'flatpickr';
 import {Calendar, X} from 'lucide-react';
 import 'flatpickr/dist/flatpickr.min.css';
+import { getSavedWeekCycle } from '@/utils/weekRangeUtils';
 
 interface GenericWeeklyDatePickerProps {
   id: string;
@@ -75,11 +76,13 @@ const GenericWeeklyDatePicker: React.FC<GenericWeeklyDatePickerProps> = ({
   useEffect(() => {
     if (!inputRef.current) return;
 
+    const { startDay } = getSavedWeekCycle();
+
     const fp = flatpickr(inputRef.current, {
       mode: 'single',
       dateFormat: 'd/m/Y',
       locale: {
-        firstDayOfWeek: 1, // Start week on Monday
+        firstDayOfWeek: startDay as any, // Start week on configured day (0 for Sun, 1 for Mon, etc.)
       },
       onChange: (dates) => {
         if (dates && dates.length > 0) {
@@ -112,7 +115,15 @@ const GenericWeeklyDatePicker: React.FC<GenericWeeklyDatePickerProps> = ({
       fp.setDate(selectedDate, false);
     }
 
+    const handleCycleChange = (e: any) => {
+      if (fp && e.detail && typeof e.detail.startDay === 'number') {
+        fp.set('locale', { firstDayOfWeek: e.detail.startDay });
+      }
+    };
+    window.addEventListener('app_week_cycle_changed', handleCycleChange);
+
     return () => {
+      window.removeEventListener('app_week_cycle_changed', handleCycleChange);
       fp.destroy();
       flatpickrInstanceRef.current = null;
     };

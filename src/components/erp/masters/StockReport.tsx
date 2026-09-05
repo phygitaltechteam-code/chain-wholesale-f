@@ -10,6 +10,7 @@ import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 
 interface StockReportEntry {
   id: string;
@@ -66,18 +67,8 @@ export default function StockReport() {
   const d = routeParams?.d || rawParams?.d || rawParams?.id || rawParams?.$d || '';
   const [searchTerm, setSearchTerm] = useState('');
   const getDefaultWeekRange = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now);
-    monday.setDate(diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
-    return { monday, sunday };
+    const { fromDate, toDate } = getCurrentAppWeekRange();
+    return { monday: fromDate, sunday: toDate };
   };
 
   const [fromDate, setFromDate] = useState<Date | null>(
@@ -86,6 +77,18 @@ export default function StockReport() {
   const [toDate, setToDate] = useState<Date | null>(
     () => getDefaultWeekRange().sunday,
   );
+
+  useEffect(() => {
+    const handleWeekCycleUpdate = () => {
+      const { monday, sunday } = getDefaultWeekRange();
+      setFromDate(monday);
+      setToDate(sunday);
+    };
+    window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    return () => {
+      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    };
+  }, []);
   const printRef = useRef<HTMLDivElement>(null);
   const { data: stockData, isLoading, isError, refetch } = useGetStockReport(d);
 
@@ -245,9 +248,9 @@ export default function StockReport() {
     }
   };
 
-  // Reset to current Monday -> Sunday
+  // Reset to configured week
   const handleResetDates = () => {
-    const { monday, sunday } = getCurrentWeekRange();
+    const { monday, sunday } = getDefaultWeekRange();
     setFromDate(monday);
     setToDate(sunday);
   };

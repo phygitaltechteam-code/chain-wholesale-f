@@ -4,6 +4,7 @@ import { ArrowLeft, Search, Printer, ChevronLeft, ChevronRight } from 'lucide-re
 import { useGetManufacturingData } from '@/lib/api/reportapi';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 
 interface ManufacturingItem {
   id: string;
@@ -75,18 +76,8 @@ export default function ManufacturingReport() {
   const groupsPerPage = 10;
 
   const getDefaultWeekRange = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now);
-    monday.setDate(diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
-    return { monday, sunday };
+    const { fromDate, toDate } = getCurrentAppWeekRange();
+    return { monday: fromDate, sunday: toDate };
   };
 
   const [fromDate, setFromDate] = useState<Date | null>(
@@ -95,6 +86,18 @@ export default function ManufacturingReport() {
   const [toDate, setToDate] = useState<Date | null>(
     () => getDefaultWeekRange().sunday,
   );
+
+  useEffect(() => {
+    const handleWeekCycleUpdate = () => {
+      const { monday, sunday } = getDefaultWeekRange();
+      setFromDate(monday);
+      setToDate(sunday);
+    };
+    window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    return () => {
+      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    };
+  }, []);
   const {
     data: manufacturingData,
     isLoading,

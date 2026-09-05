@@ -7,6 +7,7 @@ import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useGetLossReport } from '@/lib/api/lossreport';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 import React from 'react';
 
 // ======================================================
@@ -44,18 +45,8 @@ interface ApiDataItem {
 // HELPER FUNCTIONS
 // ======================================================
 const getDefaultWeekRange = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now);
-    monday.setDate(diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
-    return { monday, sunday };
+    const { fromDate, toDate } = getCurrentAppWeekRange();
+    return { monday: fromDate, sunday: toDate };
 };
 
 const formatDate = (dateString: string) => {
@@ -115,6 +106,20 @@ const LossReport: React.FC = () => {
     });
 
     const { data: lossReportData, isLoading, isError, refetch } = useGetLossReport();
+
+    // Listen for week cycle setting updates
+    useEffect(() => {
+        const handleWeekCycleUpdate = () => {
+            const { monday, sunday } = getDefaultWeekRange();
+            setDateRange([monday, sunday]);
+            setFromDate(monday);
+            setToDate(sunday);
+        };
+        window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+        return () => {
+            window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+        };
+    }, []);
 
     // Transform API data
     useEffect(() => {

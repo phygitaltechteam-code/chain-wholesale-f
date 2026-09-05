@@ -32,6 +32,7 @@ import { useGetHeader } from '@/lib/api/headerapi';
 import GenericInputField from '../Forms/Input/GenericInputField';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 import { useScaleFocus } from '@/lib/hooks/useScaleFocus';
 import { useNavigate } from '@tanstack/react-router';
 import AddClientModal from '../Client/AddClientModal';
@@ -142,26 +143,27 @@ const Settlement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [balanceFilter, setBalanceFilter] = useState<string>('all');
 
-  // Helper function to get week start (Monday 00:00) and end (Sunday 23:59:59)
+  // Helper function to get week start and end based on admin week setting
   const getDefaultWeekRange = () => {
-    const now = new Date();
-    const day = now.getDay(); // 0 = Sun, 1 = Mon, ...
-    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now);
-    monday.setDate(diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    sunday.setHours(23, 59, 59, 999);
-
-    return { monday, sunday };
+    const { fromDate, toDate } = getCurrentAppWeekRange();
+    return { monday: fromDate, sunday: toDate };
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
     const { monday, sunday } = getDefaultWeekRange();
     return [monday, sunday];
   });
+
+  useEffect(() => {
+    const handleWeekCycleUpdate = () => {
+      const { monday, sunday } = getDefaultWeekRange();
+      setDateRange([monday, sunday]);
+    };
+    window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    return () => {
+      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+    };
+  }, []);
 
   // ----------------------------------------------------
   // MODAL STATES

@@ -2,6 +2,7 @@ import React from 'react';
 import { Square, Flame } from 'lucide-react';
 import { Column } from '@/components/Forms/Table/GenericTable';
 import toast from 'react-hot-toast';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 
 // ======================================================
 // Interfaces
@@ -61,18 +62,8 @@ export const hasMeltingStatus = (item: any): boolean => {
 };
 
 export const getDefaultWeekRange = () => {
-  const now = new Date();
-  const day = now.getDay();
-  const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now);
-  monday.setDate(diffToMonday);
-  monday.setHours(0, 0, 0, 0);
-
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
-
-  return { monday, sunday };
+  const { fromDate, toDate } = getCurrentAppWeekRange();
+  return { monday: fromDate, sunday: toDate };
 };
 
 export const formatDate = (dateString: string) => {

@@ -3,6 +3,7 @@ import { Column } from '@/components/Forms/Table/GenericTable';
 import { PackageCheck } from 'lucide-react';
 import React from 'react';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 
 export interface MeltingRow {
   id: string;
@@ -32,19 +33,8 @@ export interface ScrapCardData {
 }
 
 export const getCurrentWeekRange = () => {
-  const today = new Date();
-  const day = today.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-
-  const monday = new Date(today);
-  monday.setDate(today.getDate() + diffToMonday);
-  monday.setHours(0, 0, 0, 0);
-
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
-
-  return { monday, sunday };
+  const { fromDate, toDate } = getCurrentAppWeekRange();
+  return { monday: fromDate, sunday: toDate };
 };
 
 export const calculateExpectedFine = (grossWt: number, purity: number): number => {

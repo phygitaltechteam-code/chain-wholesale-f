@@ -2,23 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeft, Search, Printer, Calendar, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
-import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
+import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useGetStock } from '@/lib/api/stock';
 import { useGetLossReport } from '@/lib/api/lossreport';
 import { useGetStockLedgerReport, StockSummaryData, StockTableItem, StockMovementItem } from '@/lib/api/stockledger';
-
-// Helper to get current month range (1st of month to end of month)
-const getDefaultCurrentMonthRange = () => {
-  const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-  firstDay.setHours(0, 0, 0, 0);
-
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  lastDay.setHours(23, 59, 59, 999);
-
-  return { from: firstDay, to: lastDay };
-};
 
 const formatNumberDisplay = (value: unknown, decimals = 2): string => {
   if (value === null || value === undefined || value === '') return '0.00';
@@ -50,14 +39,18 @@ export default function StockLedgerReport() {
   const navigate = useNavigate();
   const getpdfheaderdata = useGetHeader();
 
-  // Date filters (Defaulted to current month)
-  const initialMonthRange = useMemo(() => getDefaultCurrentMonthRange(), []);
-  const [fromDate, setFromDate] = useState<Date | null>(initialMonthRange.from);
-  const [toDate, setToDate] = useState<Date | null>(initialMonthRange.to);
+  // Date filters (Defaulted to current app week range from admin settings)
+  const initialDateRange = useMemo(() => {
+    const range = getCurrentAppWeekRange();
+    return { from: range.fromDate, to: range.toDate };
+  }, []);
+
+  const [fromDate, setFromDate] = useState<Date | null>(initialDateRange.from);
+  const [toDate, setToDate] = useState<Date | null>(initialDateRange.to);
 
   // Applied date filters (triggered on "View Report" button click)
-  const [appliedFromDate, setAppliedFromDate] = useState<Date | null>(initialMonthRange.from);
-  const [appliedToDate, setAppliedToDate] = useState<Date | null>(initialMonthRange.to);
+  const [appliedFromDate, setAppliedFromDate] = useState<Date | null>(initialDateRange.from);
+  const [appliedToDate, setAppliedToDate] = useState<Date | null>(initialDateRange.to);
 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -1864,11 +1857,10 @@ export default function StockLedgerReport() {
               <span className="hidden text-xs font-bold uppercase text-[#785600] dark:text-[#b8860b] lg:inline">
                 From:
               </span>
-              <GenericWeeklyDatePicker
+              <GenericDatePicker
                 id="stock-ledger-from-date"
                 placeholder="From Date"
-                mode="from"
-                initialDates={fromDate ? [fromDate] : []}
+                initialDate={fromDate || undefined}
                 onDateChange={handleFromDateChange}
                 className="w-28 sm:w-32 md:w-36"
               />
@@ -1879,11 +1871,10 @@ export default function StockLedgerReport() {
               <span className="hidden text-xs font-bold uppercase text-[#785600] dark:text-[#b8860b] lg:inline">
                 To:
               </span>
-              <GenericWeeklyDatePicker
+              <GenericDatePicker
                 id="stock-ledger-to-date"
                 placeholder="To Date"
-                mode="to"
-                initialDates={toDate ? [toDate] : []}
+                initialDate={toDate || undefined}
                 onDateChange={handleToDateChange}
                 className="w-28 sm:w-32 md:w-36"
               />
