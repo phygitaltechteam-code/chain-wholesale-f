@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Save, Flame, TrendingUp, Box, Hammer, Scissors, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from './Forms/Buttons/GenericButton';
+import PageHeader from '@/components/Forms/Common/PageHeader';
 import {
   useGetProcessAlert,
   useSubmitProcessAlert,
@@ -29,18 +30,19 @@ export type ProcessTabId =
 interface ProcessTabConfig {
   id: ProcessTabId;
   label: string;
+  icon: React.ReactNode;
 }
 
 const STORAGE_KEY = 'chain_alert_management_settings_v2';
 
 const PROCESS_TABS: ProcessTabConfig[] = [
-  { id: 'melting', label: 'Melting' },
-  { id: 'tar', label: 'Tar' },
-  { id: 'box', label: 'Box' },
-  { id: 'soldering', label: 'Soldering' },
-  { id: 'joint', label: 'Joint' },
-  { id: 'cutting', label: 'Cutting' },
-  { id: 'skunda', label: 'S / Kunda' },
+  { id: 'melting', label: 'Melting', icon: <Flame className="h-4 w-4" /> },
+  { id: 'tar', label: 'Tar', icon: <TrendingUp className="h-4 w-4" /> },
+  { id: 'box', label: 'Box', icon: <Box className="h-4 w-4" /> },
+  { id: 'soldering', label: 'Soldering', icon: <Flame className="h-4 w-4" /> },
+  { id: 'joint', label: 'Joint', icon: <Hammer className="h-4 w-4" /> },
+  { id: 'cutting', label: 'Cutting', icon: <Scissors className="h-4 w-4" /> },
+  { id: 'skunda', label: 'S / Kunda', icon: <CheckCircle className="h-4 w-4" /> },
 ];
 
 const createDefaultRow = (grossWt: string = '10G'): AlertRuleRow => ({
@@ -83,10 +85,8 @@ export const AlertManagement: React.FC = () => {
     return getDefaultAlertData();
   });
 
-  // Query process alerts from network API on tab click
   const { data: serverAlerts, isLoading: isAlertsLoading } = useGetProcessAlert(activeProcess);
 
-  // Sync API response when received
   useEffect(() => {
     let list: any[] = [];
     if (Array.isArray(serverAlerts) && serverAlerts.length > 0) {
@@ -138,13 +138,11 @@ export const AlertManagement: React.FC = () => {
     }
   }, [serverAlerts, activeProcess]);
 
-  // Active rows for current tab (strictly 1 row initially unless user added more)
   const currentRows = alertData[activeProcess] || [createDefaultRow('10G')];
 
   const submitalert = useSubmitProcessAlert();
   const deleteAlertMutation = useDeleteProcessAlert();
 
-  // Update a single field in a row
   const handleFieldChange = (
     rowId: string,
     field: keyof Omit<AlertRuleRow, 'id'>,
@@ -164,7 +162,6 @@ export const AlertManagement: React.FC = () => {
     });
   };
 
-  // Add new row with Gross Wt default = 10G
   const handleAddRow = (index?: number) => {
     const newRow = createDefaultRow('10G');
     setAlertData((prev) => {
@@ -182,7 +179,6 @@ export const AlertManagement: React.FC = () => {
     toast.success('New row added');
   };
 
-  // Delete a row
   const handleDeleteRow = async (rowId: string) => {
     if (currentRows.length <= 1) {
       toast.error('At least one row is required.');
@@ -214,7 +210,6 @@ export const AlertManagement: React.FC = () => {
     toast.success('Row removed');
   };
 
-  // Save settings via process-specific API mutation with array payload
   const handleSave = async () => {
     try {
       const payload = currentRows.map((row) => {
@@ -246,35 +241,28 @@ export const AlertManagement: React.FC = () => {
       });
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(alertData));
+      toast.success('Alert settings saved successfully');
     } catch (error) {
       console.error('Failed to submit alert settings:', error);
+      toast.error('Failed to save alert settings');
     }
   };
 
-  // Columns definition using project's GenericTable Column interface
   const columns: Column<AlertRuleRow>[] = [
     {
       key: 'grossWt',
-      header: 'Gross Wt (G)',
+      header: 'Gross Wt',
       render: (item: AlertRuleRow) => (
-        <div className="relative flex items-center">
-          <input
-            type="text"
-            value={item.grossWt}
-            onChange={(e) =>
-              handleFieldChange(item.id, 'grossWt', e.target.value)
-            }
-            placeholder="10G"
-            className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-[#785600] focus:ring-1 focus:ring-[#785600] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-          />
-        </div>
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {item.grossWt}
+        </span>
       ),
     },
     {
       key: 'purity',
-      header: 'Purity (%)',
+      header: 'Purity',
       render: (item: AlertRuleRow) => (
-        <div className="relative flex items-center">
+        <div className="relative inline-block">
           <input
             type="number"
             step="any"
@@ -282,17 +270,20 @@ export const AlertManagement: React.FC = () => {
             onChange={(e) =>
               handleFieldChange(item.id, 'purity', e.target.value)
             }
-            placeholder="Purity %"
-            className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-[#785600] focus:ring-1 focus:ring-[#785600] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            placeholder="0.000"
+            className="font-mono w-20 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
           />
+          <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+            %
+          </span>
         </div>
       ),
     },
     {
       key: 'loss',
-      header: 'Loss (G)',
+      header: 'Loss',
       render: (item: AlertRuleRow) => (
-        <div className="relative flex items-center">
+        <div className="relative inline-block">
           <input
             type="number"
             step="any"
@@ -300,26 +291,33 @@ export const AlertManagement: React.FC = () => {
             onChange={(e) =>
               handleFieldChange(item.id, 'loss', e.target.value)
             }
-            placeholder="Loss (G)"
-            className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-[#785600] focus:ring-1 focus:ring-[#785600] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            placeholder="0.000"
+            className="font-mono w-20 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
           />
+          <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+            G
+          </span>
         </div>
       ),
     },
     {
       key: 'adjustment',
-      header: 'Adjustment (+/- %)',
+      header: 'Adjustment',
       render: (item: AlertRuleRow) => (
-        <div className="relative flex items-center">
+        <div className="relative inline-block">
           <input
-            type="text"
+            type="number"
+            step="any"
             value={item.adjustment}
             onChange={(e) =>
               handleFieldChange(item.id, 'adjustment', e.target.value)
             }
-            placeholder="+/- %"
-            className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-[#785600] focus:ring-1 focus:ring-[#785600] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            placeholder="0.000"
+            className="font-mono w-20 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
           />
+          <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
+            %
+          </span>
         </div>
       ),
     },
@@ -351,51 +349,67 @@ export const AlertManagement: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-4">
-      {/* Sub-Tab Navigation Bar (Matching Main Tab Style) */}
-      <div className="border-b border-slate-200 dark:border-slate-700">
-        <div className="flex gap-6 overflow-x-auto">
-          {PROCESS_TABS.map((tab) => {
-            const isActive = activeProcess === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveProcess(tab.id)}
-                className={`whitespace-nowrap border-b-2 pb-2.5 text-sm font-semibold transition-colors duration-150 ${isActive
-                  ? 'border-[#785600] text-black dark:border-amber-400 dark:text-amber-400'
-                  : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                  }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+    <div className="bg-[#f9f9f7] dark:bg-slate-950">
+      <div className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
+        {/* Page Header */}
+        <div className="mb-6">
+          <PageHeader
+            title="Alert Management"
+            subtitle="Configure alert rules for each manufacturing process"
+          />
         </div>
-      </div>
 
-      {/* Project's GenericTable Component */}
-      <div>
-        <GenericTable<AlertRuleRow>
-          data={currentRows}
-          columns={columns}
-          showSrNo={true}
-          srNoLabel="Sr No."
-          pagination={false}
-          isLoading={isAlertsLoading}
-          emptyMessage="No alert rules found"
-        />
+        {/* Sub-Tab Navigation Bar with Icons */}
+        <div className="mb-6 border-b border-[#d3c4af]/20 dark:border-slate-700">
+          <nav className="flex flex-wrap gap-1" aria-label="Tabs">
+            {PROCESS_TABS.map((tab) => {
+              const isActive = activeProcess === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveProcess(tab.id)}
+                  className={`group relative flex items-center gap-2 rounded-t-lg border-b-2 px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? 'border-[#785600] bg-[#785600]/5 text-[#785600] dark:border-[#986d00] dark:bg-[#986d00]/10 dark:text-[#986d00]'
+                      : 'border-transparent text-[#4f4535] hover:bg-[#785600]/5 dark:text-slate-500 dark:hover:bg-[#986d00]/10'
+                  } cursor-pointer`}
+                >
+                  <span className={isActive ? 'text-[#785600] dark:text-[#986d00]' : 'text-[#4f4535] dark:text-slate-500'}>
+                    {tab.icon}
+                  </span>
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
 
-        {/* Footer with Save Button */}
-        <div className="flex items-center justify-end px-4 py-3">
-          <GenericButton
-            type="button"
-            onClick={handleSave}
-            variant="primary"
-            size="sm"
-            disabled={submitalert.isPending}
-          >
-            <span>{submitalert.isPending ? 'Saving...' : 'Alert Settings'}</span>
-          </GenericButton>
+        {/* GenericTable Component */}
+        <div className=" rounded-lg shadow-sm dark:bg-slate-900 p-4">
+          <GenericTable<AlertRuleRow>
+            data={currentRows}
+            columns={columns}
+            showSrNo={true}
+            srNoLabel="Sr No."
+            pagination={false}
+            isLoading={isAlertsLoading}
+            emptyMessage="No alert rules found"
+          />
+
+          {/* Footer with Save Button */}
+          <div className="flex items-center justify-end px-4 py-3 mt-1 dark:border-slate-700">
+            <GenericButton
+              type="button"
+              onClick={handleSave}
+              variant="primary"
+              size="sm"
+              disabled={submitalert.isPending}
+              className="flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              <span>{submitalert.isPending ? 'Saving...' : 'Save'}</span>
+            </GenericButton>
+          </div>
         </div>
       </div>
     </div>
