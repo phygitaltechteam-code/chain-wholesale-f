@@ -3,7 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from './Forms/Buttons/GenericButton';
-import { useSubmitAlert } from '@/lib/api/alertmanagement';
+import { useSubmitProcessAlert, useDeleteProcessAlert } from '@/lib/api/alertmanagement';
 
 export interface AlertRuleRow {
   id: string;
@@ -61,7 +61,6 @@ export const AlertManagement: React.FC = () => {
   const [activeProcess, setActiveProcess] = useState<ProcessTabId>('melting');
   const [alertData, setAlertData] = useState<Record<ProcessTabId, AlertRuleRow[]>>(() => {
     try {
-      // Clear old dummy cached data if present
       localStorage.removeItem('chain_alert_management_settings_v1');
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -83,7 +82,8 @@ export const AlertManagement: React.FC = () => {
   // Active rows for current tab (strictly 1 row initially unless user added more)
   const currentRows = alertData[activeProcess] || [createDefaultRow('10G')];
 
-  const submitalert = useSubmitAlert();
+  const submitalert = useSubmitProcessAlert();
+  const deleteAlertMutation = useDeleteProcessAlert();
 
   // Update a single field in a row
   const handleFieldChange = (
@@ -124,35 +124,64 @@ export const AlertManagement: React.FC = () => {
   };
 
   // Delete a row
-  const handleDeleteRow = (rowId: string) => {
+  const handleDeleteRow = async (rowId: string) => {
     if (currentRows.length <= 1) {
       toast.error('At least one row is required.');
       return;
     }
-    setAlertData((prev) => ({
-      ...prev,
-      [activeProcess]: (prev[activeProcess] || []).filter((r) => r.id !== rowId),
-    }));
+
+    try {
+      if (rowId && !rowId.includes('-')) {
+        await deleteAlertMutation.mutateAsync({
+          process: activeProcess,
+          id: rowId,
+        });
+      }
+    } catch (e) {
+      console.error('Delete API error', e);
+    }
+
+    setAlertData((prev) => {
+      const updated = (prev[activeProcess] || []).filter((r) => r.id !== rowId);
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ ...prev, [activeProcess]: updated }),
+      );
+      return {
+        ...prev,
+        [activeProcess]: updated,
+      };
+    });
     toast.success('Row removed');
   };
 
-  // Save settings via Mutation and save to LocalStorage
+  // Save settings via process-specific API mutation with array payload
   const handleSave = async () => {
     try {
-      for (const row of currentRows) {
+      const payload = currentRows.map((row) => {
         const grossWtNumber =
           typeof row.grossWt === 'number'
             ? row.grossWt
             : parseFloat(String(row.grossWt).replace(/[^0-9.]/g, '')) || 10;
 
-        await submitalert.mutateAsync({
+        const adjustmentNumber =
+          typeof row.adjustment === 'number'
+            ? row.adjustment
+            : parseFloat(String(row.adjustment).replace(/[^0-9.-]/g, '')) || 0;
+
+        return {
           grossWt: grossWtNumber,
           purity: parseFloat(String(row.purity)) || 0,
           loss: parseFloat(String(row.loss)) || 0,
-          adjustment: parseFloat(String(row.adjustment)) || 0,
-          processId: activeProcess,
-        });
-      }
+          adjustment: adjustmentNumber,
+        };
+      });
+
+      await submitalert.mutateAsync({
+        process: activeProcess,
+        data: payload,
+      });
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify(alertData));
     } catch (error) {
       console.error('Failed to submit alert settings:', error);
@@ -198,7 +227,7 @@ export const AlertManagement: React.FC = () => {
     },
     {
       key: 'loss',
-      header: 'Loss (%)',
+      header: 'Loss (G)',
       render: (item: AlertRuleRow) => (
         <div className="relative flex items-center">
           <input
@@ -208,7 +237,7 @@ export const AlertManagement: React.FC = () => {
             onChange={(e) =>
               handleFieldChange(item.id, 'loss', e.target.value)
             }
-            placeholder="Loss %"
+            placeholder="Loss (G)"
             className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-[#785600] focus:ring-1 focus:ring-[#785600] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
         </div>
@@ -220,8 +249,7 @@ export const AlertManagement: React.FC = () => {
       render: (item: AlertRuleRow) => (
         <div className="relative flex items-center">
           <input
-            type="number"
-            step="any"
+            type="text"
             value={item.adjustment}
             onChange={(e) =>
               handleFieldChange(item.id, 'adjustment', e.target.value)
