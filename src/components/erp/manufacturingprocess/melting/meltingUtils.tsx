@@ -89,8 +89,10 @@ export interface AlertRule {
 export interface LossAlertResult {
   isExceeded: boolean;
   actualLoss: number;
+  baseLoss: number;
   maxAllowedLoss: number;
   adjustmentPercent: number;
+  colorState: 'gray' | 'green' | 'yellow' | 'red';
 }
 
 export const checkMeltingLossAlert = (
@@ -104,15 +106,13 @@ export const checkMeltingLossAlert = (
     !alertRules ||
     alertRules.length === 0 ||
     !grossWt ||
-    grossWt <= 0 ||
-    fineWeight === undefined ||
-    fineWeight === null
+    grossWt <= 0
   ) {
     return null;
   }
 
   // Calculate actual loss (Difference between expected fine and received fine weight)
-  const actualLoss = Math.max(0, Math.round((expectedFine - fineWeight) * 1000) / 1000);
+  const actualLoss = Math.max(0, Math.round((expectedFine - (fineWeight || 0)) * 1000) / 1000);
 
   const rules = alertRules
     .map((r: any) => {
@@ -144,7 +144,7 @@ export const checkMeltingLossAlert = (
     );
   }
 
-  // 2. Scale expected loss according to gross weight & purity ratio
+  // 2. Scale expected base loss according to gross weight & purity ratio
   let baseLoss = (matchedRule.loss / matchedRule.grossWt) * grossWt;
   if (matchedRule.purity > 0 && purity > 0) {
     baseLoss = baseLoss * (purity / matchedRule.purity);
@@ -157,11 +157,24 @@ export const checkMeltingLossAlert = (
 
   const isExceeded = actualLoss > maxAllowedLoss && actualLoss > 0.001;
 
+  let colorState: 'gray' | 'green' | 'yellow' | 'red' = 'gray';
+  if (!fineWeight || fineWeight <= 0) {
+    colorState = 'gray';
+  } else if (actualLoss > maxAllowedLoss) {
+    colorState = 'red';
+  } else if (actualLoss > baseLoss) {
+    colorState = 'yellow';
+  } else {
+    colorState = 'green';
+  }
+
   return {
     isExceeded,
     actualLoss,
+    baseLoss,
     maxAllowedLoss,
     adjustmentPercent: adjPercent,
+    colorState,
   };
 };
 
@@ -263,26 +276,38 @@ export const getMeltingColumns = (
       header: 'Loss (G)',
       render: (item) => {
         const loss = Math.max(0, Math.round((item.expectedFine - item.fineWeight) * 1000) / 1000);
-        const alertCheck =
-          item.fineWeight > 0
-            ? checkMeltingLossAlert(
-                item.grossWt,
-                item.purity,
-                item.fineWeight,
-                item.expectedFine,
-                alertRules
-              )
-            : null;
+        const alertCheck = checkMeltingLossAlert(
+          item.grossWt,
+          item.purity,
+          item.fineWeight,
+          item.expectedFine,
+          alertRules
+        );
+
+        let colorClass = 'text-gray-500 dark:text-slate-400';
+        if (alertCheck) {
+          if (alertCheck.colorState === 'green') {
+            colorClass = 'font-semibold text-green-600 dark:text-green-400';
+          } else if (alertCheck.colorState === 'yellow') {
+            colorClass = 'font-semibold text-amber-500 dark:text-amber-400';
+          } else if (alertCheck.colorState === 'red') {
+            colorClass = 'font-bold text-red-600 dark:text-red-500';
+          }
+        }
+
+        const diff =
+          alertCheck && alertCheck.isExceeded
+            ? Math.round((alertCheck.actualLoss - alertCheck.maxAllowedLoss) * 1000) / 1000
+            : 0;
 
         return (
-          <span
-            className={`font-mono text-sm ${
-              alertCheck?.isExceeded
-                ? 'font-bold text-red-600 dark:text-red-500'
-                : 'text-[#1a1c1b] dark:text-white'
-            }`}
-          >
+          <span className={`font-mono text-sm ${colorClass}`}>
             {formatNumberDisplay(loss)} G
+            {diff > 0 && (
+              <span className="ml-1.5 text-xs font-semibold text-red-600 dark:text-red-400">
+                (Diff: +{formatNumberDisplay(diff)} G)
+              </span>
+            )}
           </span>
         );
       },
