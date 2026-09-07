@@ -1,6 +1,7 @@
 import React from 'react';
-import { GenericTable } from '@/components/Forms/Table/GenericTable';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import { getHistorySKundaColumns, hasMeltingStatus, formatNumberDisplay } from './sKundaUtils';
+import { AlertRule } from '@/lib/api/alertmanagement';
 
 interface HistorySKundaProps {
   filteredData: any[];
@@ -12,14 +13,18 @@ interface HistorySKundaProps {
     totalLoss: number;
   };
   historyLoading: boolean;
+  alertRules?: AlertRule[];
+  historyColumns?: Column<any>[];
 }
 
 const HistorySKunda: React.FC<HistorySKundaProps> = ({
   filteredData,
   historyTotals,
   historyLoading,
+  alertRules,
+  historyColumns,
 }) => {
-  const historyColumns = getHistorySKundaColumns();
+  const columns = historyColumns || getHistorySKundaColumns(alertRules);
 
   return (
     <div>
@@ -98,7 +103,7 @@ const HistorySKunda: React.FC<HistorySKundaProps> = ({
 
       <GenericTable
         data={filteredData}
-        columns={historyColumns}
+        columns={columns}
         emptyMessage="No history records found for the selected date range."
         isLoading={historyLoading}
         showSrNo={true}

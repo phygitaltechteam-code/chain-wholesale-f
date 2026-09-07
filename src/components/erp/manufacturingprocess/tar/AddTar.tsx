@@ -24,6 +24,11 @@ import {
   useGetTarHistory,
   useAddMelting,
 } from '@/lib/api/tar';
+import {
+  useGetProcessAlert,
+  checkProcessLossAlert,
+  AlertRule,
+} from '@/lib/api/alertmanagement';
 import { useGetStock } from '@/lib/api/stock';
 import { useGetItems } from '@/lib/api/items';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
@@ -102,6 +107,36 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     isLoading: tarHistoryLoading,
     refetch: refetchHistory,
   } = useGetTarHistory();
+
+  // Query tar alert threshold rules
+  const { data: tarAlertRaw } = useGetProcessAlert('tar');
+
+  const alertRules: AlertRule[] = React.useMemo(() => {
+    let list: any[] = [];
+    if (Array.isArray(tarAlertRaw) && tarAlertRaw.length > 0) {
+      list = tarAlertRaw;
+    } else if (tarAlertRaw && typeof tarAlertRaw === 'object') {
+      if (Array.isArray((tarAlertRaw as any).data)) {
+        list = (tarAlertRaw as any).data;
+      } else if ((tarAlertRaw as any).grossWt !== undefined) {
+        list = [tarAlertRaw];
+      }
+    }
+
+    if (list.length === 0) {
+      try {
+        const saved = localStorage.getItem('chain_alert_management_settings_v2');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed?.tar) && parsed.tar.length > 0) {
+            list = parsed.tar;
+          }
+        }
+      } catch (e) {}
+    }
+
+    return list;
+  }, [tarAlertRaw]);
 
   // Mutation hooks
   const createTar = useCreateTar();
@@ -207,17 +242,37 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   );
 
 
-  // Filter history by selected date range
+  // Filter and sort history by Proceed Date & Time
   const getFilteredHistory = () => {
-    let filtered = tarHistory;
+    let filtered = Array.isArray(tarHistory?.data)
+      ? tarHistory.data
+      : Array.isArray(tarHistory)
+      ? tarHistory
+      : [];
+
+    // Sort descending by Proceed Date & Time
+    filtered = [...filtered].sort((a: any, b: any) => {
+      const dateA = new Date(
+        a.updatedAt || a.proceedDateTime || a.updated_at || a.createdAt || 0,
+      ).getTime();
+      const dateB = new Date(
+        b.updatedAt || b.proceedDateTime || b.updated_at || b.createdAt || 0,
+      ).getTime();
+      return dateB - dateA;
+    });
 
     if (dateRange && dateRange.length > 0) {
       if (dateRange[0]) {
         const from = new Date(dateRange[0]);
         from.setHours(0, 0, 0, 0);
         filtered = filtered.filter((item: any) => {
-          if (!item?.createdAt) return false;
-          const itemDate = new Date(item.createdAt);
+          const dateVal =
+            item?.updatedAt ||
+            item?.proceedDateTime ||
+            item?.updated_at ||
+            item?.createdAt;
+          if (!dateVal) return false;
+          const itemDate = new Date(dateVal);
           if (Number.isNaN(itemDate.getTime())) return false;
           return itemDate >= from;
         });
@@ -226,8 +281,13 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         const to = new Date(dateRange[1]);
         to.setHours(23, 59, 59, 999);
         filtered = filtered.filter((item: any) => {
-          if (!item?.createdAt) return false;
-          const itemDate = new Date(item.createdAt);
+          const dateVal =
+            item?.updatedAt ||
+            item?.proceedDateTime ||
+            item?.updated_at ||
+            item?.createdAt;
+          if (!dateVal) return false;
+          const itemDate = new Date(dateVal);
           if (Number.isNaN(itemDate.getTime())) return false;
           return itemDate <= to;
         });
@@ -809,7 +869,8 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
               handleMelting,
               hasEditableValues,
               tarLoading,
-              isSubmitting
+              isSubmitting,
+              alertRules
             )}
             emptyMessage="No tar entries found. Click 'Add Tar' to create one."
             isLoading={
@@ -830,7 +891,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
           historyTotals={historyTotals}
           tarHistoryLoading={tarHistoryLoading}
           dateRange={dateRange}
-          historyColumns={getHistoryTarColumns()}
+          historyColumns={getHistoryTarColumns(alertRules)}
         />
       )}
 

@@ -2,6 +2,11 @@ import toast from 'react-hot-toast';
 import { Column } from '@/components/Forms/Table/GenericTable';
 import { Flame, Save } from 'lucide-react';
 import React from 'react';
+import {
+  checkProcessLossAlert,
+  getProcessLossColorClass,
+  AlertRule,
+} from '@/lib/api/alertmanagement';
 
 export interface TarEntry {
   id: string;
@@ -319,7 +324,7 @@ ${dateRange.length === 2
   }, 500);
 };
 
-export const getHistoryTarColumns = (): Column<any>[] => [
+export const getHistoryTarColumns = (alertRules?: AlertRule[]): Column<any>[] => [
   {
     key: 'createdAt',
     header: 'Date & Time',
@@ -339,7 +344,7 @@ export const getHistoryTarColumns = (): Column<any>[] => [
   },
   {
     key: 'fine',
-    header: 'Fine (G)',
+    header: 'Fine (लगड)',
     render: (item) => (
       <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
         {formatNumber(item.fine)} G
@@ -348,7 +353,7 @@ export const getHistoryTarColumns = (): Column<any>[] => [
   },
   {
     key: 'purity',
-    header: 'Purity %',
+    header: 'Purity (%)',
     render: (item) => (
       <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
         {formatNumber(item.purity)}%
@@ -356,8 +361,8 @@ export const getHistoryTarColumns = (): Column<any>[] => [
     ),
   },
   {
-    key: 'tar',
-    header: 'Tar (G)',
+    key: 'grosswt',
+    header: 'Gross Wt (G)',
     colSpan: (item) => (hasMeltingStatus(item) ? 3 : 1),
     render: (item) => {
       if (hasMeltingStatus(item)) {
@@ -372,6 +377,21 @@ export const getHistoryTarColumns = (): Column<any>[] => [
       }
       return (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.grosswt)} G
+        </span>
+      );
+    },
+  },
+  {
+    key: 'tar',
+    header: 'Tar (G)',
+    colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
+    render: (item) => {
+      if (hasMeltingStatus(item)) {
+        return null;
+      }
+      return (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumber(item.tar)} G
         </span>
       );
@@ -381,21 +401,47 @@ export const getHistoryTarColumns = (): Column<any>[] => [
     key: 'scrap',
     header: 'Scrap (G)',
     colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
-    render: (item) => (
-      <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-        {formatNumber(item.scrap)} G
-      </span>
-    ),
+    render: (item) => {
+      if (hasMeltingStatus(item)) {
+        return null;
+      }
+      return (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {formatNumber(item.scrap)} G
+        </span>
+      );
+    },
   },
   {
     key: 'loss',
     header: 'Loss (G)',
     colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
-    render: (item) => (
-      <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-        {formatNumber(item.loss)} G
-      </span>
-    ),
+    render: (item) => {
+      if (hasMeltingStatus(item)) return null;
+      const grossVal = toNumber(item.grosswt > 0 ? item.grosswt : item.fine);
+      const alertCheck = checkProcessLossAlert(
+        grossVal,
+        item.purity,
+        item.loss,
+        alertRules,
+        true
+      );
+      const colorClass = getProcessLossColorClass(alertCheck);
+      const diff = alertCheck?.diff || 0;
+
+      return (
+        <div className="flex flex-col items-center justify-center">
+          <span className={`font-mono text-sm ${colorClass}`}>
+            {formatNumber(item.loss)} G
+          </span>
+          {diff > 0 && (
+            <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+              (Diff: +{formatNumber(diff)} G)
+            </span>
+          )}
+        </div>
+      );
+    },
   },
   {
     key: 'timeTaken',
@@ -432,7 +478,8 @@ export const getTarColumns = (
   handleMelting: (item: TarEntry) => void,
   hasEditableValues: (entry: TarEntry) => boolean,
   isLoading: boolean,
-  isSubmitting: boolean
+  isSubmitting: boolean,
+  alertRules?: AlertRule[]
 ): Column<TarEntry>[] => [
     {
       key: 'dateTime',
@@ -579,11 +626,32 @@ export const getTarColumns = (
     {
       key: 'loss',
       header: 'Loss (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.loss)} G
-        </span>
-      ),
+      render: (item) => {
+        const hasValues = hasEditableValues(item);
+        const grossVal = toNumber(item.grosswt > 0 ? item.grosswt : item.fine);
+        const alertCheck = checkProcessLossAlert(
+          grossVal,
+          item.purity,
+          item.loss,
+          alertRules,
+          hasValues
+        );
+        const colorClass = getProcessLossColorClass(alertCheck);
+        const diff = alertCheck?.diff || 0;
+
+        return (
+          <div className="flex flex-col items-center justify-center">
+            <span className={`font-mono text-sm ${colorClass}`}>
+              {formatNumberDisplay(item.loss)} G
+            </span>
+            {diff > 0 && (
+              <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+                (Diff: +{formatNumberDisplay(diff)} G)
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'actions',

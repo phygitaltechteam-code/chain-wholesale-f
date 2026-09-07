@@ -1,8 +1,12 @@
-import React from 'react';
 import { Square, Flame } from 'lucide-react';
 import { Column } from '@/components/Forms/Table/GenericTable';
 import toast from 'react-hot-toast';
 import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
+import {
+  AlertRule,
+  checkProcessLossAlert,
+  getProcessLossColorClass,
+} from '@/lib/api/alertmanagement';
 
 // ======================================================
 // Interfaces
@@ -311,7 +315,7 @@ export const printSKundaHistory = (
 // Columns Definition
 // ======================================================
 
-export const getHistorySKundaColumns = (): Column<any>[] => [
+export const getHistorySKundaColumns = (alertRules?: AlertRule[]): Column<any>[] => [
   {
     key: 'createdAt',
     header: 'Date & Time',
@@ -423,10 +427,28 @@ export const getHistorySKundaColumns = (): Column<any>[] => [
     colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
     render: (item) => {
       if (hasMeltingStatus(item)) return null;
+      const grossVal = (item.chainGiven || item.chainWeight || 0) + (item.kundaGiven || item.kunda || 0);
+      const alertCheck = checkProcessLossAlert(
+        grossVal,
+        item.purity,
+        item.loss,
+        alertRules,
+        true
+      );
+      const colorClass = getProcessLossColorClass(alertCheck);
+      const diff = alertCheck?.diff || 0;
+
       return (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.loss)} G
-        </span>
+        <div className="flex flex-col items-center justify-center">
+          <span className={`font-mono text-sm ${colorClass}`}>
+            {formatNumberDisplay(item.loss)} G
+          </span>
+          {diff > 0 && (
+            <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+              (Diff: +{formatNumberDisplay(diff)} G)
+            </span>
+          )}
+        </div>
       );
     },
   },
@@ -461,7 +483,8 @@ export const getSKundaColumns = (
   isLoading: boolean,
   isSubmitting: boolean,
   hasEditableValues: (entry: KundaEntry) => boolean,
-  showActionColumn: boolean
+  showActionColumn: boolean,
+  alertRules?: AlertRule[]
 ): Column<KundaEntry>[] => {
   const baseColumns: Column<KundaEntry>[] = [
     {
@@ -623,11 +646,40 @@ export const getSKundaColumns = (
     {
       key: 'loss',
       header: 'Loss (G)',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.loss)} G
-        </span>
-      ),
+      render: (item) => {
+        const hasValues = Boolean(
+          (item.kundaGivenRaw !== undefined && item.kundaGivenRaw !== '') ||
+          (item.chainReceivedRaw !== undefined && item.chainReceivedRaw !== '') ||
+          (item.scrapRaw !== undefined && item.scrapRaw !== '') ||
+          item.kundaGiven > 0 ||
+          item.chainReceived > 0 ||
+          item.scrap > 0 ||
+          item.isSaved
+        );
+        const grossVal = item.chainGiven + (item.kundaGiven || 0);
+        const alertCheck = checkProcessLossAlert(
+          grossVal,
+          item.purity,
+          item.loss,
+          alertRules,
+          hasValues
+        );
+        const colorClass = getProcessLossColorClass(alertCheck);
+        const diff = alertCheck?.diff || 0;
+
+        return (
+          <div className="flex flex-col items-center justify-center">
+            <span className={`font-mono text-sm ${colorClass}`}>
+              {formatNumberDisplay(item.loss)} G
+            </span>
+            {diff > 0 && (
+              <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+                (Diff: +{formatNumberDisplay(diff)} G)
+              </span>
+            )}
+          </div>
+        );
+      },
     },
   ];
 

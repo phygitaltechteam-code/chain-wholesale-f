@@ -327,21 +327,66 @@ const MeltingDept: React.FC = () => {
     }
   }, [meltingData, meltingLoading, error]);
 
-  // Filter history by fromDate and toDate
+  // Filter and sort history by Proceed Date & Time (updatedAt / proceedDateTime)
   const getFilteredHistory = () => {
-    const sourceData =
-      Array.isArray(meltingHistory) ? meltingHistory : [];
+    const historyList = Array.isArray(meltingHistory)
+      ? meltingHistory
+      : Array.isArray(meltingHistory?.data)
+      ? meltingHistory.data
+      : Array.isArray(meltingHistory?.history)
+      ? meltingHistory.history
+      : Array.isArray(meltingHistory?.meltingHistory)
+      ? meltingHistory.meltingHistory
+      : [];
+
+    const completedFromActive = Array.isArray(meltingData)
+      ? meltingData.filter((item: any) => item.isCompleted || item.isSaved)
+      : [];
+
+    const existingIds = new Set(historyList.map((item: any) => item.id || item._id));
+    const combinedHistory = [
+      ...historyList,
+      ...completedFromActive.filter((item: any) => !existingIds.has(item.id || item._id)),
+    ];
+
+    // Sort descending by Proceed Date & Time so newest processed items appear first
+    const sortedHistory = [...combinedHistory].sort((a: any, b: any) => {
+      const dateA = new Date(
+        a.updatedAt || a.proceedDateTime || a.updated_at || a.proceedDate || a.createdAt || 0,
+      ).getTime();
+      const dateB = new Date(
+        b.updatedAt || b.proceedDateTime || b.updated_at || b.proceedDate || b.createdAt || 0,
+      ).getTime();
+      return dateB - dateA;
+    });
 
     if (!fromDate && !toDate) {
-      return sourceData;
+      return sortedHistory;
     }
 
-    return sourceData.filter((item: any) => {
-      const itemDate = new Date(
-        item.createdAt || item.updatedAt || Date.now(),
-      );
-      if (fromDate && itemDate < fromDate) return false;
-      if (toDate && itemDate > toDate) return false;
+    return sortedHistory.filter((item: any) => {
+      const dateVal =
+        item.updatedAt ||
+        item.proceedDateTime ||
+        item.updated_at ||
+        item.proceedDate ||
+        item.createdAt ||
+        item.dateTime ||
+        item.created_at;
+      if (!dateVal) return true;
+      const itemDate = new Date(dateVal);
+      if (Number.isNaN(itemDate.getTime())) return true;
+
+      if (fromDate) {
+        const from = new Date(fromDate);
+        from.setHours(0, 0, 0, 0);
+        if (itemDate < from) return false;
+      }
+      if (toDate) {
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+        if (itemDate > to) return false;
+      }
       return true;
     });
   };
@@ -367,7 +412,7 @@ const MeltingDept: React.FC = () => {
       },
       { totalGross: 0, totalExpected: 0, totalFine: 0, totalLoss: 0 },
     );
-  }, [meltingHistory, fromDate, toDate]);
+  }, [meltingHistory, meltingData, fromDate, toDate]);
 
   // Main Melting process totals
   const meltingTotals = React.useMemo(() => {
@@ -447,25 +492,10 @@ const MeltingDept: React.FC = () => {
       const entry = meltingEntries[index];
       if (!entry) return;
 
-      const alertCheck = checkMeltingLossAlert(
-        entry.grossWt,
-        entry.purity,
-        entry.fineWeight,
-        entry.expectedFine,
-        alertRules
-      );
-
-      if (alertCheck?.isExceeded) {
-        toast.error(
-          `Cannot submit: Loss (${formatNumberDisplay(alertCheck.actualLoss)} G) exceeds allowed limit of ${formatNumberDisplay(alertCheck.maxAllowedLoss)} G`
-        );
-        return;
-      }
-
       setSaveIndex(index);
       setShowConfirmModal(true);
     },
-    [meltingEntries, alertRules],
+    [meltingEntries],
   );
 
   // Confirm Stock and Proceed
@@ -473,21 +503,6 @@ const MeltingDept: React.FC = () => {
     if (saveIndex === null) return;
     const index = saveIndex;
     const entry = meltingEntries[index];
-
-    const alertCheck = checkMeltingLossAlert(
-      entry.grossWt,
-      entry.purity,
-      entry.fineWeight,
-      entry.expectedFine,
-      alertRules
-    );
-
-    if (alertCheck?.isExceeded) {
-      toast.error(
-        `Cannot submit: Loss (${formatNumberDisplay(alertCheck.actualLoss)} G) exceeds allowed limit of ${formatNumberDisplay(alertCheck.maxAllowedLoss)} G`
-      );
-      return;
-    }
 
     setIsLoading(true);
     try {
@@ -517,6 +532,7 @@ const MeltingDept: React.FC = () => {
       setShowConfirmModal(false);
       setSaveIndex(null);
       await refetch();
+      await refetchHistory();
     } catch (err: any) {
       console.error('Error stocking melted gold:', err);
       const backendMessage =
@@ -531,7 +547,7 @@ const MeltingDept: React.FC = () => {
       setShowConfirmModal(false);
       setSaveIndex(null);
     }
-  }, [saveIndex, meltingEntries, alertRules, submitMeltingStock, refetch]);
+  }, [saveIndex, meltingEntries, alertRules, submitMeltingStock, refetch, refetchHistory]);
 
   const toggleHistory = () => {
     if (showHistory) {
@@ -542,8 +558,16 @@ const MeltingDept: React.FC = () => {
     } else {
       setShowHistory(true);
       const { monday, sunday } = getCurrentWeekRange();
-      setFromDate(monday);
-      setToDate(sunday);
+      const from = new Date(monday);
+      from.setHours(0, 0, 0, 0);
+      const to = new Date(sunday);
+      to.setHours(23, 59, 59, 999);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+      const finalTo = to > todayEnd ? to : todayEnd;
+      setFromDate(from);
+      setToDate(finalTo);
+      refetch();
       refetchHistory();
     }
   };
@@ -730,6 +754,7 @@ const MeltingDept: React.FC = () => {
           historyData={getFilteredHistory()}
           historyTotals={historyTotals}
           historyLoading={historyLoading}
+          alertRules={alertRules}
         />
       )}
 

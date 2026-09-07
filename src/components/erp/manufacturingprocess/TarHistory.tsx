@@ -4,6 +4,11 @@ import { useNavigate } from '@tanstack/react-router';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import { useGetTarHistory } from '@/lib/api/tar';
 import toast from 'react-hot-toast';
+import {
+  useGetProcessAlert,
+  checkProcessLossAlert,
+  getProcessLossColorClass,
+} from '@/lib/api/alertmanagement';
 
 interface TarHistoryProps {
   onBack?: () => void;
@@ -18,6 +23,7 @@ const TarHistory: React.FC<TarHistoryProps> = ({ onBack }) => {
 
   // Fetch tar history data
   const { data: tarHistory = [], isLoading, refetch } = useGetTarHistory();
+  const { data: alertRules } = useGetProcessAlert('tar');
 
   // Get unique items and sizes for filter
   const uniqueItems = React.useMemo(() => {
@@ -223,11 +229,33 @@ const TarHistory: React.FC<TarHistoryProps> = ({ onBack }) => {
     {
       key: 'loss',
       header: 'Loss',
-      render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumber(item.loss)}
-        </span>
-      ),
+      render: (item) => {
+        const grossVal = parseFloat(String(item.grosswt || item.grossWeight || item.fine || 0));
+        const purVal = parseFloat(String(item.purity || 0));
+        const lossVal = parseFloat(String(item.loss || 0));
+        const alertCheck = checkProcessLossAlert(
+          grossVal,
+          purVal,
+          lossVal,
+          alertRules,
+          true
+        );
+        const colorClass = getProcessLossColorClass(alertCheck);
+        const diff = alertCheck?.diff || 0;
+
+        return (
+          <div className="flex flex-col items-center justify-center">
+            <span className={`font-mono text-sm ${colorClass}`}>
+              {formatNumber(item.loss)}
+            </span>
+            {diff > 0 && (
+              <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+                (Diff: +{formatNumber(diff)} G)
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'purity',

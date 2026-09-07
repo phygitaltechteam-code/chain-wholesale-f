@@ -13,6 +13,7 @@ import {
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 import { useAddSkundaMelting } from '@/lib/api/processmelting';
+import { useGetProcessAlert, checkProcessLossAlert } from '@/lib/api/alertmanagement';
 
 import {
   KundaEntry,
@@ -64,8 +65,7 @@ const SKundaDept: React.FC = () => {
   } = useGetKundaHistory();
   const submitKunda = useSubmitKunda();
   const addStockInward = useAddSKundaInStock();
-
-
+  const { data: alertRules } = useGetProcessAlert('kunda');
 
   const { getScaleProps } = useTableScaleFocus<
     'kundaGiven' | 'chainReceived' | 'scrap'
@@ -151,16 +151,37 @@ const SKundaDept: React.FC = () => {
     }
   }, [kundaData, kundaLoading, error]);
 
+  // Filter and sort history by Proceed Date & Time
   const getFilteredHistory = () => {
-    let filtered = kundaHistory;
+    let filtered = Array.isArray(kundaHistory?.data)
+      ? kundaHistory.data
+      : Array.isArray(kundaHistory)
+      ? kundaHistory
+      : [];
+
+    // Sort descending by Proceed Date & Time
+    filtered = [...filtered].sort((a: any, b: any) => {
+      const dateA = new Date(
+        a.updatedAt || a.proceedDateTime || a.updated_at || a.createdAt || 0,
+      ).getTime();
+      const dateB = new Date(
+        b.updatedAt || b.proceedDateTime || b.updated_at || b.createdAt || 0,
+      ).getTime();
+      return dateB - dateA;
+    });
 
     if (dateRange && dateRange.length > 0) {
       if (dateRange[0]) {
         const from = new Date(dateRange[0]);
         from.setHours(0, 0, 0, 0);
         filtered = filtered.filter((item: any) => {
-          if (!item?.createdAt) return false;
-          const itemDate = new Date(item.createdAt);
+          const dateVal =
+            item?.updatedAt ||
+            item?.proceedDateTime ||
+            item?.updated_at ||
+            item?.createdAt;
+          if (!dateVal) return false;
+          const itemDate = new Date(dateVal);
           if (Number.isNaN(itemDate.getTime())) return false;
           return itemDate >= from;
         });
@@ -169,8 +190,13 @@ const SKundaDept: React.FC = () => {
         const to = new Date(dateRange[1]);
         to.setHours(23, 59, 59, 999);
         filtered = filtered.filter((item: any) => {
-          if (!item?.createdAt) return false;
-          const itemDate = new Date(item.createdAt);
+          const dateVal =
+            item?.updatedAt ||
+            item?.proceedDateTime ||
+            item?.updated_at ||
+            item?.createdAt;
+          if (!dateVal) return false;
+          const itemDate = new Date(dateVal);
           if (Number.isNaN(itemDate.getTime())) return false;
           return itemDate <= to;
         });
@@ -395,7 +421,7 @@ const SKundaDept: React.FC = () => {
       setShowConfirmModal(false);
       setSaveIndex(null);
     }
-  }, [saveIndex, kundaEntries, submitKunda, refetch]);
+  }, [saveIndex, kundaEntries, submitKunda, refetch, alertRules]);
 
   const hasEditableValues = (entry: KundaEntry): boolean => {
     return Boolean(entry.isDirty);
@@ -424,7 +450,8 @@ const SKundaDept: React.FC = () => {
     isLoading,
     isSubmitting,
     hasEditableValues,
-    showActionColumn
+    showActionColumn,
+    alertRules
   );
 
   return (
@@ -531,6 +558,7 @@ const SKundaDept: React.FC = () => {
           filteredData={getFilteredHistory()}
           historyTotals={historyTotals}
           historyLoading={historyLoading}
+          alertRules={alertRules}
         />
       )}
       <SkundaAddInStock

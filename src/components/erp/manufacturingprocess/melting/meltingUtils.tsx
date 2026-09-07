@@ -301,14 +301,16 @@ export const getMeltingColumns = (
             : 0;
 
         return (
-          <span className={`font-mono text-sm ${colorClass}`}>
-            {formatNumberDisplay(loss)} G
+          <div className="flex flex-col items-center justify-center">
+            <span className={`font-mono text-sm ${colorClass}`}>
+              {formatNumberDisplay(loss)} G
+            </span>
             {diff > 0 && (
-              <span className="ml-1.5 text-xs font-semibold text-red-600 dark:text-red-400">
+              <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
                 (Diff: +{formatNumberDisplay(diff)} G)
               </span>
             )}
-          </span>
+          </div>
         );
       },
     },

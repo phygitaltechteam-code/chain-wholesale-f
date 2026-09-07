@@ -2,6 +2,8 @@ import React from 'react';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import { formatNumberDisplay, hasMeltingStatus, getHistoryCuttingColumns, toNumber } from './cuttingUtils';
 
+import { AlertRule } from '@/lib/api/alertmanagement';
+
 interface HistoryCuttingProps {
     filteredData?: any[];
     historyData?: any[];
@@ -14,6 +16,7 @@ interface HistoryCuttingProps {
     historyLoading?: boolean;
     dateRange?: Date[];
     historyColumns?: Column<any>[];
+    alertRules?: AlertRule[];
 }
 
 const HistoryCutting: React.FC<HistoryCuttingProps> = ({
@@ -23,9 +26,10 @@ const HistoryCutting: React.FC<HistoryCuttingProps> = ({
     historyLoading = false,
     dateRange = [],
     historyColumns,
+    alertRules,
 }) => {
     const data = filteredData || historyData || [];
-    const columns = historyColumns || getHistoryCuttingColumns();
+    const columns = historyColumns || getHistoryCuttingColumns(alertRules);
 
     const computedTotals = React.useMemo(() => {
         if (historyTotals) return historyTotals;

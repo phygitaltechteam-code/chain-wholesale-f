@@ -17,6 +17,11 @@ import { useGetHeader } from '@/lib/api/headerapi';
 import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 import { useAddBoxMelting } from '@/lib/api/processmelting';
+import {
+    useGetProcessAlert,
+    checkProcessLossAlert,
+    AlertRule,
+} from '@/lib/api/alertmanagement';
 
 import {
     BoxEntry,
@@ -63,6 +68,36 @@ const BoxDept: React.FC = () => {
     const submitBox = useSubmitBox();
     const createBox = useCreateBox();
     const submitMelting = useAddBoxMelting();
+
+    // Query box alert threshold rules
+    const { data: boxAlertRaw } = useGetProcessAlert('box');
+
+    const alertRules: AlertRule[] = React.useMemo(() => {
+        let list: any[] = [];
+        if (Array.isArray(boxAlertRaw) && boxAlertRaw.length > 0) {
+            list = boxAlertRaw;
+        } else if (boxAlertRaw && typeof boxAlertRaw === 'object') {
+            if (Array.isArray((boxAlertRaw as any).data)) {
+                list = (boxAlertRaw as any).data;
+            } else if ((boxAlertRaw as any).grossWt !== undefined) {
+                list = [boxAlertRaw];
+            }
+        }
+
+        if (list.length === 0) {
+            try {
+                const saved = localStorage.getItem('chain_alert_management_settings_v2');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed?.box) && parsed.box.length > 0) {
+                        list = parsed.box;
+                    }
+                }
+            } catch (e) {}
+        }
+
+        return list;
+    }, [boxAlertRaw]);
 
 
     const handleMelting = async (entry: BoxEntry) => {
@@ -212,17 +247,37 @@ const BoxDept: React.FC = () => {
         }
     }, [boxData, boxLoading]);
 
-    // Filter history by selected From-To date range.
+    // Filter and sort history by Proceed Date & Time
     const getFilteredHistory = () => {
-        let filtered = boxHistory;
+        let filtered = Array.isArray(boxHistory?.data)
+            ? boxHistory.data
+            : Array.isArray(boxHistory)
+            ? boxHistory
+            : [];
+
+        // Sort descending by Proceed Date & Time
+        filtered = [...filtered].sort((a: any, b: any) => {
+            const dateA = new Date(
+                a.updatedAt || a.proceedDateTime || a.updated_at || a.createdAt || 0,
+            ).getTime();
+            const dateB = new Date(
+                b.updatedAt || b.proceedDateTime || b.updated_at || b.createdAt || 0,
+            ).getTime();
+            return dateB - dateA;
+        });
 
         if (dateRange && dateRange.length > 0) {
             if (dateRange[0]) {
                 const from = new Date(dateRange[0]);
                 from.setHours(0, 0, 0, 0);
                 filtered = filtered.filter((item: any) => {
-                    if (!item?.createdAt) return false;
-                    const itemDate = new Date(item.createdAt);
+                    const dateVal =
+                        item?.updatedAt ||
+                        item?.proceedDateTime ||
+                        item?.updated_at ||
+                        item?.createdAt;
+                    if (!dateVal) return false;
+                    const itemDate = new Date(dateVal);
                     if (Number.isNaN(itemDate.getTime())) return false;
                     return itemDate >= from;
                 });
@@ -231,8 +286,13 @@ const BoxDept: React.FC = () => {
                 const to = new Date(dateRange[1]);
                 to.setHours(23, 59, 59, 999);
                 filtered = filtered.filter((item: any) => {
-                    if (!item?.createdAt) return false;
-                    const itemDate = new Date(item.createdAt);
+                    const dateVal =
+                        item?.updatedAt ||
+                        item?.proceedDateTime ||
+                        item?.updated_at ||
+                        item?.createdAt;
+                    if (!dateVal) return false;
+                    const itemDate = new Date(dateVal);
                     if (Number.isNaN(itemDate.getTime())) return false;
                     return itemDate <= to;
                 });
@@ -330,7 +390,7 @@ const BoxDept: React.FC = () => {
         printBoxHistory(getFilteredHistory(), fromDate, toDate, getpdfheaderdata);
     };
 
-    const historyColumns = getHistoryBoxColumns();
+    const historyColumns = getHistoryBoxColumns(alertRules);
 
     const toggleHistory = () => {
         if (showHistory) {
@@ -624,6 +684,7 @@ const BoxDept: React.FC = () => {
         isLoading,
         isSubmitting,
         meltingLoadingIds,
+        alertRules,
     );
 
 

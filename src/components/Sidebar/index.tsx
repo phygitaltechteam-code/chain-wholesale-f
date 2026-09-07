@@ -21,6 +21,7 @@ import {
   MdAccountCircle,
   MdPictureAsPdf,
   MdAutoGraph,
+  MdAddAlert,
 } from 'react-icons/md';
 import { useAuthContext } from '@/context/AuthContext';
 import { EPinIcon } from '@/icons';
@@ -152,6 +153,12 @@ const Sidebar = ({
       label: 'Daily Report',
       icon: <MdAssessment size={22} />,
       roles: ['ADMIN'],
+    },
+    {
+      label: 'Alert Management',
+      path: '/alertmanagement',
+      roles: ['ADMIN'],
+      icon: <MdAddAlert size={22} />
     },
     {
       label: 'Purity Management',
@@ -323,27 +330,7 @@ const Sidebar = ({
     if (setSidebarOpen) setSidebarOpen(newState);
   };
 
-  const getUserInitials = () => {
-    const name = user?.fullname || user?.username || 'User';
-    return name
-      .split(' ')
-      .map((word: string) => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
-  const getRoleDisplay = () => {
-    if (role === 'SUPERADMIN') return 'Super Admin';
-    if (role === 'ADMIN') return 'Admin';
-    return 'User';
-  };
-
-  const getLogoLetter = () => {
-    if (role === 'SUPERADMIN') return 'S';
-    if (role === 'ADMIN') return 'M';
-    return 'G';
-  };
 
   const getPortalName = () => {
     return 'FineWt';

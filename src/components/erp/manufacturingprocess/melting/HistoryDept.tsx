@@ -10,14 +10,22 @@ interface HistoryDeptProps {
     totalLoss: number;
   };
   historyLoading: boolean;
+  alertRules?: AlertRule[];
 }
 
-import { formatDate, formatNumberDisplay, calculateExpectedFine } from './meltingUtils';
+import {
+  formatDate,
+  formatNumberDisplay,
+  calculateExpectedFine,
+  AlertRule,
+  checkMeltingLossAlert,
+} from './meltingUtils';
 
 const HistoryDept: React.FC<HistoryDeptProps> = ({
   historyData,
   historyTotals,
   historyLoading,
+  alertRules,
 }) => {
   // History columns
   const historyColumns: Column<any>[] = [
@@ -25,13 +33,13 @@ const HistoryDept: React.FC<HistoryDeptProps> = ({
       key: 'createdAt',
       header: 'Date & Time',
       render: (item) => {
-        const { date, time } = formatDate(item.createdAt);
+        const { date, time } = formatDate(item.createdAt || item.dateTime || item.created_at);
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
               {date}
             </span>
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
               {time}
             </span>
           </div>
@@ -87,19 +95,52 @@ const HistoryDept: React.FC<HistoryDeptProps> = ({
       key: 'loss',
       header: 'Loss (G)',
       render: (item) => {
+        const gross = item.grossWeight ?? item.grossWt ?? item.weight ?? 0;
         const expected =
           item.expected ??
           item.expectedFine ??
-          calculateExpectedFine(item.grossWeight ?? item.grossWt ?? item.weight, item.purity);
+          calculateExpectedFine(gross, item.purity);
         const fine = item.fineWeight || 0;
         const loss =
           item.loss !== undefined && item.loss !== null
             ? item.loss
             : Math.max(0, Math.round((expected - fine) * 1000) / 1000);
+
+        const alertCheck = checkMeltingLossAlert(
+          gross,
+          item.purity,
+          fine,
+          expected,
+          alertRules
+        );
+
+        let colorClass = 'text-gray-500 dark:text-slate-400';
+        if (alertCheck) {
+          if (alertCheck.colorState === 'green') {
+            colorClass = 'font-semibold text-green-600 dark:text-green-400';
+          } else if (alertCheck.colorState === 'yellow') {
+            colorClass = 'font-semibold text-amber-500 dark:text-amber-400';
+          } else if (alertCheck.colorState === 'red') {
+            colorClass = 'font-bold text-red-600 dark:text-red-500';
+          }
+        }
+
+        const diff =
+          alertCheck && alertCheck.isExceeded
+            ? Math.round((alertCheck.actualLoss - alertCheck.maxAllowedLoss) * 1000) / 1000
+            : 0;
+
         return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-            {formatNumberDisplay(loss)} G
-          </span>
+          <div className="flex flex-col items-center justify-center">
+            <span className={`font-mono text-sm ${colorClass}`}>
+              {formatNumberDisplay(loss)} G
+            </span>
+            {diff > 0 && (
+              <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+                (Diff: +{formatNumberDisplay(diff)} G)
+              </span>
+            )}
+          </div>
         );
       },
     },
@@ -114,15 +155,15 @@ const HistoryDept: React.FC<HistoryDeptProps> = ({
     },
     {
       key: 'updatedAt',
-      header: 'Processed Date & Time',
+      header: 'Proceed Date & Time',
       render: (item) => {
-        const { date, time } = formatDate(item.updatedAt);
+        const { date, time } = formatDate(item.updatedAt || item.updated_at || item.proceedDateTime || item.proceedDate || item.createdAt);
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
               {date}
             </span>
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
               {time}
             </span>
           </div>

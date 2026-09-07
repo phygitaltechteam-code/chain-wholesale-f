@@ -25,6 +25,7 @@ import { useGetHeader } from '@/lib/api/headerapi';
 import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 import { useAddCuttingMelting, useGetCuttingScrap, getBackendErrorMessage, useAddCuttingScrap } from '@/lib/api/processmelting';
+import { useGetProcessAlert, checkProcessLossAlert } from '@/lib/api/alertmanagement';
 
 import {
   CuttingEntry,
@@ -107,6 +108,7 @@ const CuttingDept: React.FC = () => {
   const submitMelting = useAddCuttingMelting();
   const { data: cuttingScrapData, refetch: refetchCuttingScrap } = useGetCuttingScrap();
   const receivedscrap = useAddCuttingScrap();
+  const { data: alertRules } = useGetProcessAlert('cutting');
 
   const scrapList = React.useMemo(() => {
     const list = Array.isArray(cuttingScrapData?.data)
@@ -350,15 +352,42 @@ const CuttingDept: React.FC = () => {
     }
   }, [cuttingData, cuttingLoading]);
 
-  // Filter history by date range
+  // Filter and sort history by Proceed Date & Time
   const getFilteredHistory = () => {
-    if (!dateRange || dateRange.length === 0) return cuttingHistory;
+    let list = Array.isArray(cuttingHistory?.data)
+      ? cuttingHistory.data
+      : Array.isArray(cuttingHistory)
+      ? cuttingHistory
+      : [];
 
-    const [from, to] = dateRange;
+    // Sort descending by Proceed Date & Time
+    list = [...list].sort((a: any, b: any) => {
+      const dateA = new Date(
+        a.updatedAt || a.proceedDateTime || a.updated_at || a.createdAt || 0,
+      ).getTime();
+      const dateB = new Date(
+        b.updatedAt || b.proceedDateTime || b.updated_at || b.createdAt || 0,
+      ).getTime();
+      return dateB - dateA;
+    });
 
-    return cuttingHistory.filter((item: any) => {
-      if (!item.createdAt) return false;
-      const itemDate = new Date(item.createdAt);
+    if (!dateRange || dateRange.length === 0) return list;
+
+    const [fromRaw, toRaw] = dateRange;
+    const from = fromRaw ? new Date(fromRaw) : null;
+    if (from) from.setHours(0, 0, 0, 0);
+    const to = toRaw ? new Date(toRaw) : null;
+    if (to) to.setHours(23, 59, 59, 999);
+
+    return list.filter((item: any) => {
+      const dateVal =
+        item?.updatedAt ||
+        item?.proceedDateTime ||
+        item?.updated_at ||
+        item?.createdAt;
+      if (!dateVal) return false;
+      const itemDate = new Date(dateVal);
+      if (Number.isNaN(itemDate.getTime())) return false;
 
       if (from && to) {
         return itemDate >= from && itemDate <= to;
@@ -465,6 +494,7 @@ const CuttingDept: React.FC = () => {
   );
 
   // Open confirmation popup before saving
+  // Open confirmation popup before saving
   const handleSaveClick = useCallback(
     (index: number, target: 'stock' | 'kunda') => {
       const entry = cuttingEntries[index];
@@ -493,18 +523,18 @@ const CuttingDept: React.FC = () => {
     const index = saveIndex;
     const entry = cuttingEntries[index];
 
+    const lossVal =
+      entry.loss !== undefined && entry.loss !== null
+        ? entry.loss
+        : calculateLoss(
+            entry.chainGiven || 0,
+            entry.chainReceived || 0,
+            entry.scrap || 0,
+          );
+
     setIsLoading(true);
 
     try {
-      const lossVal =
-        entry.loss !== undefined && entry.loss !== null
-          ? entry.loss
-          : calculateLoss(
-              entry.chainGiven || 0,
-              entry.chainReceived || 0,
-              entry.scrap || 0,
-            );
-
       if (actionType === 'stock') {
         await submitCutting.mutateAsync({
           id: entry.id,
@@ -555,7 +585,7 @@ const CuttingDept: React.FC = () => {
       setSaveIndex(null);
       setActionType(null);
     }
-  }, [saveIndex, actionType, cuttingEntries, submitCutting, submitMoveKunda, refetch]);
+  }, [saveIndex, actionType, cuttingEntries, submitCutting, submitMoveKunda, refetch, alertRules]);
 
   const isSubmitting = submitCutting.isPending || submitMoveKunda.isPending;
 
@@ -568,6 +598,7 @@ const CuttingDept: React.FC = () => {
     isSubmitting,
     submitMoveKundaIsPending: submitMoveKunda.isPending,
     meltingLoadingIds,
+    alertRules,
   });
 
   const toggleHistory = () => {
@@ -731,6 +762,7 @@ const CuttingDept: React.FC = () => {
           filteredData={getFilteredHistory()}
           historyLoading={historyLoading}
           dateRange={dateRange}
+          historyColumns={getHistoryCuttingColumns(alertRules)}
         />
       )}
 

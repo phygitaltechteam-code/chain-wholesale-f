@@ -162,3 +162,112 @@ export const useDeleteAlert = () => {
 export const useSubmitAlert = () => {
     return useSubmitProcessAlert();
 };
+
+export interface AlertRule {
+    grossWt: number | string;
+    purity: number | string;
+    loss?: number | string;
+    lossWt?: number | string;
+    adjustment?: number | string;
+    adjsutment?: number | string;
+}
+
+export interface ProcessLossAlertResult {
+    isExceeded: boolean;
+    actualLoss: number;
+    baseLoss: number;
+    maxAllowedLoss: number;
+    adjustmentPercent: number;
+    diff: number;
+    colorState: 'gray' | 'green' | 'yellow' | 'red';
+}
+
+export const checkProcessLossAlert = (
+    grossWt: number,
+    purity: number,
+    actualLoss: number,
+    alertRules?: AlertRule[],
+    hasEnteredValues: boolean = true
+): ProcessLossAlertResult | null => {
+    if (
+        !alertRules ||
+        alertRules.length === 0 ||
+        !grossWt ||
+        grossWt <= 0
+    ) {
+        return null;
+    }
+
+    const rules = alertRules
+        .map((r: any) => {
+            const gWt =
+                typeof r.grossWt === 'number'
+                    ? r.grossWt
+                    : parseFloat(String(r.grossWt).replace(/[^0-9.]/g, '')) || 10;
+            const pur = parseFloat(String(r.purity)) || 0;
+            const l =
+                parseFloat(String(r.loss !== undefined && r.loss !== null ? r.loss : (r.lossWt ?? 0))) || 0;
+            const rawAdj =
+                r.adjustment !== undefined && r.adjustment !== null ? r.adjustment : r.adjsutment;
+            const adj =
+                typeof rawAdj === 'number'
+                    ? rawAdj
+                    : parseFloat(String(rawAdj ?? 0).replace(/[^0-9.-]/g, '')) || 0;
+            return { grossWt: gWt, purity: pur, loss: l, adjustment: adj };
+        })
+        .filter((r) => r.grossWt > 0 && r.loss > 0);
+
+    if (rules.length === 0) return null;
+
+    // 1. Find matched rule by purity or closest purity
+    let matchedRule = rules.find((r) => Math.abs(r.purity - purity) < 0.1);
+    if (!matchedRule) {
+        matchedRule = rules.reduce((prev, curr) =>
+            Math.abs(curr.purity - purity) < Math.abs(prev.purity - purity) ? curr : prev
+        );
+    }
+
+    // 2. Scale expected base loss according to gross weight & purity ratio
+    let baseLoss = (matchedRule.loss / matchedRule.grossWt) * grossWt;
+    if (matchedRule.purity > 0 && purity > 0) {
+        baseLoss = baseLoss * (purity / matchedRule.purity);
+    }
+    baseLoss = Math.round(baseLoss * 1000) / 1000;
+
+    // 3. Max allowed loss with tolerance adjustment (+/- %)
+    const adjPercent = matchedRule.adjustment || 0;
+    const maxAllowedLoss = Math.round(baseLoss * (1 + adjPercent / 100) * 1000) / 1000;
+
+    const validLoss = Math.max(0, Math.round(actualLoss * 1000) / 1000);
+    const isExceeded = validLoss > maxAllowedLoss && validLoss > 0.001;
+    const diff = isExceeded ? Math.round((validLoss - maxAllowedLoss) * 1000) / 1000 : 0;
+
+    let colorState: 'gray' | 'green' | 'yellow' | 'red' = 'gray';
+    if (!hasEnteredValues || validLoss === 0) {
+        colorState = 'gray';
+    } else if (isExceeded) {
+        colorState = 'red';
+    } else if (validLoss > baseLoss) {
+        colorState = 'yellow';
+    } else {
+        colorState = 'green';
+    }
+
+    return {
+        isExceeded,
+        actualLoss: validLoss,
+        baseLoss,
+        maxAllowedLoss,
+        adjustmentPercent: adjPercent,
+        diff,
+        colorState,
+    };
+};
+
+export const getProcessLossColorClass = (alertResult?: ProcessLossAlertResult | null): string => {
+    if (!alertResult) return 'text-gray-500 dark:text-slate-400';
+    if (alertResult.colorState === 'green') return 'font-semibold text-green-600 dark:text-green-400';
+    if (alertResult.colorState === 'yellow') return 'font-semibold text-amber-500 dark:text-amber-400';
+    if (alertResult.colorState === 'red') return 'font-bold text-red-600 dark:text-red-500';
+    return 'text-gray-500 dark:text-slate-400';
+};

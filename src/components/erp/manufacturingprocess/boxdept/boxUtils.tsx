@@ -1,6 +1,11 @@
 import React from 'react';
 import { Column } from '@/components/Forms/Table/GenericTable';
 import { Flame, Save } from 'lucide-react';
+import {
+    checkProcessLossAlert,
+    getProcessLossColorClass,
+    AlertRule,
+} from '@/lib/api/alertmanagement';
 
 export interface BoxEntry {
     id: string;
@@ -331,7 +336,7 @@ export const printBoxHistory = (
     }, 500);
 };
 
-export const getHistoryBoxColumns = (): Column<any>[] => [
+export const getHistoryBoxColumns = (alertRules?: AlertRule[]): Column<any>[] => [
     {
         key: 'createdAt',
         header: 'Date & Time',
@@ -350,11 +355,20 @@ export const getHistoryBoxColumns = (): Column<any>[] => [
         },
     },
     {
+        key: 'item',
+        header: 'Item',
+        render: (item) => (
+            <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
+                {getItemName(item?.item)}
+            </span>
+        ),
+    },
+    {
         key: 'size',
         header: 'Size',
         render: (item) => (
             <span className="text-sm text-[#1a1c1b] dark:text-white">
-                {item?.size?.size}
+                {getSizeName(item?.size)}
             </span>
         ),
     },
@@ -363,14 +377,14 @@ export const getHistoryBoxColumns = (): Column<any>[] => [
         header: 'Purity %',
         render: (item) => (
             <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                {formatNumber(item.purity)}%
+                {formatNumberDisplay(item?.purity)}%
             </span>
         ),
     },
     {
         key: 'tarWeight',
-        header: 'Tar (तार)',
-        colSpan: (item) => (hasMeltingStatus(item) ? 3 : 1),
+        header: 'Tar Weight (G)',
+        colSpan: (item) => (hasMeltingStatus(item) ? 4 : 1),
         render: (item) => {
             if (hasMeltingStatus(item)) {
                 return (
@@ -421,16 +435,33 @@ export const getHistoryBoxColumns = (): Column<any>[] => [
     },
     {
         key: 'loss',
-        header: 'Loss',
+        header: 'Loss (G)',
         colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
         render: (item) => {
             if (hasMeltingStatus(item)) {
                 return null;
             }
+            const alertCheck = checkProcessLossAlert(
+                item?.tarWeight,
+                item?.purity,
+                item?.loss,
+                alertRules,
+                true
+            );
+            const colorClass = getProcessLossColorClass(alertCheck);
+            const diff = alertCheck?.diff || 0;
+
             return (
-                <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumberDisplay(item?.loss)} G
-                </span>
+                <div className="flex flex-col items-center justify-center">
+                    <span className={`font-mono text-sm ${colorClass}`}>
+                        {formatNumberDisplay(item?.loss)} G
+                    </span>
+                    {diff > 0 && (
+                        <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+                            (Diff: +{formatNumberDisplay(diff)} G)
+                        </span>
+                    )}
+                </div>
             );
         },
     },
@@ -471,7 +502,8 @@ export const getBoxColumns = (
     hasEditableValues: (entry: BoxEntry) => boolean,
     isLoading: boolean,
     isSubmitting: boolean,
-    meltingLoadingIds: Set<string>
+    meltingLoadingIds: Set<string>,
+    alertRules?: AlertRule[]
 ): Column<BoxEntry>[] => [
         {
             key: 'dateTime',
@@ -599,12 +631,32 @@ export const getBoxColumns = (
         },
         {
             key: 'loss',
-            header: 'Loss',
-            render: (item) => (
-                <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumberDisplay(item.loss)} G
-                </span>
-            ),
+            header: 'Loss (G)',
+            render: (item) => {
+                const hasValues = hasEditableValues(item);
+                const alertCheck = checkProcessLossAlert(
+                    item.tarWeight,
+                    item.purity,
+                    item.loss,
+                    alertRules,
+                    hasValues
+                );
+                const colorClass = getProcessLossColorClass(alertCheck);
+                const diff = alertCheck?.diff || 0;
+
+                return (
+                    <div className="flex flex-col items-center justify-center">
+                        <span className={`font-mono text-sm ${colorClass}`}>
+                            {formatNumberDisplay(item.loss)} G
+                        </span>
+                        {diff > 0 && (
+                            <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+                                (Diff: +{formatNumberDisplay(diff)} G)
+                            </span>
+                        )}
+                    </div>
+                );
+            },
         },
 
         {

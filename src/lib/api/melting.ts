@@ -27,7 +27,11 @@ export const getMeltingApi = async () => {
 export const getMeltingHistoryApi = async () => {
   try {
     const response = await api.get('/admin/melting/history');
-    return response.data?.data || response.data || [];
+    if (Array.isArray(response.data)) return response.data;
+    if (Array.isArray(response.data?.data)) return response.data.data;
+    if (Array.isArray(response.data?.history)) return response.data.history;
+    if (Array.isArray(response.data?.meltingHistory)) return response.data.meltingHistory;
+    return response.data?.data || response.data?.history || response.data || [];
   } catch (error) {
     return [];
   }
@@ -82,6 +86,7 @@ export const useSubmitMeltingStock = () => {
     mutationFn: submitMeltingStockApi,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['melting'] });
+      queryClient.invalidateQueries({ queryKey: ['meltingHistory'] });
       queryClient.invalidateQueries({ queryKey: ['stock'] });
     },
     onError: (error: any) => {

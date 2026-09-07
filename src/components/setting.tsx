@@ -88,7 +88,7 @@ export const Settings = () => {
       ? [{ id: 'backup', label: 'Backup & Restore Data' }]
       : []),
     { id: 'scale', label: 'Weight Scale' },
-    { id: 'alert', label: 'Alert Management' },
+    // { id: 'alert', label: 'Alert Management' },
   ];
 
   return (
@@ -160,7 +160,7 @@ export const Settings = () => {
           {activeTab === 'header' && <HeaderPdfDesign />}
           {activeTab === 'backup' && isBackupUnlocked && <BackupAndRestorePage />}
           {activeTab === 'scale' && <ScaleSetting />}
-          {activeTab === 'alert' && <AlertManagement />}
+          {/* {activeTab === 'alert' && <AlertManagement />} */}
         </div>
       </div>
     </div>

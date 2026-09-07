@@ -2,6 +2,11 @@ import React from 'react';
 import toast from 'react-hot-toast';
 import { Column } from '@/components/Forms/Table/GenericTable';
 import { Flame, Save } from 'lucide-react';
+import {
+    AlertRule,
+    checkProcessLossAlert,
+    getProcessLossColorClass,
+} from '@/lib/api/alertmanagement';
 
 export interface CuttingEntry {
     id: string;
@@ -105,7 +110,7 @@ export const hasMeltingStatus = (item: any): boolean => {
     );
 };
 
-export const getHistoryCuttingColumns = (): Column<any>[] => [
+export const getHistoryCuttingColumns = (alertRules?: AlertRule[]): Column<any>[] => [
     {
         key: 'createdAt',
         header: 'Date & Time',
@@ -204,10 +209,27 @@ export const getHistoryCuttingColumns = (): Column<any>[] => [
             if (hasMeltingStatus(item)) {
                 return null;
             }
+            const alertCheck = checkProcessLossAlert(
+                item.chainWeight ?? item.chainGiven,
+                item.purity,
+                item.loss,
+                alertRules,
+                true
+            );
+            const colorClass = getProcessLossColorClass(alertCheck);
+            const diff = alertCheck?.diff || 0;
+
             return (
-                <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumberDisplay(item.loss)} G
-                </span>
+                <div className="flex flex-col items-center justify-center">
+                    <span className={`font-mono text-sm ${colorClass}`}>
+                        {formatNumberDisplay(item.loss)} G
+                    </span>
+                    {diff > 0 && (
+                        <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+                            (Diff: +{formatNumberDisplay(diff)} G)
+                        </span>
+                    )}
+                </div>
             );
         },
     },
@@ -247,7 +269,8 @@ export const getCuttingColumns = (
     isLoadingParam?: boolean,
     isSubmittingParam?: boolean,
     submitMoveKundaIsPendingParam?: boolean,
-    meltingLoadingIdsParam?: Set<string>
+    meltingLoadingIdsParam?: Set<string>,
+    alertRulesParam?: AlertRule[]
 ): Column<CuttingEntry>[] => {
     let getScaleProps = getScalePropsParam;
     let handleInlineChange = handleInlineChangeParam;
@@ -257,6 +280,7 @@ export const getCuttingColumns = (
     let isSubmitting = isSubmittingParam;
     let submitMoveKundaIsPending = submitMoveKundaIsPendingParam;
     let meltingLoadingIds = meltingLoadingIdsParam;
+    let alertRules = alertRulesParam;
 
     if (getScalePropsParam && typeof getScalePropsParam === 'object' && typeof getScalePropsParam !== 'function') {
         getScaleProps = getScalePropsParam.getScaleProps;
@@ -267,6 +291,7 @@ export const getCuttingColumns = (
         isSubmitting = getScalePropsParam.isSubmitting;
         submitMoveKundaIsPending = getScalePropsParam.submitMoveKundaIsPending;
         meltingLoadingIds = getScalePropsParam.meltingLoadingIds;
+        alertRules = getScalePropsParam.alertRules;
     }
 
     if (typeof getScaleProps !== 'function') {
@@ -411,11 +436,35 @@ export const getCuttingColumns = (
         {
             key: 'loss',
             header: 'Loss (G)',
-            render: (item) => (
-                <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-                    {formatNumberDisplay(item.loss)} G
-                </span>
-            ),
+            render: (item) => {
+                const hasValues = Boolean(
+                    (item.chainReceivedRaw !== undefined && item.chainReceivedRaw !== '' && item.chainReceived > 0) ||
+                    item.chainReceived > 0 ||
+                    item.isSaved
+                );
+                const alertCheck = checkProcessLossAlert(
+                    item.chainWeight ?? item.chainGiven,
+                    item.purity,
+                    item.loss,
+                    alertRules,
+                    hasValues
+                );
+                const colorClass = getProcessLossColorClass(alertCheck);
+                const diff = alertCheck?.diff || 0;
+
+                return (
+                    <div className="flex flex-col items-center justify-center">
+                        <span className={`font-mono text-sm ${colorClass}`}>
+                            {formatNumberDisplay(item.loss)} G
+                        </span>
+                        {diff > 0 && (
+                            <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+                                (Diff: +{formatNumberDisplay(diff)} G)
+                            </span>
+                        )}
+                    </div>
+                );
+            },
         },
 
         {
