@@ -870,15 +870,15 @@ const DayReport: React.FC = () => {
       clientDueHtml = `
                 <div style="margin-bottom:8px;page-break-inside:avoid;">
                     <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-weight:700;">Client Dues</span>
-                        <span style="font-size:8.5px;color:#000;">Total Due: <b>${formatNumberDisplay(settlementTotals.total)} G</b> | Clients: <b>${settlementTotals.count}</b></span>
+                        <span style="font-weight:700;">Customer Settlement</span>
+                        <span style="font-size:8.5px;color:#000;">Total Settlement: <b>${formatNumberDisplay(settlementTotals.total)} G</b> | Clients: <b>${settlementTotals.count}</b></span>
                     </div>
                     <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
                         <thead>
                             <tr style="background:#785600;color:white;font-weight:600;">
                                 <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
                                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Client Name</th>
-                                <th style="border:1px solid #785600;padding:2px 3px;width:100px;text-align:center;font-size:8px;color:white;">Due Fine WT (G)</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:100px;text-align:center;font-size:8px;color:white;">Settlement (G)</th>
                             </tr>
                         </thead>
                         <tbody>${dueRows}</tbody>
@@ -925,7 +925,7 @@ const DayReport: React.FC = () => {
                         <div>Process Fine: <span style="color:#785600;">${formatNumberDisplay(processTotals.fine)} G</span></div>
                         <div>Total Loss: <span style="color:#b91c1c;">${formatNumberDisplay(lossTotals.total)} G</span></div>
                         <div>Inward Fine: <span style="color:#785600;">${formatNumberDisplay(stockInwardTotals.fine)} G</span></div>
-                        <div>Client Dues: <span style="color:#785600;">${formatNumberDisplay(settlementTotals.total)} G</span></div>
+                        <div>Customer Settlement: <span style="color:#785600;">${formatNumberDisplay(settlementTotals.total)} G</span></div>
                     </div>
 
                     <!-- Tables -->
@@ -1098,130 +1098,195 @@ const DayReport: React.FC = () => {
       {/* Main Content */}
       <div className="p-3 sm:p-4 md:p-6">
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-3">
-          {/* 1. TODAY'S PROCESS Panel - Like RealTimeGoldReport */}
-          <div className="flex flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
-            <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-              <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
-                Today's Process
-              </span>
-            </div>
-            <div className="flex flex-1 flex-col overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead>
-                  <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                    <th className="w-7 px-2 py-2.5 text-center"></th>
-                    <th className="px-3 py-2.5">Process / Item</th>
-                    <th className="px-3 py-2.5 text-right">Gross (G)</th>
-                    <th className="px-3 py-2.5 text-right">Fine (G)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
-                  {filteredProcessGroups.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400"
-                      >
-                        No process records found.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredProcessGroups.map((group) => {
-                      const isExpanded = expandedProcesses.has(group.id);
-                      return (
-                        <React.Fragment key={group.id}>
-                          <tr
-                            onClick={() => toggleProcess(group.id)}
-                            className={`cursor-pointer transition-colors ${
-                              isExpanded
-                                ? 'bg-[#785600]/10 dark:bg-amber-900/20'
-                                : 'hover:bg-[#785600]/5 dark:hover:bg-slate-800/40'
-                            }`}
-                          >
-                            <td className="px-2 py-2.5 text-center">
-                              <div className="inline-flex h-4 w-4 items-center justify-center rounded bg-[#785600]/10 text-[#785600] dark:bg-amber-400/20 dark:text-amber-400">
-                                {isExpanded ? (
-                                  <ChevronDown className="h-3 w-3" />
-                                ) : (
-                                  <ChevronRight className="h-3 w-3" />
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
-                              {group.processName}
-                            </td>
-                            <td className="font-mono px-3 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
-                              {formatNumberDisplay(group.totalGrossWeight)}
-                            </td>
-                            <td className="font-mono px-3 py-2.5 text-right font-bold text-[#785600] dark:text-amber-400">
-                              {formatNumberDisplay(group.totalFineWeight)}
-                            </td>
-                          </tr>
-
-                          {isExpanded &&
-                            group.items.map((item, idx) => (
-                              <tr
-                                key={item.id || `${group.id}-${idx}`}
-                                className="border-b border-[#d3c4af]/10 bg-[#fcfbf9]/60 text-xs hover:bg-[#f5f3ef] dark:bg-slate-900/40 dark:hover:bg-slate-800/40"
-                              >
-                                <td className="px-2 py-2 text-center text-[#817563] dark:text-slate-400">
-                                  {idx + 1}
-                                </td>
-                                <td className="px-3 py-2 pl-6 text-slate-700 dark:text-slate-300">
-                                  <span>{item.item || '-'}</span>
-                                  {item.size && item.size !== '-' && (
-                                    <span className="text-[#4f4535] dark:text-slate-400">
-                                      {' '}
-                                      ({item.size})
-                                    </span>
-                                  )}
-                                  {item.purity !== null && (
-                                    <span className="font-medium text-[#785600] dark:text-amber-400">
-                                      {' '}
-                                      ({item.purity}%)
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="font-mono px-3 py-2 text-right text-slate-700 dark:text-slate-300">
-                                  {formatNumberDisplay(item.grossweight)}
-                                </td>
-                                <td className="font-mono px-3 py-2 text-right font-semibold text-[#785600] dark:text-amber-400">
-                                  {formatNumberDisplay(item.fineweight)}
-                                </td>
-                              </tr>
-                            ))}
-                        </React.Fragment>
-                      );
-                    })
-                  )}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 font-bold dark:bg-slate-800/70">
-                    <td
-                      colSpan={2}
-                      className="px-3 py-2.5 text-[#1a1c1b] dark:text-white"
-                    >
-                      Total Process
-                    </td>
-                    <td className="font-mono px-3 py-2.5 text-right text-[#1a1c1b] dark:text-white">
-                      {formatNumberDisplay(processTotals.gross)}
-                    </td>
-                    <td className="font-mono px-3 py-2.5 text-right text-[#785600] dark:text-amber-400">
-                      {formatNumberDisplay(processTotals.fine)}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-
-          {/* 2. MIDDLE COLUMN - Customer Due & Bills & Loss */}
+          {/* 1. TODAY'S PROCESS & TODAY'S LOSS Panel */}
           <div className="flex flex-col gap-4">
-            {/* CUSTOMER TODAY'S DUE */}
+            {/* TODAY'S PROCESS */}
             <div className="flex flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
               <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
                 <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
-                  Customer Today's Due
+                  Today's Process
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      <th className="w-7 px-2 py-2.5 text-center"></th>
+                      <th className="px-3 py-2.5">Process / Item</th>
+                      <th className="px-3 py-2.5 text-right">Gross (G)</th>
+                      <th className="px-3 py-2.5 text-right">Fine (G)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
+                    {filteredProcessGroups.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400"
+                        >
+                          No process records found.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredProcessGroups.map((group) => {
+                        const isExpanded = expandedProcesses.has(group.id);
+                        return (
+                          <React.Fragment key={group.id}>
+                            <tr
+                              onClick={() => toggleProcess(group.id)}
+                              className={`cursor-pointer transition-colors ${
+                                isExpanded
+                                  ? 'bg-[#785600]/10 dark:bg-amber-900/20'
+                                  : 'hover:bg-[#785600]/5 dark:hover:bg-slate-800/40'
+                              }`}
+                            >
+                              <td className="px-2 py-2.5 text-center">
+                                <div className="inline-flex h-4 w-4 items-center justify-center rounded bg-[#785600]/10 text-[#785600] dark:bg-amber-400/20 dark:text-amber-400">
+                                  {isExpanded ? (
+                                    <ChevronDown className="h-3 w-3" />
+                                  ) : (
+                                    <ChevronRight className="h-3 w-3" />
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                                {group.processName}
+                              </td>
+                              <td className="font-mono px-3 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
+                                {formatNumberDisplay(group.totalGrossWeight)}
+                              </td>
+                              <td className="font-mono px-3 py-2.5 text-right font-bold text-[#785600] dark:text-amber-400">
+                                {formatNumberDisplay(group.totalFineWeight)}
+                              </td>
+                            </tr>
+
+                            {isExpanded &&
+                              group.items.map((item, idx) => (
+                                <tr
+                                  key={item.id || `${group.id}-${idx}`}
+                                  className="border-b border-[#d3c4af]/10 bg-[#fcfbf9]/60 text-xs hover:bg-[#f5f3ef] dark:bg-slate-900/40 dark:hover:bg-slate-800/40"
+                                >
+                                  <td className="px-2 py-2 text-center text-[#817563] dark:text-slate-400">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="px-3 py-2 pl-6 text-slate-700 dark:text-slate-300">
+                                    <span>{item.item || '-'}</span>
+                                    {item.size && item.size !== '-' && (
+                                      <span className="text-[#4f4535] dark:text-slate-400">
+                                        {' '}
+                                        ({item.size})
+                                      </span>
+                                    )}
+                                    {item.purity !== null && (
+                                      <span className="font-medium text-[#785600] dark:text-amber-400">
+                                        {' '}
+                                        ({item.purity}%)
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="font-mono px-3 py-2 text-right text-slate-700 dark:text-slate-300">
+                                    {formatNumberDisplay(item.grossweight)}
+                                  </td>
+                                  <td className="font-mono px-3 py-2 text-right font-semibold text-[#785600] dark:text-amber-400">
+                                    {formatNumberDisplay(item.fineweight)}
+                                  </td>
+                                </tr>
+                              ))}
+                          </React.Fragment>
+                        );
+                      })
+                    )}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 font-bold dark:bg-slate-800/70">
+                      <td
+                        colSpan={2}
+                        className="px-3 py-2.5 text-[#1a1c1b] dark:text-white"
+                      >
+                        Total Process
+                      </td>
+                      <td className="font-mono px-3 py-2.5 text-right text-[#1a1c1b] dark:text-white">
+                        {formatNumberDisplay(processTotals.gross)}
+                      </td>
+                      <td className="font-mono px-3 py-2.5 text-right text-[#785600] dark:text-amber-400">
+                        {formatNumberDisplay(processTotals.fine)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            {/* TODAY'S LOSS - Placed after Today's Process */}
+            <div className="flex flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+              <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
+                <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
+                  Today's Loss
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      <th className="w-7 px-2 py-2.5 text-center"></th>
+                      <th className="px-3 py-2.5">Particular</th>
+                      <th className="px-3 py-2.5 text-right">Loss (G)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
+                    {filteredLoss.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={3}
+                          className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400"
+                        >
+                          No loss records found.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredLoss.map((l, idx) => (
+                        <tr
+                          key={l.id || idx}
+                          className="hover:bg-[#785600]/5 dark:hover:bg-slate-800/40"
+                        >
+                          <td className="px-2 py-2.5 text-center text-[#817563] dark:text-slate-400">
+                            {idx + 1}
+                          </td>
+                          <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                            {l.processName}
+                          </td>
+                          <td className="font-mono px-3 py-2.5 text-right text-[#785600] dark:text-amber-400">
+                            {formatNumberDisplay(l.loss)}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 font-bold dark:bg-slate-800/70">
+                      <td
+                        colSpan={2}
+                        className="px-3 py-2.5 text-[#1a1c1b] dark:text-white"
+                      >
+                        Total Loss
+                      </td>
+                      <td className="font-mono px-3 py-2.5 text-right text-[#785600] dark:text-amber-400">
+                        {formatNumberDisplay(lossTotals.total)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. MIDDLE COLUMN - Customer Settlement & Bills */}
+          <div className="flex flex-col gap-4">
+            {/* TODAY'S CUSTOMER SETTLEMENT */}
+            <div className="flex flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+              <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
+                <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
+                  Today's Customer Settlement
                 </span>
               </div>
               <div className="flex flex-1 flex-col overflow-x-auto">
@@ -1315,7 +1380,7 @@ const DayReport: React.FC = () => {
                         colSpan={2}
                         className="px-3 py-2.5 text-[#1a1c1b] dark:text-white"
                       >
-                        Total Due
+                        Total Settlement
                       </td>
                       <td className="font-mono px-3 py-2.5 text-right text-[#785600] dark:text-amber-400">
                         {formatNumberDisplay(settlementTotals.total)}
@@ -1326,7 +1391,7 @@ const DayReport: React.FC = () => {
               </div>
             </div>
 
-            {/* TODAY'S BILLS - Placed after Customer Due */}
+            {/* TODAY'S BILLS - Placed after Customer Settlement */}
             <div className="flex flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
               <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
                 <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
@@ -1400,68 +1465,6 @@ const DayReport: React.FC = () => {
                       </td>
                       <td className="font-mono px-3 py-2.5 text-right text-[#785600] dark:text-amber-400">
                         {formatNumberDisplay(summary.totalBillsRemainingWeight)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-
-            {/* TODAY'S LOSS */}
-            <div className="flex flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
-              <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-                <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
-                  Today's Loss
-                </span>
-              </div>
-              <div className="flex flex-1 flex-col overflow-x-auto">
-                <table className="w-full text-left text-xs sm:text-sm">
-                  <thead>
-                    <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                      <th className="w-7 px-2 py-2.5 text-center"></th>
-                      <th className="px-3 py-2.5">Particular</th>
-                      <th className="px-3 py-2.5 text-right">Loss (G)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
-                    {filteredLoss.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={3}
-                          className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400"
-                        >
-                          No loss records found.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredLoss.map((l, idx) => (
-                        <tr
-                          key={l.id || idx}
-                          className="hover:bg-[#785600]/5 dark:hover:bg-slate-800/40"
-                        >
-                          <td className="px-2 py-2.5 text-center text-[#817563] dark:text-slate-400">
-                            {idx + 1}
-                          </td>
-                          <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
-                            {l.processName}
-                          </td>
-                          <td className="font-mono px-3 py-2.5 text-right text-[#785600] dark:text-amber-400">
-                            {formatNumberDisplay(l.loss)}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 font-bold dark:bg-slate-800/70">
-                      <td
-                        colSpan={2}
-                        className="px-3 py-2.5 text-[#1a1c1b] dark:text-white"
-                      >
-                        Total Loss
-                      </td>
-                      <td className="font-mono px-3 py-2.5 text-right text-[#785600] dark:text-amber-400">
-                        {formatNumberDisplay(lossTotals.total)}
                       </td>
                     </tr>
                   </tfoot>
