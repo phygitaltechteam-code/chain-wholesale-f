@@ -77,10 +77,99 @@ export const formatDate = (dateString: string) => {
   };
 };
 
+export interface AlertRule {
+  grossWt: number | string;
+  purity: number | string;
+  loss?: number | string;
+  lossWt?: number | string;
+  adjustment?: number | string;
+  adjsutment?: number | string;
+}
+
+export interface LossAlertResult {
+  isExceeded: boolean;
+  actualLoss: number;
+  maxAllowedLoss: number;
+  adjustmentPercent: number;
+}
+
+export const checkMeltingLossAlert = (
+  grossWt: number,
+  purity: number,
+  fineWeight: number,
+  expectedFine: number,
+  alertRules?: AlertRule[]
+): LossAlertResult | null => {
+  if (
+    !alertRules ||
+    alertRules.length === 0 ||
+    !grossWt ||
+    grossWt <= 0 ||
+    fineWeight === undefined ||
+    fineWeight === null
+  ) {
+    return null;
+  }
+
+  // Calculate actual loss (Difference between expected fine and received fine weight)
+  const actualLoss = Math.max(0, Math.round((expectedFine - fineWeight) * 1000) / 1000);
+
+  const rules = alertRules
+    .map((r: any) => {
+      const gWt =
+        typeof r.grossWt === 'number'
+          ? r.grossWt
+          : parseFloat(String(r.grossWt).replace(/[^0-9.]/g, '')) || 10;
+      const pur = parseFloat(String(r.purity)) || 0;
+      const l =
+        parseFloat(String(r.loss !== undefined && r.loss !== null ? r.loss : (r.lossWt ?? 0))) || 0;
+      const rawAdj =
+        r.adjustment !== undefined && r.adjustment !== null ? r.adjustment : r.adjsutment;
+      const adj =
+        typeof rawAdj === 'number'
+          ? rawAdj
+          : parseFloat(String(rawAdj ?? 0).replace(/[^0-9.-]/g, '')) || 0;
+      return { grossWt: gWt, purity: pur, loss: l, adjustment: adj };
+    })
+    .filter((r) => r.grossWt > 0 && r.loss > 0);
+
+  if (rules.length === 0) return null;
+
+  // 1. Try to find a matched rule by purity
+  let matchedRule = rules.find((r) => Math.abs(r.purity - purity) < 0.1);
+  if (!matchedRule) {
+    // If exact purity is not in alert, find the closest available purity rule
+    matchedRule = rules.reduce((prev, curr) =>
+      Math.abs(curr.purity - purity) < Math.abs(prev.purity - purity) ? curr : prev
+    );
+  }
+
+  // 2. Scale expected loss according to gross weight & purity ratio
+  let baseLoss = (matchedRule.loss / matchedRule.grossWt) * grossWt;
+  if (matchedRule.purity > 0 && purity > 0) {
+    baseLoss = baseLoss * (purity / matchedRule.purity);
+  }
+  baseLoss = Math.round(baseLoss * 1000) / 1000;
+
+  // 3. Max allowed loss with tolerance adjustment (+/- %)
+  const adjPercent = matchedRule.adjustment || 0;
+  const maxAllowedLoss = Math.round(baseLoss * (1 + adjPercent / 100) * 1000) / 1000;
+
+  const isExceeded = actualLoss > maxAllowedLoss && actualLoss > 0.001;
+
+  return {
+    isExceeded,
+    actualLoss,
+    maxAllowedLoss,
+    adjustmentPercent: adjPercent,
+  };
+};
+
 export const getMeltingColumns = (
   getScaleProps: (index: number, field: any) => any,
   handleInlineChange: (index: number, field: any, value: string) => void,
-  handleStockClick: (index: number) => void
+  handleStockClick: (index: number) => void,
+  alertRules?: AlertRule[]
 ): Column<MeltingRow>[] => {
   return [
     {
@@ -174,8 +263,25 @@ export const getMeltingColumns = (
       header: 'Loss (G)',
       render: (item) => {
         const loss = Math.max(0, Math.round((item.expectedFine - item.fineWeight) * 1000) / 1000);
+        const alertCheck =
+          item.fineWeight > 0
+            ? checkMeltingLossAlert(
+                item.grossWt,
+                item.purity,
+                item.fineWeight,
+                item.expectedFine,
+                alertRules
+              )
+            : null;
+
         return (
-          <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          <span
+            className={`font-mono text-sm ${
+              alertCheck?.isExceeded
+                ? 'font-bold text-red-600 dark:text-red-500'
+                : 'text-[#1a1c1b] dark:text-white'
+            }`}
+          >
             {formatNumberDisplay(loss)} G
           </span>
         );
@@ -230,7 +336,7 @@ export const printMeltingHistory = (
   const rows = data
     .map((item: any, idx: number) => {
       const { date: createDate, time: createTime } = formatDate(item.createdAt);
-      
+
       // Better handling for updatedAt - show "Pending" if not available
       let updateDisplay = 'Pending';
       let updateStyle = 'color:#999;font-style:italic;';
@@ -241,7 +347,7 @@ export const printMeltingHistory = (
           updateStyle = 'color:#000;font-style:normal;';
         }
       }
-      
+
       return `
         <tr>
           <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;color:#000;">${idx + 1}</td>
@@ -325,15 +431,15 @@ export const printMeltingHistory = (
           Melting History Report
         </h2>
         ${fromDate && toDate
-          ? `
+      ? `
           <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
             From: ${fromDate.toLocaleDateString('en-IN')} &nbsp; To: ${toDate.toLocaleDateString('en-IN')}
           </div>
         `
-          : `
+      : `
           <div style="flex:1;"></div>
         `
-        }
+    }
       </div>
 
       <!-- Table -->

@@ -1,8 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/utils/axios';
 import toast from 'react-hot-toast';
 
 export interface SubmitAlertParams {
+    id?: string;
     grossWt: number;
     purity: number;
     loss: number;
@@ -22,6 +23,18 @@ export const ALERT_ENDPOINTS: Record<string, string> = {
     joint: '/admin/profile/joint',
     cutting: '/admin/profile/cutting',
     skunda: '/admin/profile/kunda',
+    kunda: '/admin/profile/kunda',
+};
+
+// Generic process alert get function
+export const getProcessAlertApi = async (process: string) => {
+    try {
+        const endpoint = ALERT_ENDPOINTS[process] || `/admin/profile/${process}`;
+        const response = await api.get(endpoint);
+        return response.data?.data || response.data || [];
+    } catch (error) {
+        return [];
+    }
 };
 
 // Generic process alert submit function
@@ -51,7 +64,24 @@ export const deleteProcessAlertApi = async ({
     return response.data;
 };
 
+// Query hook for getting process alerts
+export const useGetProcessAlert = (process: string) => {
+    return useQuery({
+        queryKey: ['processAlert', process],
+        queryFn: () => getProcessAlertApi(process),
+        enabled: Boolean(process),
+    });
+};
+
 // Specific API functions per process (supports array or single object)
+export const getMeltingAlert = () => getProcessAlertApi('melting');
+export const getTarAlert = () => getProcessAlertApi('tar');
+export const getBoxAlert = () => getProcessAlertApi('box');
+export const getSolderingAlert = () => getProcessAlertApi('soldering');
+export const getJointAlert = () => getProcessAlertApi('joint');
+export const getCuttingAlert = () => getProcessAlertApi('cutting');
+export const getSKundaAlert = () => getProcessAlertApi('kunda');
+
 export const submitMeltingAlert = (data: SubmitAlertParams[] | SubmitAlertParams) =>
     api.post<SubmitAlertResponse>('/admin/profile/melting', data).then((res) => res.data);
 
@@ -97,9 +127,11 @@ export const deleteSKundaAlert = (id: string) =>
 
 // Hook for submitting alert by process
 export const useSubmitProcessAlert = () => {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationFn: submitProcessAlertApi,
-        onSuccess: () => {
+        onSuccess: (_data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['processAlert', variables.process] });
             toast.success('Alert settings saved successfully');
         },
         onError: () => {
@@ -110,9 +142,11 @@ export const useSubmitProcessAlert = () => {
 
 // Hook for single delete alert by process
 export const useDeleteProcessAlert = () => {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationFn: deleteProcessAlertApi,
-        onSuccess: () => {
+        onSuccess: (_data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['processAlert', variables.process] });
             toast.success('Alert rule deleted successfully');
         },
         onError: () => {

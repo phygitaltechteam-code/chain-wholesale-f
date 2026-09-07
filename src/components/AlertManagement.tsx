@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from './Forms/Buttons/GenericButton';
-import { useSubmitProcessAlert, useDeleteProcessAlert } from '@/lib/api/alertmanagement';
+import {
+  useGetProcessAlert,
+  useSubmitProcessAlert,
+  useDeleteProcessAlert,
+} from '@/lib/api/alertmanagement';
 
 export interface AlertRuleRow {
   id: string;
@@ -78,6 +82,61 @@ export const AlertManagement: React.FC = () => {
     }
     return getDefaultAlertData();
   });
+
+  // Query process alerts from network API on tab click
+  const { data: serverAlerts, isLoading: isAlertsLoading } = useGetProcessAlert(activeProcess);
+
+  // Sync API response when received
+  useEffect(() => {
+    let list: any[] = [];
+    if (Array.isArray(serverAlerts) && serverAlerts.length > 0) {
+      list = serverAlerts;
+    } else if (serverAlerts && typeof serverAlerts === 'object') {
+      if (Array.isArray((serverAlerts as any).data) && (serverAlerts as any).data.length > 0) {
+        list = (serverAlerts as any).data;
+      } else if ((serverAlerts as any).grossWt !== undefined) {
+        list = [serverAlerts];
+      }
+    }
+
+    if (list.length > 0) {
+      const mappedRows: AlertRuleRow[] = list.map((item, idx) => {
+        const lossVal =
+          item.loss !== undefined && item.loss !== null
+            ? item.loss
+            : item.lossWt !== undefined && item.lossWt !== null
+            ? item.lossWt
+            : '';
+
+        const adjVal =
+          item.adjustment !== undefined && item.adjustment !== null
+            ? item.adjustment
+            : item.adjsutment !== undefined && item.adjsutment !== null
+            ? item.adjsutment
+            : '';
+
+        return {
+          id: item._id || item.id || `rule-${activeProcess}-${idx}-${Date.now()}`,
+          grossWt:
+            item.grossWt !== undefined && item.grossWt !== null
+              ? typeof item.grossWt === 'number'
+                ? `${item.grossWt}G`
+                : String(item.grossWt).includes('G')
+                ? item.grossWt
+                : `${item.grossWt}G`
+              : '10G',
+          purity: item.purity !== undefined && item.purity !== null ? item.purity : '',
+          loss: lossVal,
+          adjustment: adjVal,
+        };
+      });
+
+      setAlertData((prev) => ({
+        ...prev,
+        [activeProcess]: mappedRows,
+      }));
+    }
+  }, [serverAlerts, activeProcess]);
 
   // Active rows for current tab (strictly 1 row initially unless user added more)
   const currentRows = alertData[activeProcess] || [createDefaultRow('10G')];
@@ -169,11 +228,15 @@ export const AlertManagement: React.FC = () => {
             ? row.adjustment
             : parseFloat(String(row.adjustment).replace(/[^0-9.-]/g, '')) || 0;
 
+        const lossNumber = parseFloat(String(row.loss)) || 0;
+
         return {
           grossWt: grossWtNumber,
           purity: parseFloat(String(row.purity)) || 0,
-          loss: parseFloat(String(row.loss)) || 0,
+          loss: lossNumber,
+          lossWt: lossNumber,
           adjustment: adjustmentNumber,
+          adjsutment: adjustmentNumber,
         };
       });
 
@@ -318,6 +381,7 @@ export const AlertManagement: React.FC = () => {
           showSrNo={true}
           srNoLabel="Sr No."
           pagination={false}
+          isLoading={isAlertsLoading}
           emptyMessage="No alert rules found"
         />
 

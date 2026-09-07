@@ -27,18 +27,21 @@ import {
   useSubmitMeltingStock,
   useSubmitMeltingScrapStock,
 } from '@/lib/api/melting';
+import { useGetProcessAlert } from '@/lib/api/alertmanagement';
 import HistoryDept from './HistoryDept';
 import AddDept from './AddDept';
 import MeltingPopup, { ScrapModalItem } from '../cutting/MeltingPopup';
 import {
   MeltingRow,
   ScrapCardData,
+  AlertRule,
   getCurrentWeekRange,
   calculateExpectedFine,
   formatNumberDisplay,
   formatDate,
   getMeltingColumns,
-  printMeltingHistory
+  checkMeltingLossAlert,
+  printMeltingHistory,
 } from './meltingUtils';
 const MeltingDept: React.FC = () => {
   const getpdfheaderdata = useGetHeader();
@@ -408,18 +411,61 @@ const MeltingDept: React.FC = () => {
     [],
   );
 
+  // Query melting alert threshold rules
+  const { data: meltingAlertRaw } = useGetProcessAlert('melting');
+
+  const alertRules: AlertRule[] = React.useMemo(() => {
+    let list: any[] = [];
+    if (Array.isArray(meltingAlertRaw) && meltingAlertRaw.length > 0) {
+      list = meltingAlertRaw;
+    } else if (meltingAlertRaw && typeof meltingAlertRaw === 'object') {
+      if (Array.isArray((meltingAlertRaw as any).data)) {
+        list = (meltingAlertRaw as any).data;
+      } else if ((meltingAlertRaw as any).grossWt !== undefined) {
+        list = [meltingAlertRaw];
+      }
+    }
+
+    if (list.length === 0) {
+      try {
+        const saved = localStorage.getItem('chain_alert_management_settings_v2');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed?.melting) && parsed.melting.length > 0) {
+            list = parsed.melting;
+          }
+        }
+      } catch (e) {}
+    }
+
+    return list;
+  }, [meltingAlertRaw]);
+
   // Stock Action Click
   const handleStockClick = useCallback(
     (index: number) => {
       const entry = meltingEntries[index];
-      // if (!entry.fineWeight || entry.fineWeight <= 0) {
-      //   toast.error('Please enter a valid fine weight');
-      //   return;
-      // }
+      if (!entry) return;
+
+      const alertCheck = checkMeltingLossAlert(
+        entry.grossWt,
+        entry.purity,
+        entry.fineWeight,
+        entry.expectedFine,
+        alertRules
+      );
+
+      if (alertCheck?.isExceeded) {
+        toast.error(
+          `Cannot submit: Loss (${formatNumberDisplay(alertCheck.actualLoss)} G) exceeds allowed limit of ${formatNumberDisplay(alertCheck.maxAllowedLoss)} G`
+        );
+        return;
+      }
+
       setSaveIndex(index);
       setShowConfirmModal(true);
     },
-    [meltingEntries],
+    [meltingEntries, alertRules],
   );
 
   // Confirm Stock and Proceed
@@ -427,6 +473,21 @@ const MeltingDept: React.FC = () => {
     if (saveIndex === null) return;
     const index = saveIndex;
     const entry = meltingEntries[index];
+
+    const alertCheck = checkMeltingLossAlert(
+      entry.grossWt,
+      entry.purity,
+      entry.fineWeight,
+      entry.expectedFine,
+      alertRules
+    );
+
+    if (alertCheck?.isExceeded) {
+      toast.error(
+        `Cannot submit: Loss (${formatNumberDisplay(alertCheck.actualLoss)} G) exceeds allowed limit of ${formatNumberDisplay(alertCheck.maxAllowedLoss)} G`
+      );
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -470,7 +531,7 @@ const MeltingDept: React.FC = () => {
       setShowConfirmModal(false);
       setSaveIndex(null);
     }
-  }, [saveIndex, meltingEntries, submitMeltingStock, refetch]);
+  }, [saveIndex, meltingEntries, alertRules, submitMeltingStock, refetch]);
 
   const toggleHistory = () => {
     if (showHistory) {
@@ -487,10 +548,13 @@ const MeltingDept: React.FC = () => {
     }
   };
 
-  // historyColumns removed
-
   // Main Table columns
-  const columns = getMeltingColumns(getScaleProps, handleInlineChange, handleStockClick);
+  const columns = getMeltingColumns(
+    getScaleProps,
+    handleInlineChange,
+    handleStockClick,
+    alertRules
+  );
 
   // Print History Report
   const handlePrintHistory = () => {
@@ -533,8 +597,8 @@ const MeltingDept: React.FC = () => {
                   type="button"
                   onClick={() => toggleSelectScrapCard(card.purity)}
                   className={`flex min-w-[140px] flex-col items-start rounded-xl border px-4 py-3 shadow-sm transition-all ${isSelected
-                      ? 'border-2 border-[#785600] bg-amber-50 shadow-md ring-2 ring-[#785600]/20 dark:border-amber-400 dark:bg-amber-950/50'
-                      : 'border-[#d3c4af]/30 bg-white hover:border-[#785600]/60 dark:border-slate-700 dark:bg-slate-900'
+                    ? 'border-2 border-[#785600] bg-amber-50 shadow-md ring-2 ring-[#785600]/20 dark:border-amber-400 dark:bg-amber-950/50'
+                    : 'border-[#d3c4af]/30 bg-white hover:border-[#785600]/60 dark:border-slate-700 dark:bg-slate-900'
                     }`}
                 >
                   <div className="flex w-full items-center justify-between gap-2">
