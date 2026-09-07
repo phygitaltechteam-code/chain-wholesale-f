@@ -1429,6 +1429,7 @@ const BillEdit: React.FC = () => {
                     type="number"
                     step="0.001"
                     min="0"
+                    disabled
                     value={
                       formData.totalFine !== undefined &&
                         formData.totalFine !== null &&

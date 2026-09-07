@@ -156,6 +156,7 @@ const AddTarModal: React.FC<AddTarModalProps> = ({
                           onChange={(e) =>
                             handleCardChange(idx, 'fine', e.target.value)
                           }
+                          disabled
                           placeholder="0.000"
                           className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm font-bold text-[#785600] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-amber-400"
                         />

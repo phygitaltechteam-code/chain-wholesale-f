@@ -6,10 +6,11 @@ import AdminProfile from './AdminProfile';
 import HeaderPdfDesign from './HeaderPdfDesign';
 import BackupAndRestorePage from './Backup&RestorePage';
 import ScaleSetting from './ScaleSetting';
+import AlertManagement from './AlertManagement';
 
 export const Settings = () => {
   const [activeTab, setActiveTab] = useState<
-    'profile' | 'header' | 'backup' | 'scale'
+    'profile' | 'header' | 'backup' | 'scale' | 'alert'
   >('profile');
 
   const [isBackupUnlocked, setIsBackupUnlocked] = useState(false);
@@ -87,6 +88,7 @@ export const Settings = () => {
       ? [{ id: 'backup', label: 'Backup & Restore Data' }]
       : []),
     { id: 'scale', label: 'Weight Scale' },
+    { id: 'alert', label: 'Alert Management' },
   ];
 
   return (
@@ -101,7 +103,7 @@ export const Settings = () => {
                 key={tab.id}
                 onClick={() =>
                   setActiveTab(
-                    tab.id as 'profile' | 'header' | 'backup' | 'scale',
+                    tab.id as 'profile' | 'header' | 'backup' | 'scale' | 'alert',
                   )
                 }
                 className={`whitespace-nowrap border-b-2 pb-2.5 text-sm font-semibold transition-colors duration-150 ${activeTab === tab.id
@@ -158,6 +160,7 @@ export const Settings = () => {
           {activeTab === 'header' && <HeaderPdfDesign />}
           {activeTab === 'backup' && isBackupUnlocked && <BackupAndRestorePage />}
           {activeTab === 'scale' && <ScaleSetting />}
+          {activeTab === 'alert' && <AlertManagement />}
         </div>
       </div>
     </div>

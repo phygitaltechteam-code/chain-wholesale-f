@@ -1043,6 +1043,7 @@ const ReceiptAdd: React.FC = () => {
                   type="number"
                   step="0.001"
                   min="0"
+                  disabled
                   value={formData.totalFine || ''}
                   onChange={handleTotalFineChange}
                   placeholder="0.000"
