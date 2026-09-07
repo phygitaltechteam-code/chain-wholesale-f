@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronRight, ChevronDown, Printer, Plus } from 'lucide-react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
+import {ChevronRight, ChevronDown, Printer, Plus} from 'lucide-react';
 import toast from 'react-hot-toast';
-import { GenericTable } from '@/components/Forms/Table/GenericTable';
+import {GenericTable} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
 import {
@@ -10,10 +10,13 @@ import {
   useGetKundaHistory,
   useSubmitKunda,
 } from '@/lib/api/cutting';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
-import { useAddSkundaMelting } from '@/lib/api/processmelting';
-import { useGetProcessAlert, checkProcessLossAlert } from '@/lib/api/alertmanagement';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
+import {useAddSkundaMelting} from '@/lib/api/processmelting';
+import {
+  useGetProcessAlert,
+  checkProcessLossAlert,
+} from '@/lib/api/alertmanagement';
 
 import {
   KundaEntry,
@@ -35,18 +38,21 @@ const SKundaDept: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const { monday, sunday } = getDefaultWeekRange();
+    const {monday, sunday} = getDefaultWeekRange();
     return [monday, sunday];
   });
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
-      const { monday, sunday } = getDefaultWeekRange();
+      const {monday, sunday} = getDefaultWeekRange();
       setDateRange([monday, sunday]);
     };
     window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
     return () => {
-      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+      window.removeEventListener(
+        'app_week_cycle_changed',
+        handleWeekCycleUpdate,
+      );
     };
   }, []);
 
@@ -65,9 +71,9 @@ const SKundaDept: React.FC = () => {
   } = useGetKundaHistory();
   const submitKunda = useSubmitKunda();
   const addStockInward = useAddSKundaInStock();
-  const { data: alertRules } = useGetProcessAlert('kunda');
+  const {data: alertRules} = useGetProcessAlert('kunda');
 
-  const { getScaleProps } = useTableScaleFocus<
+  const {getScaleProps} = useTableScaleFocus<
     'kundaGiven' | 'chainReceived' | 'scrap'
   >((index, field, weight) => {
     handleInlineChange(index, field, weight.toString());
@@ -102,11 +108,11 @@ const SKundaDept: React.FC = () => {
               ? kunda.loss !== undefined && kunda.loss !== null
                 ? kunda.loss
                 : Math.max(
-                  0,
-                  Math.round(
-                    (chainGiven + kundaGiven - chainReceived - scrap) * 1000,
-                  ) / 1000,
-                )
+                    0,
+                    Math.round(
+                      (chainGiven + kundaGiven - chainReceived - scrap) * 1000,
+                    ) / 1000,
+                  )
               : 0;
 
           return {
@@ -130,8 +136,14 @@ const SKundaDept: React.FC = () => {
             loss: loss,
             isEditing: !isSaved,
             isSaved: isSaved,
-            kundaGivenRaw: isSaved && (kunda.kundaGiven || kunda.kunda) ? (kunda.kundaGiven || kunda.kunda).toString() : '',
-            chainReceivedRaw: isSaved && kunda.chainReceived ? kunda.chainReceived.toString() : '',
+            kundaGivenRaw:
+              isSaved && (kunda.kundaGiven || kunda.kunda)
+                ? (kunda.kundaGiven || kunda.kunda).toString()
+                : '',
+            chainReceivedRaw:
+              isSaved && kunda.chainReceived
+                ? kunda.chainReceived.toString()
+                : '',
             scrapRaw: isSaved && kunda.scrap ? kunda.scrap.toString() : '',
             purityRaw: kunda.purity ? kunda.purity.toString() : '',
             itemId: kunda.itemId,
@@ -156,8 +168,8 @@ const SKundaDept: React.FC = () => {
     let filtered = Array.isArray(kundaHistory?.data)
       ? kundaHistory.data
       : Array.isArray(kundaHistory)
-      ? kundaHistory
-      : [];
+        ? kundaHistory
+        : [];
 
     // Sort descending by Proceed Date & Time
     filtered = [...filtered].sort((a: any, b: any) => {
@@ -248,7 +260,7 @@ const SKundaDept: React.FC = () => {
       setKundaEntries((prev) =>
         prev.map((entry, i) => {
           if (i === index) {
-            const updated = { ...entry };
+            const updated = {...entry};
 
             if (field === 'kundaGiven') {
               updated.kundaGivenRaw = value;
@@ -289,8 +301,10 @@ const SKundaDept: React.FC = () => {
             const scrapAmount = Number(updated.scrap || 0);
 
             const hasAnyInputEntered =
-              (updated.kundaGivenRaw !== undefined && updated.kundaGivenRaw !== '') ||
-              (updated.chainReceivedRaw !== undefined && updated.chainReceivedRaw !== '') ||
+              (updated.kundaGivenRaw !== undefined &&
+                updated.kundaGivenRaw !== '') ||
+              (updated.chainReceivedRaw !== undefined &&
+                updated.chainReceivedRaw !== '') ||
               (updated.scrapRaw !== undefined && updated.scrapRaw !== '') ||
               kundaAmount > 0 ||
               receivedAmount > 0 ||
@@ -304,7 +318,7 @@ const SKundaDept: React.FC = () => {
                     kundaAmount -
                     receivedAmount -
                     scrapAmount) *
-                  1000,
+                    1000,
                 ) / 1000,
               );
             } else {
@@ -342,7 +356,11 @@ const SKundaDept: React.FC = () => {
   );
 
   // Update the handleStockAdded function
-  const handleStockAdded = async (stockData: { id: string; stockId?: string; weight: number }) => {
+  const handleStockAdded = async (stockData: {
+    id: string;
+    stockId?: string;
+    weight: number;
+  }) => {
     try {
       const stockId = stockData.stockId || stockData.id;
       await addStockInward.mutateAsync({
@@ -393,12 +411,12 @@ const SKundaDept: React.FC = () => {
         prev.map((s, i) =>
           i === index
             ? {
-              ...s,
-              isEditing: false,
-              isSaved: true,
-              isCompleted: true,
-              isDirty: false,
-            }
+                ...s,
+                isEditing: false,
+                isSaved: true,
+                isCompleted: true,
+                isDirty: false,
+              }
             : s,
         ),
       );
@@ -451,7 +469,7 @@ const SKundaDept: React.FC = () => {
     isSubmitting,
     hasEditableValues,
     showActionColumn,
-    alertRules
+    alertRules,
   );
 
   return (

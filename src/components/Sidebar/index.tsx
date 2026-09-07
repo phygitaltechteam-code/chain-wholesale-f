@@ -1,6 +1,6 @@
 // components/Sidebar.tsx
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useLocation } from '@tanstack/react-router';
+import React, {useState, useEffect, useMemo} from 'react';
+import {Link, useLocation} from '@tanstack/react-router';
 import {
   MdInventory2,
   MdPrecisionManufacturing,
@@ -23,9 +23,9 @@ import {
   MdAutoGraph,
   MdAddAlert,
 } from 'react-icons/md';
-import { useAuthContext } from '@/context/AuthContext';
-import { EPinIcon } from '@/icons';
-import { TrendingDown, Calculator } from 'lucide-react';
+import {useAuthContext} from '@/context/AuthContext';
+import {EPinIcon} from '@/icons';
+import {TrendingDown, Calculator} from 'lucide-react';
 import logoImg from '@/assets/logo/logo1.png';
 
 interface SidebarProps {
@@ -50,8 +50,6 @@ interface SubMenuItem {
   icon?: React.ReactNode;
 }
 
-
-
 const Sidebar = ({
   onCollapseChange,
   isMobile: propIsMobile,
@@ -59,8 +57,8 @@ const Sidebar = ({
   setSidebarOpen,
 }: SidebarProps) => {
   const location = useLocation();
-  const { pathname } = location;
-  const { user, isAuthenticated } = useAuthContext();
+  const {pathname} = location;
+  const {user, isAuthenticated} = useAuthContext();
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
@@ -158,7 +156,7 @@ const Sidebar = ({
       label: 'Alert Management',
       path: '/alertmanagement',
       roles: ['ADMIN'],
-      icon: <MdAddAlert size={22} />
+      icon: <MdAddAlert size={22} />,
     },
     {
       label: 'Purity Management',
@@ -330,8 +328,6 @@ const Sidebar = ({
     if (setSidebarOpen) setSidebarOpen(newState);
   };
 
-
-
   const getPortalName = () => {
     return 'FineWt';
   };
@@ -358,8 +354,9 @@ const Sidebar = ({
 
   const MobileOverlay = () => (
     <div
-      className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-all duration-300 md:hidden ${isMobileMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
-        }`}
+      className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-all duration-300 md:hidden ${
+        isMobileMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
+      }`}
       onClick={toggleMobileMenu}
     />
   );
@@ -384,10 +381,11 @@ const Sidebar = ({
                 toggleSubmenu(item.label);
               }
             }}
-            className={`group flex w-full items-center justify-between rounded-lg transition-all duration-200 ${isItemActive || isAnySubrouteActive
-              ? 'bg-[#B8860B]/10 text-[#B8860B]'
-              : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              } ${isActuallyCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}`}
+            className={`group flex w-full items-center justify-between rounded-lg transition-all duration-200 ${
+              isItemActive || isAnySubrouteActive
+                ? 'bg-[#B8860B]/10 text-[#B8860B]'
+                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            } ${isActuallyCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}`}
             title={isActuallyCollapsed ? item.label : ''}
           >
             <div
@@ -404,8 +402,9 @@ const Sidebar = ({
             </div>
             {!isActuallyCollapsed && (
               <MdExpandMore
-                className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
-                  }`}
+                className={`transform transition-transform duration-200 ${
+                  isExpanded ? 'rotate-180' : ''
+                }`}
                 size={18}
               />
             )}
@@ -424,10 +423,11 @@ const Sidebar = ({
                       onClick={() => {
                         if (isMobileDevice) toggleMobileMenu();
                       }}
-                      className={`flex items-center gap-2 rounded-lg py-2 pl-4 pr-3 text-sm transition-all duration-200 ${isSubActive
-                        ? 'bg-[#B8860B]/10 text-[#B8860B]'
-                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                        }`}
+                      className={`flex items-center gap-2 rounded-lg py-2 pl-4 pr-3 text-sm transition-all duration-200 ${
+                        isSubActive
+                          ? 'bg-[#B8860B]/10 text-[#B8860B]'
+                          : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                      }`}
                     >
                       <span className="shrink-0">{subroute.icon}</span>
                       <span>{subroute.label}</span>
@@ -448,10 +448,11 @@ const Sidebar = ({
           onClick={() => {
             if (isMobileDevice) toggleMobileMenu();
           }}
-          className={`group flex items-center rounded-lg transition-all duration-200 ${isActive(item.path!)
-            ? 'bg-[#B8860B]/10 text-[#B8860B]'
-            : 'text-slate-400 hover:bg-white/5 hover:text-white'
-            } ${isActuallyCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}`}
+          className={`group flex items-center rounded-lg transition-all duration-200 ${
+            isActive(item.path!)
+              ? 'bg-[#B8860B]/10 text-[#B8860B]'
+              : 'text-slate-400 hover:bg-white/5 hover:text-white'
+          } ${isActuallyCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-2.5'}`}
           title={isActuallyCollapsed ? item.label : ''}
         >
           <span className={`shrink-0 ${isActuallyCollapsed ? '' : 'mr-3'}`}>
@@ -479,9 +480,12 @@ const Sidebar = ({
     <>
       <div
         onClick={toggleCollapse}
-        className={`mb-6 mt-6 cursor-pointer select-none transition-all duration-300 ${isMobileDevice ? 'px-4' : isCollapsed ? 'px-2' : 'px-4'
-          }`}
-        title={isCollapsed ? 'Click to expand sidebar' : 'Click to collapse sidebar'}
+        className={`mb-6 mt-6 cursor-pointer select-none transition-all duration-300 ${
+          isMobileDevice ? 'px-4' : isCollapsed ? 'px-2' : 'px-4'
+        }`}
+        title={
+          isCollapsed ? 'Click to expand sidebar' : 'Click to collapse sidebar'
+        }
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
@@ -497,7 +501,7 @@ const Sidebar = ({
               <img
                 src={logoImg}
                 alt="FineWt Logo"
-                className="h-full w-full object-contain rounded-lg"
+                className="h-full w-full rounded-lg object-contain"
               />
             </div>
           </div>
@@ -507,10 +511,10 @@ const Sidebar = ({
               <img
                 src={logoImg}
                 alt="FineWt Logo"
-                className="h-full w-full object-contain rounded-lg"
+                className="h-full w-full rounded-lg object-contain"
               />
             </div>
-            <div className="text-left min-w-0">
+            <div className="min-w-0 text-left">
               <h1 className="truncate font-['Playfair_Display'] text-lg font-bold text-[#B8860B] md:text-xl">
                 {getPortalName()}
               </h1>
@@ -554,15 +558,14 @@ const Sidebar = ({
         </div>
       </div> */}
 
-
-
       <div className="border-t border-white/5 px-2 py-3">
         <button
           onClick={handleLogout}
-          className={`flex w-full items-center rounded-lg transition-all duration-200 ${isCollapsed && !isMobileDevice
-            ? 'justify-center px-2 py-3'
-            : 'px-3 py-2.5 md:px-4 md:py-3'
-            } text-slate-400 hover:bg-white/5 hover:text-white`}
+          className={`flex w-full items-center rounded-lg transition-all duration-200 ${
+            isCollapsed && !isMobileDevice
+              ? 'justify-center px-2 py-3'
+              : 'px-3 py-2.5 md:px-4 md:py-3'
+          } text-slate-400 hover:bg-white/5 hover:text-white`}
           title={isCollapsed && !isMobileDevice ? 'Logout' : ''}
         >
           <MdLogout
@@ -595,10 +598,11 @@ const Sidebar = ({
       <MobileOverlay />
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-full flex-col bg-[#1a1a2e] shadow-2xl transition-all duration-300 ease-in-out ${getSidebarWidth()} ${isMobileDevice && !isMobileMenuOpen
-          ? '-translate-x-full'
-          : 'translate-x-0'
-          }`}
+        className={`fixed left-0 top-0 z-50 flex h-full flex-col bg-[#1a1a2e] shadow-2xl transition-all duration-300 ease-in-out ${getSidebarWidth()} ${
+          isMobileDevice && !isMobileMenuOpen
+            ? '-translate-x-full'
+            : 'translate-x-0'
+        }`}
       >
         <SidebarContent />
       </aside>

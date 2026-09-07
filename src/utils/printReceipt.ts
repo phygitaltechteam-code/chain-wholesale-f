@@ -62,10 +62,10 @@ export const printReceipt = (
     dateFormatted = isNaN(d.getTime())
       ? String(receiptData.date)
       : d.toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        });
   }
   if (!dateFormatted) {
     dateFormatted = new Date().toLocaleDateString('en-IN', {
@@ -81,9 +81,9 @@ export const printReceipt = (
     receiptData.totalFineWt !== undefined
       ? Number(receiptData.totalFineWt)
       : items.reduce((sum, i) => {
-        const fine = i.finWt ?? i.fineWt ?? i.fineWeight ?? 0;
-        return sum + Number(fine || 0);
-      }, 0);
+          const fine = i.finWt ?? i.fineWt ?? i.fineWeight ?? 0;
+          return sum + Number(fine || 0);
+        }, 0);
 
   const receive =
     receiptData.receive !== undefined
@@ -93,9 +93,7 @@ export const printReceipt = (
         : 0;
 
   const dueBalance =
-    receiptData.dueBalance !== undefined
-      ? Number(receiptData.dueBalance)
-      : 0;
+    receiptData.dueBalance !== undefined ? Number(receiptData.dueBalance) : 0;
 
   const remainingBalance =
     receiptData.remainingBalance !== undefined
@@ -113,7 +111,9 @@ export const printReceipt = (
     const purity = format3Decimals(item.purity);
     const gross = format3Decimals(item.grossWeight ?? item.grossWt ?? 0);
     const srp = format2Decimals(item.srp ?? 0);
-    const fine = format3Decimals(item.finWt ?? item.fineWt ?? item.fineWeight ?? 0);
+    const fine = format3Decimals(
+      item.finWt ?? item.fineWt ?? item.fineWeight ?? 0,
+    );
     const labor = format2Decimals(item.laborRate ?? 0);
 
     itemsRows += `
@@ -147,8 +147,7 @@ export const printReceipt = (
     headerInfo.description ||
     'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
   const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-  const phoneNumbers =
-    headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+  const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
   const invocationColor = headerInfo.invocationColor || '#a84b20';
   const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
   const descriptionColor = headerInfo.descriptionColor || '#8b451f';
@@ -357,7 +356,11 @@ export const printReceipt = (
           iframe.contentWindow?.print();
         } catch (e) {
           // Fallback to window.open if iframe print fails
-          const printWindow = window.open('', '_blank', 'width=1100,height=800');
+          const printWindow = window.open(
+            '',
+            '_blank',
+            'width=1100,height=800',
+          );
           if (printWindow) {
             printWindow.document.write(receiptHtml);
             printWindow.document.close();

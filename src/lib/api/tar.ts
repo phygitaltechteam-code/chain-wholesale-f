@@ -61,7 +61,9 @@ const createTarApi = async (data: {
 };
 
 const saveTarApi = async ({id, data}: {id: string; data: Partial<Tar>}) => {
-  const grossVal = Number((data as any).grosswt ?? (data as any).grossWt ?? data.fine ?? 0);
+  const grossVal = Number(
+    (data as any).grosswt ?? (data as any).grossWt ?? data.fine ?? 0,
+  );
   // Include all required fields in the payload
   const payload = {
     id: id,
@@ -157,11 +159,10 @@ const getTarHistory = async () => {
   }
 };
 
-
 export const useAddMelting = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({id, data}: {id: string; data: any}) => {
       const response = await api.post(`/admin/tar/melting/${id}`, data);
       return response.data;
     },
@@ -172,15 +173,14 @@ export const useAddMelting = () => {
     },
     onError: (error: any) => {
       const errorMessage =
-      (Array.isArray(error?.response?.data?.message)
-        ? error.response.data.message.join(', ')
-        : error?.response?.data?.message) ||
-      error?.response?.data?.error ||
-      error?.data?.message ||
-      error?.message ||
-      'Failed to complete melting';
-    toast.error(errorMessage);
+        (Array.isArray(error?.response?.data?.message)
+          ? error.response.data.message.join(', ')
+          : error?.response?.data?.message) ||
+        error?.response?.data?.error ||
+        error?.data?.message ||
+        error?.message ||
+        'Failed to complete melting';
+      toast.error(errorMessage);
     },
   });
 };
-

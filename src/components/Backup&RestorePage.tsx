@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, {useRef, useState} from 'react';
 import {
   Download,
   Upload,
@@ -14,7 +14,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 
-import { useQueryClient } from '@tanstack/react-query';
+import {useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 import {
@@ -170,7 +170,7 @@ const BackupAndRestorePage = () => {
 
     const confirmed = window.confirm(
       'This will overwrite all existing database data.\n\n' +
-      'Are you sure you want to restore this backup?',
+        'Are you sure you want to restore this backup?',
     );
 
     if (!confirmed) {
@@ -243,7 +243,7 @@ const BackupAndRestorePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 dark:bg-slate-950">
+    <div className="bg-gray-50 min-h-screen p-6 dark:bg-slate-950">
       <div className="mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -265,7 +265,8 @@ const BackupAndRestorePage = () => {
                 </h2>
               </div>
               <p className="mb-6 text-sm text-[#4f4535] dark:text-slate-400">
-                Backup your complete database via direct email or instant download to your device.
+                Backup your complete database via direct email or instant
+                download to your device.
               </p>
             </div>
 
@@ -309,7 +310,7 @@ const BackupAndRestorePage = () => {
                   type="file"
                   accept=".sql,application/sql,text/plain"
                   onChange={handleFileSelect}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-amber-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-[#785600] hover:file:bg-amber-100 dark:file:bg-slate-800 dark:file:text-amber-400"
+                  className="text-gray-500 block w-full text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-amber-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-[#785600] hover:file:bg-amber-100 dark:file:bg-slate-800 dark:file:text-amber-400"
                 />
               </div>
             </div>
@@ -318,10 +319,11 @@ const BackupAndRestorePage = () => {
               type="button"
               onClick={handleRestore}
               disabled={!selectedFile || restore.isPending || isUploading}
-              className={`w-full !whitespace-nowrap !px-6 ${!selectedFile || restore.isPending || isUploading
-                ? '!cursor-not-allowed !bg-gray-300 !text-gray-500 dark:!bg-slate-800 dark:!text-slate-600'
-                : '!bg-emerald-600 !text-white hover:!bg-emerald-700'
-                }`}
+              className={`w-full !whitespace-nowrap !px-6 ${
+                !selectedFile || restore.isPending || isUploading
+                  ? '!bg-gray-300 !text-gray-500 !cursor-not-allowed dark:!bg-slate-800 dark:!text-slate-600'
+                  : '!bg-emerald-600 !text-white hover:!bg-emerald-700'
+              }`}
             >
               {restore.isPending || isUploading ? (
                 <>
@@ -347,7 +349,8 @@ const BackupAndRestorePage = () => {
                 </h2>
               </div>
               <p className="mb-6 text-sm text-[#4f4535] dark:text-slate-400">
-                Permanently clear and reset all database records. This action cannot be undone.
+                Permanently clear and reset all database records. This action
+                cannot be undone.
               </p>
             </div>
 
@@ -382,7 +385,8 @@ const BackupAndRestorePage = () => {
                   Confirm Database Deletion
                 </h3>
                 <p className="mt-2 text-sm text-[#4f4535] dark:text-slate-300">
-                  Are you sure you want to permanently delete all database records? This action cannot be undone.
+                  Are you sure you want to permanently delete all database
+                  records? This action cannot be undone.
                 </p>
               </div>
 
@@ -392,7 +396,7 @@ const BackupAndRestorePage = () => {
                   type="button"
                   onClick={() => setShowDeleteConfirmModal(false)}
                   disabled={deleteDbMutation.isPending}
-                  className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                  className="hover:bg-gray-100 rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors dark:text-slate-400 dark:hover:bg-slate-800"
                 >
                   Cancel
                 </button>
@@ -431,7 +435,7 @@ const BackupAndRestorePage = () => {
                   type="button"
                   onClick={() => setShowBackupOptionsModal(false)}
                   disabled={isDownloading || isSendingEmail}
-                  className="rounded-lg p-1 text-[#4f4535] hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                  className="hover:bg-gray-100 rounded-lg p-1 text-[#4f4535] dark:text-slate-400 dark:hover:bg-slate-800"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -484,4 +488,3 @@ const BackupAndRestorePage = () => {
 };
 
 export default BackupAndRestorePage;
-

@@ -8,7 +8,7 @@ export const AdminExpiryModal: React.FC = () => {
   const {user} = useAuthContext();
   const profileQuery = useGetProfileData();
   const profileData = profileQuery?.data?.data || profileQuery?.data;
-  
+
   const [enteredKey, setEnteredKey] = useState('');
   const [keyError, setKeyError] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -87,7 +87,7 @@ export const AdminExpiryModal: React.FC = () => {
     : 'Expired';
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div className="animate-in fade-in fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm duration-200">
       <div className="w-full max-w-md overflow-hidden rounded-2xl border border-red-500/30 bg-white shadow-2xl dark:border-red-900/50 dark:bg-slate-900">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-red-600 to-amber-600 px-6 py-5 text-center text-white">
@@ -181,7 +181,7 @@ export const AdminExpiryModal: React.FC = () => {
           </form>
 
           {/* Contact Support Note */}
-          <div className="mt-4 border-t border-[#d3c4af]/20 pt-3 text-center text-[11px] text-gray-500 dark:border-slate-800 dark:text-gray-400">
+          <div className="text-gray-500 dark:text-gray-400 mt-4 border-t border-[#d3c4af]/20 pt-3 text-center text-[11px] dark:border-slate-800">
             <span>To renew your license or get an extension key, contact </span>
             <span className="font-semibold text-[#785600] dark:text-amber-400">
               System Support

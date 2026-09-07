@@ -1,7 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Flame, TrendingUp, Box, Hammer, Scissors, CheckCircle } from 'lucide-react';
+import React, {useState, useEffect} from 'react';
+import {
+  Plus,
+  Trash2,
+  Save,
+  Flame,
+  TrendingUp,
+  Box,
+  Hammer,
+  Scissors,
+  CheckCircle,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericButton from './Forms/Buttons/GenericButton';
 import PageHeader from '@/components/Forms/Common/PageHeader';
 import {
@@ -36,13 +46,13 @@ interface ProcessTabConfig {
 const STORAGE_KEY = 'chain_alert_management_settings_v2';
 
 const PROCESS_TABS: ProcessTabConfig[] = [
-  { id: 'melting', label: 'Melting', icon: <Flame className="h-4 w-4" /> },
-  { id: 'tar', label: 'Tar', icon: <TrendingUp className="h-4 w-4" /> },
-  { id: 'box', label: 'Box', icon: <Box className="h-4 w-4" /> },
-  { id: 'soldering', label: 'Soldering', icon: <Flame className="h-4 w-4" /> },
-  { id: 'joint', label: 'Joint', icon: <Hammer className="h-4 w-4" /> },
-  { id: 'cutting', label: 'Cutting', icon: <Scissors className="h-4 w-4" /> },
-  { id: 'skunda', label: 'S / Kunda', icon: <CheckCircle className="h-4 w-4" /> },
+  {id: 'melting', label: 'Melting', icon: <Flame className="h-4 w-4" />},
+  {id: 'tar', label: 'Tar', icon: <TrendingUp className="h-4 w-4" />},
+  {id: 'box', label: 'Box', icon: <Box className="h-4 w-4" />},
+  {id: 'soldering', label: 'Soldering', icon: <Flame className="h-4 w-4" />},
+  {id: 'joint', label: 'Joint', icon: <Hammer className="h-4 w-4" />},
+  {id: 'cutting', label: 'Cutting', icon: <Scissors className="h-4 w-4" />},
+  {id: 'skunda', label: 'S / Kunda', icon: <CheckCircle className="h-4 w-4" />},
 ];
 
 const createDefaultRow = (grossWt: string = '10G'): AlertRuleRow => ({
@@ -65,13 +75,16 @@ const getDefaultAlertData = (): Record<ProcessTabId, AlertRuleRow[]> => ({
 
 export const AlertManagement: React.FC = () => {
   const [activeProcess, setActiveProcess] = useState<ProcessTabId>('melting');
-  const [alertData, setAlertData] = useState<Record<ProcessTabId, AlertRuleRow[]>>(() => {
+  const [alertData, setAlertData] = useState<
+    Record<ProcessTabId, AlertRuleRow[]>
+  >(() => {
     try {
       localStorage.removeItem('chain_alert_management_settings_v1');
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        const merged: Record<ProcessTabId, AlertRuleRow[]> = getDefaultAlertData();
+        const merged: Record<ProcessTabId, AlertRuleRow[]> =
+          getDefaultAlertData();
         PROCESS_TABS.forEach((tab) => {
           if (Array.isArray(parsed[tab.id]) && parsed[tab.id].length > 0) {
             merged[tab.id] = parsed[tab.id];
@@ -85,14 +98,18 @@ export const AlertManagement: React.FC = () => {
     return getDefaultAlertData();
   });
 
-  const { data: serverAlerts, isLoading: isAlertsLoading } = useGetProcessAlert(activeProcess);
+  const {data: serverAlerts, isLoading: isAlertsLoading} =
+    useGetProcessAlert(activeProcess);
 
   useEffect(() => {
     let list: any[] = [];
     if (Array.isArray(serverAlerts) && serverAlerts.length > 0) {
       list = serverAlerts;
     } else if (serverAlerts && typeof serverAlerts === 'object') {
-      if (Array.isArray((serverAlerts as any).data) && (serverAlerts as any).data.length > 0) {
+      if (
+        Array.isArray((serverAlerts as any).data) &&
+        (serverAlerts as any).data.length > 0
+      ) {
         list = (serverAlerts as any).data;
       } else if ((serverAlerts as any).grossWt !== undefined) {
         list = [serverAlerts];
@@ -105,27 +122,31 @@ export const AlertManagement: React.FC = () => {
           item.loss !== undefined && item.loss !== null
             ? item.loss
             : item.lossWt !== undefined && item.lossWt !== null
-            ? item.lossWt
-            : '';
+              ? item.lossWt
+              : '';
 
         const adjVal =
           item.adjustment !== undefined && item.adjustment !== null
             ? item.adjustment
             : item.adjsutment !== undefined && item.adjsutment !== null
-            ? item.adjsutment
-            : '';
+              ? item.adjsutment
+              : '';
 
         return {
-          id: item._id || item.id || `rule-${activeProcess}-${idx}-${Date.now()}`,
+          id:
+            item._id || item.id || `rule-${activeProcess}-${idx}-${Date.now()}`,
           grossWt:
             item.grossWt !== undefined && item.grossWt !== null
               ? typeof item.grossWt === 'number'
                 ? `${item.grossWt}G`
                 : String(item.grossWt).includes('G')
-                ? item.grossWt
-                : `${item.grossWt}G`
+                  ? item.grossWt
+                  : `${item.grossWt}G`
               : '10G',
-          purity: item.purity !== undefined && item.purity !== null ? item.purity : '',
+          purity:
+            item.purity !== undefined && item.purity !== null
+              ? item.purity
+              : '',
           loss: lossVal,
           adjustment: adjVal,
         };
@@ -151,7 +172,7 @@ export const AlertManagement: React.FC = () => {
     setAlertData((prev) => {
       const updatedList = (prev[activeProcess] || []).map((row) => {
         if (row.id === rowId) {
-          return { ...row, [field]: value };
+          return {...row, [field]: value};
         }
         return row;
       });
@@ -200,7 +221,7 @@ export const AlertManagement: React.FC = () => {
       const updated = (prev[activeProcess] || []).filter((r) => r.id !== rowId);
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ ...prev, [activeProcess]: updated }),
+        JSON.stringify({...prev, [activeProcess]: updated}),
       );
       return {
         ...prev,
@@ -288,9 +309,7 @@ export const AlertManagement: React.FC = () => {
             type="number"
             step="any"
             value={item.loss}
-            onChange={(e) =>
-              handleFieldChange(item.id, 'loss', e.target.value)
-            }
+            onChange={(e) => handleFieldChange(item.id, 'loss', e.target.value)}
             placeholder="0.000"
             className="font-mono w-20 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
           />
@@ -374,7 +393,13 @@ export const AlertManagement: React.FC = () => {
                       : 'border-transparent text-[#4f4535] hover:bg-[#785600]/5 dark:text-slate-500 dark:hover:bg-[#986d00]/10'
                   } cursor-pointer`}
                 >
-                  <span className={isActive ? 'text-[#785600] dark:text-[#986d00]' : 'text-[#4f4535] dark:text-slate-500'}>
+                  <span
+                    className={
+                      isActive
+                        ? 'text-[#785600] dark:text-[#986d00]'
+                        : 'text-[#4f4535] dark:text-slate-500'
+                    }
+                  >
                     {tab.icon}
                   </span>
                   <span>{tab.label}</span>
@@ -385,7 +410,7 @@ export const AlertManagement: React.FC = () => {
         </div>
 
         {/* GenericTable Component */}
-        <div className=" rounded-lg shadow-sm dark:bg-slate-900 p-4">
+        <div className="rounded-lg p-4 shadow-sm dark:bg-slate-900">
           <GenericTable<AlertRuleRow>
             data={currentRows}
             columns={columns}
@@ -397,7 +422,7 @@ export const AlertManagement: React.FC = () => {
           />
 
           {/* Footer with Save Button */}
-          <div className="flex items-center justify-end px-4 py-3 mt-1 dark:border-slate-700">
+          <div className="mt-1 flex items-center justify-end px-4 py-3 dark:border-slate-700">
             <GenericButton
               type="button"
               onClick={handleSave}

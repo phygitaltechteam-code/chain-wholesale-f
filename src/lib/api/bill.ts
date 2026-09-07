@@ -1,5 +1,5 @@
-import { api } from '@/utils/axios';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export const useGetQuantity = () => {
@@ -17,9 +17,9 @@ export const useBill = () => {
     mutationFn: saveBillApi,
     onSuccess: () => {
       toast.success('Bill added successfully');
-      queryClient.invalidateQueries({ queryKey: ['bill'] });
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      queryClient.invalidateQueries({ queryKey: ['stock-report'] });
+      queryClient.invalidateQueries({queryKey: ['bill']});
+      queryClient.invalidateQueries({queryKey: ['clients']});
+      queryClient.invalidateQueries({queryKey: ['stock-report']});
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Insufficient stock');
@@ -88,9 +88,9 @@ export const useDeleteBill = () => {
   return useMutation({
     mutationFn: deleteBillApi,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bill'] });
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      queryClient.invalidateQueries({ queryKey: ['stock-report'] });
+      queryClient.invalidateQueries({queryKey: ['bill']});
+      queryClient.invalidateQueries({queryKey: ['clients']});
+      queryClient.invalidateQueries({queryKey: ['stock-report']});
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Insufficient stock');
@@ -104,9 +104,9 @@ export const useBillUpdate = () => {
     mutationFn: updateBillApi,
     onSuccess: () => {
       toast.success('Bill updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['bill'] });
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      queryClient.invalidateQueries({ queryKey: ['stock-report'] });
+      queryClient.invalidateQueries({queryKey: ['bill']});
+      queryClient.invalidateQueries({queryKey: ['clients']});
+      queryClient.invalidateQueries({queryKey: ['stock-report']});
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Insufficient stock');
@@ -114,7 +114,7 @@ export const useBillUpdate = () => {
   });
 };
 
-export const updateBillApi = async ({ id, data }: { id: string; data: any }) => {
+export const updateBillApi = async ({id, data}: {id: string; data: any}) => {
   const response = await api.put(`/admin/billing/${id}`, data);
   return response.data;
 };

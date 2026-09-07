@@ -36,7 +36,9 @@ const getSizesApi = async () => {
     return response.data;
   } catch (error: any) {
     const message =
-      error?.response?.data?.message || error?.message || 'Failed to fetch sizes';
+      error?.response?.data?.message ||
+      error?.message ||
+      'Failed to fetch sizes';
     throw new Error(message);
   }
 };
@@ -92,7 +94,9 @@ export const useCreateSize = () => {
 
     onError: (error: any) => {
       const message =
-        error?.response?.data?.message || error?.message || 'Failed to add size';
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to add size';
       toast.error(message);
     },
   });
@@ -114,7 +118,9 @@ export const useUpdateSize = () => {
 
     onError: (error: any) => {
       const message =
-        error?.response?.data?.message || error?.message || 'Failed to update size';
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to update size';
       toast.error(message);
     },
   });
@@ -142,7 +148,9 @@ export const useDeleteSize = () => {
 
     onError: (error: any) => {
       const message =
-        error?.response?.data?.message || error?.message || 'Failed to delete size';
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to delete size';
       toast.error(message);
     },
   });

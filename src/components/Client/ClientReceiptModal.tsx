@@ -1,10 +1,10 @@
 import React from 'react';
-import { X, Printer, CheckCircle, FileText } from 'lucide-react';
+import {X, Printer, CheckCircle, FileText} from 'lucide-react';
 import {
   ClientReceiptData,
   printClientReceipt,
 } from '@/utils/printClientReceipt';
-import { useGetHeader } from '@/lib/api/headerapi';
+import {useGetHeader} from '@/lib/api/headerapi';
 
 interface ClientReceiptModalProps {
   isOpen: boolean;
@@ -42,13 +42,12 @@ const ClientReceiptModal: React.FC<ClientReceiptModalProps> = ({
     headerInfo.rightInvocation ||
     headerInfo.rightInovation ||
     '॥ श्री साई प्रसन्न ॥';
-  const factoryName =
-    headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+  const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
   const description =
-    headerInfo.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    headerInfo.description ||
+    'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
   const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-  const phoneNumbers =
-    headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+  const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
 
   const dateFormatted =
     receiptData.dateStr ||
@@ -70,15 +69,15 @@ const ClientReceiptModal: React.FC<ClientReceiptModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in"
+      className="animate-in fade-in fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-2xl bg-white shadow-2xl border border-[#d3c4af]/30 dark:border-slate-800 dark:bg-slate-900 animate-in zoom-in-95 duration-150"
+        className="animate-in zoom-in-95 flex max-h-[90vh] w-full max-w-lg flex-col rounded-2xl border border-[#d3c4af]/30 bg-white shadow-2xl duration-150 dark:border-slate-800 dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-[#d3c4af]/20 bg-[#785600] px-5 py-3 text-white rounded-t-2xl">
+        <div className="flex items-center justify-between rounded-t-2xl border-b border-[#d3c4af]/20 bg-[#785600] px-5 py-3 text-white">
           <div className="flex items-center gap-2">
             <div className="rounded-lg bg-white/20 p-1.5">
               <FileText className="h-5 w-5" />
@@ -92,40 +91,40 @@ const ClientReceiptModal: React.FC<ClientReceiptModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-white/80 hover:bg-white/20 hover:text-white transition-colors"
+            className="rounded-lg p-1.5 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Modal Body - Receipt Paper View */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 bg-gray-50/50 dark:bg-slate-950/40">
+        <div className="bg-gray-50/50 flex-1 overflow-y-auto p-4 dark:bg-slate-950/40 sm:p-5">
           <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-slate-900">
             {/* Header / Letterhead */}
-            <div className="text-center pb-2 border-b border-[#785600]">
-              <div className="flex justify-between items-center text-[10px] font-bold text-[#a84b20]">
+            <div className="border-b border-[#785600] pb-2 text-center">
+              <div className="flex items-center justify-between text-[10px] font-bold text-[#a84b20]">
                 <span>{leftInvocation}</span>
-                <span className="text-base sm:text-lg font-black text-[#785600] dark:text-amber-400">
+                <span className="text-base font-black text-[#785600] dark:text-amber-400 sm:text-lg">
                   {factoryName}
                 </span>
                 <span>{rightInvocation}</span>
               </div>
-              <p className="text-[9px] font-medium text-[#8b451f] dark:text-slate-300 mt-0.5">
+              <p className="mt-0.5 text-[9px] font-medium text-[#8b451f] dark:text-slate-300">
                 {description}
               </p>
-              <p className="text-[9px] font-bold text-[#a84b20] mt-0.5">
+              <p className="mt-0.5 text-[9px] font-bold text-[#a84b20]">
                 {proprietorName} &nbsp;|&nbsp; {phoneNumbers}
               </p>
             </div>
 
             {/* Badge & Bill No */}
-            <div className="relative text-center mt-3 mb-2">
+            <div className="relative mb-2 mt-3 text-center">
               <span className="inline-block rounded bg-[#785600] px-3.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white">
                 {receiptData.transactionType === 'give'
                   ? 'GIVE RECEIPT'
                   : receiptData.transactionType === 'receive'
-                  ? 'PAYMENT RECEIPT'
-                  : 'CLIENT RECEIPT'}
+                    ? 'PAYMENT RECEIPT'
+                    : 'CLIENT RECEIPT'}
               </span>
               {receiptData.billNumber && (
                 <span className="absolute right-0 top-1/2 -translate-y-1/2 text-xs font-bold text-[#785600] dark:text-amber-400">
@@ -136,20 +135,39 @@ const ClientReceiptModal: React.FC<ClientReceiptModalProps> = ({
 
             {/* Client Info & Date */}
             <div className="mb-2 rounded-lg border border-[#d3c4af]/30 bg-[#faf9f6] p-2.5 dark:border-slate-800 dark:bg-slate-800/40">
-              <div className="flex justify-between items-start gap-2">
+              <div className="flex items-start justify-between gap-2">
                 <div className="flex-1">
                   <div className="text-xs font-bold text-[#1a1c1b] dark:text-white">
-                    <span className="font-semibold text-[#4f4535] dark:text-slate-400">Client:</span> {receiptData.clientName || 'N/A'}
+                    <span className="font-semibold text-[#4f4535] dark:text-slate-400">
+                      Client:
+                    </span>{' '}
+                    {receiptData.clientName || 'N/A'}
                   </div>
-                  <div className="flex flex-wrap gap-3 mt-1 text-[11px] text-[#4f4535] dark:text-slate-300">
-                    {receiptData.phoneNumber && <div><strong className="text-[#4f4535] dark:text-slate-400">Phone:</strong> {receiptData.phoneNumber}</div>}
-                    {receiptData.address && <div><strong className="text-[#4f4535] dark:text-slate-400">Address:</strong> {receiptData.address}</div>}
+                  <div className="mt-1 flex flex-wrap gap-3 text-[11px] text-[#4f4535] dark:text-slate-300">
+                    {receiptData.phoneNumber && (
+                      <div>
+                        <strong className="text-[#4f4535] dark:text-slate-400">
+                          Phone:
+                        </strong>{' '}
+                        {receiptData.phoneNumber}
+                      </div>
+                    )}
+                    {receiptData.address && (
+                      <div>
+                        <strong className="text-[#4f4535] dark:text-slate-400">
+                          Address:
+                        </strong>{' '}
+                        {receiptData.address}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="text-right text-[11px] text-[#4f4535] dark:text-slate-300 whitespace-nowrap">
-                  <div><strong>Date:</strong> {dateFormatted}</div>
+                <div className="whitespace-nowrap text-right text-[11px] text-[#4f4535] dark:text-slate-300">
+                  <div>
+                    <strong>Date:</strong> {dateFormatted}
+                  </div>
                   {receiptData.remark && !hasItems && (
-                    <div className="mt-0.5 text-[#785600] font-semibold">
+                    <div className="mt-0.5 font-semibold text-[#785600]">
                       <strong>Remark:</strong> {receiptData.remark}
                     </div>
                   )}
@@ -160,22 +178,22 @@ const ClientReceiptModal: React.FC<ClientReceiptModalProps> = ({
             {/* Items Table if Bill */}
             {hasItems && (
               <div className="mt-3 overflow-x-auto">
-                <table className="w-full text-[11px] border-collapse border border-[#d3c4af]/30 dark:border-slate-700">
+                <table className="w-full border-collapse border border-[#d3c4af]/30 text-[11px] dark:border-slate-700">
                   <thead>
                     <tr className="bg-[#785600] text-white">
-                      <th className="p-1.5 border border-[#785600] text-center w-8">
+                      <th className="w-8 border border-[#785600] p-1.5 text-center">
                         #
                       </th>
-                      <th className="p-1.5 border border-[#785600] text-left">
+                      <th className="border border-[#785600] p-1.5 text-left">
                         Item
                       </th>
-                      <th className="p-1.5 border border-[#785600] text-center w-16">
+                      <th className="w-16 border border-[#785600] p-1.5 text-center">
                         Purity
                       </th>
-                      <th className="p-1.5 border border-[#785600] text-center w-16">
+                      <th className="w-16 border border-[#785600] p-1.5 text-center">
                         Remark
                       </th>
-                      <th className="p-1.5 border border-[#785600] text-right w-24">
+                      <th className="w-24 border border-[#785600] p-1.5 text-right">
                         Weight (G)
                       </th>
                     </tr>
@@ -199,7 +217,7 @@ const ClientReceiptModal: React.FC<ClientReceiptModalProps> = ({
                         <td className="p-1.5 text-center">
                           {item.remark || '-'}
                         </td>
-                        <td className="p-1.5 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
+                        <td className="font-mono p-1.5 text-right font-bold text-[#785600] dark:text-amber-400">
                           {formatNumber(item.weight || item.grossWeight || 0)} G
                         </td>
                       </tr>
@@ -210,9 +228,9 @@ const ClientReceiptModal: React.FC<ClientReceiptModalProps> = ({
             )}
 
             {/* Transaction / Balance Card */}
-            <div className="mt-3 rounded-lg border border-[#d3c4af]/30 bg-[#fcfbf9] p-3 dark:border-slate-700 dark:bg-slate-800/60 ml-auto max-w-xs">
+            <div className="ml-auto mt-3 max-w-xs rounded-lg border border-[#d3c4af]/30 bg-[#fcfbf9] p-3 dark:border-slate-700 dark:bg-slate-800/60">
               {receiptData.previousBalance !== undefined && (
-                <div className="flex justify-between text-xs py-0.5 text-[#4f4535] dark:text-slate-400 border-b border-dashed border-[#d3c4af]/30 pb-1">
+                <div className="flex justify-between border-b border-dashed border-[#d3c4af]/30 py-0.5 pb-1 text-xs text-[#4f4535] dark:text-slate-400">
                   <span>Previous Due Balance:</span>
                   <span className="font-mono font-bold text-[#1a1c1b] dark:text-white">
                     {formatNumber(receiptData.previousBalance)} G
@@ -220,13 +238,13 @@ const ClientReceiptModal: React.FC<ClientReceiptModalProps> = ({
                 </div>
               )}
               {receiptData.amount !== undefined && (
-                <div className="flex justify-between text-xs py-1 text-[#4f4535] dark:text-slate-400">
+                <div className="flex justify-between py-1 text-xs text-[#4f4535] dark:text-slate-400">
                   <span>
                     {receiptData.transactionType === 'give'
                       ? 'Given Weight (+):'
                       : receiptData.transactionType === 'receive'
-                      ? 'Received Weight (-):'
-                      : 'Total Weight:'}
+                        ? 'Received Weight (-):'
+                        : 'Total Weight:'}
                   </span>
                   <span
                     className={`font-mono font-bold ${
@@ -238,14 +256,14 @@ const ClientReceiptModal: React.FC<ClientReceiptModalProps> = ({
                     {receiptData.transactionType === 'give'
                       ? '+'
                       : receiptData.transactionType === 'receive'
-                      ? '-'
-                      : ''}
+                        ? '-'
+                        : ''}
                     {formatNumber(receiptData.amount)} G
                   </span>
                 </div>
               )}
               {receiptData.newBalance !== undefined && (
-                <div className="flex justify-between text-xs pt-1.5 border-t border-[#785600] font-bold text-[#785600] dark:text-amber-400">
+                <div className="flex justify-between border-t border-[#785600] pt-1.5 text-xs font-bold text-[#785600] dark:text-amber-400">
                   <span>New Due Balance:</span>
                   <span className="font-mono">
                     {formatNumber(receiptData.newBalance)} G

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Search,
   Calendar,
@@ -20,23 +20,23 @@ import {
 } from 'lucide-react';
 
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 
 import toast from 'react-hot-toast';
 
-import { useSubmitSettlement } from '@/lib/api/settlement';
+import {useSubmitSettlement} from '@/lib/api/settlement';
 
-import { Client, useGetClients } from '@/lib/api/client';
-import { useGetHeader } from '@/lib/api/headerapi';
+import {Client, useGetClients} from '@/lib/api/client';
+import {useGetHeader} from '@/lib/api/headerapi';
 
 import GenericInputField from '../Forms/Input/GenericInputField';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
-import { useScaleFocus } from '@/lib/hooks/useScaleFocus';
-import { useNavigate } from '@tanstack/react-router';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
+import {useScaleFocus} from '@/lib/hooks/useScaleFocus';
+import {useNavigate} from '@tanstack/react-router';
 import AddClientModal from '../Client/AddClientModal';
-import { printClientReceipt } from '@/utils/printClientReceipt';
+import {printClientReceipt} from '@/utils/printClientReceipt';
 
 // ======================================================
 // TYPES
@@ -145,23 +145,26 @@ const Settlement: React.FC = () => {
 
   // Helper function to get week start and end based on admin week setting
   const getDefaultWeekRange = () => {
-    const { fromDate, toDate } = getCurrentAppWeekRange();
-    return { monday: fromDate, sunday: toDate };
+    const {fromDate, toDate} = getCurrentAppWeekRange();
+    return {monday: fromDate, sunday: toDate};
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const { monday, sunday } = getDefaultWeekRange();
+    const {monday, sunday} = getDefaultWeekRange();
     return [monday, sunday];
   });
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
-      const { monday, sunday } = getDefaultWeekRange();
+      const {monday, sunday} = getDefaultWeekRange();
       setDateRange([monday, sunday]);
     };
     window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
     return () => {
-      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+      window.removeEventListener(
+        'app_week_cycle_changed',
+        handleWeekCycleUpdate,
+      );
     };
   }, []);
 
@@ -462,15 +465,16 @@ const Settlement: React.FC = () => {
             <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
               Settlement Report
             </h2>
-            ${dateRange && dateRange[0] && dateRange[1]
-        ? `
+            ${
+              dateRange && dateRange[0] && dateRange[1]
+                ? `
             <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
               From: ${formatDateForDisplay(dateRange[0])} 
               &nbsp;&nbsp; To: ${formatDateForDisplay(dateRange[1])}
             </div>
             `
-        : `<div style="flex:1;"></div>`
-      }
+                : `<div style="flex:1;"></div>`
+            }
           </div>
 
           <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
@@ -702,23 +706,25 @@ const Settlement: React.FC = () => {
       const isGive = settlementDetail.settlementType === 'give';
       const receiptDataToPrint = isGive
         ? {
-          clientName: settlementDetail.clientName,
-          phoneNumber: settlementDetail.phoneNumber,
-          address: settlementDetail.address,
-          transactionType: 'give' as const,
-          amount: settlementDetail.settlementAmount,
-          previousBalance: settlementDetail.pendingBalance,
-          newBalance: settlementDetail.pendingBalance + settlementDetail.settlementAmount,
-          remark: settlementDetail.remark || 'Settlement (Given)',
-          dateTime: new Date().toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-          }),
-        }
+            clientName: settlementDetail.clientName,
+            phoneNumber: settlementDetail.phoneNumber,
+            address: settlementDetail.address,
+            transactionType: 'give' as const,
+            amount: settlementDetail.settlementAmount,
+            previousBalance: settlementDetail.pendingBalance,
+            newBalance:
+              settlementDetail.pendingBalance +
+              settlementDetail.settlementAmount,
+            remark: settlementDetail.remark || 'Settlement (Given)',
+            dateTime: new Date().toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            }),
+          }
         : null;
 
       await submitSettlementMutation.mutateAsync(settlementData);
@@ -843,7 +849,7 @@ const Settlement: React.FC = () => {
   const handleRowClick = (client: Client) => {
     const targetId = client?.id || (client as any)?._id;
     if (targetId) {
-      navigate({ to: '/client/clientreport/$id', params: { id: targetId } });
+      navigate({to: '/client/clientreport/$id', params: {id: targetId}});
     }
   };
 
@@ -1017,10 +1023,11 @@ const Settlement: React.FC = () => {
                     inputRef.current?.select();
                   }, 50);
                 }}
-                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'receive'
-                  ? 'border-[#785600] bg-[#785600] text-white'
-                  : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                  }`}
+                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  settlementDetail.settlementType === 'receive'
+                    ? 'border-[#785600] bg-[#785600] text-white'
+                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
               >
                 <Minus className="h-4 w-4" />
                 Receive
@@ -1037,10 +1044,11 @@ const Settlement: React.FC = () => {
                     inputRef.current?.select();
                   }, 50);
                 }}
-                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${settlementDetail.settlementType === 'give'
-                  ? 'border-[#785600] bg-[#785600] text-white'
-                  : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                  }`}
+                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  settlementDetail.settlementType === 'give'
+                    ? 'border-[#785600] bg-[#785600] text-white'
+                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                }`}
               >
                 <Plus className="h-4 w-4" />
                 Give

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   Plus,
   Save,
@@ -11,19 +11,19 @@ import {
   Eye,
   RefreshCw,
 } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
-import { useGetItems, Item } from '@/lib/api/items';
-import { useGetSizes, Size } from '@/lib/api/sizes';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import {useGetItems, Item} from '@/lib/api/items';
+import {useGetSizes, Size} from '@/lib/api/sizes';
 import {
   useCreateStock,
   useUpdateStock,
   useDeleteStock,
   useGetStock,
 } from '@/lib/api/stock';
-import { z } from 'zod';
+import {z} from 'zod';
 
 // Zod Schema for validation
 const OpeningStockSchema = z.object({
@@ -60,8 +60,8 @@ const StockMaster: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch items and sizes from API
-  const { data: items = [], isLoading: itemsLoading } = useGetItems();
-  const { data: sizes = [], isLoading: sizesLoading } = useGetSizes();
+  const {data: items = [], isLoading: itemsLoading} = useGetItems();
+  const {data: sizes = [], isLoading: sizesLoading} = useGetSizes();
 
   // Fetch existing stock data
   const {
@@ -89,7 +89,8 @@ const StockMaster: React.FC = () => {
           const size = sizes.find((s) => s.id === stock.sizeId);
           const isGold =
             (stock.sizeId === null && stock.purity === null) ||
-            (item?.name?.toLowerCase().includes('gold') && stock.sizeId === null);
+            (item?.name?.toLowerCase().includes('gold') &&
+              stock.sizeId === null);
 
           const weight = stock.weight ? Number(stock.weight) : 0;
           const purity = isGold ? 100 : stock.purity ? Number(stock.purity) : 0;
@@ -111,12 +112,10 @@ const StockMaster: React.FC = () => {
         },
       );
       const goldItems = stockEntries.filter(
-        (entry) =>
-          entry.sizeId === null && entry.purity === 100,
+        (entry) => entry.sizeId === null && entry.purity === 100,
       );
       const otherItems = stockEntries.filter(
-        (entry) =>
-          !(entry.sizeId === null && entry.purity === 100),
+        (entry) => !(entry.sizeId === null && entry.purity === 100),
       );
       const sortedGold = goldItems.sort((a, b) => a.item.localeCompare(b.item));
       const sortedOther = otherItems.sort((a, b) => {
@@ -137,15 +136,15 @@ const StockMaster: React.FC = () => {
   // Filter data based on search term - search across all fields
   const filteredData = searchTerm
     ? openingEntries.filter((entry) => {
-      const searchLower = searchTerm.toLowerCase().trim();
-      return (
-        entry.item.toLowerCase().includes(searchLower) ||
-        entry.size.toLowerCase().includes(searchLower) ||
-        entry.purity.toString().includes(searchLower) ||
-        entry.grams.toString().includes(searchLower) ||
-        `${entry.grams}`.includes(searchLower)
-      );
-    })
+        const searchLower = searchTerm.toLowerCase().trim();
+        return (
+          entry.item.toLowerCase().includes(searchLower) ||
+          entry.size.toLowerCase().includes(searchLower) ||
+          entry.purity.toString().includes(searchLower) ||
+          entry.grams.toString().includes(searchLower) ||
+          `${entry.grams}`.includes(searchLower)
+        );
+      })
     : openingEntries;
 
   // Validate form data
@@ -208,7 +207,7 @@ const StockMaster: React.FC = () => {
 
     try {
       if (entry.isSaved) {
-        await updateStock.mutateAsync({ id: entry.id, data: stockDataPayload });
+        await updateStock.mutateAsync({id: entry.id, data: stockDataPayload});
         toast.success('Opening stock updated successfully!');
       } else {
         const result = await createStock.mutateAsync(stockDataPayload);
@@ -240,7 +239,7 @@ const StockMaster: React.FC = () => {
 
   const handleRowClick = (entry: OpeningStockEntry) => {
     const id = entry.id;
-    navigate({ to: `/stock/stockreport/${entry.id}` });
+    navigate({to: `/stock/stockreport/${entry.id}`});
   };
 
   // Define columns for GenericTable - NO EDIT/DELETE icons
@@ -287,7 +286,6 @@ const StockMaster: React.FC = () => {
         );
       },
     },
-
   ];
 
   const isSubmitting =
@@ -311,7 +309,7 @@ const StockMaster: React.FC = () => {
               }}
               disabled={stockLoading}
               title="Refresh Stock Data"
-              className="flex items-center justify-center rounded-lg p-1.5 text-[#785600] transition-all hover:bg-[#785600]/10 hover:scale-105 active:scale-95 disabled:opacity-50 dark:text-amber-400 dark:hover:bg-slate-800"
+              className="flex items-center justify-center rounded-lg p-1.5 text-[#785600] transition-all hover:scale-105 hover:bg-[#785600]/10 active:scale-95 disabled:opacity-50 dark:text-amber-400 dark:hover:bg-slate-800"
             >
               <RefreshCw
                 className={`h-4 w-4 sm:h-5 sm:w-5 ${stockLoading ? 'animate-spin' : ''}`}
@@ -346,7 +344,7 @@ const StockMaster: React.FC = () => {
               {/* Inward / Outward */}
               <GenericButton
                 type="button"
-                onClick={() => navigate({ to: '/Stocks/stockmanagement' })}
+                onClick={() => navigate({to: '/Stocks/stockmanagement'})}
                 variant="primary"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -356,7 +354,7 @@ const StockMaster: React.FC = () => {
               {/* Opening Stock */}
               <GenericButton
                 type="button"
-                onClick={() => navigate({ to: '/stock/openingstock' })}
+                onClick={() => navigate({to: '/stock/openingstock'})}
                 variant="primary"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -366,7 +364,7 @@ const StockMaster: React.FC = () => {
               {/* Add Item */}
               <GenericButton
                 type="button"
-                onClick={() => navigate({ to: '/master/additems' })}
+                onClick={() => navigate({to: '/master/additems'})}
                 variant="primary"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -376,7 +374,7 @@ const StockMaster: React.FC = () => {
               {/* Add Size */}
               <GenericButton
                 type="button"
-                onClick={() => navigate({ to: '/master/size' })}
+                onClick={() => navigate({to: '/master/size'})}
                 variant="primary"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

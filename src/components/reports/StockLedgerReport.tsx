@@ -1,13 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Search, Printer, Calendar, Eye } from 'lucide-react';
+import React, {useState, useEffect, useMemo} from 'react';
+import {useNavigate} from '@tanstack/react-router';
+import {ArrowLeft, Search, Printer, Calendar, Eye} from 'lucide-react';
 import toast from 'react-hot-toast';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { useGetStock } from '@/lib/api/stock';
-import { useGetLossReport } from '@/lib/api/lossreport';
-import { useGetStockLedgerReport, StockSummaryData, StockTableItem, StockMovementItem } from '@/lib/api/stockledger';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {useGetStock} from '@/lib/api/stock';
+import {useGetLossReport} from '@/lib/api/lossreport';
+import {
+  useGetStockLedgerReport,
+  StockSummaryData,
+  StockTableItem,
+  StockMovementItem,
+} from '@/lib/api/stockledger';
 
 const formatNumberDisplay = (value: unknown, decimals = 2): string => {
   if (value === null || value === undefined || value === '') return '0.00';
@@ -42,21 +47,31 @@ export default function StockLedgerReport() {
   // Date filters (Defaulted to current app week range from admin settings)
   const initialDateRange = useMemo(() => {
     const range = getCurrentAppWeekRange();
-    return { from: range.fromDate, to: range.toDate };
+    return {from: range.fromDate, to: range.toDate};
   }, []);
 
   const [fromDate, setFromDate] = useState<Date | null>(initialDateRange.from);
   const [toDate, setToDate] = useState<Date | null>(initialDateRange.to);
 
   // Applied date filters (triggered on "View Report" button click)
-  const [appliedFromDate, setAppliedFromDate] = useState<Date | null>(initialDateRange.from);
-  const [appliedToDate, setAppliedToDate] = useState<Date | null>(initialDateRange.to);
+  const [appliedFromDate, setAppliedFromDate] = useState<Date | null>(
+    initialDateRange.from,
+  );
+  const [appliedToDate, setAppliedToDate] = useState<Date | null>(
+    initialDateRange.to,
+  );
 
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch API data from POST /admin/stock/report with fromDate and toDate
-  const fromDateStr = useMemo(() => formatDateToISO(appliedFromDate), [appliedFromDate]);
-  const toDateStr = useMemo(() => formatDateToISO(appliedToDate), [appliedToDate]);
+  const fromDateStr = useMemo(
+    () => formatDateToISO(appliedFromDate),
+    [appliedFromDate],
+  );
+  const toDateStr = useMemo(
+    () => formatDateToISO(appliedToDate),
+    [appliedToDate],
+  );
 
   const {
     data: apiLedgerData,
@@ -114,21 +129,60 @@ export default function StockLedgerReport() {
       if (sec1 || sec2 || ovOpening || ovClosing || sumOpening || sumClosing) {
         setSummaryData({
           opening: {
-            gold: Number(sec1?.openingGold ?? ovOpening?.gold ?? sumOpening?.gold ?? 0),
-            raw: Number(sec1?.openingRaw ?? ovOpening?.raw ?? sumOpening?.raw ?? 0),
-            openingChain: Number(sec1?.openingChain ?? ovOpening?.chain ?? sumOpening?.openingChain ?? 0),
+            gold: Number(
+              sec1?.openingGold ?? ovOpening?.gold ?? sumOpening?.gold ?? 0,
+            ),
+            raw: Number(
+              sec1?.openingRaw ?? ovOpening?.raw ?? sumOpening?.raw ?? 0,
+            ),
+            openingChain: Number(
+              sec1?.openingChain ??
+                ovOpening?.chain ??
+                sumOpening?.openingChain ??
+                0,
+            ),
             srp: Number(sec1?.srp ?? ovOpening?.srp ?? sumOpening?.srp ?? 0),
-            openingClientDue: Number(sec1?.openingClientDue ?? ovOpening?.clientDue ?? sumOpening?.openingClientDue ?? 0),
-            inward: Number(sec1?.inward ?? ovOpening?.inward ?? sumOpening?.inward ?? 0),
+            openingClientDue: Number(
+              sec1?.openingClientDue ??
+                ovOpening?.clientDue ??
+                sumOpening?.openingClientDue ??
+                0,
+            ),
+            inward: Number(
+              sec1?.inward ?? ovOpening?.inward ?? sumOpening?.inward ?? 0,
+            ),
           },
           closing: {
-            gold: Number(sec2?.closingGold ?? ovClosing?.gold ?? sumClosing?.gold ?? 0),
-            raw: Number(sec2?.closingRaw ?? ovClosing?.raw ?? sumClosing?.raw ?? 0),
-            closingChain: Number(sec2?.closingChain ?? ovClosing?.chain ?? sumClosing?.closingChain ?? 0),
-            closingClientDue: Number(sec2?.closingClientDue ?? ovClosing?.clientDue ?? sumClosing?.closingClientDue ?? 0),
-            loss: Number(sec2?.loss ?? ovClosing?.loss ?? sumClosing?.loss ?? 0),
-            outward: Number(sec2?.outward ?? ovClosing?.outward ?? sumClosing?.outward ?? 0),
-            profitLoss: Number(sec2?.profitLoss ?? ovClosing?.profitLoss ?? data?.summary?.profitLoss ?? 0),
+            gold: Number(
+              sec2?.closingGold ?? ovClosing?.gold ?? sumClosing?.gold ?? 0,
+            ),
+            raw: Number(
+              sec2?.closingRaw ?? ovClosing?.raw ?? sumClosing?.raw ?? 0,
+            ),
+            closingChain: Number(
+              sec2?.closingChain ??
+                ovClosing?.chain ??
+                sumClosing?.closingChain ??
+                0,
+            ),
+            closingClientDue: Number(
+              sec2?.closingClientDue ??
+                ovClosing?.clientDue ??
+                sumClosing?.closingClientDue ??
+                0,
+            ),
+            loss: Number(
+              sec2?.loss ?? ovClosing?.loss ?? sumClosing?.loss ?? 0,
+            ),
+            outward: Number(
+              sec2?.outward ?? ovClosing?.outward ?? sumClosing?.outward ?? 0,
+            ),
+            profitLoss: Number(
+              sec2?.profitLoss ??
+                ovClosing?.profitLoss ??
+                data?.summary?.profitLoss ??
+                0,
+            ),
           },
         });
       }
@@ -142,8 +196,10 @@ export default function StockLedgerReport() {
             name: `${item.name || 'Chain'}${item.size ? ` (${item.size})` : ''}${item.purity ? ` ${item.purity}%` : ''}`,
             opening: Number(item.opening ?? item.openingFine ?? 0),
             closing: Number(item.closing ?? item.closingFine ?? 0),
-            due: Number(item.difference ?? item.differenceFine ?? item.closing ?? 0),
-          }))
+            due: Number(
+              item.difference ?? item.differenceFine ?? item.closing ?? 0,
+            ),
+          })),
         );
       }
 
@@ -156,21 +212,31 @@ export default function StockLedgerReport() {
             id: item.id || `raw-${idx}`,
             name: item.name || item.item || item.itemName || 'GOLD',
             opening: Number(item.opening ?? item.openingStock ?? 0),
-            closing: Number(item.closing ?? item.closingStock ?? item.weight ?? 0),
+            closing: Number(
+              item.closing ?? item.closingStock ?? item.weight ?? 0,
+            ),
             due: Number(item.due ?? item.difference ?? item.closing ?? 0),
-          }))
+          })),
         );
       } else if (Array.isArray(allItems) && allItems.length > 0) {
-        const rawItems = allItems.filter((i: any) => !i.sizeName || i.itemName?.toUpperCase() === 'GOLD');
+        const rawItems = allItems.filter(
+          (i: any) => !i.sizeName || i.itemName?.toUpperCase() === 'GOLD',
+        );
         if (rawItems.length > 0) {
           setRawStockList(
             rawItems.map((item: any, idx: number) => ({
               id: item.stockId || item.itemId || item.id || `raw-${idx}`,
               name: item.itemName || item.name || 'GOLD',
-              opening: Number(item.openingStock ?? item.openingStockFine ?? item.opening ?? 0),
-              closing: Number(item.closingStock ?? item.closingStockFine ?? item.closing ?? 0),
-              due: Number(item.netChange ?? item.netChangeFine ?? item.closingStock ?? 0),
-            }))
+              opening: Number(
+                item.openingStock ?? item.openingStockFine ?? item.opening ?? 0,
+              ),
+              closing: Number(
+                item.closingStock ?? item.closingStockFine ?? item.closing ?? 0,
+              ),
+              due: Number(
+                item.netChange ?? item.netChangeFine ?? item.closingStock ?? 0,
+              ),
+            })),
           );
         }
       }
@@ -185,15 +251,20 @@ export default function StockLedgerReport() {
             opening: Number(item.opening ?? 0),
             closing: Number(item.closing ?? 0),
             difference: Number(item.difference ?? 0),
-          }))
+          })),
         );
       }
 
       // 5. Stock Movement mapping (paired from section3.stockMovement inwards and outwards)
-      const stockMovement = data?.section3?.stockMovement || data?.stockMovement;
+      const stockMovement =
+        data?.section3?.stockMovement || data?.stockMovement;
       if (stockMovement) {
-        const inwards = Array.isArray(stockMovement.inwards) ? stockMovement.inwards : [];
-        const outwards = Array.isArray(stockMovement.outwards) ? stockMovement.outwards : [];
+        const inwards = Array.isArray(stockMovement.inwards)
+          ? stockMovement.inwards
+          : [];
+        const outwards = Array.isArray(stockMovement.outwards)
+          ? stockMovement.outwards
+          : [];
         const maxLen = Math.max(inwards.length, outwards.length);
 
         if (maxLen > 0) {
@@ -201,14 +272,24 @@ export default function StockLedgerReport() {
           for (let i = 0; i < maxLen; i++) {
             const inItem = inwards[i];
             const outItem = outwards[i];
-            const inVal = inItem && (inItem.fineWeight != null || inItem.weight != null) ? Number(inItem.fineWeight ?? inItem.weight ?? 0) : null;
-            const outVal = outItem && (outItem.fineWeight != null || outItem.weight != null) ? Number(outItem.fineWeight ?? outItem.weight ?? 0) : null;
+            const inVal =
+              inItem && (inItem.fineWeight != null || inItem.weight != null)
+                ? Number(inItem.fineWeight ?? inItem.weight ?? 0)
+                : null;
+            const outVal =
+              outItem && (outItem.fineWeight != null || outItem.weight != null)
+                ? Number(outItem.fineWeight ?? outItem.weight ?? 0)
+                : null;
             movementRows.push({
               id: inItem?.id || outItem?.id || `mov-${i}`,
-              inwardName: inItem ? `${inItem.name}${inItem.sizeName ? ` (${inItem.sizeName})` : ''}` : '',
+              inwardName: inItem
+                ? `${inItem.name}${inItem.sizeName ? ` (${inItem.sizeName})` : ''}`
+                : '',
               inwardSubtext: inItem?.remark || '',
               inward: inVal !== null && inVal > 0 ? inVal : null,
-              outwardName: outItem ? `${outItem.name}${outItem.sizeName ? ` (${outItem.sizeName})` : ''}` : '',
+              outwardName: outItem
+                ? `${outItem.name}${outItem.sizeName ? ` (${outItem.sizeName})` : ''}`
+                : '',
               outwardSubtext: outItem?.remark || '',
               outward: outVal !== null && outVal > 0 ? outVal : null,
             });
@@ -284,7 +365,8 @@ export default function StockLedgerReport() {
         item.name.toLowerCase().includes(query) ||
         item.opening.toString().includes(query) ||
         item.closing.toString().includes(query) ||
-        (item.difference !== undefined && item.difference.toString().includes(query)),
+        (item.difference !== undefined &&
+          item.difference.toString().includes(query)),
     );
   }, [clientList, query]);
 
@@ -293,10 +375,12 @@ export default function StockLedgerReport() {
     return movementList.filter(
       (item) =>
         item.inwardName.toLowerCase().includes(query) ||
-        (item.inwardSubtext && item.inwardSubtext.toLowerCase().includes(query)) ||
+        (item.inwardSubtext &&
+          item.inwardSubtext.toLowerCase().includes(query)) ||
         item.inward.toString().includes(query) ||
         item.outwardName.toLowerCase().includes(query) ||
-        (item.outwardSubtext && item.outwardSubtext.toLowerCase().includes(query)) ||
+        (item.outwardSubtext &&
+          item.outwardSubtext.toLowerCase().includes(query)) ||
         item.outward.toString().includes(query),
     );
   }, [movementList, query]);
@@ -321,16 +405,14 @@ export default function StockLedgerReport() {
     // ============================================================
 
     const existingContainer = document.getElementById(
-      "stock-ledger-print-container"
+      'stock-ledger-print-container',
     );
 
     if (existingContainer) {
       existingContainer.remove();
     }
 
-    const existingStyle = document.getElementById(
-      "stock-ledger-print-style"
-    );
+    const existingStyle = document.getElementById('stock-ledger-print-style');
 
     if (existingStyle) {
       existingStyle.remove();
@@ -340,9 +422,9 @@ export default function StockLedgerReport() {
     // CREATE PRINT CONTAINER
     // ============================================================
 
-    const printContainer = document.createElement("div");
+    const printContainer = document.createElement('div');
 
-    printContainer.id = "stock-ledger-print-container";
+    printContainer.id = 'stock-ledger-print-container';
 
     printContainer.style.cssText = `
     position: fixed;
@@ -366,43 +448,33 @@ export default function StockLedgerReport() {
 
     const headerInfo =
       getpdfheaderdata?.data?.data ||
-      (getpdfheaderdata?.data?.factoryName
-        ? getpdfheaderdata.data
-        : {});
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
 
-    const leftInvocation =
-      headerInfo.leftInvocation || "॥ श्री गणेश प्रसन्न ॥";
+    const leftInvocation = headerInfo.leftInvocation || '॥ श्री गणेश प्रसन्न ॥';
 
     const rightInvocation =
-      headerInfo.rightInvocation || "॥ श्री साई प्रसन्न ॥";
+      headerInfo.rightInvocation || '॥ श्री साई प्रसन्न ॥';
 
-    const factoryName =
-      headerInfo.factoryName || "मातोश्री चेन फॅक्टरी, मिरज";
+    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
 
     const description =
       headerInfo.description ||
-      "आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.";
+      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
 
-    const proprietorName =
-      headerInfo.proprietorName || "प्रो. नितीन खरात";
+    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
 
     const phoneNumbers =
-      headerInfo.phoneNumbers || "मो. ९३७०२४७०३५ / ७३८७२३५१८४";
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
 
-    const invocationColor =
-      headerInfo.invocationColor || "#a84b20";
+    const invocationColor = headerInfo.invocationColor || '#a84b20';
 
-    const factoryNameColor =
-      headerInfo.factoryNameColor || "#c43d5c";
+    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
 
-    const descriptionColor =
-      headerInfo.descriptionColor || "#8b451f";
+    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
 
-    const proprietorColor =
-      headerInfo.proprietorColor || "#a84b20";
+    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
 
-    const phoneColor =
-      headerInfo.phoneColor || "#a84b20";
+    const phoneColor = headerInfo.phoneColor || '#a84b20';
 
     // ============================================================
     // TOTALS
@@ -410,47 +482,47 @@ export default function StockLedgerReport() {
 
     const rawTotalOpening = filteredRawStock.reduce(
       (sum, item) => sum + (item.opening || 0),
-      0
+      0,
     );
 
     const rawTotalClosing = filteredRawStock.reduce(
       (sum, item) => sum + (item.closing || 0),
-      0
+      0,
     );
 
     const rawTotalDifference = filteredRawStock.reduce(
       (sum, item) => sum + (item.due || 0),
-      0
+      0,
     );
 
     const chainTotalOpening = filteredChainStock.reduce(
       (sum, item) => sum + (item.opening || 0),
-      0
+      0,
     );
 
     const chainTotalClosing = filteredChainStock.reduce(
       (sum, item) => sum + (item.closing || 0),
-      0
+      0,
     );
 
     const chainTotalDifference = filteredChainStock.reduce(
       (sum, item) => sum + (item.due || 0),
-      0
+      0,
     );
 
     const clientTotalOpening = filteredClient.reduce(
       (sum, item) => sum + (item.opening || 0),
-      0
+      0,
     );
 
     const clientTotalClosing = filteredClient.reduce(
       (sum, item) => sum + (item.closing || 0),
-      0
+      0,
     );
 
     const clientTotalDifference = filteredClient.reduce(
       (sum, item) => sum + (item.difference || 0),
-      0
+      0,
     );
 
     // ============================================================
@@ -460,23 +532,23 @@ export default function StockLedgerReport() {
     const rawRows =
       filteredRawStock.length > 0
         ? filteredRawStock
-          .map(
-            (item) => `
+            .map(
+              (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.opening
-            )}</td>
+                  item.opening,
+                )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.closing
-            )}</td>
+                  item.closing,
+                )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-              item.due
-            )}</td>
+                  item.due,
+                )}</td>
               </tr>
-            `
-          )
-          .join("")
+            `,
+            )
+            .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -490,23 +562,23 @@ export default function StockLedgerReport() {
     const chainRows =
       filteredChainStock.length > 0
         ? filteredChainStock
-          .map(
-            (item) => `
+            .map(
+              (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.opening
-            )}</td>
+                  item.opening,
+                )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.closing
-            )}</td>
+                  item.closing,
+                )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-              item.due
-            )}</td>
+                  item.due,
+                )}</td>
               </tr>
-            `
-          )
-          .join("")
+            `,
+            )
+            .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -520,23 +592,23 @@ export default function StockLedgerReport() {
     const clientRows =
       filteredClient.length > 0
         ? filteredClient
-          .map(
-            (item) => `
+            .map(
+              (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.opening
-            )}</td>
+                  item.opening,
+                )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.closing
-            )}</td>
+                  item.closing,
+                )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-              item.difference
-            )}</td>
+                  item.difference,
+                )}</td>
               </tr>
-            `
-          )
-          .join("")
+            `,
+            )
+            .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -550,52 +622,52 @@ export default function StockLedgerReport() {
     const movementRows =
       filteredMovement.length > 0
         ? filteredMovement
-          .map(
-            (item) => `
+            .map(
+              (item) => `
               <tr class="movement-row">
                 <td class="movement-name center-cell">
                   <div class="movement-main">
-                    ${item.inwardName || "-"}
+                    ${item.inwardName || '-'}
                   </div>
 
-                  ${item.inwardSubtext
-                ? `<div class="movement-subtext">${item.inwardSubtext}</div>`
-                : ""
-              }
+                  ${
+                    item.inwardSubtext
+                      ? `<div class="movement-subtext">${item.inwardSubtext}</div>`
+                      : ''
+                  }
                 </td>
 
                 <td class="movement-number center-cell inward-number">
-                  ${item.inwardName &&
-                item.inward != null &&
-                item.inward > 0
-                ? formatNumberDisplay(item.inward)
-                : "-"
-              }
+                  ${
+                    item.inwardName && item.inward != null && item.inward > 0
+                      ? formatNumberDisplay(item.inward)
+                      : '-'
+                  }
                 </td>
 
                 <td class="movement-name center-cell">
                   <div class="movement-main">
-                    ${item.outwardName || "-"}
+                    ${item.outwardName || '-'}
                   </div>
 
-                  ${item.outwardSubtext
-                ? `<div class="movement-subtext">${item.outwardSubtext}</div>`
-                : ""
-              }
+                  ${
+                    item.outwardSubtext
+                      ? `<div class="movement-subtext">${item.outwardSubtext}</div>`
+                      : ''
+                  }
                 </td>
 
                 <td class="movement-number center-cell outward-number">
-                  ${item.outwardName &&
-                item.outward != null &&
-                item.outward > 0
-                ? formatNumberDisplay(item.outward)
-                : "-"
-              }
+                  ${
+                    item.outwardName && item.outward != null && item.outward > 0
+                      ? formatNumberDisplay(item.outward)
+                      : '-'
+                  }
                 </td>
               </tr>
-            `
-          )
-          .join("")
+            `,
+            )
+            .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -691,9 +763,7 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value">
-                        ${formatNumberDisplay(
-      summaryData.opening.gold
-    )}
+                        ${formatNumberDisplay(summaryData.opening.gold)}
                       </td>
                     </tr>
 
@@ -703,9 +773,7 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value">
-                        ${formatNumberDisplay(
-      summaryData.opening.raw
-    )}
+                        ${formatNumberDisplay(summaryData.opening.raw)}
                       </td>
                     </tr>
 
@@ -715,9 +783,7 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value">
-                        ${formatNumberDisplay(
-      summaryData.opening.openingChain
-    )}
+                        ${formatNumberDisplay(summaryData.opening.openingChain)}
                       </td>
                     </tr>
 
@@ -728,8 +794,8 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value">
                         ${formatNumberDisplay(
-      summaryData.opening.openingClientDue
-    )}
+                          summaryData.opening.openingClientDue,
+                        )}
                       </td>
                     </tr>
 
@@ -739,9 +805,7 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value">
-                        ${formatNumberDisplay(
-      summaryData.opening.srp
-    )}
+                        ${formatNumberDisplay(summaryData.opening.srp)}
                       </td>
                     </tr>
 
@@ -752,9 +816,7 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value green bold">
-                        ${formatNumberDisplay(
-      summaryData.opening.inward
-    )}
+                        ${formatNumberDisplay(summaryData.opening.inward)}
                       </td>
 
                     </tr>
@@ -778,9 +840,7 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value">
-                        ${formatNumberDisplay(
-      summaryData.closing.gold
-    )}
+                        ${formatNumberDisplay(summaryData.closing.gold)}
                       </td>
                     </tr>
 
@@ -790,9 +850,7 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value">
-                        ${formatNumberDisplay(
-      summaryData.closing.raw
-    )}
+                        ${formatNumberDisplay(summaryData.closing.raw)}
                       </td>
                     </tr>
 
@@ -802,9 +860,7 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value">
-                        ${formatNumberDisplay(
-      summaryData.closing.closingChain
-    )}
+                        ${formatNumberDisplay(summaryData.closing.closingChain)}
                       </td>
                     </tr>
 
@@ -815,8 +871,8 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value">
                         ${formatNumberDisplay(
-      summaryData.closing.closingClientDue
-    )}
+                          summaryData.closing.closingClientDue,
+                        )}
                       </td>
                     </tr>
 
@@ -826,9 +882,7 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value">
-                        ${formatNumberDisplay(
-      summaryData.closing.loss
-    )}
+                        ${formatNumberDisplay(summaryData.closing.loss)}
                       </td>
                     </tr>
 
@@ -839,9 +893,7 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value orange bold">
-                        ${formatNumberDisplay(
-      summaryData.closing.outward
-    )}
+                        ${formatNumberDisplay(summaryData.closing.outward)}
                       </td>
 
                     </tr>
@@ -854,8 +906,8 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value profit">
                         ${formatNumberDisplay(
-      summaryData.closing.profitLoss ?? 0
-    )}
+                          summaryData.closing.profitLoss ?? 0,
+                        )}
                       </td>
 
                     </tr>
@@ -1112,9 +1164,9 @@ export default function StockLedgerReport() {
     // PRINT STYLE
     // ============================================================
 
-    const style = document.createElement("style");
+    const style = document.createElement('style');
 
-    style.id = "stock-ledger-print-style";
+    style.id = 'stock-ledger-print-style';
 
     style.textContent = `
     /* ==========================================================
@@ -1844,7 +1896,7 @@ export default function StockLedgerReport() {
           <div className="flex w-full min-w-0 items-center gap-2.5 sm:w-auto">
             <div className="h-5 w-px flex-shrink-0 bg-[#d3c4af]/40 dark:bg-slate-700" />
             <div>
-              <h1 className="font-headline text-xl font-black italic tracking-tight text-[#1a1a2e] sm:text-2xl lg:text-3xl dark:text-white">
+              <h1 className="font-headline text-xl font-black italic tracking-tight text-[#1a1a2e] dark:text-white sm:text-2xl lg:text-3xl">
                 Business 360 Report
               </h1>
             </div>
@@ -1914,61 +1966,75 @@ export default function StockLedgerReport() {
         <div className="overflow-hidden rounded-2xl border border-[#d3c4af]/30 bg-white shadow-md transition-all dark:border-slate-800 dark:bg-slate-900">
           {/* Header Banner */}
           <div className="border-b border-[#d3c4af]/20 bg-gradient-to-b from-white to-[#f9f9f7] px-4 py-4 text-center dark:from-slate-900 dark:to-slate-900/90">
-            <h2 className="text-base font-black tracking-wider text-[#1a1c1b] dark:text-white sm:text-lg md:text-xl uppercase">
+            <h2 className="text-base font-black uppercase tracking-wider text-[#1a1c1b] dark:text-white sm:text-lg md:text-xl">
               BUSINESS 360 REPORT
             </h2>
             <div className="mt-1.5 flex items-center justify-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d3c4af]/40 bg-[#f4f1ea] px-3.5 py-0.5 text-xs font-bold text-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-[#b8860b] shadow-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d3c4af]/40 bg-[#f4f1ea] px-3.5 py-0.5 text-xs font-bold text-[#785600] shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-[#b8860b]">
                 <Calendar className="h-3 w-3" />
                 Date: {dateRangeLabel}
               </span>
             </div>
           </div>
 
-          <div className="p-3 sm:p-5 md:p-6 space-y-5">
+          <div className="space-y-5 p-3 sm:p-5 md:p-6">
             {/* 1. OPENING / CLOSING Split Box */}
-            <div className="overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white dark:border-slate-800 dark:bg-slate-900/70 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[#d3c4af]/30 dark:divide-slate-800">
+            <div className="overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+              <div className="grid grid-cols-1 divide-y divide-[#d3c4af]/30 dark:divide-slate-800 md:grid-cols-2 md:divide-x md:divide-y-0">
                 {/* Left: OPENING */}
                 <div>
                   <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2 text-center dark:bg-slate-800/60">
-                    <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
+                    <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
                       OPENING
                     </span>
                   </div>
-                  <div className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800 text-xs sm:text-sm font-semibold">
-                    <div className="flex items-center justify-between px-4 py-2.5 hover:bg-[#785600]/5 dark:hover:bg-slate-800/40 transition-colors">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">Gold Stock</span>
+                  <div className="divide-y divide-[#d3c4af]/20 text-xs font-semibold dark:divide-slate-800 sm:text-sm">
+                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                        Gold Stock
+                      </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
                         {formatNumberDisplay(summaryData.opening.gold)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 hover:bg-[#785600]/5 dark:hover:bg-slate-800/40 transition-colors">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">Manufacturing</span>
+                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                        Manufacturing
+                      </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
                         {formatNumberDisplay(summaryData.opening.raw)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 hover:bg-[#785600]/5 dark:hover:bg-slate-800/40 transition-colors">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">Chain Stock</span>
+                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                        Chain Stock
+                      </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
                         {formatNumberDisplay(summaryData.opening.openingChain)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 hover:bg-[#785600]/5 dark:hover:bg-slate-800/40 transition-colors">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">Client Due</span>
+                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                        Client Due
+                      </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(summaryData.opening.openingClientDue)}
+                        {formatNumberDisplay(
+                          summaryData.opening.openingClientDue,
+                        )}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 hover:bg-[#785600]/5 dark:hover:bg-slate-800/40 transition-colors">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">SRP</span>
+                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                        SRP
+                      </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
                         {formatNumberDisplay(summaryData.opening.srp)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between bg-[#f4f1ea]/60 px-4 py-2.5 dark:bg-slate-800/50">
-                      <span className="font-bold text-[#1a1c1b] dark:text-white">Inward</span>
+                      <span className="font-bold text-[#1a1c1b] dark:text-white">
+                        Inward
+                      </span>
                       <span className="font-mono text-sm font-bold text-green-700 dark:text-green-400">
                         {formatNumberDisplay(summaryData.opening.inward)}
                       </span>
@@ -1979,51 +2045,69 @@ export default function StockLedgerReport() {
                 {/* Right: CLOSING */}
                 <div>
                   <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2 text-center dark:bg-slate-800/60">
-                    <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
+                    <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
                       CLOSING
                     </span>
                   </div>
-                  <div className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800 text-xs sm:text-sm font-semibold">
-                    <div className="flex items-center justify-between px-4 py-2.5 hover:bg-[#785600]/5 dark:hover:bg-slate-800/40 transition-colors">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">Gold Stock</span>
+                  <div className="divide-y divide-[#d3c4af]/20 text-xs font-semibold dark:divide-slate-800 sm:text-sm">
+                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                        Gold Stock
+                      </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
                         {formatNumberDisplay(summaryData.closing.gold)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 hover:bg-[#785600]/5 dark:hover:bg-slate-800/40 transition-colors">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">Manufacturing</span>
+                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                        Manufacturing
+                      </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
                         {formatNumberDisplay(summaryData.closing.raw)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 hover:bg-[#785600]/5 dark:hover:bg-slate-800/40 transition-colors">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">Chain Stock</span>
+                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                        Chain Stock
+                      </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
                         {formatNumberDisplay(summaryData.closing.closingChain)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 hover:bg-[#785600]/5 dark:hover:bg-slate-800/40 transition-colors">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">Client Due</span>
+                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                        Client Due
+                      </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(summaryData.closing.closingClientDue)}
+                        {formatNumberDisplay(
+                          summaryData.closing.closingClientDue,
+                        )}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 hover:bg-[#785600]/5 dark:hover:bg-slate-800/40 transition-colors">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">Loss</span>
+                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                        Loss
+                      </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
                         {formatNumberDisplay(summaryData.closing.loss)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between bg-[#f4f1ea]/60 px-4 py-2.5 dark:bg-slate-800/50">
-                      <span className="font-bold text-[#1a1c1b] dark:text-white">Outward</span>
+                      <span className="font-bold text-[#1a1c1b] dark:text-white">
+                        Outward
+                      </span>
                       <span className="font-mono text-sm font-bold text-amber-700 dark:text-amber-400">
                         {formatNumberDisplay(summaryData.closing.outward)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between border-t border-[#d3c4af]/30 bg-emerald-50/70 px-4 py-2.5 dark:bg-emerald-950/30">
-                      <span className="font-bold text-emerald-900 dark:text-emerald-300">Profit / Loss</span>
+                      <span className="font-bold text-emerald-900 dark:text-emerald-300">
+                        Profit / Loss
+                      </span>
                       <span className="font-mono text-sm font-extrabold text-emerald-700 dark:text-emerald-400">
-                        {formatNumberDisplay(summaryData.closing.profitLoss ?? 0)}
+                        {formatNumberDisplay(
+                          summaryData.closing.profitLoss ?? 0,
+                        )}
                       </span>
                     </div>
                   </div>
@@ -2032,15 +2116,15 @@ export default function StockLedgerReport() {
             </div>
 
             {/* 2, 3, 4: MANUFACTURING STOCK, CHAIN STOCK, & CLIENT in ONE ROW */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
+            <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-3">
               {/* MANUFACTURING STOCK Table */}
-              <div className="flex flex-col h-full rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
+              <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
                 <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-                  <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
+                  <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
                     MANUFACTURING STOCK
                   </span>
                 </div>
-                <div className="overflow-x-auto flex-1 flex flex-col">
+                <div className="flex flex-1 flex-col overflow-x-auto">
                   <table className="w-full text-left text-xs sm:text-sm">
                     <thead>
                       <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
@@ -2060,20 +2144,23 @@ export default function StockLedgerReport() {
                             <td className="px-3.5 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
                               {row.name}
                             </td>
-                            <td className="px-3.5 py-2.5 text-right font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                            <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
                               {formatNumberDisplay(row.opening)}
                             </td>
-                            <td className="px-3.5 py-2.5 text-right font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                            <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
                               {formatNumberDisplay(row.closing)}
                             </td>
-                            <td className="px-3.5 py-2.5 text-right font-mono font-bold text-[#1a1c1b] dark:text-slate-100">
+                            <td className="font-mono px-3.5 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
                               {formatNumberDisplay(row.due)}
                             </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={4} className="px-3.5 py-6 text-center text-xs text-gray-500">
+                          <td
+                            colSpan={4}
+                            className="text-gray-500 px-3.5 py-6 text-center text-xs"
+                          >
                             No manufacturing stock data found.
                           </td>
                         </tr>
@@ -2084,13 +2171,13 @@ export default function StockLedgerReport() {
               </div>
 
               {/* CHAIN STOCK Table */}
-              <div className="flex flex-col h-full rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
+              <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
                 <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-                  <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
+                  <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
                     CHAIN STOCK
                   </span>
                 </div>
-                <div className="overflow-x-auto flex-1 flex flex-col">
+                <div className="flex flex-1 flex-col overflow-x-auto">
                   <table className="w-full text-left text-xs sm:text-sm">
                     <thead>
                       <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
@@ -2110,20 +2197,23 @@ export default function StockLedgerReport() {
                             <td className="px-3.5 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
                               {row.name}
                             </td>
-                            <td className="px-3.5 py-2.5 text-right font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                            <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
                               {formatNumberDisplay(row.opening)}
                             </td>
-                            <td className="px-3.5 py-2.5 text-right font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                            <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
                               {formatNumberDisplay(row.closing)}
                             </td>
-                            <td className="px-3.5 py-2.5 text-right font-mono font-bold text-[#1a1c1b] dark:text-slate-100">
+                            <td className="font-mono px-3.5 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
                               {formatNumberDisplay(row.due)}
                             </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={4} className="px-3.5 py-6 text-center text-xs text-gray-500">
+                          <td
+                            colSpan={4}
+                            className="text-gray-500 px-3.5 py-6 text-center text-xs"
+                          >
                             No chain stock data found.
                           </td>
                         </tr>
@@ -2134,13 +2224,13 @@ export default function StockLedgerReport() {
               </div>
 
               {/* CLIENT Table */}
-              <div className="flex flex-col h-full rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900/70">
+              <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
                 <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-                  <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
+                  <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
                     CLIENT
                   </span>
                 </div>
-                <div className="overflow-x-auto flex-1 flex flex-col">
+                <div className="flex flex-1 flex-col overflow-x-auto">
                   <table className="w-full text-left text-xs sm:text-sm">
                     <thead>
                       <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
@@ -2160,20 +2250,23 @@ export default function StockLedgerReport() {
                             <td className="px-3.5 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
                               {row.name}
                             </td>
-                            <td className="px-3.5 py-2.5 text-right font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                            <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
                               {formatNumberDisplay(row.opening)}
                             </td>
-                            <td className="px-3.5 py-2.5 text-right font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                            <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
                               {formatNumberDisplay(row.closing)}
                             </td>
-                            <td className="px-3.5 py-2.5 text-right font-mono font-bold text-[#1a1c1b] dark:text-slate-100">
+                            <td className="font-mono px-3.5 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
                               {formatNumberDisplay(row.difference)}
                             </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={4} className="px-3.5 py-6 text-center text-xs text-gray-500">
+                          <td
+                            colSpan={4}
+                            className="text-gray-500 px-3.5 py-6 text-center text-xs"
+                          >
                             No client records found.
                           </td>
                         </tr>
@@ -2185,9 +2278,9 @@ export default function StockLedgerReport() {
             </div>
 
             {/* 5. INWARD OUTWARD HISTORY Table */}
-            <div className="rounded-xl border border-[#d3c4af]/30 bg-white dark:border-slate-800 dark:bg-slate-900/70 shadow-sm overflow-hidden">
+            <div className="overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
               <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2 text-center dark:bg-slate-800/60">
-                <span className="text-xs font-black tracking-widest text-[#1a1c1b] uppercase dark:text-white">
+                <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
                   INWARD OUTWARD HISTORY
                 </span>
               </div>
@@ -2213,32 +2306,43 @@ export default function StockLedgerReport() {
                               {row.inwardName ? row.inwardName : '-'}
                             </div>
                             {row.inwardSubtext && (
-                              <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                              <div className="text-gray-500 dark:text-gray-400 text-[11px]">
                                 {row.inwardSubtext}
                               </div>
                             )}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-mono font-bold text-green-700 dark:text-green-400">
-                            {row.inwardName && row.inward != null && row.inward > 0 ? formatNumberDisplay(row.inward) : '-'}
+                          <td className="font-mono px-4 py-2.5 text-right font-bold text-green-700 dark:text-green-400">
+                            {row.inwardName &&
+                            row.inward != null &&
+                            row.inward > 0
+                              ? formatNumberDisplay(row.inward)
+                              : '-'}
                           </td>
                           <td className="px-4 py-2.5">
                             <div className="font-medium text-[#1a1c1b] dark:text-white">
                               {row.outwardName ? row.outwardName : '-'}
                             </div>
                             {row.outwardSubtext && (
-                              <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                              <div className="text-gray-500 dark:text-gray-400 text-[11px]">
                                 {row.outwardSubtext}
                               </div>
                             )}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-mono font-bold text-amber-700 dark:text-amber-400">
-                            {row.outwardName && row.outward != null && row.outward > 0 ? formatNumberDisplay(row.outward) : '-'}
+                          <td className="font-mono px-4 py-2.5 text-right font-bold text-amber-700 dark:text-amber-400">
+                            {row.outwardName &&
+                            row.outward != null &&
+                            row.outward > 0
+                              ? formatNumberDisplay(row.outward)
+                              : '-'}
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={4} className="px-4 py-4 text-center text-xs text-gray-500">
+                        <td
+                          colSpan={4}
+                          className="text-gray-500 px-4 py-4 text-center text-xs"
+                        >
                           No stock movement records found.
                         </td>
                       </tr>

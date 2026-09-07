@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {
   History,
   ChevronRight,
@@ -13,13 +13,13 @@ import {
   Scale,
   AlertCircle,
 } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { useTableScaleFocus, useScaleFocus } from '@/lib/hooks/useScaleFocus';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {useTableScaleFocus, useScaleFocus} from '@/lib/hooks/useScaleFocus';
 import {
   useGetMelting,
   useGetMeltingHistory,
@@ -27,10 +27,10 @@ import {
   useSubmitMeltingStock,
   useSubmitMeltingScrapStock,
 } from '@/lib/api/melting';
-import { useGetProcessAlert } from '@/lib/api/alertmanagement';
+import {useGetProcessAlert} from '@/lib/api/alertmanagement';
 import HistoryDept from './HistoryDept';
 import AddDept from './AddDept';
-import MeltingPopup, { ScrapModalItem } from '../cutting/MeltingPopup';
+import MeltingPopup, {ScrapModalItem} from '../cutting/MeltingPopup';
 import {
   MeltingRow,
   ScrapCardData,
@@ -55,7 +55,9 @@ const MeltingDept: React.FC = () => {
   const [toDate, setToDate] = useState<Date | null>(null);
 
   // Selected scrap cards state for MeltingPopup
-  const [selectedScrapPurities, setSelectedScrapPurities] = useState<Set<number>>(new Set());
+  const [selectedScrapPurities, setSelectedScrapPurities] = useState<
+    Set<number>
+  >(new Set());
   const [isScrapModalOpen, setIsScrapModalOpen] = useState(false);
 
   // Add Scrap Modal state
@@ -80,12 +82,12 @@ const MeltingDept: React.FC = () => {
     isLoading: historyLoading,
     refetch: refetchHistory,
   } = useGetMeltingHistory();
-  const { data: scrapData = [] } = useGetScrap();
+  const {data: scrapData = []} = useGetScrap();
   const submitMeltingStock = useSubmitMeltingStock();
   const submitMeltingScrap = useSubmitMeltingScrapStock();
 
   // Weighing Scale table focus hook
-  const { getScaleProps } = useTableScaleFocus<'fineWeight'>(
+  const {getScaleProps} = useTableScaleFocus<'fineWeight'>(
     (index, field, weight) => {
       handleInlineChange(index, field, weight.toString());
     },
@@ -97,18 +99,21 @@ const MeltingDept: React.FC = () => {
   });
 
   const scrapCards: ScrapCardData[] = React.useMemo(() => {
-    const scrapList = Array.isArray(scrapData?.data) ? scrapData.data :
-      Array.isArray(scrapData) ? scrapData : [];
+    const scrapList = Array.isArray(scrapData?.data)
+      ? scrapData.data
+      : Array.isArray(scrapData)
+        ? scrapData
+        : [];
 
     // Return empty cards if API returns no scrap
     if (scrapList.length === 0) return [];
 
-    const cardMap = new Map<number, { totalWeight: number; count: number }>();
+    const cardMap = new Map<number, {totalWeight: number; count: number}>();
     scrapList.forEach((item: any) => {
       const p = Number(item.purity) || 0;
       const wt = Number(item.weight) || 0;
       if (p > 0 && wt > 0) {
-        const current = cardMap.get(p) || { totalWeight: 0, count: 0 };
+        const current = cardMap.get(p) || {totalWeight: 0, count: 0};
         cardMap.set(p, {
           totalWeight: current.totalWeight + wt,
           count: current.count + 1,
@@ -122,7 +127,6 @@ const MeltingDept: React.FC = () => {
       count: data.count,
     }));
   }, [scrapData]);
-
 
   const toggleSelectScrapCard = (purity: number) => {
     setSelectedScrapPurities((prev) => {
@@ -155,7 +159,8 @@ const MeltingDept: React.FC = () => {
       totalAvailableWeight += item.availableWeight;
     });
 
-    const finalPurity = totalAvailableWeight > 0 ? weightedPuritySum / totalAvailableWeight : 0;
+    const finalPurity =
+      totalAvailableWeight > 0 ? weightedPuritySum / totalAvailableWeight : 0;
 
     return {
       finalPurity,
@@ -215,8 +220,12 @@ const MeltingDept: React.FC = () => {
     }
 
     setIsSubmittingScrap(true);
-    const expectedFine = calculateExpectedFine(weightNum, Number(selectedPurity));
-    const particularText = particular.trim() || `Scrap Melting ${selectedPurity}%`;
+    const expectedFine = calculateExpectedFine(
+      weightNum,
+      Number(selectedPurity),
+    );
+    const particularText =
+      particular.trim() || `Scrap Melting ${selectedPurity}%`;
 
     try {
       await submitMeltingScrap.mutateAsync({
@@ -230,7 +239,10 @@ const MeltingDept: React.FC = () => {
       toast.success('Scrap added to melting successfully!');
       await refetch();
     } catch (err: any) {
-      console.warn('API submission error, adding locally to melting process:', err);
+      console.warn(
+        'API submission error, adding locally to melting process:',
+        err,
+      );
       const newEntry: MeltingRow = {
         id: `melting-${Date.now()}`,
         srNo: meltingEntries.length + 1,
@@ -278,27 +290,34 @@ const MeltingDept: React.FC = () => {
           const purity = item.purity || 0;
           const expectedFine =
             item.expectedFine || calculateExpectedFine(grossWt, purity);
-          const fineWeight = item.fineWeight || item.fineWeight || expectedFine || 0;
+          const fineWeight =
+            item.fineWeight || item.fineWeight || expectedFine || 0;
           const isSaved = item.isCompleted === true;
 
           const loss = isSaved
-            ? (item.loss !== undefined && item.loss !== null
+            ? item.loss !== undefined && item.loss !== null
               ? item.loss
-              : Math.max(0, Math.round((expectedFine - fineWeight) * 1000) / 1000))
-            : Math.max(0, Math.round((expectedFine - fineWeight) * 1000) / 1000);
+              : Math.max(
+                  0,
+                  Math.round((expectedFine - fineWeight) * 1000) / 1000,
+                )
+            : Math.max(
+                0,
+                Math.round((expectedFine - fineWeight) * 1000) / 1000,
+              );
 
           return {
             id: item.id || `melting-${index}`,
             srNo: index + 1,
             dateTime: item.createdAt
               ? new Date(item.createdAt).toLocaleString('en-IN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true,
-              })
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true,
+                })
               : '-',
             createdAt: item.createdAt,
             updatedAt: item.updatedAt,
@@ -332,30 +351,44 @@ const MeltingDept: React.FC = () => {
     const historyList = Array.isArray(meltingHistory)
       ? meltingHistory
       : Array.isArray(meltingHistory?.data)
-      ? meltingHistory.data
-      : Array.isArray(meltingHistory?.history)
-      ? meltingHistory.history
-      : Array.isArray(meltingHistory?.meltingHistory)
-      ? meltingHistory.meltingHistory
-      : [];
+        ? meltingHistory.data
+        : Array.isArray(meltingHistory?.history)
+          ? meltingHistory.history
+          : Array.isArray(meltingHistory?.meltingHistory)
+            ? meltingHistory.meltingHistory
+            : [];
 
     const completedFromActive = Array.isArray(meltingData)
       ? meltingData.filter((item: any) => item.isCompleted || item.isSaved)
       : [];
 
-    const existingIds = new Set(historyList.map((item: any) => item.id || item._id));
+    const existingIds = new Set(
+      historyList.map((item: any) => item.id || item._id),
+    );
     const combinedHistory = [
       ...historyList,
-      ...completedFromActive.filter((item: any) => !existingIds.has(item.id || item._id)),
+      ...completedFromActive.filter(
+        (item: any) => !existingIds.has(item.id || item._id),
+      ),
     ];
 
     // Sort descending by Proceed Date & Time so newest processed items appear first
     const sortedHistory = [...combinedHistory].sort((a: any, b: any) => {
       const dateA = new Date(
-        a.updatedAt || a.proceedDateTime || a.updated_at || a.proceedDate || a.createdAt || 0,
+        a.updatedAt ||
+          a.proceedDateTime ||
+          a.updated_at ||
+          a.proceedDate ||
+          a.createdAt ||
+          0,
       ).getTime();
       const dateB = new Date(
-        b.updatedAt || b.proceedDateTime || b.updated_at || b.proceedDate || b.createdAt || 0,
+        b.updatedAt ||
+          b.proceedDateTime ||
+          b.updated_at ||
+          b.proceedDate ||
+          b.createdAt ||
+          0,
       ).getTime();
       return dateB - dateA;
     });
@@ -396,8 +429,14 @@ const MeltingDept: React.FC = () => {
     const data = getFilteredHistory();
     return data.reduce(
       (acc: any, item: any) => {
-        const gross = Number(item.grossWeight ?? item.grossWt ?? item.weight ?? 0);
-        const expected = Number(item.expected ?? item.expectedFine ?? calculateExpectedFine(gross, item.purity));
+        const gross = Number(
+          item.grossWeight ?? item.grossWt ?? item.weight ?? 0,
+        );
+        const expected = Number(
+          item.expected ??
+            item.expectedFine ??
+            calculateExpectedFine(gross, item.purity),
+        );
         const fine = Number(item.fineWeight || 0);
         const loss =
           item.loss !== undefined && item.loss !== null
@@ -410,7 +449,7 @@ const MeltingDept: React.FC = () => {
           totalLoss: acc.totalLoss + loss,
         };
       },
-      { totalGross: 0, totalExpected: 0, totalFine: 0, totalLoss: 0 },
+      {totalGross: 0, totalExpected: 0, totalFine: 0, totalLoss: 0},
     );
   }, [meltingHistory, meltingData, fromDate, toDate]);
 
@@ -423,7 +462,7 @@ const MeltingDept: React.FC = () => {
         totalFine: acc.totalFine + (Number(item.fineWeight) || 0),
         totalLoss: acc.totalLoss + (Number(item.loss) || 0),
       }),
-      { totalGross: 0, totalExpected: 0, totalFine: 0, totalLoss: 0 },
+      {totalGross: 0, totalExpected: 0, totalFine: 0, totalLoss: 0},
     );
   }, [meltingEntries]);
 
@@ -432,7 +471,7 @@ const MeltingDept: React.FC = () => {
       setMeltingEntries((prev) =>
         prev.map((entry, i) => {
           if (i === index) {
-            const updated = { ...entry };
+            const updated = {...entry};
             if (field === 'fineWeight') {
               updated.fineWeightRaw = value;
               if (value === '' || value === '.' || value === '-') {
@@ -443,7 +482,8 @@ const MeltingDept: React.FC = () => {
               }
               updated.loss = Math.max(
                 0,
-                Math.round((updated.expectedFine - updated.fineWeight) * 1000) / 1000
+                Math.round((updated.expectedFine - updated.fineWeight) * 1000) /
+                  1000,
               );
             }
             updated.isDirty = true;
@@ -457,7 +497,7 @@ const MeltingDept: React.FC = () => {
   );
 
   // Query melting alert threshold rules
-  const { data: meltingAlertRaw } = useGetProcessAlert('melting');
+  const {data: meltingAlertRaw} = useGetProcessAlert('melting');
 
   const alertRules: AlertRule[] = React.useMemo(() => {
     let list: any[] = [];
@@ -473,7 +513,9 @@ const MeltingDept: React.FC = () => {
 
     if (list.length === 0) {
       try {
-        const saved = localStorage.getItem('chain_alert_management_settings_v2');
+        const saved = localStorage.getItem(
+          'chain_alert_management_settings_v2',
+        );
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed?.melting) && parsed.melting.length > 0) {
@@ -522,7 +564,7 @@ const MeltingDept: React.FC = () => {
       setMeltingEntries((prev) =>
         prev.map((s, i) =>
           i === index
-            ? { ...s, isEditing: false, isSaved: true, isDirty: false }
+            ? {...s, isEditing: false, isSaved: true, isDirty: false}
             : s,
         ),
       );
@@ -547,7 +589,14 @@ const MeltingDept: React.FC = () => {
       setShowConfirmModal(false);
       setSaveIndex(null);
     }
-  }, [saveIndex, meltingEntries, alertRules, submitMeltingStock, refetch, refetchHistory]);
+  }, [
+    saveIndex,
+    meltingEntries,
+    alertRules,
+    submitMeltingStock,
+    refetch,
+    refetchHistory,
+  ]);
 
   const toggleHistory = () => {
     if (showHistory) {
@@ -557,7 +606,7 @@ const MeltingDept: React.FC = () => {
       refetch();
     } else {
       setShowHistory(true);
-      const { monday, sunday } = getCurrentWeekRange();
+      const {monday, sunday} = getCurrentWeekRange();
       const from = new Date(monday);
       from.setHours(0, 0, 0, 0);
       const to = new Date(sunday);
@@ -577,12 +626,17 @@ const MeltingDept: React.FC = () => {
     getScaleProps,
     handleInlineChange,
     handleStockClick,
-    alertRules
+    alertRules,
   );
 
   // Print History Report
   const handlePrintHistory = () => {
-    printMeltingHistory(getFilteredHistory(), fromDate, toDate, getpdfheaderdata);
+    printMeltingHistory(
+      getFilteredHistory(),
+      fromDate,
+      toDate,
+      getpdfheaderdata,
+    );
   };
 
   return (
@@ -612,7 +666,7 @@ const MeltingDept: React.FC = () => {
           </div>
 
           {/* Scrollable Container */}
-          <div className="flex gap-2 overflow-x-auto pb-2 pt-1 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-[#785600]/40 dark:scrollbar-track-slate-800 dark:scrollbar-thumb-slate-600">
+          <div className="scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-[#785600]/40 dark:scrollbar-track-slate-800 dark:scrollbar-thumb-slate-600 flex gap-2 overflow-x-auto pb-2 pt-1">
             {scrapCards.map((card, idx) => {
               const isSelected = selectedScrapPurities.has(card.purity);
               return (
@@ -620,10 +674,11 @@ const MeltingDept: React.FC = () => {
                   key={idx}
                   type="button"
                   onClick={() => toggleSelectScrapCard(card.purity)}
-                  className={`flex min-w-[140px] flex-col items-start rounded-xl border px-4 py-3 shadow-sm transition-all ${isSelected
-                    ? 'border-2 border-[#785600] bg-amber-50 shadow-md ring-2 ring-[#785600]/20 dark:border-amber-400 dark:bg-amber-950/50'
-                    : 'border-[#d3c4af]/30 bg-white hover:border-[#785600]/60 dark:border-slate-700 dark:bg-slate-900'
-                    }`}
+                  className={`flex min-w-[140px] flex-col items-start rounded-xl border px-4 py-3 shadow-sm transition-all ${
+                    isSelected
+                      ? 'border-2 border-[#785600] bg-amber-50 shadow-md ring-2 ring-[#785600]/20 dark:border-amber-400 dark:bg-amber-950/50'
+                      : 'border-[#d3c4af]/30 bg-white hover:border-[#785600]/60 dark:border-slate-700 dark:bg-slate-900'
+                  }`}
                 >
                   <div className="flex w-full items-center justify-between gap-2">
                     <span className="font-mono text-sm font-bold text-black dark:text-white">
@@ -692,7 +747,11 @@ const MeltingDept: React.FC = () => {
           )}
 
           {showHistory && (
-            <GenericButton type="button" onClick={handlePrintHistory} variant="primary">
+            <GenericButton
+              type="button"
+              onClick={handlePrintHistory}
+              variant="primary"
+            >
               <Printer className="h-4 w-4" />
               <span>Print</span>
             </GenericButton>
@@ -769,7 +828,7 @@ const MeltingDept: React.FC = () => {
               Are you sure you want to send this melted fine gold to Stock?
             </p>
 
-            <div className="mb-4 rounded-xl bg-gray-50 p-3 text-xs dark:bg-slate-800">
+            <div className="bg-gray-50 mb-4 rounded-xl p-3 text-xs dark:bg-slate-800">
               <div className="flex justify-between py-1">
                 <span className="text-gray-500">Particular:</span>
                 <span className="font-semibold text-black dark:text-white">
@@ -803,7 +862,7 @@ const MeltingDept: React.FC = () => {
                   setShowConfirmModal(false);
                   setSaveIndex(null);
                 }}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg border px-4 py-2 text-sm font-semibold dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 Cancel
               </button>
@@ -837,7 +896,10 @@ const MeltingDept: React.FC = () => {
             particular: `Scrap Melting ${payload.avgPurity}%`,
             grossWt: payload.weight,
             purity: payload.avgPurity,
-            expectedFine: calculateExpectedFine(payload.weight, payload.avgPurity),
+            expectedFine: calculateExpectedFine(
+              payload.weight,
+              payload.avgPurity,
+            ),
             fineWeight: payload.weight * (payload.receivedPurity / 100),
             lossWeight: payload.lossFineWeight,
           });

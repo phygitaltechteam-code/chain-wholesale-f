@@ -1,5 +1,5 @@
-import { api } from '@/utils/axios';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export interface ProfilePayload {
@@ -49,7 +49,11 @@ export const updateProfileApi = async (data: ProfilePayload) => {
   } catch (error: any) {
     if (error?.response?.data) {
       const errData = error.response.data;
-      if (errData.errors && Array.isArray(errData.errors) && errData.errors.length > 0) {
+      if (
+        errData.errors &&
+        Array.isArray(errData.errors) &&
+        errData.errors.length > 0
+      ) {
         const errorDetails = errData.errors
           .map((e: any) => `${e.field || 'Field'}: ${e.message}`)
           .join(', ');
@@ -73,7 +77,7 @@ export const useUpdateProfile = () => {
     mutationFn: updateProfileApi,
     onSuccess: () => {
       toast.success('Profile updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      queryClient.invalidateQueries({queryKey: ['user-profile']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update profile');
@@ -82,7 +86,7 @@ export const useUpdateProfile = () => {
 };
 
 // API call to activate / submit key
-export const activateKeyApi = async (keyData: { key: string }) => {
+export const activateKeyApi = async (keyData: {key: string}) => {
   try {
     const response = await api.post('/admin/profile/expiry', keyData);
     return response.data;
@@ -103,7 +107,7 @@ export const useActivateKey = () => {
     mutationFn: activateKeyApi,
     onSuccess: (data) => {
       toast.success(data?.message || 'License key activated successfully!');
-      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      queryClient.invalidateQueries({queryKey: ['user-profile']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to activate key');
@@ -111,13 +115,12 @@ export const useActivateKey = () => {
   });
 };
 
-
 export const useAccessForBackup = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: accessPassword,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      queryClient.invalidateQueries({queryKey: ['user-profile']});
     },
   });
 };
@@ -136,4 +139,4 @@ export const accessPassword = async (data: ProfilePayload) => {
     }
     throw error;
   }
-}; 
+};

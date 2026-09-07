@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   Plus,
   Save,
@@ -12,9 +12,9 @@ import {
   AlertCircle,
   Flame,
 } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import { Column, GenericTable } from '@/components/Forms/Table/GenericTable';
+import {Column, GenericTable} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import {
   useTar,
@@ -29,12 +29,12 @@ import {
   checkProcessLossAlert,
   AlertRule,
 } from '@/lib/api/alertmanagement';
-import { useGetStock } from '@/lib/api/stock';
-import { useGetItems } from '@/lib/api/items';
+import {useGetStock} from '@/lib/api/stock';
+import {useGetItems} from '@/lib/api/items';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
-import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
 
 import {
   TarEntry,
@@ -57,7 +57,7 @@ interface AddTarProps {
   showBack?: boolean;
 }
 
-const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
+const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
   const getpdfheaderdata = useGetHeader();
   const navigate = useNavigate();
   const [tarEntries, setTarEntries] = useState<TarEntry[]>([]);
@@ -70,13 +70,14 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   const [showStockErrorModal, setShowStockErrorModal] = useState(false);
   const [stockErrorMessage, setStockErrorMessage] = useState('');
 
-
   const getDefaultWeekRange = () => {
-    const { fromDate, toDate } = getCurrentAppWeekRange();
+    const {fromDate, toDate} = getCurrentAppWeekRange();
     return [fromDate, toDate];
   };
 
-  const [dateRange, setDateRange] = useState<Date[]>(() => getDefaultWeekRange());
+  const [dateRange, setDateRange] = useState<Date[]>(() =>
+    getDefaultWeekRange(),
+  );
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
@@ -84,14 +85,16 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     };
     window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
     return () => {
-      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+      window.removeEventListener(
+        'app_week_cycle_changed',
+        handleWeekCycleUpdate,
+      );
     };
   }, []);
 
   const [modalCards, setModalCards] = useState<TarCardForm[]>([
     createNewCard(),
   ]);
-
 
   const [selectedDate, setSelectedDate] = useState({
     day: new Date().getDate(),
@@ -101,7 +104,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     minute: new Date().getMinutes(),
   });
 
-  const { data: tarData = [], isLoading: tarLoading, refetch } = useTar();
+  const {data: tarData = [], isLoading: tarLoading, refetch} = useTar();
   const {
     data: tarHistory = [],
     isLoading: tarHistoryLoading,
@@ -109,7 +112,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   } = useGetTarHistory();
 
   // Query tar alert threshold rules
-  const { data: tarAlertRaw } = useGetProcessAlert('tar');
+  const {data: tarAlertRaw} = useGetProcessAlert('tar');
 
   const alertRules: AlertRule[] = React.useMemo(() => {
     let list: any[] = [];
@@ -125,7 +128,9 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
 
     if (list.length === 0) {
       try {
-        const saved = localStorage.getItem('chain_alert_management_settings_v2');
+        const saved = localStorage.getItem(
+          'chain_alert_management_settings_v2',
+        );
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed?.tar) && parsed.tar.length > 0) {
@@ -143,15 +148,13 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   const saveTar = useSaveTar();
 
   // Fetch stock and items data
-  const { data: rawStockData = [] } = useGetStock();
-  const { data: rawItemsData = [] } = useGetItems();
+  const {data: rawStockData = []} = useGetStock();
+  const {data: rawItemsData = []} = useGetItems();
   const submitMelting = useAddMelting();
-  
+
   const handleMelting = async (entry: TarEntry) => {
     setTarEntries((prev) =>
-      prev.map((e) =>
-        e.id === entry.id ? { ...e, isMeltingLoading: true } : e
-      )
+      prev.map((e) => (e.id === entry.id ? {...e, isMeltingLoading: true} : e)),
     );
 
     try {
@@ -168,14 +171,15 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
       await refetch();
     } catch (error: any) {
       console.error('Error in melting:', error);
-      const errorMessage = error?.response?.data?.message || 'Failed to process melting';
+      const errorMessage =
+        error?.response?.data?.message || 'Failed to process melting';
       toast.error(errorMessage);
     } finally {
       // Clear loading state for this specific row
       setTarEntries((prev) =>
         prev.map((e) =>
-          e.id === entry.id ? { ...e, isMeltingLoading: false } : e
-        )
+          e.id === entry.id ? {...e, isMeltingLoading: false} : e,
+        ),
       );
     }
   };
@@ -206,10 +210,10 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         return goldItemIds.includes(s.itemId);
       }
       const itemName = (
-        typeof s.item === 'string'
-          ? s.item
-          : s.item?.name || s.itemName || ''
-      ).trim().toLowerCase();
+        typeof s.item === 'string' ? s.item : s.item?.name || s.itemName || ''
+      )
+        .trim()
+        .toLowerCase();
       return itemName === 'gold' || itemName.includes('gold');
     });
 
@@ -229,26 +233,25 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
   };
 
   // Scale hooks for modal and table
-  const { getScaleProps: getModalScaleProps } = useTableScaleFocus<
+  const {getScaleProps: getModalScaleProps} = useTableScaleFocus<
     'grossWt' | 'fine'
   >((cardIndex, field, weight) => {
     handleCardChange(cardIndex, field, weight.toString());
   });
 
-  const { getScaleProps } = useTableScaleFocus<'tar' | 'scrap'>(
+  const {getScaleProps} = useTableScaleFocus<'tar' | 'scrap'>(
     (index, field, weight) => {
       handleInlineChange(index, field, weight.toString());
     },
   );
-
 
   // Filter and sort history by Proceed Date & Time
   const getFilteredHistory = () => {
     let filtered = Array.isArray(tarHistory?.data)
       ? tarHistory.data
       : Array.isArray(tarHistory)
-      ? tarHistory
-      : [];
+        ? tarHistory
+        : [];
 
     // Sort descending by Proceed Date & Time
     filtered = [...filtered].sort((a: any, b: any) => {
@@ -326,7 +329,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     },
   );
 
-
   // Initialize with existing tar data
   useEffect(() => {
     if (!tarLoading) {
@@ -395,10 +397,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     }
   }, [tarEntries]);
 
-
-
-
-
   const handleCardChange = (
     cardIndex: number,
     field: 'itemId' | 'sizeId' | 'grossWt' | 'purity' | 'fine',
@@ -410,7 +408,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
 
         if (field === 'grossWt' || field === 'purity') {
           const sanitized = value.replace(/[^0-9.]/g, '');
-          const nextCard = { ...card, [field]: sanitized };
+          const nextCard = {...card, [field]: sanitized};
           const grossNum = parseFloat(
             field === 'grossWt' ? sanitized : card.grossWt,
           );
@@ -430,14 +428,13 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
           return nextCard;
         } else if (field === 'fine') {
           const sanitized = value.replace(/[^0-9.]/g, '');
-          return { ...card, fine: sanitized };
+          return {...card, fine: sanitized};
         } else {
-          return { ...card, [field]: value };
+          return {...card, [field]: value};
         }
       }),
     );
   };
-
 
   const handleRemoveCard = (cardIndex: number) => {
     setModalCards((prev) => {
@@ -485,11 +482,11 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     }
 
     setModalCards((prev) =>
-      prev.map((c, idx) => (idx === cardIndex ? { ...c, isSaving: true } : c)),
+      prev.map((c, idx) => (idx === cardIndex ? {...c, isSaving: true} : c)),
     );
 
     try {
-      const { day, month, year, hour, minute } = selectedDate;
+      const {day, month, year, hour, minute} = selectedDate;
       const date = new Date(year, month - 1, day, hour, minute);
       const dateTimeStr = formatDateTime(date);
       const grossVal = grossWtValue > 0 ? grossWtValue : fineValue;
@@ -528,7 +525,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         scrapRaw: '',
         purityRaw: purityValue > 0 ? String(purityValue) : '',
         grosswtRaw: grossVal > 0 ? String(grossVal) : '',
-
       };
 
       setTarEntries((prev) => [...prev, newEntry]);
@@ -565,7 +561,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
         setShowStockErrorModal(true);
         setModalCards((prev) =>
           prev.map((c, idx) =>
-            idx === cardIndex ? { ...c, isSaving: false } : c,
+            idx === cardIndex ? {...c, isSaving: false} : c,
           ),
         );
         return;
@@ -573,9 +569,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
 
       toast.error(backendMessage || 'Failed to save tar entry');
       setModalCards((prev) =>
-        prev.map((c, idx) =>
-          idx === cardIndex ? { ...c, isSaving: false } : c,
-        ),
+        prev.map((c, idx) => (idx === cardIndex ? {...c, isSaving: false} : c)),
       );
     }
   };
@@ -588,7 +582,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     setTarEntries((prev) =>
       prev.map((entry, i) => {
         if (i === index) {
-          const updated = { ...entry };
+          const updated = {...entry};
 
           if (field === 'grosswt') {
             const sanitized = value.replace(/[^0-9.]/g, '');
@@ -695,7 +689,7 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
       });
 
       setTarEntries((prev) =>
-        prev.map((s, i) => (i === index ? { ...s, isSaved: true } : s)),
+        prev.map((s, i) => (i === index ? {...s, isSaved: true} : s)),
       );
 
       setIsTarCompleted(true);
@@ -739,17 +733,11 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
     }
   };
 
-
-
-
   const hasEditableValues = (entry: TarEntry): boolean => {
     return Boolean(entry.isDirty);
   };
 
-
   const isSubmitting = createTar.isPending || saveTar.isPending;
-
-
 
   const toggleHistory = () => {
     if (showHistory) {
@@ -760,7 +748,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
       refetchHistory();
     }
   };
-
 
   return (
     <div className="flex flex-col gap-4">
@@ -777,7 +764,6 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
             <GenericButton
               type="button"
               onClick={handleOpenModal}
-
               variant="primary"
             >
               <Plus className="h-4 w-4" />
@@ -833,7 +819,13 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
           {showHistory && (
             <GenericButton
               type="button"
-              onClick={() => printTarHistory(getFilteredHistory(), dateRange, getpdfheaderdata)}
+              onClick={() =>
+                printTarHistory(
+                  getFilteredHistory(),
+                  dateRange,
+                  getpdfheaderdata,
+                )
+              }
               variant="primary"
             >
               <Printer className="h-4 w-4" />
@@ -870,12 +862,10 @@ const AddTar: React.FC<AddTarProps> = ({ showBack = false }) => {
               hasEditableValues,
               tarLoading,
               isSubmitting,
-              alertRules
+              alertRules,
             )}
             emptyMessage="No tar entries found. Click 'Add Tar' to create one."
-            isLoading={
-              tarLoading || isSubmitting
-            }
+            isLoading={tarLoading || isSubmitting}
             showSrNo={true}
             srNoLabel="Sr No."
             rowClassName={(item) =>

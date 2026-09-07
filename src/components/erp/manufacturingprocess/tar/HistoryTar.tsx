@@ -1,6 +1,6 @@
 import React from 'react';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
-import { formatNumberDisplay, hasMeltingStatus } from './tarUtils';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import {formatNumberDisplay, hasMeltingStatus} from './tarUtils';
 
 interface HistoryTarProps {
   historyData: any[];

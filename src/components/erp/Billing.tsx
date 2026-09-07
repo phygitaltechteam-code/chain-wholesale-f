@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   X,
   Search,
@@ -9,14 +9,14 @@ import {
   Calendar,
   Factory,
 } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import toast from 'react-hot-toast';
 import GenericButton from '../Forms/Buttons/GenericButton';
-import { useDeleteBill, useGetBill } from '@/lib/api/bill';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { printReceipt } from '@/utils/printReceipt';
+import {useDeleteBill, useGetBill} from '@/lib/api/bill';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {printReceipt} from '@/utils/printReceipt';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
 import {
   Scale,
@@ -27,9 +27,9 @@ import {
   AlertTriangle,
   ShieldAlert,
 } from 'lucide-react';
-import { useGetProfileData, useActivateKey } from '@/lib/api/profile';
+import {useGetProfileData, useActivateKey} from '@/lib/api/profile';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
 
 interface ReceiptItem {
   id: string;
@@ -141,7 +141,7 @@ const Billing: React.FC = () => {
     }
 
     activateKeyMutation.mutate(
-      { key: cleanKey },
+      {key: cleanKey},
       {
         onSuccess: () => {
           setIsUnlocked(true);
@@ -179,7 +179,7 @@ const Billing: React.FC = () => {
 
   // Default date range based on admin week configuration
   const getCurrentWeekRange = () => {
-    const { fromDate, toDate, fromStr, toStr } = getCurrentAppWeekRange();
+    const {fromDate, toDate, fromStr, toStr} = getCurrentAppWeekRange();
     return {
       monday: fromDate,
       sunday: toDate,
@@ -206,7 +206,7 @@ const Billing: React.FC = () => {
   const fromDatePickerRef = useRef<any>(null);
   const toDatePickerRef = useRef<any>(null);
 
-  const { data: billData, isLoading: billLoading } = useGetBill();
+  const {data: billData, isLoading: billLoading} = useGetBill();
 
   useEffect(() => {
     setDefaultDateRange();
@@ -216,12 +216,15 @@ const Billing: React.FC = () => {
     };
     window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
     return () => {
-      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+      window.removeEventListener(
+        'app_week_cycle_changed',
+        handleWeekCycleUpdate,
+      );
     };
   }, []);
 
   const setDefaultDateRange = () => {
-    const { monday, sunday, fromStr, toStr } = getCurrentWeekRange();
+    const {monday, sunday, fromStr, toStr} = getCurrentWeekRange();
     setDateRange({
       from: fromStr,
       to: toStr,
@@ -261,12 +264,15 @@ const Billing: React.FC = () => {
           // Map all items
           const items =
             receipt.receiptItems?.map((item) => ({
-              itemId: item.itemID || (item as any).itemId || item.item?.id || '',
-              sizeId: item.sizeID || (item as any).sizeId || item.size?.id || '',
+              itemId:
+                item.itemID || (item as any).itemId || item.item?.id || '',
+              sizeId:
+                item.sizeID || (item as any).sizeId || item.size?.id || '',
               item: item.item?.name || 'N/A',
               size: item.size?.size || 'N/A',
               purity: item.purity || 0,
-              availableQty: (item as any).availableQty || (item as any).quantity || 0,
+              availableQty:
+                (item as any).availableQty || (item as any).quantity || 0,
               finWt: item.fineWeight || 0,
               srp: item.srp || 0,
               grossWeight: item.grossWeight || 0,
@@ -304,9 +310,10 @@ const Billing: React.FC = () => {
             phoneNumber: receipt.client?.phoneNumber || 'N/A',
             receive: receipt.customerWeight || 0,
             pending: receipt.remainingWeight || 0,
-            dueBalance: receipt.client?.due !== undefined && receipt.client?.due !== null
-              ? Number(receipt.client.due)
-              : Number(receipt.client?.openingBalance) || 0,
+            dueBalance:
+              receipt.client?.due !== undefined && receipt.client?.due !== null
+                ? Number(receipt.client.due)
+                : Number(receipt.client?.openingBalance) || 0,
             type:
               (receipt.type as 'DRAFT' | 'BILL') ||
               (receipt.remainingWeight === 0 ? 'BILL' : 'DRAFT'),
@@ -344,8 +351,7 @@ const Billing: React.FC = () => {
         item.item.toLowerCase().includes(searchTerm.toLowerCase()),
       );
 
-    const matchesStatus =
-      statusFilter === 'ALL' || group.type === statusFilter;
+    const matchesStatus = statusFilter === 'ALL' || group.type === statusFilter;
 
     let matchesDate = true;
     if (dateRange.from || dateRange.to) {
@@ -431,9 +437,7 @@ const Billing: React.FC = () => {
 
     const headerInfo =
       getpdfheaderdata?.data?.data ||
-      (getpdfheaderdata?.data?.factoryName
-        ? getpdfheaderdata.data
-        : {});
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
 
     const leftInvocation =
       headerInfo.leftInvocation ||
@@ -445,37 +449,26 @@ const Billing: React.FC = () => {
       headerInfo.rightInovation ||
       '॥ श्री साई प्रसन्न ॥';
 
-    const factoryName =
-      headerInfo.factoryName ||
-      'मातोश्री चेन फॅक्टरी, मिरज';
+    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
 
     const description =
       headerInfo.description ||
       'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
 
-    const proprietorName =
-      headerInfo.proprietorName ||
-      'प्रो. नितीन खरात';
+    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
 
     const phoneNumbers =
-      headerInfo.phoneNumbers ||
-      'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
 
-    const invocationColor =
-      headerInfo.invocationColor || '#a84b20';
+    const invocationColor = headerInfo.invocationColor || '#a84b20';
 
-    const factoryNameColor =
-      headerInfo.factoryNameColor || '#c43d5c';
+    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
 
-    const descriptionColor =
-      headerInfo.descriptionColor || '#8b451f';
+    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
 
-    const proprietorColor =
-      headerInfo.proprietorColor || '#a84b20';
+    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
 
-    const phoneColor =
-      headerInfo.phoneColor || '#a84b20';
-
+    const phoneColor = headerInfo.phoneColor || '#a84b20';
 
     // ==========================================================
     // FONT SIZES
@@ -497,7 +490,6 @@ const Billing: React.FC = () => {
       ? `${headerInfo.phoneFontSize}px`
       : '8px';
 
-
     // ==========================================================
     // DATE FORMAT
     // ==========================================================
@@ -512,16 +504,9 @@ const Billing: React.FC = () => {
       });
     };
 
-    const fromStr =
-      fromDate.length > 0
-        ? formatDateStr(fromDate[0])
-        : '';
+    const fromStr = fromDate.length > 0 ? formatDateStr(fromDate[0]) : '';
 
-    const toStr =
-      toDate.length > 0
-        ? formatDateStr(toDate[0])
-        : '';
-
+    const toStr = toDate.length > 0 ? formatDateStr(toDate[0]) : '';
 
     // ==========================================================
     // CREATE TABLE ROWS
@@ -529,33 +514,29 @@ const Billing: React.FC = () => {
 
     const rows = filteredGroups
       .map((group, index) => {
-
         const items =
           group.items && group.items.length > 0
             ? group.items
             : [
-              {
-                item: group.displayItems || '-',
-                size: group.displaySizes || '-',
-                purity: Number(group.displayPurity) || 0,
-                finWt: group.totalFinWt || 0,
-                srp: group.totalSRP || 0,
-                grossWeight: 0,
-              },
-            ];
+                {
+                  item: group.displayItems || '-',
+                  size: group.displaySizes || '-',
+                  purity: Number(group.displayPurity) || 0,
+                  finWt: group.totalFinWt || 0,
+                  srp: group.totalSRP || 0,
+                  grossWeight: 0,
+                },
+              ];
 
         const rowCount = items.length;
 
-
         return items
           .map((item, itemIdx) => {
-
             // ==================================================
             // FIRST ROW
             // ==================================================
 
             if (itemIdx === 0) {
-
               return `
               <tr>
 
@@ -607,46 +588,39 @@ const Billing: React.FC = () => {
                 <!-- ITEM -->
                 <td class="item-col">
                   ${item.item || '-'}
-                  ${item.size
-                  ? ` (${item.size})`
-                  : ''
-                }
+                  ${item.size ? ` (${item.size})` : ''}
                 </td>
 
 
                 <!-- PURITY -->
                 <td class="purity-col">
-                  ${item.purity
-                  ? `${formatNumberWithDecimals(
+                  ${
                     item.purity
-                  )}%`
-                  : '-'
-                }
+                      ? `${formatNumberWithDecimals(item.purity)}%`
+                      : '-'
+                  }
                 </td>
 
 
                 <!-- FINE WEIGHT -->
                 <td class="number-col fine-col">
-                  ${item.finWt !== undefined &&
-                  item.finWt !== null
-                  ? formatNumberWithDecimals(
-                    item.finWt
-                  )
-                  : '-'
-                }
+                  ${
+                    item.finWt !== undefined && item.finWt !== null
+                      ? formatNumberWithDecimals(item.finWt)
+                      : '-'
+                  }
                 </td>
 
 
                 <!-- SRP -->
                 <td class="number-col">
-                  ${item.srp !== undefined &&
-                  item.srp !== null &&
-                  Number(item.srp) > 0
-                  ? formatNumberWith2Decimals(
-                    item.srp
-                  )
-                  : '-'
-                }
+                  ${
+                    item.srp !== undefined &&
+                    item.srp !== null &&
+                    Number(item.srp) > 0
+                      ? formatNumberWith2Decimals(item.srp)
+                      : '-'
+                  }
                 </td>
 
 
@@ -655,9 +629,7 @@ const Billing: React.FC = () => {
                   rowspan="${rowCount}"
                   class="number-col"
                 >
-                  ${formatNumberWithDecimals(
-                  group.receive
-                )}
+                  ${formatNumberWithDecimals(group.receive)}
                 </td>
 
 
@@ -666,16 +638,12 @@ const Billing: React.FC = () => {
                   rowspan="${rowCount}"
                   class="number-col pending-col"
                 >
-                  ${formatNumberWithDecimals(
-                  group.pending
-                )}
+                  ${formatNumberWithDecimals(group.pending)}
                 </td>
 
               </tr>
             `;
-
             }
-
 
             // ==================================================
             // ADDITIONAL ITEM ROW
@@ -687,46 +655,39 @@ const Billing: React.FC = () => {
               <!-- ITEM -->
               <td class="item-col">
                 ${item.item || '-'}
-                ${item.size
-                ? ` (${item.size})`
-                : ''
-              }
+                ${item.size ? ` (${item.size})` : ''}
               </td>
 
 
               <!-- PURITY -->
               <td class="purity-col">
-                ${item.purity
-                ? `${formatNumberWithDecimals(
+                ${
                   item.purity
-                )}%`
-                : '-'
-              }
+                    ? `${formatNumberWithDecimals(item.purity)}%`
+                    : '-'
+                }
               </td>
 
 
               <!-- FINE WEIGHT -->
               <td class="number-col fine-col">
-                ${item.finWt !== undefined &&
-                item.finWt !== null
-                ? formatNumberWithDecimals(
-                  item.finWt
-                )
-                : '-'
-              }
+                ${
+                  item.finWt !== undefined && item.finWt !== null
+                    ? formatNumberWithDecimals(item.finWt)
+                    : '-'
+                }
               </td>
 
 
               <!-- SRP -->
               <td class="number-col">
-                ${item.srp !== undefined &&
-                item.srp !== null &&
-                Number(item.srp) > 0
-                ? formatNumberWith2Decimals(
-                  item.srp
-                )
-                : '-'
-              }
+                ${
+                  item.srp !== undefined &&
+                  item.srp !== null &&
+                  Number(item.srp) > 0
+                    ? formatNumberWith2Decimals(item.srp)
+                    : '-'
+                }
               </td>
 
             </tr>
@@ -736,32 +697,24 @@ const Billing: React.FC = () => {
       })
       .join('');
 
-
     // ==========================================================
     // TOTALS
     // ==========================================================
 
-    const totalFineAll =
-      filteredGroups.reduce(
-        (s, g) =>
-          s + (g.totalFinWt || 0),
-        0
-      );
+    const totalFineAll = filteredGroups.reduce(
+      (s, g) => s + (g.totalFinWt || 0),
+      0,
+    );
 
-    const totalReceiveAll =
-      filteredGroups.reduce(
-        (s, g) =>
-          s + (g.receive || 0),
-        0
-      );
+    const totalReceiveAll = filteredGroups.reduce(
+      (s, g) => s + (g.receive || 0),
+      0,
+    );
 
-    const totalPendingAll =
-      filteredGroups.reduce(
-        (s, g) =>
-          s + (g.pending || 0),
-        0
-      );
-
+    const totalPendingAll = filteredGroups.reduce(
+      (s, g) => s + (g.pending || 0),
+      0,
+    );
 
     // ==========================================================
     // COMPLETE PRINT HTML
@@ -1478,12 +1431,13 @@ const Billing: React.FC = () => {
 
             <div class="date-range">
 
-              ${fromStr && toStr
-        ? `From: ${fromStr}
+              ${
+                fromStr && toStr
+                  ? `From: ${fromStr}
                      &nbsp;&nbsp;
                      To: ${toStr}`
-        : ''
-      }
+                  : ''
+              }
 
             </div>
 
@@ -1562,9 +1516,7 @@ const Billing: React.FC = () => {
                     font-weight:bold;
                   "
                 >
-                  ${formatNumberWithDecimals(
-        totalFineAll
-      )}
+                  ${formatNumberWithDecimals(totalFineAll)}
                 </td>
 
 
@@ -1591,9 +1543,7 @@ const Billing: React.FC = () => {
                     font-weight:bold;
                   "
                 >
-                  ${formatNumberWithDecimals(
-        totalReceiveAll
-      )}
+                  ${formatNumberWithDecimals(totalReceiveAll)}
                 </td>
 
 
@@ -1607,9 +1557,7 @@ const Billing: React.FC = () => {
                     font-weight:bold;
                   "
                 >
-                  ${formatNumberWithDecimals(
-        totalPendingAll
-      )}
+                  ${formatNumberWithDecimals(totalPendingAll)}
                 </td>
 
               </tr>
@@ -1626,7 +1574,6 @@ const Billing: React.FC = () => {
     </html>
   `;
 
-
     // ==========================================================
     // PRINT USING IFRAME
     // IMPORTANT:
@@ -1634,80 +1581,55 @@ const Billing: React.FC = () => {
     // ==========================================================
 
     try {
-
       // --------------------------------------------------------
       // Remove old iframe if it exists
       // --------------------------------------------------------
 
-      const existingIframe =
-        document.getElementById(
-          'print-report-iframe'
-        );
+      const existingIframe = document.getElementById('print-report-iframe');
 
       if (existingIframe) {
         existingIframe.remove();
       }
 
-
       // --------------------------------------------------------
       // Create iframe
       // --------------------------------------------------------
 
-      const iframe =
-        document.createElement('iframe');
+      const iframe = document.createElement('iframe');
 
-      iframe.id =
-        'print-report-iframe';
+      iframe.id = 'print-report-iframe';
 
-      iframe.style.position =
-        'fixed';
+      iframe.style.position = 'fixed';
 
-      iframe.style.left =
-        '-10000px';
+      iframe.style.left = '-10000px';
 
-      iframe.style.top =
-        '0';
+      iframe.style.top = '0';
 
-      iframe.style.width =
-        '210mm';
+      iframe.style.width = '210mm';
 
-      iframe.style.height =
-        '297mm';
+      iframe.style.height = '297mm';
 
-      iframe.style.border =
-        '0';
+      iframe.style.border = '0';
 
-      iframe.style.visibility =
-        'hidden';
+      iframe.style.visibility = 'hidden';
 
-      iframe.style.pointerEvents =
-        'none';
+      iframe.style.pointerEvents = 'none';
 
-
-      document.body.appendChild(
-        iframe
-      );
-
+      document.body.appendChild(iframe);
 
       // --------------------------------------------------------
       // Get iframe document
       // --------------------------------------------------------
 
-      const iframeDoc =
-        iframe.contentWindow?.document;
-
+      const iframeDoc = iframe.contentWindow?.document;
 
       if (!iframeDoc) {
-
         iframe.remove();
 
-        toast.error(
-          'Unable to prepare print'
-        );
+        toast.error('Unable to prepare print');
 
         return;
       }
-
 
       // --------------------------------------------------------
       // Write report HTML
@@ -1715,76 +1637,51 @@ const Billing: React.FC = () => {
 
       iframeDoc.open();
 
-      iframeDoc.write(
-        reportHtml
-      );
+      iframeDoc.write(reportHtml);
 
       iframeDoc.close();
-
 
       // --------------------------------------------------------
       // Print AFTER content has loaded
       // --------------------------------------------------------
 
       setTimeout(() => {
-
-        const printWindow =
-          iframe.contentWindow;
-
+        const printWindow = iframe.contentWindow;
 
         if (!printWindow) {
-
           iframe.remove();
 
           return;
         }
 
-
         let cleanedUp = false;
-
 
         // ------------------------------------------------------
         // Cleanup
         // ------------------------------------------------------
 
         const cleanup = () => {
-
           if (cleanedUp) {
             return;
           }
 
           cleanedUp = true;
 
-
           setTimeout(() => {
-
-            if (
-              document.body.contains(
-                iframe
-              )
-            ) {
-
+            if (document.body.contains(iframe)) {
               iframe.remove();
-
             }
-
           }, 100);
-
         };
-
 
         // ------------------------------------------------------
         // IMPORTANT:
         // onafterprint executes after Print OR Cancel
         // ------------------------------------------------------
 
-        printWindow.onafterprint =
-          () => {
-
-            cleanup();
-
-          };
-
+        printWindow.onafterprint = () => {
+          cleanup();
+        };
 
         // ------------------------------------------------------
         // ONLY ONE PRINT CALL
@@ -1792,51 +1689,29 @@ const Billing: React.FC = () => {
 
         printWindow.print();
 
-
         // ------------------------------------------------------
         // Safety cleanup
         // Does NOT call print again.
         // ------------------------------------------------------
 
         setTimeout(() => {
-
           cleanup();
-
         }, 60000);
-
-
       }, 700);
-
-
     } catch (error) {
-
-      console.error(
-        'Print error:',
-        error
-      );
-
+      console.error('Print error:', error);
 
       // ========================================================
       // FALLBACK PRINT WINDOW
       // ========================================================
 
-      const printWindow =
-        window.open(
-          '',
-          '_blank',
-          'width=900,height=1100'
-        );
-
+      const printWindow = window.open('', '_blank', 'width=900,height=1100');
 
       if (!printWindow) {
-
-        toast.error(
-          'Please allow pop-ups to print the report'
-        );
+        toast.error('Please allow pop-ups to print the report');
 
         return;
       }
-
 
       // --------------------------------------------------------
       // Write HTML
@@ -1844,12 +1719,9 @@ const Billing: React.FC = () => {
 
       printWindow.document.open();
 
-      printWindow.document.write(
-        reportHtml
-      );
+      printWindow.document.write(reportHtml);
 
       printWindow.document.close();
-
 
       // --------------------------------------------------------
       // Fallback print
@@ -1857,38 +1729,20 @@ const Billing: React.FC = () => {
       // --------------------------------------------------------
 
       printWindow.onload = () => {
-
         setTimeout(() => {
-
-          printWindow.onafterprint =
-            () => {
-
-              setTimeout(() => {
-
-                try {
-
-                  printWindow.close();
-
-                } catch (e) {
-
-                  console.error(
-                    'Unable to close print window:',
-                    e
-                  );
-
-                }
-
-              }, 100);
-
-            };
-
+          printWindow.onafterprint = () => {
+            setTimeout(() => {
+              try {
+                printWindow.close();
+              } catch (e) {
+                console.error('Unable to close print window:', e);
+              }
+            }, 100);
+          };
 
           printWindow.print();
-
         }, 500);
-
       };
-
     }
   };
 
@@ -1948,7 +1802,7 @@ const Billing: React.FC = () => {
     toast.success(
       `Sending ${itemsToSend.length} item${itemsToSend.length > 1 ? 's' : ''} to Tar Department...`,
     );
-    navigate({ to: '/manufacturingprocess/process' });
+    navigate({to: '/manufacturingprocess/process'});
   };
 
   const handleSelectManufacturingItem = (item: any) => {
@@ -1970,7 +1824,7 @@ const Billing: React.FC = () => {
     toast.success(
       `Sending ${item.item} (${item.grossWeight}g) to Tar Department...`,
     );
-    navigate({ to: '/manufacturingprocess/process' });
+    navigate({to: '/manufacturingprocess/process'});
   };
 
   const handleSendAllManufacturingItems = (group: BillGroup) => {
@@ -1979,7 +1833,7 @@ const Billing: React.FC = () => {
   };
 
   const handleRowClick = (item: BillGroup) => {
-    navigate({ to: `/billiupdate/${item.id}` });
+    navigate({to: `/billiupdate/${item.id}`});
   };
 
   const renderActions = (item: BillGroup, index: number) => (
@@ -2209,7 +2063,7 @@ const Billing: React.FC = () => {
             </div>
             <GenericButton
               type="button"
-              onClick={() => navigate({ to: '/receipt/addreciept' })}
+              onClick={() => navigate({to: '/receipt/addreciept'})}
             >
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span>Add Bill</span>
@@ -2438,12 +2292,12 @@ const Billing: React.FC = () => {
                     <span className="font-bold text-red-600 dark:text-red-400">
                       {expiryDate
                         ? new Date(expiryDate).toLocaleString('en-IN', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
                         : 'Expired'}
                     </span>
                   </div>
@@ -2464,10 +2318,11 @@ const Billing: React.FC = () => {
                           if (keyError) setKeyError('');
                         }}
                         placeholder="e.g. XXXX-XXXX-XXXX-XXXX"
-                        className={`font-mono w-full rounded-lg border px-3.5 py-2.5 text-xs uppercase text-[#1a1c1b] placeholder:text-[#817563] focus:outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${keyError
-                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                          : 'border-[#d3c4af]/40 focus:border-[#785600] focus:ring-[#785600]/10 dark:border-slate-700'
-                          }`}
+                        className={`font-mono w-full rounded-lg border px-3.5 py-2.5 text-xs uppercase text-[#1a1c1b] placeholder:text-[#817563] focus:outline-none focus:ring-2 dark:bg-slate-800 dark:text-white ${
+                          keyError
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                            : 'border-[#d3c4af]/40 focus:border-[#785600] focus:ring-[#785600]/10 dark:border-slate-700'
+                        }`}
                       />
                     </div>
                     {keyError && (
@@ -2516,36 +2371,54 @@ const Billing: React.FC = () => {
                       Select Item for Manufacturing
                     </h3>
                     <p className="text-xs text-[#817563] dark:text-slate-400">
-                      Bill #{showManufacturingItemPicker.billNo} • {showManufacturingItemPicker.clientName}
+                      Bill #{showManufacturingItemPicker.billNo} •{' '}
+                      {showManufacturingItemPicker.clientName}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowManufacturingItemPicker(null)}
-                  className="rounded-lg p-1.5 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800"
+                  className="hover:bg-gray-100 rounded-lg p-1.5 transition-colors dark:hover:bg-slate-800"
                 >
                   <X className="h-5 w-5 text-[#4f4535] dark:text-slate-400" />
                 </button>
               </div>
 
-              <div className="max-h-[60vh] overflow-y-auto p-4 space-y-2.5">
-                <p className="text-xs text-[#4f4535] dark:text-slate-300 mb-2">
-                  Click on an item to send its details (Item, Size, Gross Weight, Purity) to the <strong>Tar Department</strong>:
+              <div className="max-h-[60vh] space-y-2.5 overflow-y-auto p-4">
+                <p className="mb-2 text-xs text-[#4f4535] dark:text-slate-300">
+                  Click on an item to send its details (Item, Size, Gross
+                  Weight, Purity) to the <strong>Tar Department</strong>:
                 </p>
                 {showManufacturingItemPicker.items.map((it, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSelectManufacturingItem(it)}
-                    className="w-full text-left flex items-center justify-between p-3.5 rounded-lg border border-[#d3c4af]/30 bg-[#fbfaf8] hover:bg-amber-50/50 hover:border-amber-400/50 transition-all dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700/60"
+                    className="flex w-full items-center justify-between rounded-lg border border-[#d3c4af]/30 bg-[#fbfaf8] p-3.5 text-left transition-all hover:border-amber-400/50 hover:bg-amber-50/50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700/60"
                   >
                     <div>
                       <div className="text-sm font-bold text-[#1a1c1b] dark:text-white">
-                        {it.item} <span className="text-xs font-normal text-[#817563] dark:text-slate-400">({it.size})</span>
+                        {it.item}{' '}
+                        <span className="text-xs font-normal text-[#817563] dark:text-slate-400">
+                          ({it.size})
+                        </span>
                       </div>
                       <div className="mt-1 flex items-center gap-3 text-xs text-[#4f4535] dark:text-slate-300">
-                        <span>Gross: <strong className="font-mono">{it.grossWeight}g</strong></span>
-                        <span>Purity: <strong className="font-mono">{it.purity}%</strong></span>
-                        <span>Fine: <strong className="font-mono text-[#785600] dark:text-amber-400">{it.finWt}g</strong></span>
+                        <span>
+                          Gross:{' '}
+                          <strong className="font-mono">
+                            {it.grossWeight}g
+                          </strong>
+                        </span>
+                        <span>
+                          Purity:{' '}
+                          <strong className="font-mono">{it.purity}%</strong>
+                        </span>
+                        <span>
+                          Fine:{' '}
+                          <strong className="font-mono text-[#785600] dark:text-amber-400">
+                            {it.finWt}g
+                          </strong>
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
@@ -2561,7 +2434,7 @@ const Billing: React.FC = () => {
                   onClick={() =>
                     handleSendAllManufacturingItems(showManufacturingItemPicker)
                   }
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-amber-700 shadow-sm"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-amber-700"
                 >
                   <Factory className="h-4 w-4" />
                   <span>
@@ -2570,7 +2443,7 @@ const Billing: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setShowManufacturingItemPicker(null)}
-                  className="rounded-lg px-4 py-2 text-xs font-medium text-[#4f4535] transition-colors hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                  className="hover:bg-gray-100 rounded-lg px-4 py-2 text-xs font-medium text-[#4f4535] transition-colors dark:text-slate-400 dark:hover:bg-slate-800"
                 >
                   Cancel
                 </button>

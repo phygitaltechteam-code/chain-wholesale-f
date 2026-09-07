@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Filter, X, Download } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
-import { useGetTarHistory } from '@/lib/api/tar';
+import React, {useState} from 'react';
+import {ArrowLeft, Filter, X, Download} from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import {useGetTarHistory} from '@/lib/api/tar';
 import toast from 'react-hot-toast';
 import {
   useGetProcessAlert,
@@ -14,7 +14,7 @@ interface TarHistoryProps {
   onBack?: () => void;
 }
 
-const TarHistory: React.FC<TarHistoryProps> = ({ onBack }) => {
+const TarHistory: React.FC<TarHistoryProps> = ({onBack}) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<string>('');
@@ -22,8 +22,8 @@ const TarHistory: React.FC<TarHistoryProps> = ({ onBack }) => {
   const [showFilter, setShowFilter] = useState(false);
 
   // Fetch tar history data
-  const { data: tarHistory = [], isLoading, refetch } = useGetTarHistory();
-  const { data: alertRules } = useGetProcessAlert('tar');
+  const {data: tarHistory = [], isLoading, refetch} = useGetTarHistory();
+  const {data: alertRules} = useGetProcessAlert('tar');
 
   // Get unique items and sizes for filter
   const uniqueItems = React.useMemo(() => {
@@ -33,7 +33,7 @@ const TarHistory: React.FC<TarHistoryProps> = ({ onBack }) => {
         items.set(tar.item.id, tar.item.name);
       }
     });
-    return Array.from(items.entries()).map(([id, name]) => ({ id, name }));
+    return Array.from(items.entries()).map(([id, name]) => ({id, name}));
   }, [tarHistory]);
 
   const uniqueSizes = React.useMemo(() => {
@@ -43,7 +43,7 @@ const TarHistory: React.FC<TarHistoryProps> = ({ onBack }) => {
         sizes.set(tar.size.id, tar.size.size);
       }
     });
-    return Array.from(sizes.entries()).map(([id, size]) => ({ id, size }));
+    return Array.from(sizes.entries()).map(([id, size]) => ({id, size}));
   }, [tarHistory]);
 
   // Format date helper
@@ -112,7 +112,7 @@ const TarHistory: React.FC<TarHistoryProps> = ({ onBack }) => {
     } else {
       navigate({
         to: '/manufacturingprocess/process',
-        state: { selectedTab: 'box' },
+        state: {selectedTab: 'box'},
       });
     }
   };
@@ -147,7 +147,7 @@ const TarHistory: React.FC<TarHistoryProps> = ({ onBack }) => {
         headers.join(','),
         ...rows.map((row) => row.join(',')),
       ].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const blob = new Blob([csvContent], {type: 'text/csv'});
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -230,7 +230,9 @@ const TarHistory: React.FC<TarHistoryProps> = ({ onBack }) => {
       key: 'loss',
       header: 'Loss',
       render: (item) => {
-        const grossVal = parseFloat(String(item.grosswt || item.grossWeight || item.fine || 0));
+        const grossVal = parseFloat(
+          String(item.grosswt || item.grossWeight || item.fine || 0),
+        );
         const purVal = parseFloat(String(item.purity || 0));
         const lossVal = parseFloat(String(item.loss || 0));
         const alertCheck = checkProcessLossAlert(
@@ -238,7 +240,7 @@ const TarHistory: React.FC<TarHistoryProps> = ({ onBack }) => {
           purVal,
           lossVal,
           alertRules,
-          true
+          true,
         );
         const colorClass = getProcessLossColorClass(alertCheck);
         const diff = alertCheck?.diff || 0;
@@ -294,10 +296,11 @@ const TarHistory: React.FC<TarHistoryProps> = ({ onBack }) => {
               {/* Filter Toggle Button */}
               <button
                 onClick={() => setShowFilter(!showFilter)}
-                className={`rounded-lg p-2 transition-colors ${showFilter || searchTerm || selectedItem || selectedSize
+                className={`rounded-lg p-2 transition-colors ${
+                  showFilter || searchTerm || selectedItem || selectedSize
                     ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                     : 'hover:bg-[#f4f4f2] dark:hover:bg-slate-800'
-                  }`}
+                }`}
               >
                 <Filter className="h-4 w-4" />
               </button>

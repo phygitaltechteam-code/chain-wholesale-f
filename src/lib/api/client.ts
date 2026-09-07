@@ -1,5 +1,5 @@
-import { api } from '@/utils/axios';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export interface Client {
@@ -92,7 +92,7 @@ export const useCreateClient = () => {
     mutationFn: createClientApi,
     onSuccess: () => {
       toast.success('Client created successfully');
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({queryKey: ['clients']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create client');
@@ -107,7 +107,7 @@ export const useUpdateClient = () => {
     mutationFn: updateClientApi,
     onSuccess: () => {
       toast.success('Client updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({queryKey: ['clients']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update client');

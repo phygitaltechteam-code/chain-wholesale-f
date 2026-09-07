@@ -351,7 +351,9 @@ export const LandingPage: React.FC = () => {
           address: '',
         });
         setFormErrors({});
-        setSaveSuccessMsg('Demo trial request saved! Our team will contact you shortly.');
+        setSaveSuccessMsg(
+          'Demo trial request saved! Our team will contact you shortly.',
+        );
         toast.success('Demo trial request saved successfully!');
       } catch (err) {
         console.error('Error saving demo trial:', err);
@@ -361,7 +363,9 @@ export const LandingPage: React.FC = () => {
           address: '',
         });
         setFormErrors({});
-        setSaveSuccessMsg('Demo trial request saved! Our team will contact you shortly.');
+        setSaveSuccessMsg(
+          'Demo trial request saved! Our team will contact you shortly.',
+        );
         toast.success('Demo trial request saved!');
       } finally {
         setIsSubmitting(false);
@@ -395,7 +399,7 @@ export const LandingPage: React.FC = () => {
             <img
               src={logoImg}
               alt="FineWt Logo"
-              className="h-8 sm:h-10 md:h-11 w-auto max-w-[160px] sm:max-w-[220px] object-contain"
+              className="h-8 w-auto max-w-[160px] object-contain sm:h-10 sm:max-w-[220px] md:h-11"
             />
           </div>
 
@@ -1172,7 +1176,8 @@ export const LandingPage: React.FC = () => {
                     Take Complete Control Over Shop-Floor Metal Loss
                   </h3>
                   <p className="mt-2 text-xs leading-relaxed text-[#4f4535] sm:text-sm">
-                    Track every milligram of gold across manufacturing with automated fine karat balances and zero unaccounted loss.
+                    Track every milligram of gold across manufacturing with
+                    automated fine karat balances and zero unaccounted loss.
                   </p>
 
                   {/* Features List with Gold Checkmarks */}
@@ -1196,7 +1201,8 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 <div className="mt-5 border-t border-[#d3c4af]/30 pt-3 text-[11px] font-medium text-[#817563]">
-                  ⚡ Instant account activation with full cloud & offline factory floor access.
+                  ⚡ Instant account activation with full cloud & offline
+                  factory floor access.
                 </div>
               </div>
             </div>
@@ -1204,7 +1210,11 @@ export const LandingPage: React.FC = () => {
             {/* Right Side: Demo & Trial Registration Form (Always visible, resets on save) */}
             <div className="flex lg:col-span-6">
               <div className="flex h-full w-full flex-col justify-between rounded-3xl border border-[#d3c4af]/60 bg-white p-6 shadow-xl shadow-[#785600]/10 sm:p-8 md:p-9">
-                <form onSubmit={handleSaveDemoTrial} noValidate className="flex h-full flex-col justify-between space-y-4 sm:space-y-5">
+                <form
+                  onSubmit={handleSaveDemoTrial}
+                  noValidate
+                  className="flex h-full flex-col justify-between space-y-4 sm:space-y-5"
+                >
                   <div>
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#785600]">
@@ -1218,11 +1228,12 @@ export const LandingPage: React.FC = () => {
                       Register for Free Demo & Trial
                     </h3>
                     <p className="mt-1 text-xs text-[#817563]">
-                      Enter your workshop details below to save your trial registration.
+                      Enter your workshop details below to save your trial
+                      registration.
                     </p>
 
                     {saveSuccessMsg && (
-                      <div className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-semibold text-emerald-800 animate-in fade-in">
+                      <div className="animate-in fade-in mt-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-semibold text-emerald-800">
                         <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
                         <span>{saveSuccessMsg}</span>
                       </div>
@@ -1249,7 +1260,7 @@ export const LandingPage: React.FC = () => {
                           value={formData.name}
                           onChange={handleInputChange}
                           placeholder="e.g. Rajesh Soni"
-                          className={`w-full rounded-xl border py-2.5 pl-10 pr-3 text-xs sm:text-sm text-[#1a1c1b] placeholder:text-[#a59986] focus:outline-none focus:ring-2 ${
+                          className={`w-full rounded-xl border py-2.5 pl-10 pr-3 text-xs text-[#1a1c1b] placeholder:text-[#a59986] focus:outline-none focus:ring-2 sm:text-sm ${
                             formErrors.name
                               ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-rose-200'
                               : 'border-[#d3c4af]/70 bg-[#fffdfa] focus:border-[#785600] focus:ring-[#785600]/20'
@@ -1269,7 +1280,8 @@ export const LandingPage: React.FC = () => {
                         htmlFor="demo-phone"
                         className="mb-1.5 block text-xs font-bold text-[#1a1c1b]"
                       >
-                        Mobile / WhatsApp Number <span className="text-rose-600">*</span>
+                        Mobile / WhatsApp Number{' '}
+                        <span className="text-rose-600">*</span>
                       </label>
                       <div className="relative">
                         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#817563]">
@@ -1282,7 +1294,7 @@ export const LandingPage: React.FC = () => {
                           value={formData.phone}
                           onChange={handleInputChange}
                           placeholder="e.g. +91 98765 43210"
-                          className={`w-full rounded-xl border py-2.5 pl-10 pr-3 text-xs sm:text-sm text-[#1a1c1b] placeholder:text-[#a59986] focus:outline-none focus:ring-2 ${
+                          className={`w-full rounded-xl border py-2.5 pl-10 pr-3 text-xs text-[#1a1c1b] placeholder:text-[#a59986] focus:outline-none focus:ring-2 sm:text-sm ${
                             formErrors.phone
                               ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-rose-200'
                               : 'border-[#d3c4af]/70 bg-[#fffdfa] focus:border-[#785600] focus:ring-[#785600]/20'
@@ -1302,7 +1314,8 @@ export const LandingPage: React.FC = () => {
                         htmlFor="demo-address"
                         className="mb-1.5 block text-xs font-bold text-[#1a1c1b]"
                       >
-                        Workshop / Store Address <span className="text-rose-600">*</span>
+                        Workshop / Store Address{' '}
+                        <span className="text-rose-600">*</span>
                       </label>
                       <div className="relative">
                         <div className="pointer-events-none absolute left-0 top-3 flex items-start pl-3.5 text-[#817563]">
@@ -1315,7 +1328,7 @@ export const LandingPage: React.FC = () => {
                           value={formData.address}
                           onChange={handleInputChange}
                           placeholder="e.g. Shop 24, Zaveri Bazaar, Kalbadevi, Mumbai - 400002"
-                          className={`w-full rounded-xl border py-2.5 pl-10 pr-3 text-xs sm:text-sm text-[#1a1c1b] placeholder:text-[#a59986] focus:outline-none focus:ring-2 ${
+                          className={`w-full rounded-xl border py-2.5 pl-10 pr-3 text-xs text-[#1a1c1b] placeholder:text-[#a59986] focus:outline-none focus:ring-2 sm:text-sm ${
                             formErrors.address
                               ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-rose-200'
                               : 'border-[#d3c4af]/70 bg-[#fffdfa] focus:border-[#785600] focus:ring-[#785600]/20'
@@ -1335,7 +1348,7 @@ export const LandingPage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#785600] via-[#8c6400] to-[#986d00] py-3.5 text-xs sm:text-sm font-bold text-white shadow-xl shadow-[#785600]/25 transition-all hover:opacity-95 hover:shadow-2xl active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-75"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#785600] via-[#8c6400] to-[#986d00] py-3.5 text-xs font-bold text-white shadow-xl shadow-[#785600]/25 transition-all hover:opacity-95 hover:shadow-2xl active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-75 sm:text-sm"
                     >
                       {isSubmitting ? (
                         <>
@@ -1351,7 +1364,8 @@ export const LandingPage: React.FC = () => {
                     </button>
 
                     <p className="mt-2 text-center text-[11px] text-[#817563]">
-                      🔒 Your contact information is kept strictly confidential and used solely to provision your demo account.
+                      🔒 Your contact information is kept strictly confidential
+                      and used solely to provision your demo account.
                     </p>
                   </div>
                 </form>
@@ -1440,14 +1454,15 @@ export const LandingPage: React.FC = () => {
       {/* ─── 9. Footer ───────────────────────────────────────────────────────── */}
       <footer className="border-t border-[#d3c4af]/40 bg-white px-4 py-8 text-xs text-[#817563] sm:px-6 sm:py-12 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 text-center md:flex-row md:text-left">
-          <div className="flex flex-col sm:flex-row items-center gap-2.5 text-center sm:text-left">
+          <div className="flex flex-col items-center gap-2.5 text-center sm:flex-row sm:text-left">
             <img
               src={logoImg}
               alt="FineWt Logo"
-              className="h-7 sm:h-8 w-auto max-w-[140px] shrink-0 object-contain"
+              className="h-7 w-auto max-w-[140px] shrink-0 object-contain sm:h-8"
             />
-            <p className="text-[9px] text-[#817563] sm:text-[10px] sm:border-l sm:border-[#d3c4af]/60 sm:pl-3">
-              © {new Date().getFullYear()} Precision Jewelry Manufacturing System
+            <p className="text-[9px] text-[#817563] sm:border-l sm:border-[#d3c4af]/60 sm:pl-3 sm:text-[10px]">
+              © {new Date().getFullYear()} Precision Jewelry Manufacturing
+              System
             </p>
           </div>
 

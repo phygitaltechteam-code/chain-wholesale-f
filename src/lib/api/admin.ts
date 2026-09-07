@@ -1,5 +1,5 @@
-import { api } from '@/utils/axios';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export interface AdminPayload {
@@ -99,7 +99,7 @@ export const useCreateAdmin = () => {
     mutationFn: createAdminApi,
     onSuccess: () => {
       toast.success('Admin created successfully');
-      queryClient.invalidateQueries({ queryKey: ['admins'] });
+      queryClient.invalidateQueries({queryKey: ['admins']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create admin');
@@ -135,7 +135,7 @@ export const useUpdateAdmin = () => {
     mutationFn: updateAdminApi,
     onSuccess: () => {
       toast.success('Admin updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['admins'] });
+      queryClient.invalidateQueries({queryKey: ['admins']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update admin');
@@ -165,7 +165,7 @@ export const useDeleteAdmin = () => {
     mutationFn: deleteAdminApi,
     onSuccess: () => {
       toast.success('Admin deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['admins'] });
+      queryClient.invalidateQueries({queryKey: ['admins']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete admin');

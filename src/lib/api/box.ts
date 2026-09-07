@@ -9,7 +9,7 @@ export const useGetBox = () => {
   });
 };
 
-export const useGetBoxweight  = () => {
+export const useGetBoxweight = () => {
   return useQuery({
     queryKey: ['boxweight'],
     queryFn: getBoxweightApi,
@@ -110,12 +110,12 @@ export const useCreateBox = () => {
   return useMutation({
     mutationFn: createBoxApi,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['box'] });
+      queryClient.invalidateQueries({queryKey: ['box']});
     },
   });
 };
 
-export const submitBoxApi = async ({ id, data }: { id: string; data: any }) => {
+export const submitBoxApi = async ({id, data}: {id: string; data: any}) => {
   try {
     const response = await api.put(`/admin/box/${id}`, data);
     return response.data;
@@ -126,5 +126,3 @@ export const submitBoxApi = async ({ id, data }: { id: string; data: any }) => {
     throw error;
   }
 };
-
-

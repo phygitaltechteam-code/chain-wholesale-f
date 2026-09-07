@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Lock, Loader2, CheckCircle2 } from 'lucide-react';
+import {useState, useEffect} from 'react';
+import {Lock, Loader2, CheckCircle2} from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAccessForBackup, useUpdateProfile } from '@/lib/api/profile';
+import {useAccessForBackup, useUpdateProfile} from '@/lib/api/profile';
 import AdminProfile from './AdminProfile';
 import HeaderPdfDesign from './HeaderPdfDesign';
 import BackupAndRestorePage from './Backup&RestorePage';
@@ -82,12 +82,12 @@ export const Settings = () => {
   };
 
   const tabs = [
-    { id: 'profile', label: 'Admin Profile' },
-    { id: 'header', label: 'Bill Header' },
+    {id: 'profile', label: 'Admin Profile'},
+    {id: 'header', label: 'Bill Header'},
     ...(isBackupUnlocked
-      ? [{ id: 'backup', label: 'Backup & Restore Data' }]
+      ? [{id: 'backup', label: 'Backup & Restore Data'}]
       : []),
-    { id: 'scale', label: 'Weight Scale' },
+    {id: 'scale', label: 'Weight Scale'},
     // { id: 'alert', label: 'Alert Management' },
   ];
 
@@ -95,7 +95,7 @@ export const Settings = () => {
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       <div className="mx-auto px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
         {/* Tab Bar Header with Top-Right Small Password Field */}
-        <div className="mb-5 flex flex-col gap-3 border-b border-slate-200 pb-2 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700">
+        <div className="mb-5 flex flex-col gap-3 border-b border-slate-200 pb-2 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
           {/* Tab Navigation */}
           <div className="flex gap-6 overflow-x-auto">
             {tabs.map((tab) => (
@@ -103,13 +103,19 @@ export const Settings = () => {
                 key={tab.id}
                 onClick={() =>
                   setActiveTab(
-                    tab.id as 'profile' | 'header' | 'backup' | 'scale' | 'alert',
+                    tab.id as
+                      | 'profile'
+                      | 'header'
+                      | 'backup'
+                      | 'scale'
+                      | 'alert',
                   )
                 }
-                className={`whitespace-nowrap border-b-2 pb-2.5 text-sm font-semibold transition-colors duration-150 ${activeTab === tab.id
-                  ? 'border-[#785600] text-[#785600] dark:border-amber-400 dark:text-amber-400'
-                  : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                  }`}
+                className={`whitespace-nowrap border-b-2 pb-2.5 text-sm font-semibold transition-colors duration-150 ${
+                  activeTab === tab.id
+                    ? 'border-[#785600] text-[#785600] dark:border-amber-400 dark:text-amber-400'
+                    : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                }`}
               >
                 {tab.label}
               </button>
@@ -158,7 +164,9 @@ export const Settings = () => {
         <div>
           {activeTab === 'profile' && <AdminProfile />}
           {activeTab === 'header' && <HeaderPdfDesign />}
-          {activeTab === 'backup' && isBackupUnlocked && <BackupAndRestorePage />}
+          {activeTab === 'backup' && isBackupUnlocked && (
+            <BackupAndRestorePage />
+          )}
           {activeTab === 'scale' && <ScaleSetting />}
           {/* {activeTab === 'alert' && <AlertManagement />} */}
         </div>

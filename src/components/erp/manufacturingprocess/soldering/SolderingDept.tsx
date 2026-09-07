@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {
   Save,
   ChevronRight,
@@ -9,9 +9,9 @@ import {
   Layers,
   Box,
 } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import { GenericTable } from '@/components/Forms/Table/GenericTable';
+import {GenericTable} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import {
   useGetSoldering,
@@ -20,14 +20,14 @@ import {
   useCreateSoldering,
   getBackendErrorMessage,
 } from '@/lib/api/soldering';
-import { useGetItems, Item } from '@/lib/api/items';
-import { useGetSizes } from '@/lib/api/sizes';
-import { useSubmitMoveCutting } from '@/lib/api/cutting';
-import { useGetBox, useGetBoxweight } from '@/lib/api/box';
+import {useGetItems, Item} from '@/lib/api/items';
+import {useGetSizes} from '@/lib/api/sizes';
+import {useSubmitMoveCutting} from '@/lib/api/cutting';
+import {useGetBox, useGetBoxweight} from '@/lib/api/box';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
-import { useAddSolderingMelting } from '@/lib/api/processmelting';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
+import {useAddSolderingMelting} from '@/lib/api/processmelting';
 
 import {
   SolderingEntry,
@@ -44,13 +44,19 @@ import HistorySoldering from './HistorySoldering';
 const SolderingDept: React.FC = () => {
   const getpdfheaderdata = useGetHeader();
   const navigate = useNavigate();
-  const [solderingEntries, setSolderingEntries] = useState<SolderingEntry[]>([]);
-  const [meltingLoadingIds, setMeltingLoadingIds] = useState<Set<string>>(new Set());
+  const [solderingEntries, setSolderingEntries] = useState<SolderingEntry[]>(
+    [],
+  );
+  const [meltingLoadingIds, setMeltingLoadingIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [hasEditedRow, setHasEditedRow] = useState(false);
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [actionType, setActionType] = useState<'joint' | 'cutting' | null>(null);
+  const [actionType, setActionType] = useState<'joint' | 'cutting' | null>(
+    null,
+  );
   const [showHistory, setShowHistory] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalCards, setModalCards] = useState<SolderingCardForm[]>([
@@ -67,7 +73,7 @@ const SolderingDept: React.FC = () => {
   const [toDate, setToDate] = useState<Date | null>(null);
 
   // Weighing Scale table focus hook
-  const { getScaleProps } = useTableScaleFocus<'chainReceived' | 'scrap'>(
+  const {getScaleProps} = useTableScaleFocus<'chainReceived' | 'scrap'>(
     (index, field, weight) => {
       handleInlineChange(index, field, weight.toString());
     },
@@ -88,15 +94,19 @@ const SolderingDept: React.FC = () => {
     refetch: refetchHistory,
   } = useGetSolderingHistory();
 
-  const { data: items = [], isLoading: itemsLoading } = useGetItems();
+  const {data: items = [], isLoading: itemsLoading} = useGetItems();
   const itemsList: Item[] = Array.isArray((items as any)?.data)
     ? (items as any).data
     : Array.isArray(items)
       ? items
       : [];
-  const { data: sizes = [], isLoading: sizesLoading } = useGetSizes();
-  const { data: boxData = [] } = useGetBox();
-  const { data: tarData = [], isLoading: tarLoading, refetch: tarRefetch } = useGetBoxweight();
+  const {data: sizes = [], isLoading: sizesLoading} = useGetSizes();
+  const {data: boxData = []} = useGetBox();
+  const {
+    data: tarData = [],
+    isLoading: tarLoading,
+    refetch: tarRefetch,
+  } = useGetBoxweight();
 
   const submitSoldering = useSubmitSoldering();
   const createSoldering = useCreateSoldering();
@@ -129,15 +139,13 @@ const SolderingDept: React.FC = () => {
   };
 
   // Weighing Scale modal focus hook
-  const { getScaleProps: getModalScaleProps } = useTableScaleFocus<'chainWeight'>(
+  const {getScaleProps: getModalScaleProps} = useTableScaleFocus<'chainWeight'>(
     (cardIndex, field, weight) => {
       handleCardChange(cardIndex, field, weight.toString());
     },
   );
 
-  const boxStockList = Array.isArray(tarData)
-    ? tarData
-    : [];
+  const boxStockList = Array.isArray(tarData) ? tarData : [];
 
   // Top Box Cards for Soldering Department (from /admin/box/stock)
   const boxCards = React.useMemo(() => {
@@ -148,7 +156,9 @@ const SolderingDept: React.FC = () => {
           (typeof item.size === 'string' ? item.size : '') ||
           'Box';
         const p = Number(item.purity || 0);
-        const wt = Number(item.tarWeight || item.chainWeight || item.weight || 0);
+        const wt = Number(
+          item.tarWeight || item.chainWeight || item.weight || 0,
+        );
         return {
           id: item.id,
           sizeId: item.sizeId || item.size?.id,
@@ -267,7 +277,8 @@ const SolderingDept: React.FC = () => {
     if (boxStockList.length > 0) {
       let filtered = boxStockList.filter(
         (b: any) =>
-          (String(b.sizeId) === String(sizeId) || String(b.size?.id) === String(sizeId)) &&
+          (String(b.sizeId) === String(sizeId) ||
+            String(b.size?.id) === String(sizeId)) &&
           Number(b.tarWeight || b.chainWeight || b.weight || 0) > 0,
       );
       if (purity && parseFloat(purity) > 0) {
@@ -284,7 +295,8 @@ const SolderingDept: React.FC = () => {
     if (Array.isArray(boxData) && boxData.length > 0) {
       let filtered = boxData.filter(
         (b: any) =>
-          (String(b.sizeId) === String(sizeId) || String(b.size?.id) === String(sizeId)) &&
+          (String(b.sizeId) === String(sizeId) ||
+            String(b.size?.id) === String(sizeId)) &&
           Number(b.chainWeight || 0) > 0,
       );
       if (purity && parseFloat(purity) > 0) {
@@ -297,8 +309,6 @@ const SolderingDept: React.FC = () => {
       }, 0);
       return truncate3Dec(total);
     }
-
-
 
     return 0;
   };
@@ -488,21 +498,32 @@ const SolderingDept: React.FC = () => {
 
   // Print History Function
   const handlePrintHistory = () => {
-    const success = printSolderingHistory(getFilteredHistory(), fromDate, toDate, getpdfheaderdata);
+    const success = printSolderingHistory(
+      getFilteredHistory(),
+      fromDate,
+      toDate,
+      getpdfheaderdata,
+    );
     if (!success) {
-      toast.error('No history records available to print for the selected date range');
+      toast.error(
+        'No history records available to print for the selected date range',
+      );
     }
   };
 
   // Handle inline field change
   const handleInlineChange = useCallback(
-    (index: number, field: 'chainReceived' | 'scrap' | 'purity', value: string) => {
+    (
+      index: number,
+      field: 'chainReceived' | 'scrap' | 'purity',
+      value: string,
+    ) => {
       setHasEditedRow(true);
 
       setSolderingEntries((prev) =>
         prev.map((entry, i) => {
           if (i === index) {
-            const updated = { ...entry };
+            const updated = {...entry};
 
             if (field === 'purity') {
               updated.purityRaw = value;
@@ -535,7 +556,9 @@ const SolderingDept: React.FC = () => {
             }
 
             if (updated.powder > 0 && updated.chainReceived > 0) {
-              updated.increase = truncate3Dec((updated.powder / updated.chainReceived) * 100);
+              updated.increase = truncate3Dec(
+                (updated.powder / updated.chainReceived) * 100,
+              );
             } else {
               updated.increase = 0;
             }
@@ -594,7 +617,7 @@ const SolderingDept: React.FC = () => {
       setSolderingEntries((prev) =>
         prev.map((s, i) =>
           i === index
-            ? { ...s, isEditing: false, isSaved: true, isCompleted: true }
+            ? {...s, isEditing: false, isSaved: true, isCompleted: true}
             : s,
         ),
       );
@@ -608,7 +631,9 @@ const SolderingDept: React.FC = () => {
       await refetch();
     } catch (error: any) {
       console.error('Error saving soldering:', error);
-      toast.error(getBackendErrorMessage(error, 'Failed to save soldering entry'));
+      toast.error(
+        getBackendErrorMessage(error, 'Failed to save soldering entry'),
+      );
 
       setIsLoading(false);
       setShowConfirmModal(false);
@@ -645,7 +670,7 @@ const SolderingDept: React.FC = () => {
       setSolderingEntries((prev) =>
         prev.map((s, i) =>
           i === index
-            ? { ...s, isEditing: false, isSaved: true, isCompleted: true }
+            ? {...s, isEditing: false, isSaved: true, isCompleted: true}
             : s,
         ),
       );
@@ -659,7 +684,9 @@ const SolderingDept: React.FC = () => {
       await refetch();
     } catch (error: any) {
       console.error('Error saving soldering:', error);
-      toast.error(getBackendErrorMessage(error, 'Failed to save soldering entry'));
+      toast.error(
+        getBackendErrorMessage(error, 'Failed to save soldering entry'),
+      );
 
       setIsLoading(false);
       setShowConfirmModal(false);
@@ -680,12 +707,10 @@ const SolderingDept: React.FC = () => {
           field === 'sizeId' || field === 'itemId'
             ? value
             : value.replace(/[^0-9.]/g, '');
-        return { ...card, [field]: sanitized };
+        return {...card, [field]: sanitized};
       }),
     );
   };
-
-
 
   const handleRemoveCard = (cardIndex: number) => {
     setModalCards((prev) => {
@@ -753,7 +778,7 @@ const SolderingDept: React.FC = () => {
     }
 
     setModalCards((prev) =>
-      prev.map((c, idx) => (idx === cardIndex ? { ...c, isSaving: true } : c)),
+      prev.map((c, idx) => (idx === cardIndex ? {...c, isSaving: true} : c)),
     );
 
     try {
@@ -794,9 +819,11 @@ const SolderingDept: React.FC = () => {
       await refetch();
     } catch (error: any) {
       console.error('Error saving soldering card:', error);
-      toast.error(getBackendErrorMessage(error, 'Failed to save soldering entry'));
+      toast.error(
+        getBackendErrorMessage(error, 'Failed to save soldering entry'),
+      );
       setModalCards((prev) =>
-        prev.map((c, idx) => (idx === cardIndex ? { ...c, isSaving: false } : c)),
+        prev.map((c, idx) => (idx === cardIndex ? {...c, isSaving: false} : c)),
       );
     }
   };
@@ -815,7 +842,7 @@ const SolderingDept: React.FC = () => {
     isLoading,
     isSubmitting,
     meltingLoadingIds,
-    hasEditableValues
+    hasEditableValues,
   );
 
   const toggleHistory = () => {
@@ -826,7 +853,7 @@ const SolderingDept: React.FC = () => {
       refetch();
     } else {
       setShowHistory(true);
-      const { monday, sunday } = getCurrentWeekRange();
+      const {monday, sunday} = getCurrentWeekRange();
       setFromDate(monday);
       setToDate(sunday);
       refetchHistory();
@@ -845,7 +872,7 @@ const SolderingDept: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-2 pt-1 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-[#785600]/40 dark:scrollbar-track-slate-800 dark:scrollbar-thumb-slate-600">
+          <div className="scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-[#785600]/40 dark:scrollbar-track-slate-800 dark:scrollbar-thumb-slate-600 flex gap-2 overflow-x-auto pb-2 pt-1">
             {boxCards.map((card, idx) => (
               <div
                 key={card.id || idx}
@@ -916,7 +943,11 @@ const SolderingDept: React.FC = () => {
 
           {/* Print History Button */}
           {showHistory && (
-            <GenericButton type="button" onClick={handlePrintHistory} variant="primary">
+            <GenericButton
+              type="button"
+              onClick={handlePrintHistory}
+              variant="primary"
+            >
               <Printer className="h-4 w-4" />
               <span>Print</span>
             </GenericButton>
@@ -930,7 +961,11 @@ const SolderingDept: React.FC = () => {
           )} */}
 
           {/* History Toggle Button */}
-          <GenericButton type="button" onClick={toggleHistory} variant="primary">
+          <GenericButton
+            type="button"
+            onClick={toggleHistory}
+            variant="primary"
+          >
             {showHistory ? (
               <ChevronRight className="h-4 w-4" />
             ) : (
@@ -993,7 +1028,11 @@ const SolderingDept: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={actionType === 'joint' ? confirmSaveJoint : confirmSaveCutting}
+                  onClick={
+                    actionType === 'joint'
+                      ? confirmSaveJoint
+                      : confirmSaveCutting
+                  }
                   disabled={isLoading}
                   className="rounded-lg bg-gradient-to-br from-[#785600] to-[#986d00] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -1007,10 +1046,11 @@ const SolderingDept: React.FC = () => {
 
       {/* Add Soldering Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4">
           <div
-            className={`w-full ${modalCards.length > 1 ? 'max-w-4xl' : 'max-w-lg'
-              } flex max-h-[90vh] flex-col rounded-2xl bg-white shadow-2xl transition-all dark:bg-slate-900 border border-[#d3c4af]/30 dark:border-slate-700`}
+            className={`w-full ${
+              modalCards.length > 1 ? 'max-w-4xl' : 'max-w-lg'
+            } flex max-h-[90vh] flex-col rounded-2xl border border-[#d3c4af]/30 bg-white shadow-2xl transition-all dark:border-slate-700 dark:bg-slate-900`}
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-[#d3c4af]/20 p-4 dark:border-slate-800">
@@ -1023,7 +1063,11 @@ const SolderingDept: React.FC = () => {
                     Add Soldering Process
                   </h3>
                   <p className="text-xs text-[#4f4535] dark:text-slate-400">
-                    {modalCards.length} {modalCards.length === 1 ? 'soldering item' : 'soldering items'} to configure
+                    {modalCards.length}{' '}
+                    {modalCards.length === 1
+                      ? 'soldering item'
+                      : 'soldering items'}{' '}
+                    to configure
                   </p>
                 </div>
               </div>
@@ -1039,10 +1083,15 @@ const SolderingDept: React.FC = () => {
 
             {/* Modal Body - Cards Container */}
             <div className="flex-1 overflow-y-auto p-4">
-              <div className={`grid gap-4 ${modalCards.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+              <div
+                className={`grid gap-4 ${modalCards.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}
+              >
                 {modalCards.map((card, idx) => {
                   const isCardSaving = card.isSaving || false;
-                  const availableQty = getAvailableBoxQty(card.sizeId, card.purity);
+                  const availableQty = getAvailableBoxQty(
+                    card.sizeId,
+                    card.purity,
+                  );
 
                   return (
                     <div
@@ -1070,7 +1119,9 @@ const SolderingDept: React.FC = () => {
                             </label>
                             <select
                               value={card.sizeId}
-                              onChange={(e) => handleSizeSelect(idx, e.target.value)}
+                              onChange={(e) =>
+                                handleSizeSelect(idx, e.target.value)
+                              }
                               className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                             >
                               <option value="">Select</option>
@@ -1111,7 +1162,7 @@ const SolderingDept: React.FC = () => {
                                 type="text"
                                 readOnly
                                 value={formatNumberDisplay(availableQty)}
-                                className="font-mono w-full rounded-lg border border-[#d3c4af]/20 bg-amber-50/50 px-2 py-1.5 pr-6 text-sm font-bold text-black outline-none cursor-not-allowed dark:bg-amber-950/20 dark:text-amber-400"
+                                className="font-mono w-full cursor-not-allowed rounded-lg border border-[#d3c4af]/20 bg-amber-50/50 px-2 py-1.5 pr-6 text-sm font-bold text-black outline-none dark:bg-amber-950/20 dark:text-amber-400"
                               />
                               <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-[10px] dark:text-slate-500">
                                 G
@@ -1127,14 +1178,19 @@ const SolderingDept: React.FC = () => {
                             </label>
                             <select
                               value={card.itemId}
-                              onChange={(e) => handleCardChange(idx, 'itemId', e.target.value)}
+                              onChange={(e) =>
+                                handleCardChange(idx, 'itemId', e.target.value)
+                              }
                               className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                             >
                               <option value="">Select Item</option>
                               {itemsList
                                 .filter((item) => {
-                                  const name = item?.name?.trim().toLowerCase() || '';
-                                  return name !== 'gold' && !name.includes('(s)');
+                                  const name =
+                                    item?.name?.trim().toLowerCase() || '';
+                                  return (
+                                    name !== 'gold' && !name.includes('(s)')
+                                  );
                                 })
                                 .map((item) => (
                                   <option key={item.id} value={item.id}>
@@ -1146,7 +1202,8 @@ const SolderingDept: React.FC = () => {
 
                           <div>
                             <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                              Chain Weight (G) <span className="text-red-500">*</span>
+                              Chain Weight (G){' '}
+                              <span className="text-red-500">*</span>
                             </label>
                             <div className="relative">
                               <input
@@ -1155,7 +1212,11 @@ const SolderingDept: React.FC = () => {
                                 value={card.chainWeight}
                                 {...getModalScaleProps(idx, 'chainWeight')}
                                 onChange={(e) =>
-                                  handleCardChange(idx, 'chainWeight', e.target.value)
+                                  handleCardChange(
+                                    idx,
+                                    'chainWeight',
+                                    e.target.value,
+                                  )
                                 }
                                 placeholder="0.000"
                                 className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 pr-6 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"

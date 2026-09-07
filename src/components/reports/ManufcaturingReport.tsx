@@ -1,10 +1,16 @@
-import { useNavigate } from '@tanstack/react-router';
-import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Search, Printer, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useGetManufacturingData } from '@/lib/api/reportapi';
+import {useNavigate} from '@tanstack/react-router';
+import {useState, useEffect, useMemo} from 'react';
+import {
+  ArrowLeft,
+  Search,
+  Printer,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import {useGetManufacturingData} from '@/lib/api/reportapi';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
 
 interface ManufacturingItem {
   id: string;
@@ -76,8 +82,8 @@ export default function ManufacturingReport() {
   const groupsPerPage = 10;
 
   const getDefaultWeekRange = () => {
-    const { fromDate, toDate } = getCurrentAppWeekRange();
-    return { monday: fromDate, sunday: toDate };
+    const {fromDate, toDate} = getCurrentAppWeekRange();
+    return {monday: fromDate, sunday: toDate};
   };
 
   const [fromDate, setFromDate] = useState<Date | null>(
@@ -89,13 +95,16 @@ export default function ManufacturingReport() {
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
-      const { monday, sunday } = getDefaultWeekRange();
+      const {monday, sunday} = getDefaultWeekRange();
       setFromDate(monday);
       setToDate(sunday);
     };
     window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
     return () => {
-      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+      window.removeEventListener(
+        'app_week_cycle_changed',
+        handleWeekCycleUpdate,
+      );
     };
   }, []);
   const {
@@ -111,7 +120,7 @@ export default function ManufacturingReport() {
     if (!manufacturingData) return [];
     const responseData = manufacturingData as
       | ApiResponse
-      | { data?: { history?: ApiDataItem[] }; history?: ApiDataItem[] };
+      | {data?: {history?: ApiDataItem[]}; history?: ApiDataItem[]};
 
     const historyList: ApiDataItem[] =
       (responseData as any)?.data?.history ||
@@ -139,7 +148,14 @@ export default function ManufacturingReport() {
     });
 
     // Group by exact Item + Size + Purity combination
-    const groupedMap: { [key: string]: { item: string; size: string; purity: number; items: ApiDataItem[] } } = {};
+    const groupedMap: {
+      [key: string]: {
+        item: string;
+        size: string;
+        purity: number;
+        items: ApiDataItem[];
+      };
+    } = {};
 
     filteredHistory.forEach((item: ApiDataItem) => {
       const itemName = item.item?.name || 'Unknown Item';
@@ -168,24 +184,25 @@ export default function ManufacturingReport() {
 
       // Sort items within group by createdAt descending (newest first)
       const sortedItems = [...groupData.items].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
 
       const items: ManufacturingItem[] = sortedItems.map((item) => {
         const date = new Date(item.createdAt);
         const formattedDate = !isNaN(date.getTime())
           ? date.toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          })
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+            })
           : '';
         const formattedTime = !isNaN(date.getTime())
           ? date.toLocaleTimeString('en-IN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-          })
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            })
           : '';
 
         return {
@@ -253,7 +270,7 @@ export default function ManufacturingReport() {
       });
     });
 
-    return { totalWeight, totalScrap, totalLoss, currentWeight };
+    return {totalWeight, totalScrap, totalLoss, currentWeight};
   }, [filteredGroups]);
 
   // 4. Group-based Pagination (ensures no group is split across page breaks)
@@ -338,16 +355,18 @@ export default function ManufacturingReport() {
         const isFirst = index === 0;
         rows += `
           <tr>
-            ${isFirst
-            ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${group.items.length}">${group.srNo}</td>`
-            : ''
-          }
-            ${isFirst
-            ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${group.items.length}">
+            ${
+              isFirst
+                ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${group.items.length}">${group.srNo}</td>`
+                : ''
+            }
+            ${
+              isFirst
+                ? `<td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:11px;color:#000;font-weight:bold;vertical-align:middle;" rowspan="${group.items.length}">
                     ${group.item} ${group.size !== 'N/A' ? `(${group.size})` : ''} ${group.purity > 0 ? `(${group.purity}%)` : ''}
                   </td>`
-            : ''
-          }
+                : ''
+            }
             <td style="border:1px solid #000;padding:1px 2px;text-align:center;font-size:10px;color:#000;white-space:nowrap;">
               ${item.dateTime}
             </td>
@@ -421,16 +440,17 @@ export default function ManufacturingReport() {
             <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
               Manufacturing Report
             </h2>
-            ${fromDate || toDate
-        ? `
+            ${
+              fromDate || toDate
+                ? `
             <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
               ${fromDate ? `From: ${formatDateForDisplay(fromDate)}` : ''} 
               ${fromDate && toDate ? '&nbsp;&nbsp;' : ''}
               ${toDate ? `To: ${formatDateForDisplay(toDate)}` : ''}
             </div>
             `
-        : `<div style="flex:1;"></div>`
-      }
+                : `<div style="flex:1;"></div>`
+            }
           </div>
 
           <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
@@ -460,14 +480,14 @@ export default function ManufacturingReport() {
               <span>Powered by Matoshree Gold</span>
               <span>|</span>
               <span>Generated: ${new Date().toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      })} ${new Date().toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      })}</span>
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              })} ${new Date().toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+              })}</span>
             </div>
           </div>
         </div>
@@ -563,7 +583,7 @@ export default function ManufacturingReport() {
           <h3 className="text-xl font-bold text-red-600 dark:text-red-400">
             Error Loading Data
           </h3>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             Failed to fetch manufacturing data.
           </p>
           <button
@@ -656,7 +676,6 @@ export default function ManufacturingReport() {
             </div>
           </div>
 
-
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
               <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
@@ -667,9 +686,6 @@ export default function ManufacturingReport() {
               </span>
             </div>
           </div>
-
-
-
 
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <div className="flex flex-col">
@@ -755,10 +771,11 @@ export default function ManufacturingReport() {
                           return (
                             <tr
                               key={item.id}
-                              className={`${isEvenGroup
-                                ? 'bg-white dark:bg-slate-900'
-                                : 'bg-gray-50 dark:bg-slate-800/50'
-                                } transition-colors hover:bg-[#f4f4f2]/60 dark:hover:bg-slate-800/80`}
+                              className={`${
+                                isEvenGroup
+                                  ? 'bg-white dark:bg-slate-900'
+                                  : 'bg-gray-50 dark:bg-slate-800/50'
+                              } transition-colors hover:bg-[#f4f4f2]/60 dark:hover:bg-slate-800/80`}
                             >
                               {isFirstInGroup && (
                                 <td
@@ -776,9 +793,15 @@ export default function ManufacturingReport() {
                                 >
                                   <div>{group.item}</div>
                                   <div>
-                                    {group.size !== 'N/A' ? `(${group.size})` : ''}
-                                    {group.size !== 'N/A' && group.purity > 0 ? ' ' : ''}
-                                    {group.purity > 0 ? `(${group.purity}%)` : ''}
+                                    {group.size !== 'N/A'
+                                      ? `(${group.size})`
+                                      : ''}
+                                    {group.size !== 'N/A' && group.purity > 0
+                                      ? ' '
+                                      : ''}
+                                    {group.purity > 0
+                                      ? `(${group.purity}%)`
+                                      : ''}
                                   </div>
                                 </td>
                               )}
@@ -800,8 +823,6 @@ export default function ManufacturingReport() {
                                 {formatNumber(item.loss)} G
                               </td>
 
-
-
                               <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
                                 {formatNumber(item.currentWeight)} G
                               </td>
@@ -822,63 +843,78 @@ export default function ManufacturingReport() {
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700"
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50 dark:text-gray-300 relative inline-flex items-center rounded-md border bg-white px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
                   >
                     Previous
                   </button>
                   <button
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
                     disabled={currentPage === totalPages}
-                    className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700"
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50 dark:text-gray-300 relative ml-3 inline-flex items-center rounded-md border bg-white px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
                   >
                     Next
                   </button>
                 </div>
                 <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      Showing page <span className="font-medium">{currentPage}</span> of{' '}
-                      <span className="font-medium">{totalPages}</span> ({filteredGroups.length} total item groups)
+                    <p className="text-gray-700 dark:text-gray-300 text-sm">
+                      Showing page{' '}
+                      <span className="font-medium">{currentPage}</span> of{' '}
+                      <span className="font-medium">{totalPages}</span> (
+                      {filteredGroups.length} total item groups)
                     </p>
                   </div>
                   <div>
-                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <nav
+                      className="isolate inline-flex -space-x-px rounded-md shadow-sm"
+                      aria-label="Pagination"
+                    >
                       <button
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
                         disabled={currentPage === 1}
-                        className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-slate-600 dark:hover:bg-slate-700"
+                        className="text-gray-400 ring-gray-300 hover:bg-gray-50 relative inline-flex items-center rounded-l-md px-2 py-2 ring-1 ring-inset focus:z-20 focus:outline-offset-0 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-slate-600 dark:hover:bg-slate-700"
                       >
                         <span className="sr-only">Previous</span>
                         <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                       </button>
-                      {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 10) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 5) {
-                          pageNum = i + 1;
-                        } else if (currentPage > totalPages - 5) {
-                          pageNum = totalPages - 9 + i;
-                        } else {
-                          pageNum = currentPage - 5 + i;
-                        }
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${pageNum === currentPage
-                              ? 'z-10 bg-[#785600] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#785600]'
-                              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:text-gray-300 dark:ring-slate-600 dark:hover:bg-slate-700'
+                      {Array.from(
+                        {length: Math.min(totalPages, 10)},
+                        (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 10) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage > totalPages - 5) {
+                            pageNum = totalPages - 9 + i;
+                          } else {
+                            pageNum = currentPage - 5 + i;
+                          }
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                                pageNum === currentPage
+                                  ? 'z-10 bg-[#785600] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#785600]'
+                                  : 'text-gray-900 ring-gray-300 hover:bg-gray-50 dark:text-gray-300 ring-1 ring-inset focus:z-20 focus:outline-offset-0 dark:ring-slate-600 dark:hover:bg-slate-700'
                               }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        },
+                      )}
                       <button
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        }
                         disabled={currentPage === totalPages}
-                        className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-slate-600 dark:hover:bg-slate-700"
+                        className="text-gray-400 ring-gray-300 hover:bg-gray-50 relative inline-flex items-center rounded-r-md px-2 py-2 ring-1 ring-inset focus:z-20 focus:outline-offset-0 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-slate-600 dark:hover:bg-slate-700"
                       >
                         <span className="sr-only">Next</span>
                         <ChevronRight className="h-5 w-5" aria-hidden="true" />

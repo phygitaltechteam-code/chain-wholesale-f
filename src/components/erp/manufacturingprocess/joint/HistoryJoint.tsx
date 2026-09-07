@@ -1,6 +1,10 @@
 import React from 'react';
-import { GenericTable } from '@/components/Forms/Table/GenericTable';
-import { getHistoryJointColumns, hasMeltingStatus, formatNumberDisplay } from './jointUtils';
+import {GenericTable} from '@/components/Forms/Table/GenericTable';
+import {
+  getHistoryJointColumns,
+  hasMeltingStatus,
+  formatNumberDisplay,
+} from './jointUtils';
 
 interface HistoryJointProps {
   filteredData: any[];

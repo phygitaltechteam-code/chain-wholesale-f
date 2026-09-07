@@ -1,5 +1,5 @@
-import { api } from '@/utils/axios';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 interface SettlementData {
@@ -56,8 +56,8 @@ export const useSubmitSettlement = () => {
     mutationFn: submitSettlement,
     onSuccess: (data: any) => {
       toast.success(data?.message || 'Settlement submitted successfully');
-      queryClient.invalidateQueries({ queryKey: ['settlements'] });
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({queryKey: ['settlements']});
+      queryClient.invalidateQueries({queryKey: ['clients']});
     },
     onError: (error: any) => {
       toast.error(

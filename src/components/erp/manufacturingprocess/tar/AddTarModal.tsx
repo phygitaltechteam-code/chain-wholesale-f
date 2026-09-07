@@ -1,6 +1,6 @@
 import React from 'react';
-import { Plus, Trash2, Layers, X } from 'lucide-react';
-import { TarCardForm, formatNumber } from './tarUtils';
+import {Plus, Trash2, Layers, X} from 'lucide-react';
+import {TarCardForm, formatNumber} from './tarUtils';
 
 interface AddTarModalProps {
   isModalOpen: boolean;
@@ -30,10 +30,11 @@ const AddTarModal: React.FC<AddTarModalProps> = ({
   if (!isModalOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4">
       <div
-        className={`w-full ${modalCards.length > 1 ? 'max-w-4xl' : 'max-w-lg'
-          } flex max-h-[90vh] flex-col rounded-2xl bg-white shadow-2xl transition-all dark:bg-slate-900 border border-[#d3c4af]/30 dark:border-slate-700`}
+        className={`w-full ${
+          modalCards.length > 1 ? 'max-w-4xl' : 'max-w-lg'
+        } flex max-h-[90vh] flex-col rounded-2xl border border-[#d3c4af]/30 bg-white shadow-2xl transition-all dark:border-slate-700 dark:bg-slate-900`}
       >
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-[#d3c4af]/20 p-4 dark:border-slate-800">
@@ -60,10 +61,11 @@ const AddTarModal: React.FC<AddTarModalProps> = ({
         {/* Modal Body - Cards Container */}
         <div className="flex-1 overflow-y-auto p-4">
           <div
-            className={`grid gap-4 ${modalCards.length > 1
-              ? 'grid-cols-1 md:grid-cols-2'
-              : 'grid-cols-1'
-              }`}
+            className={`grid gap-4 ${
+              modalCards.length > 1
+                ? 'grid-cols-1 md:grid-cols-2'
+                : 'grid-cols-1'
+            }`}
           >
             {modalCards.map((card, idx) => {
               const isCardSaving = card.isSaving || false;
@@ -72,7 +74,6 @@ const AddTarModal: React.FC<AddTarModalProps> = ({
                   key={card.id || idx}
                   className="relative flex flex-col justify-between rounded-xl border border-[#d3c4af]/30 bg-[#fbfaf8] p-4 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800/80"
                 >
-
                   {modalCards.length > 1 && (
                     <button
                       type="button"
@@ -84,7 +85,6 @@ const AddTarModal: React.FC<AddTarModalProps> = ({
                       <Trash2 className="h-4 w-4" />
                     </button>
                   )}
-
 
                   {/* Card Inputs */}
                   <div className="space-y-3">
@@ -101,11 +101,7 @@ const AddTarModal: React.FC<AddTarModalProps> = ({
                             value={card.grossWt}
                             {...getModalScaleProps(idx, 'grossWt')}
                             onChange={(e) =>
-                              handleCardChange(
-                                idx,
-                                'grossWt',
-                                e.target.value,
-                              )
+                              handleCardChange(idx, 'grossWt', e.target.value)
                             }
                             placeholder="0.000"
                             className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
@@ -126,11 +122,7 @@ const AddTarModal: React.FC<AddTarModalProps> = ({
                             inputMode="decimal"
                             value={card.purity}
                             onChange={(e) =>
-                              handleCardChange(
-                                idx,
-                                'purity',
-                                e.target.value,
-                              )
+                              handleCardChange(idx, 'purity', e.target.value)
                             }
                             placeholder="e.g. 93"
                             className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
@@ -194,7 +186,6 @@ const AddTarModal: React.FC<AddTarModalProps> = ({
             })}
           </div>
         </div>
-
       </div>
     </div>
   );

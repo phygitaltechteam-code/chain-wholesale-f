@@ -1,6 +1,6 @@
 import React from 'react';
-import { Scale, Zap, CheckCircle2, Power } from 'lucide-react';
-import { useWeightScale } from '@/context/WeightScaleContext';
+import {Scale, Zap, CheckCircle2, Power} from 'lucide-react';
+import {useWeightScale} from '@/context/WeightScaleContext';
 import toast from 'react-hot-toast';
 
 export const ScaleSetting: React.FC = () => {
@@ -100,4 +100,3 @@ export const ScaleSetting: React.FC = () => {
 };
 
 export default ScaleSetting;
-

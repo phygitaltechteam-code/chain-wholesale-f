@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Plus, X, ArrowLeft, Search, Edit, Trash2 } from 'lucide-react';
+import React, {useState} from 'react';
+import {Plus, X, ArrowLeft, Search, Edit, Trash2} from 'lucide-react';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useNavigate } from '@tanstack/react-router';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {useNavigate} from '@tanstack/react-router';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import {
   useGetItems,
   useCreateItem,
@@ -12,7 +12,7 @@ import {
   Item,
   ItemSchema,
 } from '@/lib/api/items';
-import { z } from 'zod';
+import {z} from 'zod';
 
 const ItemMaster: React.FC = () => {
   const navigate = useNavigate();
@@ -21,11 +21,11 @@ const ItemMaster: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
   });
-  const [formErrors, setFormErrors] = useState<{ name?: string }>({});
+  const [formErrors, setFormErrors] = useState<{name?: string}>({});
   const [searchTerm, setSearchTerm] = useState('');
 
   // React Query hooks
-  const { data: items = [], isLoading, refetch } = useGetItems();
+  const {data: items = [], isLoading, refetch} = useGetItems();
   const createItem = useCreateItem();
   const updateItem = useUpdateItem();
   const deleteItem = useDeleteItem();
@@ -40,14 +40,14 @@ const ItemMaster: React.FC = () => {
   // Filter data based on search term
   const filteredData = searchTerm
     ? sortedItems.filter((item) =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
     : sortedItems;
 
   // Handle form input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const {name, value} = e.target;
+    setFormData((prev) => ({...prev, [name]: value}));
     if (formErrors.name) {
       setFormErrors({});
     }
@@ -56,12 +56,12 @@ const ItemMaster: React.FC = () => {
   // Validate form data
   const validateForm = (): boolean => {
     try {
-      ItemSchema.parse({ name: formData.name.trim() });
+      ItemSchema.parse({name: formData.name.trim()});
       setFormErrors({});
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors: { name?: string } = {};
+        const errors: {name?: string} = {};
         error.errors.forEach((err) => {
           if (err.path[0] === 'name') {
             errors.name = err.message;
@@ -78,7 +78,7 @@ const ItemMaster: React.FC = () => {
   const handleAddItem = async () => {
     if (!validateForm()) return;
     try {
-      await createItem.mutateAsync({ name: formData.name.trim() });
+      await createItem.mutateAsync({name: formData.name.trim()});
       resetForm();
       setIsModalOpen(false);
       refetch();
@@ -95,7 +95,7 @@ const ItemMaster: React.FC = () => {
     try {
       await updateItem.mutateAsync({
         id: editingItem.id,
-        data: { name: formData.name.trim() },
+        data: {name: formData.name.trim()},
       });
       resetForm();
       setIsModalOpen(false);
@@ -144,14 +144,14 @@ const ItemMaster: React.FC = () => {
       return;
     }
     setEditingItem(item);
-    setFormData({ name: item.name });
+    setFormData({name: item.name});
     setFormErrors({});
     setIsModalOpen(true);
   };
 
   // Reset form
   const resetForm = () => {
-    setFormData({ name: '' });
+    setFormData({name: ''});
     setFormErrors({});
     setEditingItem(null);
   };
@@ -225,7 +225,7 @@ const ItemMaster: React.FC = () => {
           {/* Left side - Back button and Title */}
           <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
             <button
-              onClick={() => navigate({ to: '/Stocks/stockpage' })}
+              onClick={() => navigate({to: '/Stocks/stockpage'})}
               className="flex flex-shrink-0 items-center gap-1 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -312,8 +312,9 @@ const ItemMaster: React.FC = () => {
                   value={formData.name}
                   onChange={handleInputChange}
                   placeholder="e.g., Chain, Bracelet, Necklace"
-                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${formErrors.name ? 'ring-2 ring-red-500' : ''
-                    }`}
+                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
+                    formErrors.name ? 'ring-2 ring-red-500' : ''
+                  }`}
                   autoFocus
                 />
                 {formErrors.name && (

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Plus, X, ArrowLeft, Search, Edit, Trash2 } from 'lucide-react';
+import React, {useState} from 'react';
+import {Plus, X, ArrowLeft, Search, Edit, Trash2} from 'lucide-react';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useNavigate } from '@tanstack/react-router';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
-import { z } from 'zod';
+import {useNavigate} from '@tanstack/react-router';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import {z} from 'zod';
 import {
   Size,
   SizeSchema,
@@ -21,11 +21,11 @@ const SizeMaster: React.FC = () => {
   const [formData, setFormData] = useState({
     size: '',
   });
-  const [formErrors, setFormErrors] = useState<{ size?: string }>({});
+  const [formErrors, setFormErrors] = useState<{size?: string}>({});
   const [searchTerm, setSearchTerm] = useState('');
 
   // React Query hooks
-  const { data: sizes = [], isLoading, refetch } = useGetSizes();
+  const {data: sizes = [], isLoading, refetch} = useGetSizes();
   const createSize = useCreateSize();
   const updateSize = useUpdateSize();
   const deleteSize = useDeleteSize();
@@ -33,15 +33,15 @@ const SizeMaster: React.FC = () => {
   // Filter data based on search term
   const filteredData = searchTerm
     ? sizes.filter((item) =>
-      item.size.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
+        item.size.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
     : sizes;
 
   // Handle form input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const {name, value} = e.target;
 
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({...prev, [name]: value}));
     if (formErrors.size) {
       setFormErrors({});
     }
@@ -50,12 +50,12 @@ const SizeMaster: React.FC = () => {
   // Validate form data
   const validateForm = (): boolean => {
     try {
-      SizeSchema.parse({ size: formData.size.trim() });
+      SizeSchema.parse({size: formData.size.trim()});
       setFormErrors({});
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const errors: { size?: string } = {};
+        const errors: {size?: string} = {};
         error.errors.forEach((err) => {
           if (err.path[0] === 'size') {
             errors.size = err.message;
@@ -72,7 +72,7 @@ const SizeMaster: React.FC = () => {
   const handleAddSize = async () => {
     if (!validateForm()) return;
     try {
-      await createSize.mutateAsync({ size: formData.size.trim() });
+      await createSize.mutateAsync({size: formData.size.trim()});
       resetForm();
       setIsModalOpen(false);
       refetch();
@@ -89,7 +89,7 @@ const SizeMaster: React.FC = () => {
     try {
       await updateSize.mutateAsync({
         id: editingSize.id,
-        data: { size: formData.size.trim() },
+        data: {size: formData.size.trim()},
       });
       resetForm();
       setIsModalOpen(false);
@@ -129,14 +129,14 @@ const SizeMaster: React.FC = () => {
   // Handle edit button click
   const handleEditClick = (item: Size) => {
     setEditingSize(item);
-    setFormData({ size: item.size });
+    setFormData({size: item.size});
     setFormErrors({});
     setIsModalOpen(true);
   };
 
   // Reset form
   const resetForm = () => {
-    setFormData({ size: '' });
+    setFormData({size: ''});
     setFormErrors({});
     setEditingSize(null);
   };
@@ -197,7 +197,7 @@ const SizeMaster: React.FC = () => {
           {/* Left side - Back button and Title */}
           <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
             <button
-              onClick={() => navigate({ to: '/Stocks/stockpage' })}
+              onClick={() => navigate({to: '/Stocks/stockpage'})}
               className="flex flex-shrink-0 items-center gap-1 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -278,8 +278,9 @@ const SizeMaster: React.FC = () => {
                   value={formData.size}
                   onChange={handleInputChange}
                   placeholder="Enter size (e.g., 16, Small, Large, XL)"
-                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${formErrors.size ? 'ring-2 ring-red-500' : ''
-                    }`}
+                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
+                    formErrors.size ? 'ring-2 ring-red-500' : ''
+                  }`}
                   autoFocus
                 />
                 {formErrors.size && (

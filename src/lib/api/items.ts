@@ -1,12 +1,12 @@
 /* eslint-disable */
-import { api } from '@/utils/axios';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { z } from 'zod';
+import {z} from 'zod';
 
 // Zod Schema for validation
 export const ItemSchema = z.object({
-  name: z.string().min(1, 'Item name must be at least 1 characters long')
+  name: z.string().min(1, 'Item name must be at least 1 characters long'),
 });
 
 export type ItemFormData = z.infer<typeof ItemSchema>;
@@ -37,7 +37,9 @@ const getItemsApi = async () => {
     return response.data;
   } catch (error: any) {
     const message =
-      error?.response?.data?.message || error?.message || 'Failed to fetch items';
+      error?.response?.data?.message ||
+      error?.message ||
+      'Failed to fetch items';
     throw new Error(message);
   }
 };
@@ -55,7 +57,7 @@ const getItemByIdApi = async (id: string) => {
   }
 };
 
-const updateItemApi = async ({ id, data }: { id: string; data: ItemFormData }) => {
+const updateItemApi = async ({id, data}: {id: string; data: ItemFormData}) => {
   try {
     const response = await api.put(`/admin/item/${id}`, data);
     return response.data;
@@ -71,7 +73,7 @@ const updateItemApi = async ({ id, data }: { id: string; data: ItemFormData }) =
 const deleteItemApi = async (id: string) => {
   try {
     await api.delete(`/admin/item/${id}`);
-    return { success: true };
+    return {success: true};
   } catch (error: any) {
     const message =
       error?.response?.data?.message ||
@@ -113,11 +115,13 @@ export const useCreateItem = () => {
     mutationFn: createItemApi,
     onSuccess: () => {
       toast.success('Item added successfully');
-      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({queryKey: ['items']});
     },
     onError: (error: any) => {
       const message =
-        error?.response?.data?.message || error?.message || 'Failed to add item';
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to add item';
       toast.error(message);
     },
   });
@@ -130,11 +134,13 @@ export const useUpdateItem = () => {
     mutationFn: updateItemApi,
     onSuccess: () => {
       toast.success('Item updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({queryKey: ['items']});
     },
     onError: (error: any) => {
       const message =
-        error?.response?.data?.message || error?.message || 'Failed to update item';
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to update item';
       toast.error(message);
     },
   });
@@ -161,7 +167,9 @@ export const useDeleteItem = () => {
 
     onError: (error: any) => {
       const message =
-        error?.response?.data?.message || error?.message || 'Failed to delete item';
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to delete item';
       toast.error(message);
     },
   });

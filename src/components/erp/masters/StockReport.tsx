@@ -1,16 +1,16 @@
-import { useNavigate, useParams } from '@tanstack/react-router';
-import { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Search, Printer, Calendar } from 'lucide-react';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
-import { useReactToPrint } from 'react-to-print';
+import {useNavigate, useParams} from '@tanstack/react-router';
+import {useState, useRef, useEffect} from 'react';
+import {ArrowLeft, Search, Printer, Calendar} from 'lucide-react';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import {useReactToPrint} from 'react-to-print';
 import PDFHeader from '@/components/Forms/Common/PDFHeader';
-import { Route } from '@/routes/_app/stock/stockreport.$d';
-import { useGetStockReport } from '@/lib/api/reportapi';
+import {Route} from '@/routes/_app/stock/stockreport.$d';
+import {useGetStockReport} from '@/lib/api/reportapi';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
 
 interface StockReportEntry {
   id: string;
@@ -63,12 +63,17 @@ interface ApiResponse {
 export default function StockReport() {
   const navigate = useNavigate();
   const routeParams = Route.useParams();
-  const rawParams = useParams({ strict: false }) as { d?: string; id?: string; $d?: string };
-  const d = routeParams?.d || rawParams?.d || rawParams?.id || rawParams?.$d || '';
+  const rawParams = useParams({strict: false}) as {
+    d?: string;
+    id?: string;
+    $d?: string;
+  };
+  const d =
+    routeParams?.d || rawParams?.d || rawParams?.id || rawParams?.$d || '';
   const [searchTerm, setSearchTerm] = useState('');
   const getDefaultWeekRange = () => {
-    const { fromDate, toDate } = getCurrentAppWeekRange();
-    return { monday: fromDate, sunday: toDate };
+    const {fromDate, toDate} = getCurrentAppWeekRange();
+    return {monday: fromDate, sunday: toDate};
   };
 
   const [fromDate, setFromDate] = useState<Date | null>(
@@ -80,17 +85,20 @@ export default function StockReport() {
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
-      const { monday, sunday } = getDefaultWeekRange();
+      const {monday, sunday} = getDefaultWeekRange();
       setFromDate(monday);
       setToDate(sunday);
     };
     window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
     return () => {
-      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+      window.removeEventListener(
+        'app_week_cycle_changed',
+        handleWeekCycleUpdate,
+      );
     };
   }, []);
   const printRef = useRef<HTMLDivElement>(null);
-  const { data: stockData, isLoading, isError, refetch } = useGetStockReport(d);
+  const {data: stockData, isLoading, isError, refetch} = useGetStockReport(d);
 
   const getpdfheaderdata = useGetHeader();
 
@@ -133,7 +141,11 @@ export default function StockReport() {
               dateTime: `${formattedDate} ${formattedTime}`,
               item: isItemGold ? 'Gold' : itemName || 'Unknown Item',
               size: isItemGold ? '-' : item.size?.size || 'N/A',
-              purity: isItemGold ? '100' : item.purity ? item.purity.toString() : 'N/A',
+              purity: isItemGold
+                ? '100'
+                : item.purity
+                  ? item.purity.toString()
+                  : 'N/A',
               remark: remark,
               wt: item.weight || 0,
             };
@@ -250,7 +262,7 @@ export default function StockReport() {
 
   // Reset to configured week
   const handleResetDates = () => {
-    const { monday, sunday } = getDefaultWeekRange();
+    const {monday, sunday} = getDefaultWeekRange();
     setFromDate(monday);
     setToDate(sunday);
   };
@@ -307,25 +319,25 @@ export default function StockReport() {
     },
     ...(!isGold
       ? [
-        {
-          key: 'item',
-          header: 'Item',
-          render: (item: StockReportEntry) => (
-            <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
-              {item.item}
-            </span>
-          ),
-        },
-        {
-          key: 'size',
-          header: 'Size',
-          render: (item: StockReportEntry) => (
-            <span className="text-sm text-[#1a1c1b] dark:text-white">
-              {item.size}
-            </span>
-          ),
-        },
-      ]
+          {
+            key: 'item',
+            header: 'Item',
+            render: (item: StockReportEntry) => (
+              <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
+                {item.item}
+              </span>
+            ),
+          },
+          {
+            key: 'size',
+            header: 'Size',
+            render: (item: StockReportEntry) => (
+              <span className="text-sm text-[#1a1c1b] dark:text-white">
+                {item.size}
+              </span>
+            ),
+          },
+        ]
       : []),
     {
       key: 'purity',
@@ -341,7 +353,7 @@ export default function StockReport() {
       header: 'Remark',
       render: (item) => (
         <span
-          className={` px-2 py-1 text-xs font-medium ${getRemarkColor(item.remark)}`}
+          className={`px-2 py-1 text-xs font-medium ${getRemarkColor(item.remark)}`}
         >
           {item.remark}
         </span>
@@ -622,7 +634,7 @@ export default function StockReport() {
               No stock records found for this item.
             </p>
             <button
-              onClick={() => navigate({ to: '/Stocks/stockpage' })}
+              onClick={() => navigate({to: '/Stocks/stockpage'})}
               className="mt-4 rounded-lg bg-[#785600] px-4 py-2 text-white hover:bg-[#5d4200]"
             >
               Go Back
@@ -640,7 +652,7 @@ export default function StockReport() {
         <div className="flex flex-col items-center justify-between gap-3 px-3 py-2 sm:flex-row sm:px-4 sm:py-3 md:px-6">
           <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
             <button
-              onClick={() => navigate({ to: '/Stocks/stockpage' })}
+              onClick={() => navigate({to: '/Stocks/stockpage'})}
               className="inline-flex items-center justify-center rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
               title="Go Back"
             >

@@ -1,6 +1,6 @@
 import React from 'react';
-import { GenericTable } from '@/components/Forms/Table/GenericTable';
-import { getHistorySolderingColumns, hasMeltingStatus } from './solderingUtils';
+import {GenericTable} from '@/components/Forms/Table/GenericTable';
+import {getHistorySolderingColumns, hasMeltingStatus} from './solderingUtils';
 
 interface HistorySolderingProps {
   filteredData: any[];

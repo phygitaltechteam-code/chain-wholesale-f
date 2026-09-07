@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { useAddCuttingScrap } from '@/lib/api/processmelting';
-import { formatNoTrailingZeros3Dec } from './cuttingUtils';
+import React, {useState, useEffect} from 'react';
+import {X} from 'lucide-react';
+import {useAddCuttingScrap} from '@/lib/api/processmelting';
+import {formatNoTrailingZeros3Dec} from './cuttingUtils';
 import toast from 'react-hot-toast';
 
 export interface ScrapModalItem {
@@ -62,9 +62,17 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
     const totalScrapW = scrapCalculations.totalAvailableWeight;
     const avgPurity = scrapCalculations.finalPurity;
     const meltedW = weight !== '' ? parseFloat(weight) : 0;
-    const recvPurityVal = receivedPurity !== '' ? parseFloat(receivedPurity) : 0;
+    const recvPurityVal =
+      receivedPurity !== '' ? parseFloat(receivedPurity) : 0;
 
-    if (!isNaN(meltedW) && meltedW > 0 && !isNaN(recvPurityVal) && recvPurityVal > 0 && avgPurity > 0 && totalScrapW > 0) {
+    if (
+      !isNaN(meltedW) &&
+      meltedW > 0 &&
+      !isNaN(recvPurityVal) &&
+      recvPurityVal > 0 &&
+      avgPurity > 0 &&
+      totalScrapW > 0
+    ) {
       const fineGoldAvailable = (totalScrapW * avgPurity) / 100;
       const fineGoldReceived = (meltedW * recvPurityVal) / 100;
       const fineLoss = Math.max(0, fineGoldAvailable - fineGoldReceived);
@@ -72,7 +80,13 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
     } else {
       setLossFineWeight('0');
     }
-  }, [receivedPurity, weight, scrapCalculations.finalPurity, scrapCalculations.totalAvailableWeight, isManualLoss]);
+  }, [
+    receivedPurity,
+    weight,
+    scrapCalculations.finalPurity,
+    scrapCalculations.totalAvailableWeight,
+    isManualLoss,
+  ]);
 
   if (!isOpen) return null;
 
@@ -88,8 +102,12 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
         purity: item.purity,
         weight: item.availableWeight,
       })),
-      avgPurity: Number(formatNoTrailingZeros3Dec(scrapCalculations.finalPurity)),
-      avgWeight: Number(formatNoTrailingZeros3Dec(scrapCalculations.totalAvailableWeight)),
+      avgPurity: Number(
+        formatNoTrailingZeros3Dec(scrapCalculations.finalPurity),
+      ),
+      avgWeight: Number(
+        formatNoTrailingZeros3Dec(scrapCalculations.totalAvailableWeight),
+      ),
       receivedPurity: receivedPurity ? parseFloat(receivedPurity) : 0,
       receivedPercentage: receivedPurity ? parseFloat(receivedPurity) : 0,
       weight: weight ? parseFloat(weight) : 0,
@@ -101,7 +119,7 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
       if (onSubmitScrap) {
         await onSubmitScrap(payload);
       } else {
-        await receivedscrap.mutateAsync({ data: payload });
+        await receivedscrap.mutateAsync({data: payload});
       }
 
       setReceivedPurity('');
@@ -142,7 +160,7 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
 
         {/* Scrap Table */}
         <div className="my-4 overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white dark:border-slate-800 dark:bg-slate-950">
-          <table className="w-full text-left font-mono text-xs">
+          <table className="font-mono w-full text-left text-xs">
             {/* Header */}
             <thead className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] font-bold text-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <tr>
@@ -159,7 +177,7 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
                     Scrap {item.purity}%
                   </td>
 
-                  <td className="p-3 text-right font-mono font-bold text-[#1a1c1b] dark:text-slate-400">
+                  <td className="font-mono p-3 text-right font-bold text-[#1a1c1b] dark:text-slate-400">
                     {formatNoTrailingZeros3Dec(item.availableWeight)} g
                   </td>
                 </tr>
@@ -170,11 +188,15 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
             <tfoot className="border-t-2 border-[#d3c4af]/40 bg-[#f9f9f7] dark:bg-slate-900">
               <tr>
                 <td className="p-3 font-bold text-[#785600] dark:text-amber-400">
-                  Scrap Avg ({formatNoTrailingZeros3Dec(scrapCalculations.finalPurity)}%)
+                  Scrap Avg (
+                  {formatNoTrailingZeros3Dec(scrapCalculations.finalPurity)}%)
                 </td>
 
-                <td className="p-3 text-right font-mono font-bold text-[#785600] dark:text-amber-400">
-                  {formatNoTrailingZeros3Dec(scrapCalculations.totalAvailableWeight)} g
+                <td className="font-mono p-3 text-right font-bold text-[#785600] dark:text-amber-400">
+                  {formatNoTrailingZeros3Dec(
+                    scrapCalculations.totalAvailableWeight,
+                  )}{' '}
+                  g
                 </td>
               </tr>
             </tfoot>
@@ -202,9 +224,11 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
                     setIsManualLoss(false);
                   }}
                   placeholder="0.00"
-                  className="w-full rounded-lg border border-[#d3c4af]/50 bg-white px-2 py-2 text-right font-mono text-sm font-semibold text-[#1a1c1b] outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="font-mono w-full rounded-lg border border-[#d3c4af]/50 bg-white px-2 py-2 text-right text-sm font-semibold text-[#1a1c1b] outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
-                <span className="text-xs font-bold text-[#785600] dark:text-amber-400">%</span>
+                <span className="text-xs font-bold text-[#785600] dark:text-amber-400">
+                  %
+                </span>
               </div>
             </div>
 
@@ -225,7 +249,7 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
                     setIsManualLoss(false);
                   }}
                   placeholder="0.000"
-                  className="w-full rounded-lg border border-[#d3c4af]/50 bg-white px-2 py-2 text-right font-mono text-sm font-semibold text-[#1a1c1b] outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="font-mono w-full rounded-lg border border-[#d3c4af]/50 bg-white px-2 py-2 text-right text-sm font-semibold text-[#1a1c1b] outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
                 <span className="text-xs text-slate-500">g</span>
               </div>
@@ -236,7 +260,7 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
                 Fine Wt (G)
               </label>
               <div className="flex items-center gap-1">
-                <div className="w-full rounded-lg border border-[#d3c4af]/50 bg-[#fffdf6] px-2 py-2 text-right font-mono text-sm font-semibold text-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400">
+                <div className="font-mono w-full rounded-lg border border-[#d3c4af]/50 bg-[#fffdf6] px-2 py-2 text-right text-sm font-semibold text-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400">
                   {(() => {
                     const w = parseFloat(weight);
                     const p = parseFloat(receivedPurity);
@@ -267,7 +291,7 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
                     setIsManualLoss(true);
                   }}
                   placeholder="0"
-                  className="w-full rounded-lg border border-[#d3c4af]/50 bg-white px-2 py-2 text-right font-mono text-sm font-semibold text-[#1a1c1b] outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="font-mono w-full rounded-lg border border-[#d3c4af]/50 bg-white px-2 py-2 text-right text-sm font-semibold text-[#1a1c1b] outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
                 <span className="text-xs text-slate-500">g</span>
               </div>
@@ -280,11 +304,8 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
           <button
             type="button"
             onClick={handleProcessMelting}
-            disabled={
-              isLoading ||
-              scrapCalculations.totalAvailableWeight <= 0
-            }
-            className="rounded-xl bg-[#785600] px-7 py-2.5 font-mono text-sm font-bold uppercase tracking-wider text-white shadow-lg transition-all hover:bg-[#5d4200] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
+            disabled={isLoading || scrapCalculations.totalAvailableWeight <= 0}
+            className="font-mono rounded-xl bg-[#785600] px-7 py-2.5 text-sm font-bold uppercase tracking-wider text-white shadow-lg transition-all hover:bg-[#5d4200] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
           >
             {isLoading ? 'Processing...' : 'Melting'}
           </button>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, {useState, useMemo} from 'react';
 import axios from 'axios';
 import {
   Plus,
@@ -27,7 +27,7 @@ import {
   getAdminByIdApi,
   AdminPayload,
 } from '@/lib/api/admin';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import PageHeader from '@/components/Forms/Common/PageHeader';
 import toast from 'react-hot-toast';
@@ -100,10 +100,10 @@ const formatForDatetimeLocal = (isoString?: string) => {
 };
 
 const formatDate = (dateString?: string) => {
-  if (!dateString) return { date: '-', time: '-' };
+  if (!dateString) return {date: '-', time: '-'};
   try {
     const d = new Date(dateString);
-    if (isNaN(d.getTime())) return { date: dateString, time: '' };
+    if (isNaN(d.getTime())) return {date: dateString, time: ''};
     return {
       date: d.toLocaleDateString('en-IN', {
         day: '2-digit',
@@ -117,7 +117,7 @@ const formatDate = (dateString?: string) => {
       }),
     };
   } catch {
-    return { date: dateString || '-', time: '' };
+    return {date: dateString || '-', time: ''};
   }
 };
 
@@ -215,11 +215,11 @@ const AdminCreate: React.FC = () => {
     extendKey: '',
   });
 
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [showPassword, setShowPassword] = useState(false);
 
   // API Hooks
-  const { data: adminsData, isLoading } = useGetAdmins();
+  const {data: adminsData, isLoading} = useGetAdmins();
   const createAdmin = useCreateAdmin();
   const updateAdmin = useUpdateAdmin();
 
@@ -283,10 +283,7 @@ const AdminCreate: React.FC = () => {
           'ONLINE'
         ).toUpperCase(),
         amount: item.amount ?? userObj.amount ?? '',
-        renewalAmount:
-          item.renewalAmount ??
-          userObj.renewalAmount ??
-          '',
+        renewalAmount: item.renewalAmount ?? userObj.renewalAmount ?? '',
         rawExpiryDate: rawExp,
         expiryDate: rawExp ? formatDisplayDateTime(rawExp) : 'Unlimited',
         effectiveExpiryDate: effectiveExpDate,
@@ -295,7 +292,10 @@ const AdminCreate: React.FC = () => {
         key: item.key || '',
         role: userObj.role || item.role || 'ADMIN',
         extendKey: item.extendKey || userObj.extendKey || '',
-        extendDays: item.extendDays !== undefined && item.extendDays !== null ? item.extendDays : userObj.extendDays,
+        extendDays:
+          item.extendDays !== undefined && item.extendDays !== null
+            ? item.extendDays
+            : userObj.extendDays,
         isExtendUsedKey: item.isExtendUsedKey ?? userObj.isExtendUsedKey,
         startDate: item.startDate || userObj.startDate || '',
         createdAt: item.createdAt || userObj.createdAt || '',
@@ -467,7 +467,7 @@ const AdminCreate: React.FC = () => {
         }));
 
         if (errors.pincode) {
-          setErrors((prev) => ({ ...prev, pincode: '' }));
+          setErrors((prev) => ({...prev, pincode: ''}));
         }
         toast.success(`Location detected: ${city}, ${state}`);
       } else {
@@ -661,7 +661,7 @@ const AdminCreate: React.FC = () => {
                 : prev.renewalAmount,
             expiryDate: fullData.expiryDate
               ? formatForDatetimeLocal(fullData.expiryDate).replace('T', ' ') +
-              ':00'
+                ':00'
               : prev.expiryDate,
             key: fullData.key || prev.key,
             role: u.role || prev.role,
@@ -681,9 +681,9 @@ const AdminCreate: React.FC = () => {
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
-    const { name, value } = e.target;
+    const {name, value} = e.target;
     setFormData((prev) => {
-      const updated = { ...prev, [name]: value };
+      const updated = {...prev, [name]: value};
       if (
         name === 'phoneNumber' &&
         (!prev.username || prev.username === prev.phoneNumber)
@@ -734,7 +734,7 @@ const AdminCreate: React.FC = () => {
     }
 
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({...prev, [name]: ''}));
     }
   };
 
@@ -755,11 +755,9 @@ const AdminCreate: React.FC = () => {
           : '12345',
     }));
     if (errors.accessType) {
-      setErrors((prev) => ({ ...prev, accessType: '' }));
+      setErrors((prev) => ({...prev, accessType: ''}));
     }
   };
-
-
 
   const handleCopyKey = (keyVal?: string) => {
     const val = keyVal || formData.key;
@@ -771,49 +769,49 @@ const AdminCreate: React.FC = () => {
     toast.success('Offline key copied to clipboard!');
   };
 
-const validateForm = () => {
-  const newErrors: { [key: string]: string } = {};
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
 
-  if (!formData.fullname.trim()) {
-    newErrors.fullname = 'First Name / Full Name is required';
-  }
-  if (!formData.shopName.trim()) {
-    newErrors.shopName = 'Shop Name is required';
-  }
-  if (!formData.email.trim()) {
-    newErrors.email = 'Email is required';
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-    newErrors.email = 'Enter a valid email address';
-  }
-  if (!formData.phoneNumber.trim()) {
-    newErrors.phoneNumber = 'Phone number is required';
-  } else if (!/^\d{10}$/.test(formData.phoneNumber.trim())) {
-    newErrors.phoneNumber = 'Phone number must be 10 digits';
-  }
-  if (
-    formData.secondaryPhoneNumber.trim() &&
-    !/^\d{10}$/.test(formData.secondaryPhoneNumber.trim())
-  ) {
-    newErrors.secondaryPhoneNumber =
-      'Secondary phone number must be 10 digits';
-  }
-  if (formData.pincode.trim() && !/^\d{6}$/.test(formData.pincode.trim())) {
-    newErrors.pincode = 'Pincode must be 6 digits';
-  }
-  if (!formData.address.trim()) {
-    newErrors.address = 'Address is required';
-  }
-
-  // Password validation: only require when creating a new admin if empty
-  if (!editingAdmin) {
-    if (!formData.password?.trim()) {
-      newErrors.password = 'Password is required';
+    if (!formData.fullname.trim()) {
+      newErrors.fullname = 'First Name / Full Name is required';
     }
-  }
+    if (!formData.shopName.trim()) {
+      newErrors.shopName = 'Shop Name is required';
+    }
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = 'Enter a valid email address';
+    }
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone number is required';
+    } else if (!/^\d{10}$/.test(formData.phoneNumber.trim())) {
+      newErrors.phoneNumber = 'Phone number must be 10 digits';
+    }
+    if (
+      formData.secondaryPhoneNumber.trim() &&
+      !/^\d{10}$/.test(formData.secondaryPhoneNumber.trim())
+    ) {
+      newErrors.secondaryPhoneNumber =
+        'Secondary phone number must be 10 digits';
+    }
+    if (formData.pincode.trim() && !/^\d{6}$/.test(formData.pincode.trim())) {
+      newErrors.pincode = 'Pincode must be 6 digits';
+    }
+    if (!formData.address.trim()) {
+      newErrors.address = 'Address is required';
+    }
 
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
+    // Password validation: only require when creating a new admin if empty
+    if (!editingAdmin) {
+      if (!formData.password?.trim()) {
+        newErrors.password = 'Password is required';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -861,7 +859,11 @@ const validateForm = () => {
       if (formData.extendKey && formData.extendKey.trim()) {
         basePayload.extendKey = formData.extendKey.trim();
       }
-      if (formData.extendDays !== '' && formData.extendDays !== null && formData.extendDays !== undefined) {
+      if (
+        formData.extendDays !== '' &&
+        formData.extendDays !== null &&
+        formData.extendDays !== undefined
+      ) {
         basePayload.extendDays = Number(formData.extendDays) || null;
       }
     }
@@ -872,7 +874,7 @@ const validateForm = () => {
 
     try {
       if (editingAdmin) {
-        await updateAdmin.mutateAsync({ id: editingAdmin.id, data: basePayload });
+        await updateAdmin.mutateAsync({id: editingAdmin.id, data: basePayload});
       } else {
         await createAdmin.mutateAsync(basePayload);
       }
@@ -955,12 +957,13 @@ const validateForm = () => {
           type="button"
           onClick={() => handleSort('createdAt')}
           className="group inline-flex items-center justify-center gap-1.5 font-semibold text-white transition-colors hover:text-amber-200"
-          title={`Sort by Create Date (${sortField === 'createdAt'
+          title={`Sort by Create Date (${
+            sortField === 'createdAt'
               ? sortOrder === 'asc'
                 ? 'Oldest to Newest'
                 : 'Newest to Oldest'
               : 'Click to sort'
-            })`}
+          })`}
         >
           <span>Create Date Time</span>
           {sortField === 'createdAt' ? (
@@ -975,7 +978,7 @@ const validateForm = () => {
         </button>
       ),
       render: (item) => {
-        const { date, time } = formatDate(item?.createdAt);
+        const {date, time} = formatDate(item?.createdAt);
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
@@ -995,12 +998,13 @@ const validateForm = () => {
           type="button"
           onClick={() => handleSort('expiryDate')}
           className="group inline-flex items-center justify-center gap-1.5 font-semibold text-white transition-colors hover:text-amber-200"
-          title={`Sort by Expiry Date (${sortField === 'expiryDate'
+          title={`Sort by Expiry Date (${
+            sortField === 'expiryDate'
               ? sortOrder === 'asc'
                 ? 'Oldest to Newest'
                 : 'Newest to Oldest'
               : 'Click to sort'
-            })`}
+          })`}
         >
           <span>Expiry Date Time</span>
           {sortField === 'expiryDate' ? (
@@ -1032,18 +1036,14 @@ const validateForm = () => {
           !isNaN(originalTime) && originalTime < Date.now();
 
         if (extDays > 0 && item.effectiveExpiryDate) {
-          const { date: extDate, time: extTime } = formatDate(
+          const {date: extDate, time: extTime} = formatDate(
             item.effectiveExpiryDate,
           );
-          const { date: origDate } = formatDate(rawDate);
+          const {date: origDate} = formatDate(rawDate);
 
           return (
             <div className="flex flex-col items-center gap-0.5">
-              <span
-                className='text-black'
-              >
-                {extDate}
-              </span>
+              <span className="text-black">{extDate}</span>
               {extTime && extTime !== '-' && (
                 <span className="text-gray-500 dark:text-gray-400 text-xs">
                   {extTime}
@@ -1053,14 +1053,15 @@ const validateForm = () => {
           );
         }
 
-        const { date, time } = formatDate(rawDate);
+        const {date, time} = formatDate(rawDate);
         return (
           <div className="flex flex-col items-center">
             <span
-              className={`text-sm ${item.isExpired
+              className={`text-sm ${
+                item.isExpired
                   ? 'font-semibold text-red-600 dark:text-red-400'
                   : 'text-[#1a1c1b] dark:text-white'
-                }`}
+              }`}
             >
               {date}
             </span>
@@ -1079,8 +1080,8 @@ const validateForm = () => {
       render: (item) => (
         <span className="text-sm font-semibold text-black dark:text-amber-400">
           {item.renewalAmount !== undefined &&
-            item.renewalAmount !== null &&
-            item.renewalAmount !== ''
+          item.renewalAmount !== null &&
+          item.renewalAmount !== ''
             ? `₹${Number(item.renewalAmount).toLocaleString('en-IN')}`
             : '-'}
         </span>
@@ -1153,34 +1154,36 @@ const validateForm = () => {
             {(searchTerm ||
               selectedCity !== 'ALL' ||
               selectedTab !== 'ALL') && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setSelectedCity('ALL');
-                    setSelectedTab('ALL');
-                  }}
-                  className="border-gray-200 text-gray-600 hover:bg-gray-50 dark:text-gray-300 flex items-center gap-1 whitespace-nowrap rounded-lg border bg-white px-2.5 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800"
-                  title="Reset filters"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  <span>Reset</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedCity('ALL');
+                  setSelectedTab('ALL');
+                }}
+                className="border-gray-200 text-gray-600 hover:bg-gray-50 dark:text-gray-300 flex items-center gap-1 whitespace-nowrap rounded-lg border bg-white px-2.5 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800"
+                title="Reset filters"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>Reset</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setSelectedTab('ALL')}
-              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${selectedTab === 'ALL'
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'ALL'
                   ? 'bg-[#785600] text-white shadow-sm'
                   : 'bg-gray-100/70 text-gray-600 hover:bg-gray-200/70 dark:text-gray-300 dark:bg-slate-800 dark:hover:bg-slate-700'
-                }`}
+              }`}
             >
               All
               <span
-                className={`py-0.2 rounded-full px-1.5 text-[10px] ${selectedTab === 'ALL'
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'ALL'
                     ? 'bg-white/25 text-white'
                     : 'bg-gray-200 text-gray-700 dark:text-gray-200 dark:bg-slate-700'
-                  }`}
+                }`}
               >
                 {tabCounts.all}
               </span>
@@ -1189,18 +1192,20 @@ const validateForm = () => {
             <button
               type="button"
               onClick={() => setSelectedTab('ONLINE')}
-              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${selectedTab === 'ONLINE'
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'ONLINE'
                   ? 'bg-emerald-700 text-white shadow-sm'
                   : 'bg-gray-100/70 text-gray-600 dark:text-gray-300 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-700'
-                }`}
+              }`}
             >
               <ShieldCheck className="h-3.5 w-3.5" />
               Online
               <span
-                className={`py-0.2 rounded-full px-1.5 text-[10px] ${selectedTab === 'ONLINE'
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'ONLINE'
                     ? 'bg-white/25 text-white'
                     : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400'
-                  }`}
+                }`}
               >
                 {tabCounts.online}
               </span>
@@ -1209,18 +1214,20 @@ const validateForm = () => {
             <button
               type="button"
               onClick={() => setSelectedTab('OFFLINE')}
-              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${selectedTab === 'OFFLINE'
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'OFFLINE'
                   ? 'bg-amber-700 text-white shadow-sm'
                   : 'bg-gray-100/70 text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:bg-slate-800 dark:hover:bg-slate-700'
-                }`}
+              }`}
             >
               <Key className="h-3.5 w-3.5" />
               Offline
               <span
-                className={`py-0.2 rounded-full px-1.5 text-[10px] ${selectedTab === 'OFFLINE'
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'OFFLINE'
                     ? 'bg-white/25 text-white'
                     : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400'
-                  }`}
+                }`}
               >
                 {tabCounts.offline}
               </span>
@@ -1229,18 +1236,20 @@ const validateForm = () => {
             <button
               type="button"
               onClick={() => setSelectedTab('TRAIL')}
-              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${selectedTab === 'TRAIL'
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'TRAIL'
                   ? 'bg-purple-700 text-white shadow-sm'
                   : 'bg-gray-100/70 text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:bg-slate-800 dark:hover:bg-slate-700'
-                }`}
+              }`}
             >
               <Sparkles className="h-3.5 w-3.5" />
               Trail
               <span
-                className={`py-0.2 rounded-full px-1.5 text-[10px] ${selectedTab === 'TRAIL'
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'TRAIL'
                     ? 'bg-white/25 text-white'
                     : 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300'
-                  }`}
+                }`}
               >
                 {tabCounts.trail}
               </span>
@@ -1249,18 +1258,20 @@ const validateForm = () => {
             <button
               type="button"
               onClick={() => setSelectedTab('EXPIRED')}
-              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${selectedTab === 'EXPIRED'
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedTab === 'EXPIRED'
                   ? 'bg-red-700 text-white shadow-sm'
                   : 'bg-gray-100/70 text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-slate-700'
-                }`}
+              }`}
             >
               <AlertTriangle className="h-3.5 w-3.5" />
               Expired
               <span
-                className={`py-0.2 rounded-full px-1.5 text-[10px] ${selectedTab === 'EXPIRED'
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
+                  selectedTab === 'EXPIRED'
                     ? 'bg-white/25 text-white'
                     : 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-400'
-                  }`}
+                }`}
               >
                 {tabCounts.expired}
               </span>
@@ -1277,7 +1288,7 @@ const validateForm = () => {
           renderActions={renderActions}
           showSrNo={true}
           srNoLabel="Sr No."
-          onSave={() => { }}
+          onSave={() => {}}
         />
       </div>
 
@@ -1320,10 +1331,11 @@ const validateForm = () => {
                     value={formData.fullname}
                     onChange={handleInputChange}
                     placeholder="e.g. Rahul Sharma"
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.fullname
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.fullname
                         ? 'border-red-500 focus:ring-red-500/20'
                         : ''
-                      }`}
+                    }`}
                   />
                   {errors.fullname && (
                     <p className="mt-1 text-xs text-red-500">
@@ -1342,10 +1354,11 @@ const validateForm = () => {
                     value={formData.shopName}
                     onChange={handleInputChange}
                     placeholder="e.g. Royal Jewellers"
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.shopName
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.shopName
                         ? 'border-red-500 focus:ring-red-500/20'
                         : ''
-                      }`}
+                    }`}
                   />
                   {errors.shopName && (
                     <p className="mt-1 text-xs text-red-500">
@@ -1367,8 +1380,9 @@ const validateForm = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="admin@example.com"
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.email ? 'border-red-500 focus:ring-red-500/20' : ''
-                      }`}
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.email ? 'border-red-500 focus:ring-red-500/20' : ''
+                    }`}
                   />
                   {errors.email && (
                     <p className="mt-1 text-xs text-red-500">{errors.email}</p>
@@ -1386,10 +1400,11 @@ const validateForm = () => {
                     onChange={handleInputChange}
                     placeholder="10-digit phone number"
                     maxLength={10}
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.phoneNumber
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.phoneNumber
                         ? 'border-red-500 focus:ring-red-500/20'
                         : ''
-                      }`}
+                    }`}
                   />
                   {errors.phoneNumber && (
                     <p className="mt-1 text-xs text-red-500">
@@ -1419,8 +1434,9 @@ const validateForm = () => {
                         onChange={handleInputChange}
                         placeholder="6-digit pincode"
                         maxLength={6}
-                        className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-8 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.pincode ? 'border-red-500' : ''
-                          }`}
+                        className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-8 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                          errors.pincode ? 'border-red-500' : ''
+                        }`}
                       />
                       {isPincodeLoading && (
                         <Loader2 className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#785600]" />
@@ -1487,10 +1503,11 @@ const validateForm = () => {
                     value={formData.address}
                     onChange={handleInputChange}
                     placeholder="e.g. Shop No. 12, MG Road Market"
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.address
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.address
                         ? 'border-red-500 focus:ring-red-500/20'
                         : ''
-                      }`}
+                    }`}
                   />
                   {errors.address && (
                     <p className="mt-1 text-xs text-red-500">
@@ -1682,8 +1699,9 @@ const validateForm = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder={editingAdmin ? '••••••••' : 'Pass@123'}
-                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${errors.password ? 'border-red-500' : ''
-                      }`}
+                    className={`w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3.5 py-2 pr-10 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
+                      errors.password ? 'border-red-500' : ''
+                    }`}
                   />
                   <button
                     type="button"

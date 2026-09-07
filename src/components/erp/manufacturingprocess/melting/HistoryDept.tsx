@@ -1,5 +1,5 @@
 import React from 'react';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 
 interface HistoryDeptProps {
   historyData: any[];
@@ -33,7 +33,9 @@ const HistoryDept: React.FC<HistoryDeptProps> = ({
       key: 'createdAt',
       header: 'Date & Time',
       render: (item) => {
-        const { date, time } = formatDate(item.createdAt || item.dateTime || item.created_at);
+        const {date, time} = formatDate(
+          item.createdAt || item.dateTime || item.created_at,
+        );
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
@@ -60,7 +62,8 @@ const HistoryDept: React.FC<HistoryDeptProps> = ({
       header: 'Gross Wt (G)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.grossWeight ?? item.grossWt ?? item.weight)} G
+          {formatNumberDisplay(item.grossWeight ?? item.grossWt ?? item.weight)}{' '}
+          G
         </span>
       ),
     },
@@ -111,7 +114,7 @@ const HistoryDept: React.FC<HistoryDeptProps> = ({
           item.purity,
           fine,
           expected,
-          alertRules
+          alertRules,
         );
 
         let colorClass = 'text-gray-500 dark:text-slate-400';
@@ -127,7 +130,9 @@ const HistoryDept: React.FC<HistoryDeptProps> = ({
 
         const diff =
           alertCheck && alertCheck.isExceeded
-            ? Math.round((alertCheck.actualLoss - alertCheck.maxAllowedLoss) * 1000) / 1000
+            ? Math.round(
+                (alertCheck.actualLoss - alertCheck.maxAllowedLoss) * 1000,
+              ) / 1000
             : 0;
 
         return (
@@ -148,7 +153,7 @@ const HistoryDept: React.FC<HistoryDeptProps> = ({
       key: 'timeTaken',
       header: 'Gold Aging',
       render: (item) => (
-        <span className="font-medium text-sm text-[#1a1c1b] dark:text-white">
+        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
           {item?.timeTaken || '-'}
         </span>
       ),
@@ -157,7 +162,13 @@ const HistoryDept: React.FC<HistoryDeptProps> = ({
       key: 'updatedAt',
       header: 'Proceed Date & Time',
       render: (item) => {
-        const { date, time } = formatDate(item.updatedAt || item.updated_at || item.proceedDateTime || item.proceedDate || item.createdAt);
+        const {date, time} = formatDate(
+          item.updatedAt ||
+            item.updated_at ||
+            item.proceedDateTime ||
+            item.proceedDate ||
+            item.createdAt,
+        );
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {
   Save,
   ChevronRight,
@@ -10,9 +10,9 @@ import {
   Layers,
   X,
 } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import { GenericTable } from '@/components/Forms/Table/GenericTable';
+import {GenericTable} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import {
   useGetCutting,
@@ -21,11 +21,19 @@ import {
   useSubmitMoveKunda,
 } from '@/lib/api/cutting';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
-import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
-import { useAddCuttingMelting, useGetCuttingScrap, getBackendErrorMessage, useAddCuttingScrap } from '@/lib/api/processmelting';
-import { useGetProcessAlert, checkProcessLossAlert } from '@/lib/api/alertmanagement';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
+import {
+  useAddCuttingMelting,
+  useGetCuttingScrap,
+  getBackendErrorMessage,
+  useAddCuttingScrap,
+} from '@/lib/api/processmelting';
+import {
+  useGetProcessAlert,
+  checkProcessLossAlert,
+} from '@/lib/api/alertmanagement';
 
 import {
   CuttingEntry,
@@ -51,41 +59,48 @@ const CuttingDept: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [actionType, setActionType] = useState<'stock' | 'kunda' | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [meltingLoadingIds, setMeltingLoadingIds] = useState<Set<string>>(new Set());
+  const [meltingLoadingIds, setMeltingLoadingIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Scrap selection and modal states
-  const [selectedScrapIds, setSelectedScrapIds] = useState<Set<string>>(new Set());
+  const [selectedScrapIds, setSelectedScrapIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [isScrapModalOpen, setIsScrapModalOpen] = useState(false);
   const [scrapModalItems, setScrapModalItems] = useState<
-    { id: string; purity: number; availableWeight: number; sendWeight: string }[]
+    {id: string; purity: number; availableWeight: number; sendWeight: string}[]
   >([]);
   const [isMeltingSubmitting, setIsMeltingSubmitting] = useState(false);
 
   // Weighing Scale table focus hook
-  const { getScaleProps } = useTableScaleFocus<'chainReceived' | 'scrap'>(
+  const {getScaleProps} = useTableScaleFocus<'chainReceived' | 'scrap'>(
     (index, field, weight) => {
       handleInlineChange(index, field, weight.toString());
     },
   );
 
   const getDefaultWeekRange = () => {
-    const { fromDate, toDate } = getCurrentAppWeekRange();
-    return { monday: fromDate, sunday: toDate };
+    const {fromDate, toDate} = getCurrentAppWeekRange();
+    return {monday: fromDate, sunday: toDate};
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const { monday, sunday } = getDefaultWeekRange();
+    const {monday, sunday} = getDefaultWeekRange();
     return [monday, sunday];
   });
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
-      const { monday, sunday } = getDefaultWeekRange();
+      const {monday, sunday} = getDefaultWeekRange();
       setDateRange([monday, sunday]);
     };
     window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
     return () => {
-      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+      window.removeEventListener(
+        'app_week_cycle_changed',
+        handleWeekCycleUpdate,
+      );
     };
   }, []);
 
@@ -106,9 +121,10 @@ const CuttingDept: React.FC = () => {
   const submitCutting = useSubmitCutting();
   const submitMoveKunda = useSubmitMoveKunda();
   const submitMelting = useAddCuttingMelting();
-  const { data: cuttingScrapData, refetch: refetchCuttingScrap } = useGetCuttingScrap();
+  const {data: cuttingScrapData, refetch: refetchCuttingScrap} =
+    useGetCuttingScrap();
   const receivedscrap = useAddCuttingScrap();
-  const { data: alertRules } = useGetProcessAlert('cutting');
+  const {data: alertRules} = useGetProcessAlert('cutting');
 
   const scrapList = React.useMemo(() => {
     const list = Array.isArray(cuttingScrapData?.data)
@@ -144,7 +160,9 @@ const CuttingDept: React.FC = () => {
       return;
     }
 
-    const itemsToLoad = scrapList.filter((item: any) => selectedScrapIds.has(item.id));
+    const itemsToLoad = scrapList.filter((item: any) =>
+      selectedScrapIds.has(item.id),
+    );
 
     setScrapModalItems(
       itemsToLoad.map((item: any) => ({
@@ -160,7 +178,9 @@ const CuttingDept: React.FC = () => {
 
   const handleModalWeightChange = (index: number, val: string) => {
     setScrapModalItems((prev) =>
-      prev.map((item, idx) => (idx === index ? { ...item, sendWeight: val } : item)),
+      prev.map((item, idx) =>
+        idx === index ? {...item, sendWeight: val} : item,
+      ),
     );
   };
 
@@ -192,7 +212,8 @@ const CuttingDept: React.FC = () => {
       };
     });
 
-    const finalPurity = activeWeightSum > 0 ? weightedPuritySum / activeWeightSum : 0;
+    const finalPurity =
+      activeWeightSum > 0 ? weightedPuritySum / activeWeightSum : 0;
 
     return {
       itemBreakdown,
@@ -203,7 +224,9 @@ const CuttingDept: React.FC = () => {
   }, [scrapModalItems]);
 
   const handleProcessMelting = async () => {
-    const itemsToProcess = scrapCalculations.itemBreakdown.filter((item) => item.entered > 0);
+    const itemsToProcess = scrapCalculations.itemBreakdown.filter(
+      (item) => item.entered > 0,
+    );
 
     if (itemsToProcess.length === 0) {
       toast.error('Please enter weight to melt');
@@ -216,12 +239,11 @@ const CuttingDept: React.FC = () => {
           items: itemsToProcess.map((item) => ({
             cuttingId: item.id,
             purity: item.p,
-            weight: item.entered
+            weight: item.entered,
           })),
 
           avgPurity: Number(scrapCalculations.finalPurity.toFixed(3)),
           avgWeight: Number(scrapCalculations.totalEnteredWeight.toFixed(3)),
-
         },
       });
 
@@ -279,7 +301,7 @@ const CuttingDept: React.FC = () => {
           const chainGiven =
             cutting.chainWeight !== undefined && cutting.chainWeight !== null
               ? cutting.chainWeight
-              : (cutting.chainGiven || 0);
+              : cutting.chainGiven || 0;
           const chainReceived = cutting.chainReceived || 0;
           const scrap = cutting.scrap || 0;
           const loss = cutting.loss || 0;
@@ -357,8 +379,8 @@ const CuttingDept: React.FC = () => {
     let list = Array.isArray(cuttingHistory?.data)
       ? cuttingHistory.data
       : Array.isArray(cuttingHistory)
-      ? cuttingHistory
-      : [];
+        ? cuttingHistory
+        : [];
 
     // Sort descending by Proceed Date & Time
     list = [...list].sort((a: any, b: any) => {
@@ -404,16 +426,13 @@ const CuttingDept: React.FC = () => {
   };
 
   const totals = cuttingEntries.reduce(
-    (
-      acc,
-      item: any,
-    ) => ({
+    (acc, item: any) => ({
       totalGiven: acc.totalGiven + toNumber(item?.chainWeight),
       totalReceived: acc.totalReceived + toNumber(item?.chainReceived),
       totalScrap: acc.totalScrap + toNumber(item?.scrap),
       totalLoss: acc.totalLoss + toNumber(item?.loss),
     }),
-    { totalGiven: 0, totalReceived: 0, totalScrap: 0, totalLoss: 0 },
+    {totalGiven: 0, totalReceived: 0, totalScrap: 0, totalLoss: 0},
   );
 
   // Handle inline field change
@@ -428,7 +447,7 @@ const CuttingDept: React.FC = () => {
       setCuttingEntries((prev) =>
         prev.map((entry, i) => {
           if (i === index) {
-            const updated = { ...entry };
+            const updated = {...entry};
 
             if (field === 'chainGiven') {
               updated.chainGivenRaw = value;
@@ -476,7 +495,7 @@ const CuttingDept: React.FC = () => {
                 0,
                 Math.round(
                   (updated.chainGiven - updated.chainReceived - scrapAmount) *
-                  1000,
+                    1000,
                 ) / 1000,
               );
             } else {
@@ -564,7 +583,7 @@ const CuttingDept: React.FC = () => {
       setCuttingEntries((prev) =>
         prev.map((s, i) =>
           i === index
-            ? { ...s, isEditing: false, isSaved: true, isCompleted: true }
+            ? {...s, isEditing: false, isSaved: true, isCompleted: true}
             : s,
         ),
       );
@@ -578,14 +597,24 @@ const CuttingDept: React.FC = () => {
       await refetch();
     } catch (error: any) {
       console.error('Error saving cutting:', error);
-      toast.error(getBackendErrorMessage(error, 'Failed to save cutting entry'));
+      toast.error(
+        getBackendErrorMessage(error, 'Failed to save cutting entry'),
+      );
 
       setIsLoading(false);
       setShowConfirmModal(false);
       setSaveIndex(null);
       setActionType(null);
     }
-  }, [saveIndex, actionType, cuttingEntries, submitCutting, submitMoveKunda, refetch, alertRules]);
+  }, [
+    saveIndex,
+    actionType,
+    cuttingEntries,
+    submitCutting,
+    submitMoveKunda,
+    refetch,
+    alertRules,
+  ]);
 
   const isSubmitting = submitCutting.isPending || submitMoveKunda.isPending;
 
@@ -613,7 +642,6 @@ const CuttingDept: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4">
-
       {scrapList.length > 0 && !showHistory && (
         <div className="w-full">
           <div className="mb-2 flex items-center justify-between px-1">
@@ -636,7 +664,7 @@ const CuttingDept: React.FC = () => {
             )}
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-2 pt-1 scrollbar-thin">
+          <div className="scrollbar-thin flex gap-2 overflow-x-auto pb-2 pt-1">
             {scrapList.map((scrap: any, idx: number) => {
               const isSelected = selectedScrapIds.has(scrap.id);
               return (
@@ -644,10 +672,11 @@ const CuttingDept: React.FC = () => {
                   key={scrap.id || idx}
                   type="button"
                   onClick={() => toggleSelectScrapCard(scrap.id)}
-                  className={`flex min-w-[140px] flex-col items-start rounded-xl border px-4 py-3 shadow-sm transition-all ${isSelected
+                  className={`flex min-w-[140px] flex-col items-start rounded-xl border px-4 py-3 shadow-sm transition-all ${
+                    isSelected
                       ? 'border-2 border-[#785600] bg-amber-50 shadow-md ring-2 ring-[#785600]/20 dark:border-amber-400 dark:bg-amber-950/50'
                       : 'border-[#d3c4af]/30 bg-white hover:border-[#785600]/60 dark:border-slate-700 dark:bg-slate-900'
-                    }`}
+                  }`}
                 >
                   <div className="flex w-full items-center justify-between gap-2">
                     <span className="font-mono text-sm font-bold text-black dark:text-white">
@@ -710,13 +739,17 @@ const CuttingDept: React.FC = () => {
             </div>
           )}
 
-
-
           {/* Print History Button */}
           {showHistory && (
             <GenericButton
               type="button"
-              onClick={() => printCuttingHistory(getFilteredHistory(), dateRange, getpdfheaderdata)}
+              onClick={() =>
+                printCuttingHistory(
+                  getFilteredHistory(),
+                  dateRange,
+                  getpdfheaderdata,
+                )
+              }
               variant="primary"
             >
               <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

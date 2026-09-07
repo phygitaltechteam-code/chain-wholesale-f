@@ -61,11 +61,7 @@ const OpeningStock: React.FC = () => {
   const {data: rawSizes, isLoading: sizesLoading} = useGetSizes();
 
   // Fetch existing stock data
-  const {
-    data: rawStockData,
-    isLoading: stockLoading,
-    refetch,
-  } = useGetStock();
+  const {data: rawStockData, isLoading: stockLoading, refetch} = useGetStock();
 
   const items = rawItems || EMPTY_ITEMS;
   const sizes = rawSizes || EMPTY_SIZES;
@@ -90,33 +86,39 @@ const OpeningStock: React.FC = () => {
     }
 
     if (stockData && stockData.length > 0) {
-      const entries: OpeningStockEntry[] = stockData.map((stock: any, index: number) => {
-        const item = items.find((i: any) => i.id === stock.itemId);
-        const size = sizes.find((s: any) => s.id === stock.sizeId);
+      const entries: OpeningStockEntry[] = stockData.map(
+        (stock: any, index: number) => {
+          const item = items.find((i: any) => i.id === stock.itemId);
+          const size = sizes.find((s: any) => s.id === stock.sizeId);
 
-        // Check if this is a gold row (strictly based on item name, not index)
-        const isGold = item?.name?.trim().toLowerCase() === 'gold';
+          // Check if this is a gold row (strictly based on item name, not index)
+          const isGold = item?.name?.trim().toLowerCase() === 'gold';
 
-        // Handle null values with fallbacks
-        const weight = stock.weight ? Number(stock.weight) : 0;
-        const purity = stock.purity ? Number(stock.purity) : 0;
+          // Handle null values with fallbacks
+          const weight = stock.weight ? Number(stock.weight) : 0;
+          const purity = stock.purity ? Number(stock.purity) : 0;
 
-        return {
-          id: stock.id,
-          srNo: index + 1,
-          item: isGold ? 'Gold' : item?.name || '',
-          size: isGold ? '-' : size?.size || '',
-          purity: isGold ? 100 : purity,
-          grams: weight,
-          isEditing: false,
-          isSaved: true,
-          gramsRaw: weight ? formatNumberDisplay(weight, 3) : '0',
-          purityRaw: isGold ? '100' : purity ? formatNumberDisplay(purity, 3) : '',
-          itemId: stock.itemId || '',
-          sizeId: stock.sizeId || '',
-          isGoldRow: isGold,
-        };
-      });
+          return {
+            id: stock.id,
+            srNo: index + 1,
+            item: isGold ? 'Gold' : item?.name || '',
+            size: isGold ? '-' : size?.size || '',
+            purity: isGold ? 100 : purity,
+            grams: weight,
+            isEditing: false,
+            isSaved: true,
+            gramsRaw: weight ? formatNumberDisplay(weight, 3) : '0',
+            purityRaw: isGold
+              ? '100'
+              : purity
+                ? formatNumberDisplay(purity, 3)
+                : '',
+            itemId: stock.itemId || '',
+            sizeId: stock.sizeId || '',
+            isGoldRow: isGold,
+          };
+        },
+      );
 
       // Keep Gold row on top if present, followed by other inventory items
       const goldEntries = entries.filter((e) => e.isGoldRow);
@@ -130,7 +132,14 @@ const OpeningStock: React.FC = () => {
     } else {
       setOpeningEntries((prev) => (prev.length === 0 ? prev : []));
     }
-  }, [rawStockData, rawItems, rawSizes, itemsLoading, sizesLoading, stockLoading]);
+  }, [
+    rawStockData,
+    rawItems,
+    rawSizes,
+    itemsLoading,
+    sizesLoading,
+    stockLoading,
+  ]);
 
   // Filter data based on search term (memoized)
   const filteredData = useMemo(() => {
@@ -177,7 +186,9 @@ const OpeningStock: React.FC = () => {
     setOpeningEntries((prev) =>
       prev.map((entry, i) => {
         const isMatch =
-          typeof indexOrId === 'number' ? i === indexOrId : entry.id === indexOrId;
+          typeof indexOrId === 'number'
+            ? i === indexOrId
+            : entry.id === indexOrId;
         if (isMatch) {
           return {
             ...entry,
@@ -200,7 +211,9 @@ const OpeningStock: React.FC = () => {
     setOpeningEntries((prev) =>
       prev.map((entry, i) => {
         const isMatch =
-          typeof indexOrId === 'number' ? i === indexOrId : entry.id === indexOrId;
+          typeof indexOrId === 'number'
+            ? i === indexOrId
+            : entry.id === indexOrId;
         if (isMatch) {
           const updated = {...entry};
 
@@ -341,7 +354,9 @@ const OpeningStock: React.FC = () => {
       await refetch();
     } catch (error: any) {
       console.error('Error saving opening stock:', error);
-      toast.error(error?.response?.data?.message || 'Failed to save opening stock');
+      toast.error(
+        error?.response?.data?.message || 'Failed to save opening stock',
+      );
     }
   };
 
@@ -380,7 +395,9 @@ const OpeningStock: React.FC = () => {
       // React Query invalidation in useDeleteStock refreshes the server data.
     } catch (error: any) {
       console.error('Error deleting opening stock:', error);
-      toast.error(error?.response?.data?.message || 'Failed to delete opening stock');
+      toast.error(
+        error?.response?.data?.message || 'Failed to delete opening stock',
+      );
     }
   };
 
@@ -411,7 +428,9 @@ const OpeningStock: React.FC = () => {
 
   // Check if a row is the gold row
   const isGoldRow = (entry: OpeningStockEntry) => {
-    return Boolean(entry.isGoldRow || entry.item?.trim().toLowerCase() === 'gold');
+    return Boolean(
+      entry.isGoldRow || entry.item?.trim().toLowerCase() === 'gold',
+    );
   };
 
   // Custom action renderer for GenericTable with matching theme

@@ -1,7 +1,11 @@
 import React from 'react';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
-import { getHistorySKundaColumns, hasMeltingStatus, formatNumberDisplay } from './sKundaUtils';
-import { AlertRule } from '@/lib/api/alertmanagement';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import {
+  getHistorySKundaColumns,
+  hasMeltingStatus,
+  formatNumberDisplay,
+} from './sKundaUtils';
+import {AlertRule} from '@/lib/api/alertmanagement';
 
 interface HistorySKundaProps {
   filteredData: any[];

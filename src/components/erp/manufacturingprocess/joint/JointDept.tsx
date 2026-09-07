@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronRight, ChevronDown, Printer } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
+import {ChevronRight, ChevronDown, Printer} from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
-import { GenericTable } from '@/components/Forms/Table/GenericTable';
+import {GenericTable} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useGetJoint, useGetJointHistory, useSubmitJoint } from '@/lib/api/joint';
+import {useGetJoint, useGetJointHistory, useSubmitJoint} from '@/lib/api/joint';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
-import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
-import { useAddJointMelting } from '@/lib/api/processmelting';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
+import {useAddJointMelting} from '@/lib/api/processmelting';
 
 import {
   JointEntry,
@@ -27,26 +27,31 @@ const JointDept: React.FC = () => {
   const [saveIndex, setSaveIndex] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [meltingLoadingIds, setMeltingLoadingIds] = useState<Set<string>>(new Set());
+  const [meltingLoadingIds, setMeltingLoadingIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   const getDefaultWeekRange = () => {
-    const { fromDate, toDate } = getCurrentAppWeekRange();
-    return { monday: fromDate, sunday: toDate };
+    const {fromDate, toDate} = getCurrentAppWeekRange();
+    return {monday: fromDate, sunday: toDate};
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const { monday, sunday } = getDefaultWeekRange();
+    const {monday, sunday} = getDefaultWeekRange();
     return [monday, sunday];
   });
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
-      const { monday, sunday } = getDefaultWeekRange();
+      const {monday, sunday} = getDefaultWeekRange();
       setDateRange([monday, sunday]);
     };
     window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
     return () => {
-      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+      window.removeEventListener(
+        'app_week_cycle_changed',
+        handleWeekCycleUpdate,
+      );
     };
   }, []);
 
@@ -99,7 +104,7 @@ const JointDept: React.FC = () => {
     }
   };
 
-  const { getScaleProps } = useTableScaleFocus<
+  const {getScaleProps} = useTableScaleFocus<
     'powderReceived' | 'powder' | 'scrap'
   >((index, field, weight) => {
     handleInlineChange(index, field, weight.toString());
@@ -127,13 +132,13 @@ const JointDept: React.FC = () => {
           const powder =
             chainReceived > 0
               ? Math.max(
-                0,
-                Math.round((chainReceived - chainGiven) * 1000) / 1000,
-              )
+                  0,
+                  Math.round((chainReceived - chainGiven) * 1000) / 1000,
+                )
               : joint.powder || 0;
           const increase =
             powder > 0 && chainReceived > 0
-              ? Math.round(((powder / chainReceived) * 100) * 1000) / 1000
+              ? Math.round((powder / chainReceived) * 100 * 1000) / 1000
               : joint.increase || 0;
 
           const scrapVal = isSaved ? joint.scrap || 0 : 0;
@@ -142,10 +147,10 @@ const JointDept: React.FC = () => {
               ? joint.loss
               : isSaved && chainReceived > 0
                 ? Math.max(
-                  0,
-                  Math.round((chainGiven - chainReceived - scrapVal) * 1000) /
-                  1000,
-                )
+                    0,
+                    Math.round((chainGiven - chainReceived - scrapVal) * 1000) /
+                      1000,
+                  )
                 : 0;
 
           return {
@@ -173,7 +178,8 @@ const JointDept: React.FC = () => {
             isEditing: !isSaved,
             isSaved: isSaved,
             powderReceivedRaw:
-              joint.powderReceived !== null && joint.powderReceived !== undefined
+              joint.powderReceived !== null &&
+              joint.powderReceived !== undefined
                 ? joint.powderReceived.toString()
                 : '',
             powderRaw: powder > 0 ? powder.toString() : '',
@@ -254,12 +260,12 @@ const JointDept: React.FC = () => {
         acc.totalLoss +
         toNumber(
           item?.loss ??
-          Math.max(
-            0,
-            (item?.chainReceived || item?.chainWeight || 0) -
-            (item?.powderReceived || 0) -
-            (item?.scrap || 0),
-          ),
+            Math.max(
+              0,
+              (item?.chainReceived || item?.chainWeight || 0) -
+                (item?.powderReceived || 0) -
+                (item?.scrap || 0),
+            ),
         ),
     }),
     {
@@ -286,7 +292,7 @@ const JointDept: React.FC = () => {
       setJointEntries((prev) =>
         prev.map((entry, i) => {
           if (i === index) {
-            const updated = { ...entry };
+            const updated = {...entry};
 
             if (field === 'powderReceived') {
               updated.powderReceivedRaw = value;
@@ -298,19 +304,17 @@ const JointDept: React.FC = () => {
               }
 
               const chainGiven = entry.chainReceived || entry.chainWeight || 0;
-              const autoPowder =
-                Math.max(
-                  0,
-                  Math.round((updated.powderReceived - chainGiven) * 1000) /
-                  1000,
-                );
+              const autoPowder = Math.max(
+                0,
+                Math.round((updated.powderReceived - chainGiven) * 1000) / 1000,
+              );
               updated.powder = autoPowder;
               updated.powderRaw = autoPowder > 0 ? autoPowder.toString() : '0';
 
               if (updated.powder > 0 && updated.powderReceived > 0) {
                 updated.increase =
                   Math.round(
-                    ((updated.powder / updated.powderReceived) * 100) * 1000,
+                    (updated.powder / updated.powderReceived) * 100 * 1000,
                   ) / 1000;
               } else {
                 updated.increase = 0;
@@ -327,7 +331,7 @@ const JointDept: React.FC = () => {
               if (updated.powder > 0 && updated.powderReceived > 0) {
                 updated.increase =
                   Math.round(
-                    ((updated.powder / updated.powderReceived) * 100) * 1000,
+                    (updated.powder / updated.powderReceived) * 100 * 1000,
                   ) / 1000;
               } else {
                 updated.increase = 0;
@@ -379,13 +383,10 @@ const JointDept: React.FC = () => {
     [],
   );
 
-  const handleSaveClick = useCallback(
-    (index: number) => {
-      setSaveIndex(index);
-      setShowConfirmModal(true);
-    },
-    [],
-  );
+  const handleSaveClick = useCallback((index: number) => {
+    setSaveIndex(index);
+    setShowConfirmModal(true);
+  }, []);
 
   const confirmSave = useCallback(async () => {
     if (saveIndex === null) return;
@@ -413,7 +414,7 @@ const JointDept: React.FC = () => {
       setJointEntries((prev) =>
         prev.map((s, i) =>
           i === index
-            ? { ...s, isEditing: false, isSaved: true, isCompleted: true }
+            ? {...s, isEditing: false, isSaved: true, isCompleted: true}
             : s,
         ),
       );
@@ -452,7 +453,7 @@ const JointDept: React.FC = () => {
     isLoading,
     isSubmitting,
     meltingLoadingIds,
-    hasEditableValues
+    hasEditableValues,
   );
 
   const toggleHistory = () => {

@@ -1,9 +1,9 @@
 import toast from 'react-hot-toast';
-import { Column } from '@/components/Forms/Table/GenericTable';
-import { PackageCheck } from 'lucide-react';
+import {Column} from '@/components/Forms/Table/GenericTable';
+import {PackageCheck} from 'lucide-react';
 import React from 'react';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
 
 export interface MeltingRow {
   id: string;
@@ -33,11 +33,14 @@ export interface ScrapCardData {
 }
 
 export const getCurrentWeekRange = () => {
-  const { fromDate, toDate } = getCurrentAppWeekRange();
-  return { monday: fromDate, sunday: toDate };
+  const {fromDate, toDate} = getCurrentAppWeekRange();
+  return {monday: fromDate, sunday: toDate};
 };
 
-export const calculateExpectedFine = (grossWt: number, purity: number): number => {
+export const calculateExpectedFine = (
+  grossWt: number,
+  purity: number,
+): number => {
   if (!grossWt || !purity) return 0;
   return Math.round(((grossWt * purity) / 100) * 1000) / 1000;
 };
@@ -57,11 +60,11 @@ export const formatNumberDisplay = (value: unknown): string => {
 };
 
 export const formatDate = (dateString: string) => {
-  if (!dateString || dateString === '-') return { date: '-', time: '-' };
+  if (!dateString || dateString === '-') return {date: '-', time: '-'};
   const date = new Date(dateString);
   if (isNaN(date.getTime())) {
     const parts = String(dateString).split(', ');
-    return { date: parts[0] || dateString, time: parts[1] || '' };
+    return {date: parts[0] || dateString, time: parts[1] || ''};
   }
   return {
     date: date.toLocaleDateString('en-IN', {
@@ -100,19 +103,17 @@ export const checkMeltingLossAlert = (
   purity: number,
   fineWeight: number,
   expectedFine: number,
-  alertRules?: AlertRule[]
+  alertRules?: AlertRule[],
 ): LossAlertResult | null => {
-  if (
-    !alertRules ||
-    alertRules.length === 0 ||
-    !grossWt ||
-    grossWt <= 0
-  ) {
+  if (!alertRules || alertRules.length === 0 || !grossWt || grossWt <= 0) {
     return null;
   }
 
   // Calculate actual loss (Difference between expected fine and received fine weight)
-  const actualLoss = Math.max(0, Math.round((expectedFine - (fineWeight || 0)) * 1000) / 1000);
+  const actualLoss = Math.max(
+    0,
+    Math.round((expectedFine - (fineWeight || 0)) * 1000) / 1000,
+  );
 
   const rules = alertRules
     .map((r: any) => {
@@ -122,14 +123,20 @@ export const checkMeltingLossAlert = (
           : parseFloat(String(r.grossWt).replace(/[^0-9.]/g, '')) || 10;
       const pur = parseFloat(String(r.purity)) || 0;
       const l =
-        parseFloat(String(r.loss !== undefined && r.loss !== null ? r.loss : (r.lossWt ?? 0))) || 0;
+        parseFloat(
+          String(
+            r.loss !== undefined && r.loss !== null ? r.loss : (r.lossWt ?? 0),
+          ),
+        ) || 0;
       const rawAdj =
-        r.adjustment !== undefined && r.adjustment !== null ? r.adjustment : r.adjsutment;
+        r.adjustment !== undefined && r.adjustment !== null
+          ? r.adjustment
+          : r.adjsutment;
       const adj =
         typeof rawAdj === 'number'
           ? rawAdj
           : parseFloat(String(rawAdj ?? 0).replace(/[^0-9.-]/g, '')) || 0;
-      return { grossWt: gWt, purity: pur, loss: l, adjustment: adj };
+      return {grossWt: gWt, purity: pur, loss: l, adjustment: adj};
     })
     .filter((r) => r.grossWt > 0 && r.loss > 0);
 
@@ -140,7 +147,9 @@ export const checkMeltingLossAlert = (
   if (!matchedRule) {
     // If exact purity is not in alert, find the closest available purity rule
     matchedRule = rules.reduce((prev, curr) =>
-      Math.abs(curr.purity - purity) < Math.abs(prev.purity - purity) ? curr : prev
+      Math.abs(curr.purity - purity) < Math.abs(prev.purity - purity)
+        ? curr
+        : prev,
     );
   }
 
@@ -153,7 +162,8 @@ export const checkMeltingLossAlert = (
 
   // 3. Max allowed loss with tolerance adjustment (+/- %)
   const adjPercent = matchedRule.adjustment || 0;
-  const maxAllowedLoss = Math.round(baseLoss * (1 + adjPercent / 100) * 1000) / 1000;
+  const maxAllowedLoss =
+    Math.round(baseLoss * (1 + adjPercent / 100) * 1000) / 1000;
 
   const isExceeded = actualLoss > maxAllowedLoss && actualLoss > 0.001;
 
@@ -182,14 +192,14 @@ export const getMeltingColumns = (
   getScaleProps: (index: number, field: any) => any,
   handleInlineChange: (index: number, field: any, value: string) => void,
   handleStockClick: (index: number) => void,
-  alertRules?: AlertRule[]
+  alertRules?: AlertRule[],
 ): Column<MeltingRow>[] => {
   return [
     {
       key: 'dateTime',
       header: 'Date & Time',
       render: (item) => {
-        const { date, time } = formatDate(item.createdAt || item.dateTime);
+        const {date, time} = formatDate(item.createdAt || item.dateTime);
         return (
           <div className="flex flex-col items-center">
             <span className="text-sm text-[#1a1c1b] dark:text-white">
@@ -224,7 +234,7 @@ export const getMeltingColumns = (
       key: 'purity',
       header: 'Purity % (टंच)',
       render: (item) => (
-        <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+        <div className="bg-gray-50/50 flex w-24 items-center justify-center gap-1 whitespace-nowrap px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
             {formatNumberDisplay(item.purity)}%
           </span>
@@ -275,13 +285,16 @@ export const getMeltingColumns = (
       key: 'loss',
       header: 'Loss (G)',
       render: (item) => {
-        const loss = Math.max(0, Math.round((item.expectedFine - item.fineWeight) * 1000) / 1000);
+        const loss = Math.max(
+          0,
+          Math.round((item.expectedFine - item.fineWeight) * 1000) / 1000,
+        );
         const alertCheck = checkMeltingLossAlert(
           item.grossWt,
           item.purity,
           item.fineWeight,
           item.expectedFine,
-          alertRules
+          alertRules,
         );
 
         let colorClass = 'text-gray-500 dark:text-slate-400';
@@ -297,7 +310,9 @@ export const getMeltingColumns = (
 
         const diff =
           alertCheck && alertCheck.isExceeded
-            ? Math.round((alertCheck.actualLoss - alertCheck.maxAllowedLoss) * 1000) / 1000
+            ? Math.round(
+                (alertCheck.actualLoss - alertCheck.maxAllowedLoss) * 1000,
+              ) / 1000
             : 0;
 
         return (
@@ -333,7 +348,7 @@ export const getMeltingColumns = (
               type="button"
               onClick={() => handleStockClick(index)}
               variant="primary"
-              className="flex items-center gap-1 text-xs py-1.5 px-3"
+              className="flex items-center gap-1 px-3 py-1.5 text-xs"
               title="Send Fine Gold to Stock"
             >
               <PackageCheck className="h-3.5 w-3.5" />
@@ -350,7 +365,7 @@ export const printMeltingHistory = (
   data: any[],
   fromDate: Date | null,
   toDate: Date | null,
-  getpdfheaderdata: any
+  getpdfheaderdata: any,
 ) => {
   if (!data || data.length === 0) {
     toast.error('No history data to print');
@@ -362,7 +377,7 @@ export const printMeltingHistory = (
 
   const rows = data
     .map((item: any, idx: number) => {
-      const { date: createDate, time: createTime } = formatDate(item.createdAt);
+      const {date: createDate, time: createTime} = formatDate(item.createdAt);
 
       // Better handling for updatedAt - show "Pending" if not available
       let updateDisplay = 'Pending';
@@ -407,8 +422,7 @@ export const printMeltingHistory = (
     headerInfo.description ||
     'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
   const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-  const phoneNumbers =
-    headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+  const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
   const invocationColor = headerInfo.invocationColor || '#a84b20';
   const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
   const descriptionColor = headerInfo.descriptionColor || '#8b451f';
@@ -457,16 +471,17 @@ export const printMeltingHistory = (
         <h2 style="margin:0;font-size:16px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
           Melting History Report
         </h2>
-        ${fromDate && toDate
-      ? `
+        ${
+          fromDate && toDate
+            ? `
           <div style="font-size:10px;color:#000;font-weight:bold;flex:1;text-align:right;">
             From: ${fromDate.toLocaleDateString('en-IN')} &nbsp; To: ${toDate.toLocaleDateString('en-IN')}
           </div>
         `
-      : `
+            : `
           <div style="flex:1;"></div>
         `
-    }
+        }
       </div>
 
       <!-- Table -->

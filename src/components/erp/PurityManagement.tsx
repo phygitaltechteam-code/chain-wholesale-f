@@ -1,11 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import {
-  Calculator,
-  RefreshCw,
-  Copy,
-  Info,
-  Sparkles,
-} from 'lucide-react';
+import React, {useState, useMemo} from 'react';
+import {Calculator, RefreshCw, Copy, Info, Sparkles} from 'lucide-react';
 import PageHeader from '@/components/Forms/Common/PageHeader';
 import toast from 'react-hot-toast';
 
@@ -16,7 +10,10 @@ export const PurityManagement: React.FC = () => {
   const [targetPurity, setTargetPurity] = useState<string>('');
 
   // Parse numerical values
-  const weight = useMemo(() => Math.max(0, parseFloat(goldWeight) || 0), [goldWeight]);
+  const weight = useMemo(
+    () => Math.max(0, parseFloat(goldWeight) || 0),
+    [goldWeight],
+  );
   const purityCurrent = useMemo(
     () => Math.min(100, Math.max(0, parseFloat(currentPurity) || 0)),
     [currentPurity],
@@ -26,7 +23,8 @@ export const PurityManagement: React.FC = () => {
     [targetPurity],
   );
 
-  const hasInput = goldWeight !== '' && currentPurity !== '' && targetPurity !== '';
+  const hasInput =
+    goldWeight !== '' && currentPurity !== '' && targetPurity !== '';
 
   // Validation
   const isValid = useMemo(() => {
@@ -50,7 +48,8 @@ export const PurityManagement: React.FC = () => {
   }, [weight, purityCurrent, purityTarget, isValid, hasInput]);
 
   const handleCopySummary = () => {
-    const formattedResult = pureGoldToAdd > 0 ? parseFloat(pureGoldToAdd.toFixed(3)).toString() : '0';
+    const formattedResult =
+      pureGoldToAdd > 0 ? parseFloat(pureGoldToAdd.toFixed(3)).toString() : '0';
     const summaryText = `Current Weight: ${weight}g | Current Purity: ${purityCurrent}% | Target Purity: ${purityTarget}% => Pure Gold to Add: ${formattedResult}g`;
     navigator.clipboard.writeText(summaryText);
     toast.success('Summary copied to clipboard!');
@@ -93,7 +92,7 @@ export const PurityManagement: React.FC = () => {
                 onClick={handleReset}
                 className="flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
               >
-                <RefreshCw className="h-3.5 w-3.5" /> 
+                <RefreshCw className="h-3.5 w-3.5" />
                 <span>Reset</span>
               </button>
             </div>
@@ -174,7 +173,11 @@ export const PurityManagement: React.FC = () => {
                 <input
                   type="text"
                   disabled
-                  value={pureGoldToAdd > 0 ? parseFloat(pureGoldToAdd.toFixed(3)).toString() : ''}
+                  value={
+                    pureGoldToAdd > 0
+                      ? parseFloat(pureGoldToAdd.toFixed(3)).toString()
+                      : ''
+                  }
                   placeholder="Result will appear here"
                   className="w-full cursor-not-allowed rounded-lg border-2 border-amber-500/40 bg-amber-50/60 px-4 py-2.5 pr-12 text-base font-bold text-[#785600] outline-none dark:border-amber-500/30 dark:bg-slate-950 dark:text-amber-400"
                 />
@@ -183,7 +186,7 @@ export const PurityManagement: React.FC = () => {
                 </span>
                 {pureGoldToAdd > 0 && (
                   <div className="absolute -right-1 -top-1">
-                    <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
+                    <Sparkles className="h-3.5 w-3.5 animate-pulse text-amber-500" />
                   </div>
                 )}
               </div>
@@ -194,7 +197,8 @@ export const PurityManagement: React.FC = () => {
               <div className="flex items-start gap-2 rounded-lg border border-amber-200/50 bg-amber-50 p-3 dark:border-amber-800/30 dark:bg-amber-950/40">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
                 <p className="text-xs text-amber-800 dark:text-amber-300">
-                  Target purity must be greater than current purity and less than 100%.
+                  Target purity must be greater than current purity and less
+                  than 100%.
                 </p>
               </div>
             )}

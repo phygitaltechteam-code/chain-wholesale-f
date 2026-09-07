@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, {useState, useEffect, useRef, useMemo} from 'react';
 import {
   X,
   Save,
@@ -15,22 +15,22 @@ import {
   UserPlus,
   Printer,
 } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useGetClients, useCreateClient } from '@/lib/api/client';
-import { useGetItems } from '@/lib/api/items';
-import { useGetSizes } from '@/lib/api/sizes';
+import {useGetClients, useCreateClient} from '@/lib/api/client';
+import {useGetItems} from '@/lib/api/items';
+import {useGetSizes} from '@/lib/api/sizes';
 import toast from 'react-hot-toast';
-import { z } from 'zod';
+import {z} from 'zod';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
-import { useGetQuantity, useBill } from '@/lib/api/bill';
+import {useGetQuantity, useBill} from '@/lib/api/bill';
 import GenericInputField from '../Forms/Input/GenericInputField';
-import { ClientSearch } from './ClientSearch';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
-import { printReceipt } from '@/utils/printReceipt';
+import {ClientSearch} from './ClientSearch';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
+import {printReceipt} from '@/utils/printReceipt';
 
 interface ReceiptItem {
   id: string;
@@ -137,7 +137,9 @@ const ReceiptAdd: React.FC = () => {
   }>({});
   const [savedBillData, setSavedBillData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittingType, setSubmittingType] = useState<'draft' | 'bill' | null>(null);
+  const [submittingType, setSubmittingType] = useState<'draft' | 'bill' | null>(
+    null,
+  );
   const isSubmittingRef = useRef(false);
 
   // Refs for debounce
@@ -149,8 +151,8 @@ const ReceiptAdd: React.FC = () => {
   } | null>(null);
 
   // Fetch data from API
-  const { data: clients = [], refetch: refetchClients } = useGetClients();
-  const { data: rawItems = [] } = useGetItems();
+  const {data: clients = [], refetch: refetchClients} = useGetClients();
+  const {data: rawItems = []} = useGetItems();
   const items = useMemo(
     () =>
       (Array.isArray(rawItems) ? rawItems : []).filter((item: any) => {
@@ -159,7 +161,7 @@ const ReceiptAdd: React.FC = () => {
       }),
     [rawItems],
   );
-  const { data: sizes = [] } = useGetSizes();
+  const {data: sizes = []} = useGetSizes();
   const createClient = useCreateClient();
 
   // API hooks
@@ -168,7 +170,7 @@ const ReceiptAdd: React.FC = () => {
   const savebill = useBill();
 
   // Weighing Scale table focus hook
-  const { getScaleProps } = useTableScaleFocus<keyof ReceiptItem>(
+  const {getScaleProps} = useTableScaleFocus<keyof ReceiptItem>(
     (index, field, weight) => {
       handleItemChange(index, field, weight);
     },
@@ -284,7 +286,7 @@ const ReceiptAdd: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       items: prev.items.map((entry, i) =>
-        i === index ? { ...entry, isLoadingQty: true } : entry,
+        i === index ? {...entry, isLoadingQty: true} : entry,
       ),
     }));
 
@@ -297,7 +299,6 @@ const ReceiptAdd: React.FC = () => {
       });
 
       let weight = 0;
-
 
       // Extract weight
       if (
@@ -325,10 +326,10 @@ const ReceiptAdd: React.FC = () => {
           items: prev.items.map((entry, i) =>
             i === index
               ? {
-                ...entry,
-                availableQty: weight,
-                isLoadingQty: false,
-              }
+                  ...entry,
+                  availableQty: weight,
+                  isLoadingQty: false,
+                }
               : entry,
           ),
         }));
@@ -336,7 +337,7 @@ const ReceiptAdd: React.FC = () => {
         setFormData((prev) => ({
           ...prev,
           items: prev.items.map((entry, i) =>
-            i === index ? { ...entry, isLoadingQty: false } : entry,
+            i === index ? {...entry, isLoadingQty: false} : entry,
           ),
         }));
       }
@@ -345,7 +346,7 @@ const ReceiptAdd: React.FC = () => {
       setFormData((prev) => ({
         ...prev,
         items: prev.items.map((entry, i) =>
-          i === index ? { ...entry, isLoadingQty: false } : entry,
+          i === index ? {...entry, isLoadingQty: false} : entry,
         ),
       }));
     }
@@ -359,7 +360,6 @@ const ReceiptAdd: React.FC = () => {
     const effectivePurity = (purity + srp) / 100;
     return Math.round(grossWt * effectivePurity * 1000) / 1000;
   };
-
 
   // Update Total Fine calculation (Fine Wt + Labor Rate)
   const updateTotalFine = (items: ReceiptItem[]) => {
@@ -386,7 +386,8 @@ const ReceiptAdd: React.FC = () => {
       field === 'laborRate' ||
       field === 'wastage'
     ) {
-      const strValue = value === null || value === undefined ? '' : String(value);
+      const strValue =
+        value === null || value === undefined ? '' : String(value);
       if (strValue.includes('.')) {
         const decimalPlaces = strValue.split('.')[1]?.length || 0;
         if (decimalPlaces > 3) {
@@ -433,12 +434,7 @@ const ReceiptAdd: React.FC = () => {
           clearTimeout(debounceTimerRef.current);
         }
         debounceTimerRef.current = setTimeout(() => {
-          fetchQuantity(
-            index,
-            currentItem.item,
-            currentItem.size,
-            purityNum,
-          );
+          fetchQuantity(index, currentItem.item, currentItem.size, purityNum);
         }, 300);
       }
     }
@@ -496,13 +492,13 @@ const ReceiptAdd: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const value = e.target.value;
-    setFormData((prev) => ({ ...prev, customerWeight: value }));
+    setFormData((prev) => ({...prev, customerWeight: value}));
   };
 
   // Handle Total Fine (Issue) change - Manual edit
   const handleTotalFineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setFormData((prev) => ({ ...prev, totalFine: value }));
+    setFormData((prev) => ({...prev, totalFine: value}));
   };
 
   const calculateTotalGrossWt = () => {
@@ -511,7 +507,6 @@ const ReceiptAdd: React.FC = () => {
       0,
     );
   };
-
 
   const getClientDueBalance = (client: any) => {
     if (!client) return 0;
@@ -526,8 +521,6 @@ const ReceiptAdd: React.FC = () => {
     return Math.round(openingBalance * 1000) / 1000;
   };
 
-
-
   const calculateRemainingWeight = () => {
     const client = clients.find((c: any) => c.id === formData.clientId);
     const dueBalance = getClientDueBalance(client);
@@ -536,9 +529,9 @@ const ReceiptAdd: React.FC = () => {
       formData.totalFine !== undefined && formData.totalFine !== ''
         ? Number(formData.totalFine) || 0
         : formData.items.reduce(
-          (sum, item) => sum + (Number(item.fineWt) || 0),
-          0,
-        );
+            (sum, item) => sum + (Number(item.fineWt) || 0),
+            0,
+          );
     // Remaining Balance = Total Fine Wt + Due Balance - Advance
     const remaining = totalFineWeight + dueBalance - advance;
     return Math.round(remaining * 1000) / 1000;
@@ -550,8 +543,6 @@ const ReceiptAdd: React.FC = () => {
     return formatted;
   };
 
-
-
   const handlePrintReceipt = (responseData?: any) => {
     const client = clients.find((c: any) => c.id === formData.clientId);
     const clientDue = getClientDueBalance(client);
@@ -559,8 +550,10 @@ const ReceiptAdd: React.FC = () => {
     const now = new Date();
     const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours() % 12 || 12).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'pm' : 'am'}`;
 
-    const advance = Number(responseData?.customerWeight ?? formData.customerWeight) || 0;
-    const remaining = Number(responseData?.remainingWeight ?? calculateRemainingWeight()) || 0;
+    const advance =
+      Number(responseData?.customerWeight ?? formData.customerWeight) || 0;
+    const remaining =
+      Number(responseData?.remainingWeight ?? calculateRemainingWeight()) || 0;
 
     const itemsList = formData.items.map((item) => ({
       item: item.item || '-',
@@ -588,7 +581,6 @@ const ReceiptAdd: React.FC = () => {
       getpdfheaderdata,
     );
   };
-
 
   // Save as Draft - Use 'DRAFT' (uppercase)
   const handleSaveAsDraft = async () => {
@@ -636,7 +628,7 @@ const ReceiptAdd: React.FC = () => {
 
       await savebill.mutateAsync(billData);
       // toast.success('Bill saved as draft successfully!');
-      navigate({ to: '/billing' });
+      navigate({to: '/billing'});
     } catch (error) {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
@@ -707,7 +699,7 @@ const ReceiptAdd: React.FC = () => {
 
       // Navigate after print
       setTimeout(() => {
-        navigate({ to: '/billing' });
+        navigate({to: '/billing'});
       }, 1500);
     } catch (error: any) {
       isSubmittingRef.current = false;
@@ -819,13 +811,13 @@ const ReceiptAdd: React.FC = () => {
               step="0.001"
               min="0"
               max="100"
-              value={item.purity !== undefined && item.purity !== null ? item.purity : ''}
+              value={
+                item.purity !== undefined && item.purity !== null
+                  ? item.purity
+                  : ''
+              }
               onChange={(e) =>
-                handleItemChange(
-                  actualIndex,
-                  'purity',
-                  e.target.value,
-                )
+                handleItemChange(actualIndex, 'purity', e.target.value)
               }
               placeholder="0.000"
               suffix="%"
@@ -846,8 +838,8 @@ const ReceiptAdd: React.FC = () => {
         <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#c5b497] bg-[#eae3d5] px-2 py-1.5 text-xs shadow-inner dark:border-slate-600 dark:bg-slate-800">
           <span className="font-mono font-bold text-black dark:text-white">
             {item.availableQty !== undefined &&
-              item.availableQty !== null &&
-              item.availableQty !== ''
+            item.availableQty !== null &&
+            item.availableQty !== ''
               ? formatNumberThreeDecimals(Number(item.availableQty))
               : '0'}
           </span>
@@ -868,7 +860,11 @@ const ReceiptAdd: React.FC = () => {
             inputMode="decimal"
             step="0.001"
             min="0"
-            value={item.grossWt !== undefined && item.grossWt !== null ? item.grossWt : ''}
+            value={
+              item.grossWt !== undefined && item.grossWt !== null
+                ? item.grossWt
+                : ''
+            }
             {...getScaleProps(actualIndex, 'grossWt')}
             onChange={(e) => {
               handleItemChange(actualIndex, 'grossWt', e.target.value);
@@ -894,11 +890,7 @@ const ReceiptAdd: React.FC = () => {
             min="0"
             value={item.srp !== undefined && item.srp !== null ? item.srp : ''}
             onChange={(e) =>
-              handleItemChange(
-                actualIndex,
-                'srp',
-                e.target.value,
-              )
+              handleItemChange(actualIndex, 'srp', e.target.value)
             }
             placeholder="0.000"
             suffix="G"
@@ -933,13 +925,13 @@ const ReceiptAdd: React.FC = () => {
             inputMode="decimal"
             step="0.001"
             min="0"
-            value={item.laborRate !== undefined && item.laborRate !== null ? item.laborRate : ''}
+            value={
+              item.laborRate !== undefined && item.laborRate !== null
+                ? item.laborRate
+                : ''
+            }
             onChange={(e) =>
-              handleItemChange(
-                actualIndex,
-                'laborRate',
-                e.target.value,
-              )
+              handleItemChange(actualIndex, 'laborRate', e.target.value)
             }
             placeholder="0.000"
             suffix="G"
@@ -958,7 +950,7 @@ const ReceiptAdd: React.FC = () => {
         <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate({ to: '/billing' })}
+              onClick={() => navigate({to: '/billing'})}
               className="flex flex-shrink-0 items-center gap-2 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -1068,7 +1060,7 @@ const ReceiptAdd: React.FC = () => {
                   value={formData.customerWeight || ''}
                   onChange={handleCustomerWeightChange}
                   placeholder="0.000"
-                  className="font-mono w-28 rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b]  focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-emerald-400"
+                  className="font-mono w-28 rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-emerald-400"
                 />
                 <span className="pointer-events-none absolute right-2.5 text-xs text-[#817563] dark:text-slate-400">
                   G
@@ -1157,7 +1149,8 @@ const ReceiptAdd: React.FC = () => {
 
             <div className="px-5 py-4">
               <p className="text-xs leading-relaxed text-[#4f4535] dark:text-slate-300">
-                Not enough stock available to complete this bill. You can save it as a draft.
+                Not enough stock available to complete this bill. You can save
+                it as a draft.
               </p>
             </div>
 
@@ -1184,7 +1177,9 @@ const ReceiptAdd: React.FC = () => {
                 ) : (
                   <FileText className="h-3.5 w-3.5" />
                 )}
-                {isSubmitting || savebill.isPending ? 'Saving...' : 'Save as Draft'}
+                {isSubmitting || savebill.isPending
+                  ? 'Saving...'
+                  : 'Save as Draft'}
               </button>
             </div>
           </div>

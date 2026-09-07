@@ -69,7 +69,8 @@ class WeightScaleService {
   }
 
   public async autoConnectPreviousSerial(baudRate = 9600): Promise<boolean> {
-    if (!this.isWebSerialSupported() || this.status === 'connected') return false;
+    if (!this.isWebSerialSupported() || this.status === 'connected')
+      return false;
     try {
       const ports = await (navigator as any).serial.getPorts();
       if (ports && ports.length > 0) {
@@ -87,7 +88,10 @@ class WeightScaleService {
         return true;
       }
     } catch (err) {
-      console.debug('Auto-connect previous serial not available or failed:', err);
+      console.debug(
+        'Auto-connect previous serial not available or failed:',
+        err,
+      );
     }
     return false;
   }
@@ -318,8 +322,7 @@ class WeightScaleService {
 
     if (!this.customWsUrl) {
       // Auto-fallback: try next candidate port in list
-      const nextIndex =
-        (this.currentPortIndex + 1) % this.fallbackPorts.length;
+      const nextIndex = (this.currentPortIndex + 1) % this.fallbackPorts.length;
       this.currentPortIndex = nextIndex;
 
       // If we finished a full cycle through all fallback ports, wait 3 seconds before next round

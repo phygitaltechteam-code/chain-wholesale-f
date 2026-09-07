@@ -1,5 +1,5 @@
-import { api } from '@/utils/axios';
-import { useMutation } from '@tanstack/react-query';
+import {api} from '@/utils/axios';
+import {useMutation} from '@tanstack/react-query';
 
 export const getBackFile = async (): Promise<Blob> => {
   try {
@@ -39,14 +39,14 @@ const getRestoreFile = async (formData: FormData) => {
 export const deleteDatabase = async (password?: string) => {
   try {
     const response = await api.delete('/admin/backup/delete', {
-      data: password ? { password } : {},
+      data: password ? {password} : {},
     });
     return response.data;
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||
-      error?.message ||
-      'Failed to delete database',
+        error?.message ||
+        'Failed to delete database',
     );
   }
 };
@@ -86,8 +86,8 @@ export const sendBackupEmail = async () => {
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||
-      error?.message ||
-      'Failed to trigger backup',
+        error?.message ||
+        'Failed to trigger backup',
     );
   }
 };
@@ -97,7 +97,3 @@ export const useSendBackupEmail = () => {
     mutationFn: sendBackupEmail,
   });
 };
-
-
-
-

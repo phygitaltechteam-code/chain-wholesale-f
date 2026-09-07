@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import {useQuery} from '@tanstack/react-query';
 import apiClient from '@/lib/api/client';
-import { api } from '@/utils/axios';
+import {api} from '@/utils/axios';
 
 // ======================================================
 // INTERFACES

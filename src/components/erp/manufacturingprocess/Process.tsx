@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from '@tanstack/react-router';
+import React, {useState, useEffect} from 'react';
+import {useNavigate, useLocation} from '@tanstack/react-router';
 import {
   TrendingUp,
   Box,
@@ -9,7 +9,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import { manufacturingStore } from '@/utils/manufacturingStore';
+import {manufacturingStore} from '@/utils/manufacturingStore';
 
 // Import all department components
 import MeltingDept from './melting/MeltingDept';
@@ -99,7 +99,7 @@ const Process: React.FC = () => {
   // Initialize steps based on current route or state
   useEffect(() => {
     const currentPath = location.pathname;
-    const state = location.state as { selectedTab?: string } | null;
+    const state = location.state as {selectedTab?: string} | null;
 
     let stepIndex = processSteps.findIndex((step) =>
       currentPath.includes(step.path),
@@ -131,11 +131,11 @@ const Process: React.FC = () => {
     // Initialize steps with statuses
     const updatedSteps = processSteps.map((step, index) => {
       if (index < stepIndex) {
-        return { ...step, status: 'completed' as const };
+        return {...step, status: 'completed' as const};
       } else if (index === stepIndex) {
-        return { ...step, status: 'active' as const };
+        return {...step, status: 'active' as const};
       } else {
-        return { ...step, status: 'pending' as const };
+        return {...step, status: 'pending' as const};
       }
     });
 
@@ -158,8 +158,8 @@ const Process: React.FC = () => {
     if (hasTar && currentStep === 0 && !wasTarCompleted) {
       setWasTarCompleted(true);
       const updatedSteps = steps.map((step, index) => {
-        if (index === 0) return { ...step, status: 'completed' as const };
-        if (index === 1) return { ...step, status: 'active' as const };
+        if (index === 0) return {...step, status: 'completed' as const};
+        if (index === 1) return {...step, status: 'active' as const};
         return step;
       });
       setSteps(updatedSteps);
@@ -171,11 +171,11 @@ const Process: React.FC = () => {
   const handleTabClick = (index: number) => {
     const updatedSteps = steps.map((step, i) => {
       if (i < index) {
-        return { ...step, status: 'completed' as const };
+        return {...step, status: 'completed' as const};
       } else if (i === index) {
-        return { ...step, status: 'active' as const };
+        return {...step, status: 'active' as const};
       } else {
-        return { ...step, status: 'pending' as const };
+        return {...step, status: 'pending' as const};
       }
     });
 
@@ -185,7 +185,7 @@ const Process: React.FC = () => {
     // Update URL state without navigating
     navigate({
       to: '/manufacturingprocess/process',
-      state: { selectedTab: steps[index].id },
+      state: {selectedTab: steps[index].id},
       replace: true,
     });
   };
@@ -217,12 +217,13 @@ const Process: React.FC = () => {
                 <button
                   key={step.id}
                   onClick={() => handleTabClick(index)}
-                  className={`group relative flex items-center gap-2 rounded-t-lg border-b-2 px-4 py-2.5 text-sm font-medium transition-all duration-200 ${isActive
+                  className={`group relative flex items-center gap-2 rounded-t-lg border-b-2 px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+                    isActive
                       ? 'border-[#785600] bg-[#785600]/5 text-[#785600] dark:border-[#986d00] dark:bg-[#986d00]/10 dark:text-[#986d00]'
                       : isCompleted
                         ? 'border-transparent text-[#785600] hover:bg-[#785600]/5 dark:text-[#986d00] dark:hover:bg-[#986d00]/10'
                         : 'border-transparent text-[#4f4535] hover:bg-[#785600]/5 dark:text-slate-500 dark:hover:bg-[#986d00]/10'
-                    } cursor-pointer`}
+                  } cursor-pointer`}
                 >
                   {/* Icon */}
                   <span

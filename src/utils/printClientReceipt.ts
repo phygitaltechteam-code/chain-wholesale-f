@@ -41,7 +41,9 @@ export const generateClientReceiptHtml = (
   const headerSource = receiptData.headerInfo || headerInfo;
   const header =
     headerSource?.data?.data ||
-    (headerSource?.data?.factoryName ? headerSource.data : headerSource || {}) ||
+    (headerSource?.data?.factoryName
+      ? headerSource.data
+      : headerSource || {}) ||
     {};
 
   const leftInvocation =
@@ -52,8 +54,7 @@ export const generateClientReceiptHtml = (
   const description =
     header.description || 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
   const proprietorName = header.proprietorName || 'प्रो. नितीन खरात';
-  const phoneNumbers =
-    header.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+  const phoneNumbers = header.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
 
   const invocationColor = header.invocationColor || '#a84b20';
   const factoryNameColor = header.factoryNameColor || '#c43d5c';
@@ -193,42 +194,46 @@ export const generateClientReceiptHtml = (
           <!-- PAYMENT SUMMARY CARD -->
           <div style="display:flex;justify-content:flex-end;margin-top:8px;">
             <div style="width:45%;min-width:210px;border:1px solid #d6c08a;border-radius:4px;background:#fffdf7 !important;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-              ${receiptData.previousBalance !== undefined
-      ? `
+              ${
+                receiptData.previousBalance !== undefined
+                  ? `
                 <div style="display:flex;justify-content:space-between;padding:3px 8px;border-bottom:1px dashed #dddddd;font-size:10px;">
                   <span style="font-weight:bold;color:#666666;">Previous Due Balance</span>
                   <span style="font-family:monospace;font-weight:bold;color:#111111;">${formatNumber(receiptData.previousBalance)} G</span>
                 </div>
               `
-      : ''
-    }
-              ${receiptData.amount !== undefined
-      ? `
+                  : ''
+              }
+              ${
+                receiptData.amount !== undefined
+                  ? `
                 <div style="display:flex;justify-content:space-between;padding:3px 8px;border-bottom:1px dashed #dddddd;font-size:10px;">
                   <span style="font-weight:bold;color:#666666;">
-                    ${receiptData.transactionType === 'give'
-        ? 'Given Weight (+)'
-        : receiptData.transactionType === 'receive'
-          ? 'Received Weight (-)'
-          : 'Total Weight'
-      }
+                    ${
+                      receiptData.transactionType === 'give'
+                        ? 'Given Weight (+)'
+                        : receiptData.transactionType === 'receive'
+                          ? 'Received Weight (-)'
+                          : 'Total Weight'
+                    }
                   </span>
                   <span style="font-family:monospace;font-weight:bold;color:#111111;">
                     ${receiptData.transactionType === 'give' ? '+' : receiptData.transactionType === 'receive' ? '-' : ''}${formatNumber(Math.abs(Number(receiptData.amount || 0)))} G
                   </span>
                 </div>
               `
-      : ''
-    }
-              ${receiptData.newBalance !== undefined
-      ? `
+                  : ''
+              }
+              ${
+                receiptData.newBalance !== undefined
+                  ? `
                 <div style="display:flex;justify-content:space-between;padding:4px 8px;background:#f4f0e5 !important;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                   <span style="font-weight:bold;color:#111111;">Total Balance</span>
                   <span style="font-family:monospace;font-weight:bold;color:#785600;">${formatNumber(receiptData.newBalance)} G</span>
                 </div>
               `
-      : ''
-    }
+                  : ''
+              }
             </div>
           </div>
 

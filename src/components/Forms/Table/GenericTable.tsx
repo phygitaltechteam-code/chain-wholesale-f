@@ -1,5 +1,5 @@
 // components/Common/GenericTable.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {
   Edit,
   Trash2,
@@ -19,7 +19,7 @@ export interface Column<T> {
   render?: (item: T, index: number) => React.ReactNode;
   editable?: boolean;
   inputType?: 'text' | 'number' | 'select';
-  options?: { value: string; label: string }[];
+  options?: {value: string; label: string}[];
   className?: string;
   align?: 'left' | 'right' | 'center';
   width?: string;
@@ -61,7 +61,7 @@ export interface GenericTableProps<T> {
 
 const getPageNumbers = (current: number, total: number) => {
   if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1);
+    return Array.from({length: total}, (_, i) => i + 1);
   }
   if (current <= 4) {
     return [1, 2, 3, 4, 5, '...', total];
@@ -72,7 +72,7 @@ const getPageNumbers = (current: number, total: number) => {
   return [1, '...', current - 1, current, current + 1, '...', total];
 };
 
-export function GenericTable<T extends { id?: string | number }>({
+export function GenericTable<T extends {id?: string | number}>({
   data,
   columns,
   onSave,
@@ -131,7 +131,7 @@ export function GenericTable<T extends { id?: string | number }>({
   const handleEdit = (item: T, index: number) => {
     if (enableInlineEdit) {
       setEditingIndex(index);
-      setEditData({ ...item });
+      setEditData({...item});
     }
     if (onEdit) onEdit(item, index);
   };
@@ -142,14 +142,14 @@ export function GenericTable<T extends { id?: string | number }>({
   };
 
   const handleSave = (item: T, index: number) => {
-    const updatedItem = { ...item, ...editData };
+    const updatedItem = {...item, ...editData};
     if (onSave) onSave(updatedItem, index);
     setEditingIndex(null);
     setEditData({});
   };
 
   const handleFieldChange = (key: string, value: any) => {
-    setEditData((prev) => ({ ...prev, [key]: value }));
+    setEditData((prev) => ({...prev, [key]: value}));
   };
 
   const handleRowClick = (item: T, index: number) => {
@@ -165,10 +165,7 @@ export function GenericTable<T extends { id?: string | number }>({
       return sourceData.filter((item) =>
         searchFields.some((field) => {
           const value = item[field];
-          return (
-            value &&
-            String(value).toLowerCase().includes(term)
-          );
+          return value && String(value).toLowerCase().includes(term);
         }),
       );
     }
@@ -224,25 +221,25 @@ export function GenericTable<T extends { id?: string | number }>({
   // Get all columns including SR No if enabled
   const allColumns = showSrNo
     ? [
-      {
-        key: '__srNo' as keyof T,
-        header: srNoLabel,
-        align: 'center' as const,
-        width: '60px',
-        className: 'text-center font-semibold text-white dark:text-[#986d00]',
-        render: (_: T, pageIndex: number) => {
-          const actualSr = isPaginationEnabled
-            ? (currentPage - 1) * effectivePageSize + pageIndex + 1
-            : pageIndex + 1;
-          return (
-            <span className="text-xs font-semibold text-[#1a1c1b] dark:text-[#986d00] sm:text-sm">
-              {actualSr}
-            </span>
-          );
+        {
+          key: '__srNo' as keyof T,
+          header: srNoLabel,
+          align: 'center' as const,
+          width: '60px',
+          className: 'text-center font-semibold text-white dark:text-[#986d00]',
+          render: (_: T, pageIndex: number) => {
+            const actualSr = isPaginationEnabled
+              ? (currentPage - 1) * effectivePageSize + pageIndex + 1
+              : pageIndex + 1;
+            return (
+              <span className="text-xs font-semibold text-[#1a1c1b] dark:text-[#986d00] sm:text-sm">
+                {actualSr}
+              </span>
+            );
+          },
         },
-      },
-      ...columns,
-    ]
+        ...columns,
+      ]
     : columns;
 
   const getColumnAlign = (column: Column<T>) => {
@@ -326,7 +323,7 @@ export function GenericTable<T extends { id?: string | number }>({
                     <th
                       key={idx}
                       className={`px-3 py-3 text-center font-semibold lg:px-4 ${column.className || ''}`}
-                      style={{ width: column.width }}
+                      style={{width: column.width}}
                     >
                       {column.header}
                     </th>
@@ -379,13 +376,17 @@ export function GenericTable<T extends { id?: string | number }>({
                           return (
                             <td
                               key={colIdx}
-                              colSpan={colSpanVal && colSpanVal > 1 ? colSpanVal : undefined}
+                              colSpan={
+                                colSpanVal && colSpanVal > 1
+                                  ? colSpanVal
+                                  : undefined
+                              }
                               className={`px-3 py-3 text-sm lg:px-4 ${textColor} ${column.className || ''}`}
-                              style={{ textAlign: align }}
+                              style={{textAlign: align}}
                             >
                               {isEditable ? (
                                 column.inputType === 'select' &&
-                                  column.options ? (
+                                column.options ? (
                                   <select
                                     value={
                                       (editData[
@@ -524,7 +525,6 @@ export function GenericTable<T extends { id?: string | number }>({
                   <strong className="font-semibold text-[#1a1c1b] dark:text-white">
                     {Math.min(currentPage * effectivePageSize, totalItems)}
                   </strong>{' '}
-
                 </span>
               ) : (
                 <span>
@@ -568,10 +568,11 @@ export function GenericTable<T extends { id?: string | number }>({
                     key={`page-${pageNum}`}
                     type="button"
                     onClick={() => setCurrentPage(Number(pageNum))}
-                    className={`flex h-8 min-w-[32px] items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${currentPage === pageNum
+                    className={`flex h-8 min-w-[32px] items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${
+                      currentPage === pageNum
                         ? 'bg-gradient-to-br from-[#785600] to-[#986d00] text-white shadow-sm'
                         : 'border border-[#d3c4af]/30 bg-white text-[#1a1c1b] hover:bg-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700'
-                      }`}
+                    }`}
                   >
                     {pageNum}
                   </button>

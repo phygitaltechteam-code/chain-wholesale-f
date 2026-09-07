@@ -1,5 +1,5 @@
-import { api } from '@/utils/axios';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export interface MeltingEntry {
@@ -30,7 +30,8 @@ export const getMeltingHistoryApi = async () => {
     if (Array.isArray(response.data)) return response.data;
     if (Array.isArray(response.data?.data)) return response.data.data;
     if (Array.isArray(response.data?.history)) return response.data.history;
-    if (Array.isArray(response.data?.meltingHistory)) return response.data.meltingHistory;
+    if (Array.isArray(response.data?.meltingHistory))
+      return response.data.meltingHistory;
     return response.data?.data || response.data?.history || response.data || [];
   } catch (error) {
     return [];
@@ -53,10 +54,8 @@ export const submitMeltingStockApi = async ({
   id?: string;
   data: any;
 }) => {
-
   const response = await api.put(`/admin/melting/${id}`, data);
   return response.data;
-
 };
 
 export const useGetMelting = () => {
@@ -85,17 +84,19 @@ export const useSubmitMeltingStock = () => {
   return useMutation({
     mutationFn: submitMeltingStockApi,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['melting'] });
-      queryClient.invalidateQueries({ queryKey: ['meltingHistory'] });
-      queryClient.invalidateQueries({ queryKey: ['stock'] });
+      queryClient.invalidateQueries({queryKey: ['melting']});
+      queryClient.invalidateQueries({queryKey: ['meltingHistory']});
+      queryClient.invalidateQueries({queryKey: ['stock']});
     },
     onError: (error: any) => {
-      const msg = error?.response?.data?.message || error?.message || 'Failed to submit melting stock';
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to submit melting stock';
       toast.error(msg);
     },
   });
 };
-
 
 export const submitMeltingScrapStockApi = async (data: any) => {
   const response = await api.post('/admin/melting/scrap', data);
@@ -107,9 +108,9 @@ export const useSubmitMeltingScrapStock = () => {
   return useMutation({
     mutationFn: submitMeltingScrapStockApi,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['melting'] });
-      queryClient.invalidateQueries({ queryKey: ['scrap'] });
-      queryClient.invalidateQueries({ queryKey: ['stock'] });
+      queryClient.invalidateQueries({queryKey: ['melting']});
+      queryClient.invalidateQueries({queryKey: ['scrap']});
+      queryClient.invalidateQueries({queryKey: ['stock']});
     },
     onError: (error: any) => {
       const msg =

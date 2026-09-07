@@ -1,7 +1,7 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import {X} from 'lucide-react';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { ScrapCardData } from './meltingUtils';
+import {ScrapCardData} from './meltingUtils';
 
 interface AddDeptProps {
   showAddScrapModal: boolean;
@@ -17,7 +17,7 @@ interface AddDeptProps {
   modalScaleProps: any;
 }
 
-import { formatNumberDisplay } from './meltingUtils';
+import {formatNumberDisplay} from './meltingUtils';
 
 const AddDept: React.FC<AddDeptProps> = ({
   showAddScrapModal,
@@ -38,14 +38,14 @@ const AddDept: React.FC<AddDeptProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <div className="w-full max-w-sm rounded-2xl border border-[#d3c4af]/30 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
         {/* Modal Header */}
-        <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-slate-800">
+        <div className="border-gray-100 mb-4 flex items-center justify-between border-b pb-3 dark:border-slate-800">
           <h3 className="text-base font-bold text-[#1a1c1b] dark:text-white">
             Add Melting
           </h3>
           <button
             type="button"
             onClick={() => setShowAddScrapModal(false)}
-            className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+            className="text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-lg p-1 dark:hover:bg-slate-800 dark:hover:text-slate-300"
           >
             <X className="h-5 w-5" />
           </button>
@@ -89,7 +89,7 @@ const AddDept: React.FC<AddDeptProps> = ({
                   : ''
               }
               placeholder="0.000 G"
-              className="font-mono w-full rounded-lg border border-[#d3c4af]/20 bg-amber-50/50 px-2 py-1.5 pr-6 text-sm font-bold text-black outline-none cursor-not-allowed dark:bg-amber-950/20 dark:text-amber-400"
+              className="font-mono w-full cursor-not-allowed rounded-lg border border-[#d3c4af]/20 bg-amber-50/50 px-2 py-1.5 pr-6 text-sm font-bold text-black outline-none dark:bg-amber-950/20 dark:text-amber-400"
             />
           </div>
 
@@ -111,16 +111,16 @@ const AddDept: React.FC<AddDeptProps> = ({
                   }
                 }}
                 placeholder="Enter scrap weight"
-                className="font-mono w-full rounded-lg border border-[#d3c4af]/20 bg-amber-50/50 px-2 py-1.5 pr-6 text-sm font-bold text-black outline-none cursor-not-allowed dark:bg-amber-950/20 dark:text-amber-400"
+                className="font-mono w-full cursor-not-allowed rounded-lg border border-[#d3c4af]/20 bg-amber-50/50 px-2 py-1.5 pr-6 text-sm font-bold text-black outline-none dark:bg-amber-950/20 dark:text-amber-400"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
+              <span className="text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold">
                 G
               </span>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="mt-2 flex justify-end gap-2 border-t border-gray-100 pt-3 dark:border-slate-800">
+          <div className="border-gray-100 mt-2 flex justify-end gap-2 border-t pt-3 dark:border-slate-800">
             <GenericButton
               type="submit"
               variant="primary"

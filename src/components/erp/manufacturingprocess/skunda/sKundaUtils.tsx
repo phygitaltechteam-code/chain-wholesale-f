@@ -1,7 +1,7 @@
-import { Square, Flame } from 'lucide-react';
-import { Column } from '@/components/Forms/Table/GenericTable';
+import {Square, Flame} from 'lucide-react';
+import {Column} from '@/components/Forms/Table/GenericTable';
 import toast from 'react-hot-toast';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
 import {
   AlertRule,
   checkProcessLossAlert,
@@ -59,19 +59,17 @@ export const getSizeName = (size: any): string => {
 export const hasMeltingStatus = (item: any): boolean => {
   const s = String(item?.status || item?.process || '').toUpperCase();
   return (
-    s === 'MELTING' ||
-    item?.isMelting === true ||
-    item?.meltingStatus === true
+    s === 'MELTING' || item?.isMelting === true || item?.meltingStatus === true
   );
 };
 
 export const getDefaultWeekRange = () => {
-  const { fromDate, toDate } = getCurrentAppWeekRange();
-  return { monday: fromDate, sunday: toDate };
+  const {fromDate, toDate} = getCurrentAppWeekRange();
+  return {monday: fromDate, sunday: toDate};
 };
 
 export const formatDate = (dateString: string) => {
-  if (!dateString) return { date: '-', time: '-' };
+  if (!dateString) return {date: '-', time: '-'};
   const date = new Date(dateString);
   return {
     date: date.toLocaleDateString('en-IN', {
@@ -107,10 +105,12 @@ export const formatNumberDisplay = (value: unknown): string => {
 export const printSKundaHistory = (
   filteredData: any[],
   dateRange: Date[],
-  getpdfheaderdata: any
+  getpdfheaderdata: any,
 ) => {
   if (!filteredData || filteredData.length === 0) {
-    toast.error('No history records available to print for the selected date range');
+    toast.error(
+      'No history records available to print for the selected date range',
+    );
     return false;
   }
 
@@ -129,8 +129,10 @@ export const printSKundaHistory = (
 
   const rows = filteredData
     .map((item: any, index: number) => {
-      const { date, time } = formatDate(item?.createdAt);
-      const { date: proceedDate, time: proceedTime } = formatDate(item?.updatedAt);
+      const {date, time} = formatDate(item?.createdAt);
+      const {date: proceedDate, time: proceedTime} = formatDate(
+        item?.updatedAt,
+      );
       const isMelting = hasMeltingStatus(item);
 
       return `
@@ -141,16 +143,18 @@ export const printSKundaHistory = (
         </td>
         <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${getItemName(item?.item)}</td>
         <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:8px;color:#000;">${getSizeName(item?.size)}</td>
-        ${isMelting
-          ? `<td colspan="6" style="border:1px solid #000;padding:2px 4px;text-align:center;font-weight:bold;font-size:9px;color:#785600;background-color:#fffbeb;">Melting</td>`
-          : `
+        ${
+          isMelting
+            ? `<td colspan="6" style="border:1px solid #000;padding:2px 4px;text-align:center;font-weight:bold;font-size:9px;color:#785600;background-color:#fffbeb;">Melting</td>`
+            : `
           <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.chainWeight)}</td>
           <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.kundaGiven || item?.kundaGiven || item?.kunda || 0)}</td>
           <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.chainReceived)}</td>
           <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.scrap)}</td>
           <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.loss)}</td>
           <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-family:monospace;font-size:8px;color:#000;">${formatNumberDisplay(item?.purity)}%</td>
-        `}
+        `
+        }
         <td style="border:1px solid #000;padding:2px 4px;text-align:center;font-size:7.5px;color:#000;white-space:nowrap;">
           ${proceedDate} ${proceedTime}
         </td>
@@ -184,8 +188,7 @@ export const printSKundaHistory = (
     headerInfo.description ||
     'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
   const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-  const phoneNumbers =
-    headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+  const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
   const invocationColor = headerInfo.invocationColor || '#a84b20';
   const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
   const descriptionColor = headerInfo.descriptionColor || '#8b451f';
@@ -315,16 +318,20 @@ export const printSKundaHistory = (
 // Columns Definition
 // ======================================================
 
-export const getHistorySKundaColumns = (alertRules?: AlertRule[]): Column<any>[] => [
+export const getHistorySKundaColumns = (
+  alertRules?: AlertRule[],
+): Column<any>[] => [
   {
     key: 'createdAt',
     header: 'Date & Time',
     render: (item) => {
-      const { date, time } = formatDate(item.createdAt);
+      const {date, time} = formatDate(item.createdAt);
       return (
         <div className="flex flex-col items-center">
           <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
-          <span className="text-gray-500 dark:text-gray-400 text-sm">{time}</span>
+          <span className="text-gray-500 dark:text-gray-400 text-sm">
+            {time}
+          </span>
         </div>
       );
     },
@@ -390,7 +397,10 @@ export const getHistorySKundaColumns = (alertRules?: AlertRule[]): Column<any>[]
       if (hasMeltingStatus(item)) return null;
       return (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
-          {formatNumberDisplay(item.kundaGiven || item.kundaGiven || item.kunda || 0)} G
+          {formatNumberDisplay(
+            item.kundaGiven || item.kundaGiven || item.kunda || 0,
+          )}{' '}
+          G
         </span>
       );
     },
@@ -427,13 +437,15 @@ export const getHistorySKundaColumns = (alertRules?: AlertRule[]): Column<any>[]
     colSpan: (item) => (hasMeltingStatus(item) ? 0 : 1),
     render: (item) => {
       if (hasMeltingStatus(item)) return null;
-      const grossVal = (item.chainGiven || item.chainWeight || 0) + (item.kundaGiven || item.kunda || 0);
+      const grossVal =
+        (item.chainGiven || item.chainWeight || 0) +
+        (item.kundaGiven || item.kunda || 0);
       const alertCheck = checkProcessLossAlert(
         grossVal,
         item.purity,
         item.loss,
         alertRules,
-        true
+        true,
       );
       const colorClass = getProcessLossColorClass(alertCheck);
       const diff = alertCheck?.diff || 0;
@@ -456,7 +468,7 @@ export const getHistorySKundaColumns = (alertRules?: AlertRule[]): Column<any>[]
     key: 'timeTaken',
     header: 'Gold Aging',
     render: (item) => (
-      <span className="font-medium text-sm text-[#1a1c1b] dark:text-white">
+      <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
         {item?.timeTaken || '-'}
       </span>
     ),
@@ -465,11 +477,13 @@ export const getHistorySKundaColumns = (alertRules?: AlertRule[]): Column<any>[]
     key: 'updatedAt',
     header: 'Proceed Date & Time',
     render: (item) => {
-      const { date, time } = formatDate(item.updatedAt);
+      const {date, time} = formatDate(item.updatedAt);
       return (
         <div className="flex flex-col items-center">
           <span className="text-sm text-[#1a1c1b] dark:text-white">{date}</span>
-          <span className="text-gray-500 dark:text-gray-400 text-sm">{time}</span>
+          <span className="text-gray-500 dark:text-gray-400 text-sm">
+            {time}
+          </span>
         </div>
       );
     },
@@ -484,7 +498,7 @@ export const getSKundaColumns = (
   isSubmitting: boolean,
   hasEditableValues: (entry: KundaEntry) => boolean,
   showActionColumn: boolean,
-  alertRules?: AlertRule[]
+  alertRules?: AlertRule[],
 ): Column<KundaEntry>[] => {
   const baseColumns: Column<KundaEntry>[] = [
     {
@@ -497,8 +511,12 @@ export const getSKundaColumns = (
 
         return (
           <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">{datePart}</span>
-            <span className="text-sm text-[#1a1c1b] dark:text-white">{timePart}</span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {datePart}
+            </span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {timePart}
+            </span>
           </div>
         );
       },
@@ -525,7 +543,7 @@ export const getSKundaColumns = (
       key: 'purity',
       header: 'Purity % (टंच)',
       render: (item) => (
-        <div className="flex w-24 items-center justify-center gap-1 whitespace-nowrap bg-gray-50/50 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
+        <div className="bg-gray-50/50 flex w-24 items-center justify-center gap-1 whitespace-nowrap px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800/50">
           <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
             {formatNumberDisplay(item.purity)}%
           </span>
@@ -558,7 +576,9 @@ export const getSKundaColumns = (
                       : item.kundaGiven
                 }
                 {...getScaleProps(index, 'kundaGiven')}
-                onChange={(e) => handleInlineChange(index, 'kundaGiven', e.target.value)}
+                onChange={(e) =>
+                  handleInlineChange(index, 'kundaGiven', e.target.value)
+                }
                 placeholder="0.000"
                 className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
@@ -592,7 +612,9 @@ export const getSKundaColumns = (
                       : item.chainReceived
                 }
                 {...getScaleProps(index, 'chainReceived')}
-                onChange={(e) => handleInlineChange(index, 'chainReceived', e.target.value)}
+                onChange={(e) =>
+                  handleInlineChange(index, 'chainReceived', e.target.value)
+                }
                 placeholder="0.000"
                 className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
@@ -626,7 +648,9 @@ export const getSKundaColumns = (
                       : item.scrap
                 }
                 {...getScaleProps(index, 'scrap')}
-                onChange={(e) => handleInlineChange(index, 'scrap', e.target.value)}
+                onChange={(e) =>
+                  handleInlineChange(index, 'scrap', e.target.value)
+                }
                 placeholder="0.000"
                 className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
               />
@@ -649,12 +673,13 @@ export const getSKundaColumns = (
       render: (item) => {
         const hasValues = Boolean(
           (item.kundaGivenRaw !== undefined && item.kundaGivenRaw !== '') ||
-          (item.chainReceivedRaw !== undefined && item.chainReceivedRaw !== '') ||
+          (item.chainReceivedRaw !== undefined &&
+            item.chainReceivedRaw !== '') ||
           (item.scrapRaw !== undefined && item.scrapRaw !== '') ||
           item.kundaGiven > 0 ||
           item.chainReceived > 0 ||
           item.scrap > 0 ||
-          item.isSaved
+          item.isSaved,
         );
         const grossVal = item.chainGiven + (item.kundaGiven || 0);
         const alertCheck = checkProcessLossAlert(
@@ -662,7 +687,7 @@ export const getSKundaColumns = (
           item.purity,
           item.loss,
           alertRules,
-          hasValues
+          hasValues,
         );
         const colorClass = getProcessLossColorClass(alertCheck);
         const diff = alertCheck?.diff || 0;

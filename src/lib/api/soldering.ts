@@ -1,6 +1,6 @@
 // lib/api/soldering.ts
-import { api } from '@/utils/axios';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {api} from '@/utils/axios';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export interface Soldering {
@@ -18,7 +18,10 @@ export interface Soldering {
   updatedAt?: string;
 }
 
-export const getBackendErrorMessage = (error: any, fallback: string): string => {
+export const getBackendErrorMessage = (
+  error: any,
+  fallback: string,
+): string => {
   if (!error) return fallback;
   const msg =
     error?.response?.data?.message ||
@@ -84,7 +87,7 @@ export const useSubmitSoldering = () => {
     onSuccess: (data: any) => {
       const msg = data?.message || 'Soldering submitted successfully';
       toast.success(msg);
-      queryClient.invalidateQueries({ queryKey: ['soldering'] });
+      queryClient.invalidateQueries({queryKey: ['soldering']});
     },
     onError: (error: any) => {
       const msg = getBackendErrorMessage(error, 'Failed to submit soldering');
@@ -100,10 +103,13 @@ export const useCreateSoldering = () => {
     onSuccess: (data: any) => {
       const msg = data?.message || 'Soldering created successfully';
       toast.success(msg);
-      queryClient.invalidateQueries({ queryKey: ['soldering'] });
+      queryClient.invalidateQueries({queryKey: ['soldering']});
     },
     onError: (error: any) => {
-      const msg = getBackendErrorMessage(error, 'Failed to create soldering entry');
+      const msg = getBackendErrorMessage(
+        error,
+        'Failed to create soldering entry',
+      );
       toast.error(msg);
     },
   });

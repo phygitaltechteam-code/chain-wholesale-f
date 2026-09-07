@@ -1,5 +1,5 @@
-import { api } from '@/utils/axios';
-import { useQuery } from '@tanstack/react-query';
+import {api} from '@/utils/axios';
+import {useQuery} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 export const useGetClientReport = (id: string) => {
@@ -20,8 +20,8 @@ export const getclientreport = async (id: string) => {
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||
-      error?.message ||
-      'Failed to fetch settlements',
+        error?.message ||
+        'Failed to fetch settlements',
     );
   }
 };
@@ -67,8 +67,8 @@ const getManufacturingData = async () => {
   } catch (error: any) {
     throw new Error(
       error?.response?.data?.message ||
-      error?.message ||
-      'Failed to fetch settlements',
+        error?.message ||
+        'Failed to fetch settlements',
     );
   }
 };

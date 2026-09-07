@@ -1,5 +1,5 @@
-import { api } from '@/utils/axios';
-import { useQuery } from '@tanstack/react-query';
+import {api} from '@/utils/axios';
+import {useQuery} from '@tanstack/react-query';
 
 export interface StockSummaryData {
   opening: {
@@ -56,7 +56,10 @@ export interface StockLedgerReportResponse {
   };
 }
 
-export const getStockLedgerReportApi = async (fromDate?: string, toDate?: string) => {
+export const getStockLedgerReportApi = async (
+  fromDate?: string,
+  toDate?: string,
+) => {
   try {
     const payload = {
       fromDate: fromDate || '',
@@ -66,7 +69,10 @@ export const getStockLedgerReportApi = async (fromDate?: string, toDate?: string
     const response = await api.post('/admin/stock/report', payload);
     return response.data;
   } catch (error: any) {
-    console.warn('API /admin/stock/report POST response / error:', error?.response?.data || error?.message);
+    console.warn(
+      'API /admin/stock/report POST response / error:',
+      error?.response?.data || error?.message,
+    );
     throw error;
   }
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   Plus,
   X,
@@ -9,11 +9,11 @@ import {
   Search,
   Eye,
 } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
-import { z } from 'zod';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import {z} from 'zod';
 import {
   useGetClients,
   useCreateClient,
@@ -54,7 +54,7 @@ const ClientMaster: React.FC = () => {
   }>({});
 
   // React Query hooks
-  const { data: clients = [], isLoading, refetch } = useGetClients();
+  const {data: clients = [], isLoading, refetch} = useGetClients();
   const createClient = useCreateClient();
   const updateClient = useUpdateClient();
   const deleteClient = useDeleteClient();
@@ -62,50 +62,49 @@ const ClientMaster: React.FC = () => {
   // Filter clients based on search term
   const filteredClients = searchTerm
     ? clients.filter(
-      (client: Client) =>
-        client.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.phoneNumber?.includes(searchTerm) ||
-        client.address?.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
+        (client: Client) =>
+          client.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          client.phoneNumber?.includes(searchTerm) ||
+          client.address?.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
     : clients;
 
   // Handle form input change
- const handleInputChange = (
-  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-) => {
-  const { name, value } = e.target;
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const {name, value} = e.target;
 
-  if (name === 'openingBalance') {
-    // Allow +, -, and numbers with decimal
-    const sanitized = value.replace(/[^0-9.+-]/g, '');
-    
-    // Handle multiple decimal points - keep only the first one
-    const parts = sanitized.split('.');
-    const formatted = parts.length > 2 
-      ? `${parts[0]}.${parts.slice(1).join('')}` 
-      : sanitized;
-    
-    // Allow only one + or - sign at the beginning
-    let finalValue = formatted;
-    const signMatch = formatted.match(/^([+-])/);
-    if (signMatch) {
-      const sign = signMatch[1];
-      const rest = formatted.substring(1).replace(/[+-]/g, '');
-      finalValue = sign + rest;
+    if (name === 'openingBalance') {
+      // Allow +, -, and numbers with decimal
+      const sanitized = value.replace(/[^0-9.+-]/g, '');
+
+      // Handle multiple decimal points - keep only the first one
+      const parts = sanitized.split('.');
+      const formatted =
+        parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : sanitized;
+
+      // Allow only one + or - sign at the beginning
+      let finalValue = formatted;
+      const signMatch = formatted.match(/^([+-])/);
+      if (signMatch) {
+        const sign = signMatch[1];
+        const rest = formatted.substring(1).replace(/[+-]/g, '');
+        finalValue = sign + rest;
+      } else {
+        // Remove any remaining + or - signs if not at the beginning
+        finalValue = formatted.replace(/[+-]/g, '');
+      }
+
+      setFormData((prev) => ({...prev, [name]: finalValue}));
     } else {
-      // Remove any remaining + or - signs if not at the beginning
-      finalValue = formatted.replace(/[+-]/g, '');
+      setFormData((prev) => ({...prev, [name]: value}));
     }
-    
-    setFormData((prev) => ({ ...prev, [name]: finalValue }));
-  } else {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  }
 
-  if (formErrors[name as keyof typeof formErrors]) {
-    setFormErrors((prev) => ({ ...prev, [name]: undefined }));
-  }
-};
+    if (formErrors[name as keyof typeof formErrors]) {
+      setFormErrors((prev) => ({...prev, [name]: undefined}));
+    }
+  };
   // Validate form data
   const validateForm = (): boolean => {
     try {
@@ -220,7 +219,7 @@ const ClientMaster: React.FC = () => {
   const handleRowClick = (client: Client) => {
     const targetId = client?.id || (client as any)?._id;
     if (targetId) {
-      navigate({ to: '/client/clientreport/$id', params: { id: targetId } });
+      navigate({to: '/client/clientreport/$id', params: {id: targetId}});
     }
   };
 
@@ -255,7 +254,6 @@ const ClientMaster: React.FC = () => {
     const fixed = num.toFixed(maxDecimals);
     return parseFloat(fixed).toString();
   };
-
 
   // Table columns
   const columns: Column<Client>[] = [
@@ -328,7 +326,7 @@ const ClientMaster: React.FC = () => {
           {/* Left side - Back button and Title */}
           <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
             <button
-              onClick={() => navigate({ to: '/setlment/settlement' })}
+              onClick={() => navigate({to: '/setlment/settlement'})}
               className="flex flex-shrink-0 items-center gap-1 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -415,8 +413,9 @@ const ClientMaster: React.FC = () => {
                   value={formData.fullName}
                   onChange={handleInputChange}
                   placeholder="Enter client name"
-                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${formErrors.fullName ? 'ring-2 ring-red-500' : ''
-                    }`}
+                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
+                    formErrors.fullName ? 'ring-2 ring-red-500' : ''
+                  }`}
                   autoFocus
                 />
                 {formErrors.fullName && (
@@ -437,8 +436,9 @@ const ClientMaster: React.FC = () => {
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
                   placeholder="Enter phone number"
-                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${formErrors.phoneNumber ? 'ring-2 ring-red-500' : ''
-                    }`}
+                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
+                    formErrors.phoneNumber ? 'ring-2 ring-red-500' : ''
+                  }`}
                 />
                 {formErrors.phoneNumber && (
                   <p className="mt-1 text-[10px] text-red-500 sm:text-xs">
@@ -458,8 +458,9 @@ const ClientMaster: React.FC = () => {
                   onChange={handleInputChange}
                   placeholder="Enter address"
                   rows={3}
-                  className={`w-full resize-none rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${formErrors.address ? 'ring-2 ring-red-500' : ''
-                    }`}
+                  className={`w-full resize-none rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
+                    formErrors.address ? 'ring-2 ring-red-500' : ''
+                  }`}
                 />
                 {formErrors.address && (
                   <p className="mt-1 text-[10px] text-red-500 sm:text-xs">
@@ -479,8 +480,9 @@ const ClientMaster: React.FC = () => {
                   value={formData.openingBalance}
                   onChange={handleInputChange}
                   placeholder="e.g., 50.5"
-                  className={`font-mono w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${formErrors.openingBalance ? 'ring-2 ring-red-500' : ''
-                    }`}
+                  className={`font-mono w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
+                    formErrors.openingBalance ? 'ring-2 ring-red-500' : ''
+                  }`}
                 />
                 {formErrors.openingBalance && (
                   <p className="mt-1 text-[10px] text-red-500 sm:text-xs">
