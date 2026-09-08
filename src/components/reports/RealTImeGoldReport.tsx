@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useMemo} from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Search,
   Printer,
@@ -7,10 +7,10 @@ import {
   ChevronRight,
   Layers,
 } from 'lucide-react';
-import {useGetHeader} from '@/lib/api/headerapi';
-import {useGetRealTimeGold} from '@/lib/api/realtimegold';
+import { useGetHeader } from '@/lib/api/headerapi';
+import { useGetRealTimeGold } from '@/lib/api/realtimegold';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
 
 // ======================================================
 // INTERFACES
@@ -55,7 +55,7 @@ export interface SummaryData {
   totalItemsCount: number;
   byProcess?: Record<
     string,
-    {totalWeight: number; totalFineWeight: number; count: number}
+    { totalWeight: number; totalFineWeight: number; count: number }
   >;
 }
 
@@ -129,8 +129,8 @@ const calculateAvgPurity = (gross: number, fine: number): string => {
 };
 
 const getDefaultWeekRange = () => {
-  const {fromDate, toDate} = getCurrentAppWeekRange();
-  return {monday: fromDate, sunday: toDate};
+  const { fromDate, toDate } = getCurrentAppWeekRange();
+  return { monday: fromDate, sunday: toDate };
 };
 
 const formatDateForDisplay = (date: Date | null) => {
@@ -342,22 +342,22 @@ const buildCategoryGroups = (data: any | undefined): CategoryGroup[] => {
       .filter((i: any) => {
         const dueVal = toNumber(
           i.due ??
-            i.fineWeight ??
-            i.fineweight ??
-            i.grossWeight ??
-            i.grossweight ??
-            0,
+          i.fineWeight ??
+          i.fineweight ??
+          i.grossWeight ??
+          i.grossweight ??
+          0,
         );
         return dueVal > 0;
       })
       .map((i: any) => {
         const dueVal = toNumber(
           i.due ??
-            i.fineWeight ??
-            i.fineweight ??
-            i.grossWeight ??
-            i.grossweight ??
-            0,
+          i.fineWeight ??
+          i.fineweight ??
+          i.grossWeight ??
+          i.grossweight ??
+          0,
         );
         const clientName = i.clientName || i.name || 'Unnamed Client';
         return {
@@ -407,7 +407,7 @@ const RealTimeGoldReport: React.FC = () => {
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
-      const {monday, sunday} = getDefaultWeekRange();
+      const { monday, sunday } = getDefaultWeekRange();
       setFromDate(monday);
       setToDate(sunday);
     };
@@ -562,21 +562,20 @@ const RealTimeGoldReport: React.FC = () => {
   const stockTotals = useMemo(() => {
     const gross = stockGroups.reduce((s, g) => s + g.totalGrossWeight, 0);
     const fine = stockGroups.reduce((s, g) => s + g.totalFineWeight, 0);
-    return {gross, fine, count: stockGroups.reduce((s, g) => s + g.count, 0)};
+    return { gross, fine, count: stockGroups.reduce((s, g) => s + g.count, 0) };
   }, [stockGroups]);
 
   const processTotals = useMemo(() => {
     const gross = processGroups.reduce((s, g) => s + g.totalGrossWeight, 0);
     const fine = processGroups.reduce((s, g) => s + g.totalFineWeight, 0);
-    return {gross, fine, count: processGroups.reduce((s, g) => s + g.count, 0)};
+    return { gross, fine, count: processGroups.reduce((s, g) => s + g.count, 0) };
   }, [processGroups]);
 
   const clientDueTotal = useMemo(() => {
     const fine = clientDueGroup ? clientDueGroup.totalFineWeight : 0;
-    return {fine, count: clientDueGroup ? clientDueGroup.count : 0};
+    return { fine, count: clientDueGroup ? clientDueGroup.count : 0 };
   }, [clientDueGroup]);
 
-  // Calculate Totals & Purity
   const grandTotals = useMemo(() => {
     const totalGrossWeight = stockTotals.gross + processTotals.gross;
     const totalFineWeight =
@@ -584,10 +583,16 @@ const RealTimeGoldReport: React.FC = () => {
     const totalItems =
       stockTotals.count + processTotals.count + clientDueTotal.count;
 
+    // Get grand total from API summary if available
+    const apiGrandGross = summaryFromApi?.grandTotalWeight || 0;
+    const apiGrandFine = summaryFromApi?.grandTotalFineWeight || 0;
+
     return {
       totalGrossWeight,
       totalFineWeight,
       totalItems,
+      grandTotalWeight: apiGrandGross || totalGrossWeight,
+      grandTotalFineWeight: apiGrandFine || totalFineWeight,
       stockGrossWeight: stockTotals.gross,
       stockFineWeight: stockTotals.fine,
       stockAvgPurity: calculateAvgPurity(stockTotals.gross, stockTotals.fine),
@@ -599,7 +604,7 @@ const RealTimeGoldReport: React.FC = () => {
       ),
       clientDueFineWeight: clientDueTotal.fine,
     };
-  }, [stockTotals, processTotals, clientDueTotal]);
+  }, [stockTotals, processTotals, clientDueTotal, summaryFromApi]);
 
   // Print Handler
   const handlePrint = () => {
@@ -635,19 +640,31 @@ const RealTimeGoldReport: React.FC = () => {
     const printContainer = document.createElement('div');
     printContainer.id = 'print-container';
 
-    let categoryTablesHtml = '';
-    filteredGroups.forEach((group) => {
+    let stockGroupsHtml = '';
+    let processGroupsHtml = '';
+    let clientDueHtml = '';
+
+    // Separate groups by type
+    const stockGroups = filteredGroups.filter(g => g.type === 'Stock' && g.id !== 'client-due');
+    const processGroups = filteredGroups.filter(g => g.type === 'Process');
+    const clientDueGroup = filteredGroups.find(g => g.id === 'client-due');
+
+    // Build Stock Groups HTML
+    stockGroups.forEach((group) => {
       const rowsHtml = group.items
         .map(
           (item, idx) => `
-                <tr style="border-bottom:1px solid #785600;">
-                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
-                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.name}</td>
-                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${group.id === 'client-due' ? '-' : formatNumberDisplay(item.grossWeight)}</td>
-                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${group.id === 'client-due' || item.purity === null ? '-' : formatNumberDisplay(item.purity, 2) + '%'}</td>
-                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.fineWeight)}</td>
-                </tr>
-            `,
+          <tr style="border-bottom:1px solid #785600;">
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">
+              ${item.name}
+              ${item.purity !== null && item.purity !== undefined ? `<span style="font-size:7px;color:#785600;font-weight:400;"> (${item.purity}%)</span>` : ''}
+            </td>
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${formatNumberDisplay(item.grossWeight)}</td>
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.purity === null ? '-' : formatNumberDisplay(item.purity, 2) + '%'}</td>
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.fineWeight)}</td>
+          </tr>
+        `,
         )
         .join('');
 
@@ -656,29 +673,132 @@ const RealTimeGoldReport: React.FC = () => {
         group.totalFineWeight,
       );
 
-      categoryTablesHtml += `
-                <div style="margin-bottom:8px;page-break-inside:avoid;">
-                    <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-weight:700;">${group.name}</span>
-                        <span style="font-size:8.5px;color:#000;">${group.id === 'client-due' ? `Due: <b>${formatNumberDisplay(group.totalFineWeight)} G</b>` : `Gross: <b>${formatNumberDisplay(group.totalGrossWeight)} G</b> | Avg Purity: <b>${catPurity}%</b> | Fine: <b>${formatNumberDisplay(group.totalFineWeight)} G</b>`} | Items: <b>${group.count}</b></span>
-                    </div>
-                    <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
-                        <thead>
-                            <tr style="background:#785600;color:white;font-weight:600;">
-                                <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
-                                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Item Name</th>
-                                <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Gross WT (G)</th>
-                                <th style="border:1px solid #785600;padding:2px 3px;width:65px;text-align:center;font-size:8px;color:white;">Purity</th>
-                                <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Fine WT (G)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${rowsHtml}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+      stockGroupsHtml += `
+      <div style="margin-bottom:8px;page-break-inside:avoid;">
+        <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:700;">${group.name}</span>
+          <span style="font-size:8.5px;color:#000;">Gross: <b>${formatNumberDisplay(group.totalGrossWeight)} G</b> | Avg Purity: <b>${catPurity}%</b> | Fine: <b>${formatNumberDisplay(group.totalFineWeight)} G</b> | Items: <b>${group.count}</b></span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
+          <thead>
+            <tr style="background:#785600;color:white;font-weight:600;">
+              <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Item Name</th>
+              <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Gross WT (G)</th>
+              <th style="border:1px solid #785600;padding:2px 3px;width:65px;text-align:center;font-size:8px;color:white;">Purity</th>
+              <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Fine WT (G)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
     });
+
+    // Add Grand Total for Stock
+    if (stockGroups.length > 0) {
+      const totalStockGross = stockGroups.reduce((sum, g) => sum + g.totalGrossWeight, 0);
+      const totalStockFine = stockGroups.reduce((sum, g) => sum + g.totalFineWeight, 0);
+
+      stockGroupsHtml += `
+      <div style="margin-top:-4px;margin-bottom:12px;page-break-inside:avoid;">
+        <div style="background:#785600;padding:4px 8px;font-weight:bold;font-size:10px;border:1px solid #785600;color:white;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:700;">GRAND TOTAL (Stock)</span>
+          <span style="font-size:9px;">Gross: <b>${formatNumberDisplay(grandTotals.grandTotalWeight)} G</b> | Fine: <b>${formatNumberDisplay(grandTotals.grandTotalFineWeight)} G</b></span>
+        </div>
+      </div>
+    `;
+    }
+
+    // Build Process Groups HTML
+    processGroups.forEach((group) => {
+      const rowsHtml = group.items
+        .map(
+          (item, idx) => `
+          <tr style="border-bottom:1px solid #785600;">
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">
+              ${item.name}
+              ${item.purity !== null && item.purity !== undefined ? `<span style="font-size:7px;color:#785600;font-weight:400;"> (${item.purity}%)</span>` : ''}
+            </td>
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${formatNumberDisplay(item.grossWeight)}</td>
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.purity === null ? '-' : formatNumberDisplay(item.purity, 2) + '%'}</td>
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.fineWeight)}</td>
+          </tr>
+        `,
+        )
+        .join('');
+
+      const catPurity = calculateAvgPurity(
+        group.totalGrossWeight,
+        group.totalFineWeight,
+      );
+
+      processGroupsHtml += `
+      <div style="margin-bottom:8px;page-break-inside:avoid;">
+        <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:700;">${group.name}</span>
+          <span style="font-size:8.5px;color:#000;">Gross: <b>${formatNumberDisplay(group.totalGrossWeight)} G</b> | Avg Purity: <b>${catPurity}%</b> | Fine: <b>${formatNumberDisplay(group.totalFineWeight)} G</b> | Items: <b>${group.count}</b></span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
+          <thead>
+            <tr style="background:#785600;color:white;font-weight:600;">
+              <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Item Name</th>
+              <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Gross WT (G)</th>
+              <th style="border:1px solid #785600;padding:2px 3px;width:65px;text-align:center;font-size:8px;color:white;">Purity</th>
+              <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Fine WT (G)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
+    });
+
+    // Build Client Due HTML
+    if (clientDueGroup && clientDueGroup.items.length > 0) {
+      const rowsHtml = clientDueGroup.items
+        .map(
+          (item, idx) => `
+          <tr style="border-bottom:1px solid #785600;">
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.name}</td>
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">-</td>
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">-</td>
+            <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.fineWeight)}</td>
+          </tr>
+        `,
+        )
+        .join('');
+
+      clientDueHtml = `
+      <div style="margin-bottom:8px;page-break-inside:avoid;">
+        <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:700;">${clientDueGroup.name}</span>
+          <span style="font-size:8.5px;color:#000;">Due: <b>${formatNumberDisplay(clientDueGroup.totalFineWeight)} G</b> | Items: <b>${clientDueGroup.count}</b></span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
+          <thead>
+            <tr style="background:#785600;color:white;font-weight:600;">
+              <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Client Name</th>
+              <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Gross WT (G)</th>
+              <th style="border:1px solid #785600;padding:2px 3px;width:65px;text-align:center;font-size:8px;color:white;">Purity</th>
+              <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Due WT (G)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
+    }
 
     const grandPurity = calculateAvgPurity(
       grandTotals.totalGrossWeight,
@@ -686,136 +806,142 @@ const RealTimeGoldReport: React.FC = () => {
     );
 
     printContainer.innerHTML = `
-            <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
-                <div>
-                    <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
-                            <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
-                            <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
-                            <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
-                        </div>
-                        
-                        <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
-                            ${description}
-                        </div>
-                        
-                        <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
-                            ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
-                        </div>
-                        <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
-                    </div>
+    <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+      <div>
+        <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
+            <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
+            <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
+            <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
+          </div>
+          
+          <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
+            ${description}
+          </div>
+          
+          <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
+            ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
+          </div>
+          <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
+        </div>
 
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
-                        <div style="flex:1;"></div>
-                        <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
-                            Real Time Gold Report
-                        </h2>
-                        ${
-                          fromDate || toDate
-                            ? `
-                            <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
-                                ${fromDate ? `From: ${formatDateForDisplay(fromDate)}` : ''} 
-                                ${fromDate && toDate ? '&nbsp;&nbsp;' : ''}
-                                ${toDate ? `To: ${formatDateForDisplay(toDate)}` : ''}
-                            </div>
-                        `
-                            : `
-                            <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
-                                Date: ${new Date().toLocaleDateString('en-IN')}
-                            </div>
-                        `
-                        }
-                    </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
+          <div style="flex:1;"></div>
+          <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+            Real Time Gold Report
+          </h2>
+          ${fromDate || toDate
+        ? `
+              <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
+                ${fromDate ? `From: ${formatDateForDisplay(fromDate)}` : ''} 
+                ${fromDate && toDate ? '&nbsp;&nbsp;' : ''}
+                ${toDate ? `To: ${formatDateForDisplay(toDate)}` : ''}
+              </div>
+            `
+        : `
+              <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
+                Date: ${new Date().toLocaleDateString('en-IN')}
+              </div>
+            `
+      }
+        </div>
 
-                    <!-- Grand Summary Box -->
-                    <div style="display:flex;justify-content:space-around;background:#fff8e6;border:1px solid #785600;padding:5px;margin-bottom:8px;font-size:9.5px;font-weight:bold;color:#000;">
-                        <div>Total Gross: <span style="color:#785600;">${formatNumberDisplay(grandTotals.totalGrossWeight)} G</span></div>
-                        <div>Avg Purity: <span style="color:#785600;">${grandPurity}%</span></div>
-                        <div>Total Fine: <span style="color:#785600;">${formatNumberDisplay(grandTotals.totalFineWeight)} G</span></div>
-                        <div>Total Items: <span style="color:#785600;">${grandTotals.totalItems}</span></div>
-                    </div>
+        <!-- Grand Summary Box -->
+        <div style="display:flex;justify-content:space-around;background:#fff8e6;border:1px solid #785600;padding:5px;margin-bottom:8px;font-size:9.5px;font-weight:bold;color:#000;">
+          <div>Grand Gross: <span style="color:#785600;">${formatNumberDisplay(grandTotals.grandTotalWeight)} G</span></div>
+          <div>Avg Purity: <span style="color:#785600;">${grandPurity}%</span></div>
+          <div>Grand Fine: <span style="color:#785600;">${formatNumberDisplay(grandTotals.grandTotalFineWeight)} G</span></div>
+          <div>Total Items: <span style="color:#785600;">${grandTotals.totalItems}</span></div>
+        </div>
 
-                    ${categoryTablesHtml}
-                </div>
+        <!-- Stock Groups -->
+        ${stockGroupsHtml}
 
-                <div style="width:100%;margin-top:auto;padding-top:4px;">
-                    <div style="border-top:1px solid #785600;padding-top:2px;text-align:center;">
-                        <p style="margin:0;font-size:7px;color:#000;">
-                            This is a computer generated report
-                        </p>
-                        <div style="margin-top:1px;font-size:6.5px;color:#000;display:flex;justify-content:center;gap:10px;">
-                            <span>Powered by Matoshree Gold</span>
-                            <span>|</span>
-                            <span>Generated: ${new Date().toLocaleDateString(
-                              'en-IN',
-                              {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                              },
-                            )} ${new Date().toLocaleTimeString('en-IN', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true,
-                            })}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+        <!-- Process Groups -->
+        ${processGroupsHtml}
+
+        <!-- Client Due -->
+        ${clientDueHtml}
+      </div>
+
+      <div style="width:100%;margin-top:auto;padding-top:4px;">
+        <div style="border-top:1px solid #785600;padding-top:2px;text-align:center;">
+          <p style="margin:0;font-size:7px;color:#000;">
+            This is a computer generated report
+          </p>
+          <div style="margin-top:1px;font-size:6.5px;color:#000;display:flex;justify-content:center;gap:10px;">
+            <span>Powered by Matoshree Gold</span>
+            <span>|</span>
+            <span>Generated: ${new Date().toLocaleDateString(
+        'en-IN',
+        {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        },
+      )} ${new Date().toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      })}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 
     const style = document.createElement('style');
     style.textContent = `
-            @page {
-                size: A4 portrait;
-                margin: 0;
-            }
-            @media print {
-                html, body {
-                    margin: 0;
-                    padding: 0;
-                    width: 210mm;
-                    height: 297mm;
-                }
-                body * {
-                    visibility: hidden;
-                }
-                #print-container, #print-container * {
-                    visibility: visible;
-                }
-                #print-container {
-                    position: fixed !important;
-                    left: 0 !important;
-                    top: 0 !important;
-                    width: 210mm !important;
-                    height: 297mm !important;
-                    background: white !important;
-                    padding: 4px !important;
-                    overflow: auto !important;
-                    z-index: 9999 !important;
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-                #print-container table {
-                    width: 100% !important;
-                }
-                #print-container tr {
-                    page-break-inside: avoid !important;
-                }
-                #print-container thead tr {
-                    background: #785600 !important;
-                    color: white !important;
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-                #print-container thead tr th {
-                    background: #785600 !important;
-                    color: white !important;
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-            }
-        `;
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+    @media print {
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+        height: 297mm;
+      }
+      body * {
+        visibility: hidden;
+      }
+      #print-container, #print-container * {
+        visibility: visible;
+      }
+      #print-container {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 210mm !important;
+        height: 297mm !important;
+        background: white !important;
+        padding: 4px !important;
+        overflow: auto !important;
+        z-index: 9999 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      #print-container table {
+        width: 100% !important;
+      }
+      #print-container tr {
+        page-break-inside: avoid !important;
+      }
+      #print-container thead tr {
+        background: #785600 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      #print-container thead tr th {
+        background: #785600 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  `;
 
     document.head.appendChild(style);
     document.body.appendChild(printContainer);
@@ -869,7 +995,7 @@ const RealTimeGoldReport: React.FC = () => {
           {/* Title */}
           <div>
             <h1 className="text-base font-bold text-[#1a1c1b] dark:text-white sm:text-lg">
-              Real Time Gold Report
+              Real Time Gold Dashboard
             </h1>
             <p className="text-xs text-[#817563] dark:text-slate-400">
               Live breakdown of Stock, Manufacturing processes, and Client Dues
@@ -890,25 +1016,7 @@ const RealTimeGoldReport: React.FC = () => {
               />
             </div>
 
-            {/* From & To Date Pickers */}
-            <div className="flex items-center gap-2">
-              <GenericWeeklyDatePicker
-                id="from-date-gold"
-                mode="from"
-                placeholder="From Date"
-                initialDates={fromDate ? [fromDate] : []}
-                onDateChange={handleFromDateChange}
-                className="w-28 sm:w-32 md:w-36"
-              />
-              <GenericWeeklyDatePicker
-                id="to-date-gold"
-                mode="to"
-                placeholder="To Date"
-                initialDates={toDate ? [toDate] : []}
-                onDateChange={handleToDateChange}
-                className="w-28 sm:w-32 md:w-36"
-              />
-            </div>
+
 
             {/* Print Button */}
             <button
@@ -932,7 +1040,7 @@ const RealTimeGoldReport: React.FC = () => {
                 Total Gross WT
               </span>
               <span className="text-lg font-black text-black dark:text-white">
-                {formatNumberDisplay(grandTotals.totalGrossWeight)} G
+                {formatNumberDisplay(grandTotals.grandTotalWeight)} G
               </span>
             </div>
           </div>
@@ -1006,11 +1114,10 @@ const RealTimeGoldReport: React.FC = () => {
                         <React.Fragment key={group.id}>
                           <tr
                             onClick={() => toggleRow(group.id)}
-                            className={`cursor-pointer transition-colors ${
-                              isExpanded
-                                ? 'bg-[#785600]/10 dark:bg-amber-900/20'
-                                : 'hover:bg-[#785600]/5 dark:hover:bg-slate-800/40'
-                            }`}
+                            className={`cursor-pointer transition-colors ${isExpanded
+                              ? 'bg-[#785600]/10 dark:bg-amber-900/20'
+                              : 'hover:bg-[#785600]/5 dark:hover:bg-slate-800/40'
+                              }`}
                           >
                             <td className="px-2 py-2.5 text-center">
                               <div className="inline-flex h-4 w-4 items-center justify-center rounded bg-[#785600]/10 text-black dark:bg-amber-400/20 dark:text-amber-400">
@@ -1032,7 +1139,6 @@ const RealTimeGoldReport: React.FC = () => {
                             </td>
                           </tr>
 
-                          {/* Expanded Sub-rows */}
                           {isExpanded &&
                             group.items.map((item, itemIdx) => (
                               <tr
@@ -1044,6 +1150,11 @@ const RealTimeGoldReport: React.FC = () => {
                                 </td>
                                 <td className="px-3 py-2 text-center font-semibold text-black dark:text-slate-200">
                                   {item.name}
+                                  {item.purity !== null && item.purity !== undefined && (
+                                    <span className="ml-1 text-xs text-[#785600] dark:text-amber-400">
+                                      ({item.purity}%)
+                                    </span>
+                                  )}
                                 </td>
                                 <td className="font-mono px-3 py-2 text-center font-semibold text-black dark:text-slate-200">
                                   {formatNumberDisplay(item.grossWeight)}
@@ -1118,11 +1229,10 @@ const RealTimeGoldReport: React.FC = () => {
                         <React.Fragment key={group.id}>
                           <tr
                             onClick={() => toggleRow(group.id)}
-                            className={`cursor-pointer transition-colors ${
-                              isExpanded
-                                ? 'bg-[#785600]/10 dark:bg-amber-900/20'
-                                : 'hover:bg-[#785600]/5 dark:hover:bg-slate-800/40'
-                            }`}
+                            className={`cursor-pointer transition-colors ${isExpanded
+                              ? 'bg-[#785600]/10 dark:bg-amber-900/20'
+                              : 'hover:bg-[#785600]/5 dark:hover:bg-slate-800/40'
+                              }`}
                           >
                             <td className="px-2 py-2.5 text-center">
                               <div className="inline-flex h-4 w-4 items-center justify-center rounded bg-[#785600]/10 text-black dark:bg-amber-400/20 dark:text-amber-400">
@@ -1144,7 +1254,6 @@ const RealTimeGoldReport: React.FC = () => {
                             </td>
                           </tr>
 
-                          {/* Expanded Sub-rows */}
                           {isExpanded &&
                             group.items.map((item, itemIdx) => (
                               <tr
