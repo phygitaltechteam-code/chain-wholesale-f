@@ -38,13 +38,8 @@ export const getCurrentWeekRange = () => {
   return {monday: fromDate, sunday: toDate};
 };
 
-export const calculateExpectedFine = (
-  grossWt: number,
-  purity: number,
-): number => {
-  if (!grossWt || !purity) return 0;
-  return Math.round(((grossWt * purity) / 100) * 1000) / 1000;
-};
+import {calculateExpectedFine} from '@/utils/calculations';
+export {calculateExpectedFine};
 
 export const toNumber = (value: unknown): number => {
   if (value === null || value === undefined || value === '') return 0;

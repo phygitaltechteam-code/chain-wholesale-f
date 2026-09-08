@@ -3,6 +3,7 @@ import {Calculator, RefreshCw, Sparkles, Info} from 'lucide-react';
 import PageHeader from '@/components/Forms/Common/PageHeader';
 import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import toast from 'react-hot-toast';
+import {calculatePureGoldToAdd} from '@/utils/calculations';
 
 export const PurityManagement: React.FC = () => {
   // Input states
@@ -39,13 +40,10 @@ export const PurityManagement: React.FC = () => {
     );
   }, [weight, purityCurrent, purityTarget, hasInput]);
 
-  // Calculation: A = W * (T - P) / (100 - T)
+  // Centralized Calculation: A = W * (T - P) / (100 - T)
   const pureGoldToAdd = useMemo(() => {
-    if (!hasInput || !isValid || purityTarget >= 100) return 0;
-    const numerator = weight * (purityTarget - purityCurrent);
-    const denominator = 100 - purityTarget;
-    const result = numerator / denominator;
-    return Math.max(0, result);
+    if (!hasInput || !isValid) return 0;
+    return calculatePureGoldToAdd(weight, purityCurrent, purityTarget);
   }, [weight, purityCurrent, purityTarget, isValid, hasInput]);
 
   const handleReset = () => {

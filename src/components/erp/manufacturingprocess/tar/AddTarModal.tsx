@@ -76,15 +76,6 @@ const AddTarModal: React.FC<AddTarModalProps> = ({
                   className="relative flex flex-col justify-between rounded-xl border border-[#d3c4af]/30 bg-[#fbfaf8] p-4 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800/80"
                 >
                   <div className="mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#785600]/10 text-xs font-bold text-[#785600] dark:bg-amber-900/30 dark:text-amber-400">
-                        {idx + 1}
-                      </span>
-                      <span className="text-xs font-semibold text-[#1a1c1b] dark:text-white">
-                        Tar Card #{idx + 1}
-                      </span>
-                    </div>
-
                     {modalCards.length > 1 && (
                       <button
                         type="button"

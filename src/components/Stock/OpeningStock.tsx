@@ -554,6 +554,8 @@ const OpeningStock: React.FC = () => {
       header: 'Weight (G)',
       render: (item, index) => {
         if (item.isEditing) {
+          const actualIndex = openingEntries.findIndex((e) => e.id === item.id);
+          const targetIndex = actualIndex >= 0 ? actualIndex : index;
           return (
             <div className="inline-block w-28">
               <GenericInputField
@@ -567,7 +569,7 @@ const OpeningStock: React.FC = () => {
                       ? ''
                       : item.grams
                 }
-                {...getScaleProps(index, 'grams')}
+                {...getScaleProps(targetIndex, 'grams')}
                 onChange={(e) =>
                   handleInlineChange(item.id, 'grams', e.target.value)
                 }

@@ -336,7 +336,7 @@ export default function ClientReport() {
         ? Math.abs(
             rawItems.reduce((acc, it) => acc + (Number(it.weight) || 0), 0),
           )
-        : Math.abs(entry.wt || entry.chainWt || entry.goldWt || 0);
+        : Math.abs(Number(entry.wt ?? entry.chainWt ?? entry.goldWt ?? 0));
 
     const items =
       rawItems.length > 0
@@ -369,9 +369,11 @@ export default function ClientReport() {
                     : `${entry.purity}%`
                   : '100%',
               fineWeight: Math.abs(
-                entry.wt || entry.chainWt || entry.goldWt || 0,
+                Number(entry.wt ?? entry.chainWt ?? entry.goldWt ?? 0),
               ),
-              weight: Math.abs(entry.wt || entry.chainWt || entry.goldWt || 0),
+              weight: Math.abs(
+                Number(entry.wt ?? entry.chainWt ?? entry.goldWt ?? 0),
+              ),
               remark: entry.remark || '',
             },
           ];
@@ -389,6 +391,7 @@ export default function ClientReport() {
         previousBalance: prevDue,
         newBalance: newDue,
         dateTime: entry.dateTime,
+        remark: entry.remark || undefined,
         items,
       },
       getpdfheaderdata,
@@ -940,6 +943,15 @@ export default function ClientReport() {
                             className="whitespace-nowrap border-l border-[#f4f4f2] px-3 py-3 text-center align-middle dark:border-slate-700"
                           >
                             {(() => {
+                              const remarkLower = (entry.remark || '')
+                                .toLowerCase()
+                                .trim();
+
+                              // If remark is Opening Balance, do not show print icon
+                              if (remarkLower.includes('opening')) {
+                                return null;
+                              }
+
                               const groupWeight =
                                 entry.rawGroupItems &&
                                 entry.rawGroupItems.length > 0
@@ -951,15 +963,25 @@ export default function ClientReport() {
                                   : entry.wt !== undefined && entry.wt !== null
                                     ? entry.wt
                                     : (entry.chainWt ?? entry.goldWt ?? 0);
-                              const isGiven = groupWeight < 0;
 
-                              if (!isGiven) return null;
+                              const isNegative =
+                                groupWeight < 0 ||
+                                entry.wt < 0 ||
+                                (entry.goldWt !== null &&
+                                  entry.goldWt !== undefined &&
+                                  entry.goldWt < 0) ||
+                                (entry.chainWt !== null &&
+                                  entry.chainWt !== undefined &&
+                                  entry.chainWt < 0);
+
+                              // Only show print icon for negative / settle / given transactions
+                              if (!isNegative) return null;
 
                               return (
                                 <button
                                   type="button"
                                   onClick={() => handleOpenReceipt(entry)}
-                                  title="Print Give Receipt"
+                                  title="Print Settle / Give Receipt"
                                   className="inline-flex items-center justify-center rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-amber-400 dark:hover:bg-amber-400/20"
                                 >
                                   <Printer className="h-4 w-4" />
