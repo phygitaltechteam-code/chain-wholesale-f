@@ -14,23 +14,52 @@ export const WEEK_DAYS = [
   {value: 6, label: 'Saturday'},
 ];
 
-export const WEEK_CYCLE_PRESETS = [
-  {id: 'monday_to_sunday', label: 'Monday to Sunday', startDay: 1, endDay: 0},
-  {id: 'sunday_to_sunday', label: 'Sunday to Sunday', startDay: 0, endDay: 0},
+export const WEEK_CYCLE_OPTIONS = [
   {
-    id: 'sunday_to_saturday',
-    label: 'Sunday to Saturday',
+    startDay: 1,
+    endDay: 0,
+    cycleId: 'monday_to_sunday',
+    label: 'Monday (Monday to Sunday)',
+  },
+  {
+    startDay: 2,
+    endDay: 1,
+    cycleId: 'tuesday_to_monday',
+    label: 'Tuesday (Tuesday to Monday)',
+  },
+  {
+    startDay: 3,
+    endDay: 2,
+    cycleId: 'wednesday_to_tuesday',
+    label: 'Wednesday (Wednesday to Tuesday)',
+  },
+  {
+    startDay: 4,
+    endDay: 3,
+    cycleId: 'thursday_to_wednesday',
+    label: 'Thursday (Thursday to Wednesday)',
+  },
+  {
+    startDay: 5,
+    endDay: 4,
+    cycleId: 'friday_to_thursday',
+    label: 'Friday (Friday to Thursday)',
+  },
+  {
+    startDay: 6,
+    endDay: 5,
+    cycleId: 'saturday_to_friday',
+    label: 'Saturday (Saturday to Friday)',
+  },
+  {
     startDay: 0,
     endDay: 6,
+    cycleId: 'sunday_to_saturday',
+    label: 'Sunday (Sunday to Saturday)',
   },
-  {
-    id: 'monday_to_saturday',
-    label: 'Monday to Saturday',
-    startDay: 1,
-    endDay: 6,
-  },
-  {id: 'custom', label: 'Custom From / To Day', startDay: 1, endDay: 0},
 ];
+
+export const WEEK_CYCLE_PRESETS = WEEK_CYCLE_OPTIONS;
 
 export const getSavedWeekCycle = (): WeekCycleConfig => {
   try {
@@ -41,7 +70,14 @@ export const getSavedWeekCycle = (): WeekCycleConfig => {
         typeof parsed.startDay === 'number' &&
         typeof parsed.endDay === 'number'
       ) {
-        return parsed;
+        const calculatedEndDay =
+          parsed.startDay === parsed.endDay
+            ? (parsed.startDay - 1 + 7) % 7
+            : parsed.endDay;
+        return {
+          ...parsed,
+          endDay: calculatedEndDay,
+        };
       }
     }
   } catch (e) {

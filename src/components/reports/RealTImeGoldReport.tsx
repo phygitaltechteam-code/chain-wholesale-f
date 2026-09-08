@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {
   Search,
   Printer,
@@ -7,10 +7,10 @@ import {
   ChevronRight,
   Layers,
 } from 'lucide-react';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { useGetRealTimeGold } from '@/lib/api/realtimegold';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {useGetRealTimeGold} from '@/lib/api/realtimegold';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
 
 // ======================================================
 // INTERFACES
@@ -55,7 +55,7 @@ export interface SummaryData {
   totalItemsCount: number;
   byProcess?: Record<
     string,
-    { totalWeight: number; totalFineWeight: number; count: number }
+    {totalWeight: number; totalFineWeight: number; count: number}
   >;
 }
 
@@ -129,8 +129,8 @@ const calculateAvgPurity = (gross: number, fine: number): string => {
 };
 
 const getDefaultWeekRange = () => {
-  const { fromDate, toDate } = getCurrentAppWeekRange();
-  return { monday: fromDate, sunday: toDate };
+  const {fromDate, toDate} = getCurrentAppWeekRange();
+  return {monday: fromDate, sunday: toDate};
 };
 
 const formatDateForDisplay = (date: Date | null) => {
@@ -342,22 +342,22 @@ const buildCategoryGroups = (data: any | undefined): CategoryGroup[] => {
       .filter((i: any) => {
         const dueVal = toNumber(
           i.due ??
-          i.fineWeight ??
-          i.fineweight ??
-          i.grossWeight ??
-          i.grossweight ??
-          0,
+            i.fineWeight ??
+            i.fineweight ??
+            i.grossWeight ??
+            i.grossweight ??
+            0,
         );
         return dueVal > 0;
       })
       .map((i: any) => {
         const dueVal = toNumber(
           i.due ??
-          i.fineWeight ??
-          i.fineweight ??
-          i.grossWeight ??
-          i.grossweight ??
-          0,
+            i.fineWeight ??
+            i.fineweight ??
+            i.grossWeight ??
+            i.grossweight ??
+            0,
         );
         const clientName = i.clientName || i.name || 'Unnamed Client';
         return {
@@ -407,7 +407,7 @@ const RealTimeGoldReport: React.FC = () => {
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
-      const { monday, sunday } = getDefaultWeekRange();
+      const {monday, sunday} = getDefaultWeekRange();
       setFromDate(monday);
       setToDate(sunday);
     };
@@ -562,18 +562,18 @@ const RealTimeGoldReport: React.FC = () => {
   const stockTotals = useMemo(() => {
     const gross = stockGroups.reduce((s, g) => s + g.totalGrossWeight, 0);
     const fine = stockGroups.reduce((s, g) => s + g.totalFineWeight, 0);
-    return { gross, fine, count: stockGroups.reduce((s, g) => s + g.count, 0) };
+    return {gross, fine, count: stockGroups.reduce((s, g) => s + g.count, 0)};
   }, [stockGroups]);
 
   const processTotals = useMemo(() => {
     const gross = processGroups.reduce((s, g) => s + g.totalGrossWeight, 0);
     const fine = processGroups.reduce((s, g) => s + g.totalFineWeight, 0);
-    return { gross, fine, count: processGroups.reduce((s, g) => s + g.count, 0) };
+    return {gross, fine, count: processGroups.reduce((s, g) => s + g.count, 0)};
   }, [processGroups]);
 
   const clientDueTotal = useMemo(() => {
     const fine = clientDueGroup ? clientDueGroup.totalFineWeight : 0;
-    return { fine, count: clientDueGroup ? clientDueGroup.count : 0 };
+    return {fine, count: clientDueGroup ? clientDueGroup.count : 0};
   }, [clientDueGroup]);
 
   const grandTotals = useMemo(() => {
@@ -645,9 +645,11 @@ const RealTimeGoldReport: React.FC = () => {
     let clientDueHtml = '';
 
     // Separate groups by type
-    const stockGroups = filteredGroups.filter(g => g.type === 'Stock' && g.id !== 'client-due');
-    const processGroups = filteredGroups.filter(g => g.type === 'Process');
-    const clientDueGroup = filteredGroups.find(g => g.id === 'client-due');
+    const stockGroups = filteredGroups.filter(
+      (g) => g.type === 'Stock' && g.id !== 'client-due',
+    );
+    const processGroups = filteredGroups.filter((g) => g.type === 'Process');
+    const clientDueGroup = filteredGroups.find((g) => g.id === 'client-due');
 
     // Build Stock Groups HTML
     stockGroups.forEach((group) => {
@@ -699,8 +701,14 @@ const RealTimeGoldReport: React.FC = () => {
 
     // Add Grand Total for Stock
     if (stockGroups.length > 0) {
-      const totalStockGross = stockGroups.reduce((sum, g) => sum + g.totalGrossWeight, 0);
-      const totalStockFine = stockGroups.reduce((sum, g) => sum + g.totalFineWeight, 0);
+      const totalStockGross = stockGroups.reduce(
+        (sum, g) => sum + g.totalGrossWeight,
+        0,
+      );
+      const totalStockFine = stockGroups.reduce(
+        (sum, g) => sum + g.totalFineWeight,
+        0,
+      );
 
       stockGroupsHtml += `
       <div style="margin-top:-4px;margin-bottom:12px;page-break-inside:avoid;">
@@ -830,20 +838,21 @@ const RealTimeGoldReport: React.FC = () => {
           <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
             Real Time Gold Report
           </h2>
-          ${fromDate || toDate
-        ? `
+          ${
+            fromDate || toDate
+              ? `
               <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
                 ${fromDate ? `From: ${formatDateForDisplay(fromDate)}` : ''} 
                 ${fromDate && toDate ? '&nbsp;&nbsp;' : ''}
                 ${toDate ? `To: ${formatDateForDisplay(toDate)}` : ''}
               </div>
             `
-        : `
+              : `
               <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
                 Date: ${new Date().toLocaleDateString('en-IN')}
               </div>
             `
-      }
+          }
         </div>
 
         <!-- Grand Summary Box -->
@@ -872,18 +881,15 @@ const RealTimeGoldReport: React.FC = () => {
           <div style="margin-top:1px;font-size:6.5px;color:#000;display:flex;justify-content:center;gap:10px;">
             <span>Powered by Matoshree Gold</span>
             <span>|</span>
-            <span>Generated: ${new Date().toLocaleDateString(
-        'en-IN',
-        {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        },
-      )} ${new Date().toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      })}</span>
+            <span>Generated: ${new Date().toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+            })} ${new Date().toLocaleTimeString('en-IN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            })}</span>
           </div>
         </div>
       </div>
@@ -1016,8 +1022,6 @@ const RealTimeGoldReport: React.FC = () => {
               />
             </div>
 
-
-
             {/* Print Button */}
             <button
               onClick={handlePrint}
@@ -1114,10 +1118,11 @@ const RealTimeGoldReport: React.FC = () => {
                         <React.Fragment key={group.id}>
                           <tr
                             onClick={() => toggleRow(group.id)}
-                            className={`cursor-pointer transition-colors ${isExpanded
-                              ? 'bg-[#785600]/10 dark:bg-amber-900/20'
-                              : 'hover:bg-[#785600]/5 dark:hover:bg-slate-800/40'
-                              }`}
+                            className={`cursor-pointer transition-colors ${
+                              isExpanded
+                                ? 'bg-[#785600]/10 dark:bg-amber-900/20'
+                                : 'hover:bg-[#785600]/5 dark:hover:bg-slate-800/40'
+                            }`}
                           >
                             <td className="px-2 py-2.5 text-center">
                               <div className="inline-flex h-4 w-4 items-center justify-center rounded bg-[#785600]/10 text-black dark:bg-amber-400/20 dark:text-amber-400">
@@ -1150,11 +1155,12 @@ const RealTimeGoldReport: React.FC = () => {
                                 </td>
                                 <td className="px-3 py-2 text-center font-semibold text-black dark:text-slate-200">
                                   {item.name}
-                                  {item.purity !== null && item.purity !== undefined && (
-                                    <span className="ml-1 text-xs text-[#785600] dark:text-amber-400">
-                                      ({item.purity}%)
-                                    </span>
-                                  )}
+                                  {item.purity !== null &&
+                                    item.purity !== undefined && (
+                                      <span className="ml-1 text-xs text-[#785600] dark:text-amber-400">
+                                        ({item.purity}%)
+                                      </span>
+                                    )}
                                 </td>
                                 <td className="font-mono px-3 py-2 text-center font-semibold text-black dark:text-slate-200">
                                   {formatNumberDisplay(item.grossWeight)}
@@ -1229,10 +1235,11 @@ const RealTimeGoldReport: React.FC = () => {
                         <React.Fragment key={group.id}>
                           <tr
                             onClick={() => toggleRow(group.id)}
-                            className={`cursor-pointer transition-colors ${isExpanded
-                              ? 'bg-[#785600]/10 dark:bg-amber-900/20'
-                              : 'hover:bg-[#785600]/5 dark:hover:bg-slate-800/40'
-                              }`}
+                            className={`cursor-pointer transition-colors ${
+                              isExpanded
+                                ? 'bg-[#785600]/10 dark:bg-amber-900/20'
+                                : 'hover:bg-[#785600]/5 dark:hover:bg-slate-800/40'
+                            }`}
                           >
                             <td className="px-2 py-2.5 text-center">
                               <div className="inline-flex h-4 w-4 items-center justify-center rounded bg-[#785600]/10 text-black dark:bg-amber-400/20 dark:text-amber-400">

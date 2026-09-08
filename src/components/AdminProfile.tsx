@@ -25,6 +25,7 @@ import {
   getSavedWeekCycle,
   saveWeekCycle,
   WEEK_DAYS,
+  WEEK_CYCLE_OPTIONS,
   getCurrentAppWeekRange,
   WeekCycleConfig,
 } from '@/utils/weekRangeUtils';
@@ -88,7 +89,7 @@ const AdminProfile: React.FC = () => {
     expiryDate: '',
     workStartTime: '',
     workEndTime: '',
-    workStatus: 'active', // 'active' | 'inactive' | 'on_leave'
+    workStatus: 'active',
   });
 
   // Password change states
@@ -114,11 +115,15 @@ const AdminProfile: React.FC = () => {
     e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     const selectedDay = Number(e.target.value);
+    const calculatedEndDay = (selectedDay - 1 + 7) % 7;
+    const matchingOption = WEEK_CYCLE_OPTIONS.find(
+      (opt) => opt.startDay === selectedDay,
+    );
 
     const updated: WeekCycleConfig = {
       startDay: selectedDay,
-      endDay: selectedDay, // Same day cycle: e.g. Monday to Monday (7-day span)
-      cycleId: 'custom',
+      endDay: calculatedEndDay,
+      cycleId: matchingOption?.cycleId || 'custom',
     };
     setWeekConfig(updated);
     saveWeekCycle(updated);
@@ -127,8 +132,11 @@ const AdminProfile: React.FC = () => {
     const range = getCurrentAppWeekRange();
     setWeekRangeDates({from: range.fromDate, to: range.toDate});
 
-    const dayName = WEEK_DAYS.find((d) => d.value === selectedDay)?.label;
-    toast.success(`Weekly cycle set: ${dayName} to ${dayName}`);
+    const startDayName = WEEK_DAYS.find((d) => d.value === selectedDay)?.label;
+    const endDayName = WEEK_DAYS.find(
+      (d) => d.value === calculatedEndDay,
+    )?.label;
+    toast.success(`Weekly cycle set: ${startDayName} to ${endDayName}`);
   };
 
   useEffect(() => {
@@ -522,19 +530,11 @@ const AdminProfile: React.FC = () => {
                         onChange={handleWeeklyCycleDayChange}
                         className="w-full cursor-pointer rounded-lg border border-[#d3c4af]/40 bg-white py-1.5 pl-8 pr-2.5 text-xs font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
                       >
-                        <option value={1}>Monday (Monday to Monday)</option>
-                        <option value={2}>Tuesday (Tuesday to Tuesday)</option>
-                        <option value={3}>
-                          Wednesday (Wednesday to Wednesday)
-                        </option>
-                        <option value={4}>
-                          Thursday (Thursday to Thursday)
-                        </option>
-                        <option value={5}>Friday (Friday to Friday)</option>
-                        <option value={6}>
-                          Saturday (Saturday to Saturday)
-                        </option>
-                        <option value={0}>Sunday (Sunday to Sunday)</option>
+                        {WEEK_CYCLE_OPTIONS.map((opt) => (
+                          <option key={opt.startDay} value={opt.startDay}>
+                            {opt.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
