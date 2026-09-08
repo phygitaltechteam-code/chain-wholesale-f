@@ -1,6 +1,7 @@
 import React, {useState, useMemo} from 'react';
-import {Calculator, RefreshCw, Copy, Info, Sparkles} from 'lucide-react';
+import {Calculator, RefreshCw, Sparkles, Info} from 'lucide-react';
 import PageHeader from '@/components/Forms/Common/PageHeader';
+import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import toast from 'react-hot-toast';
 
 export const PurityManagement: React.FC = () => {
@@ -47,14 +48,6 @@ export const PurityManagement: React.FC = () => {
     return Math.max(0, result);
   }, [weight, purityCurrent, purityTarget, isValid, hasInput]);
 
-  const handleCopySummary = () => {
-    const formattedResult =
-      pureGoldToAdd > 0 ? parseFloat(pureGoldToAdd.toFixed(3)).toString() : '0';
-    const summaryText = `Current Weight: ${weight}g | Current Purity: ${purityCurrent}% | Target Purity: ${purityTarget}% => Pure Gold to Add: ${formattedResult}g`;
-    navigator.clipboard.writeText(summaryText);
-    toast.success('Summary copied to clipboard!');
-  };
-
   const handleReset = () => {
     setGoldWeight('');
     setCurrentPurity('');
@@ -79,14 +72,6 @@ export const PurityManagement: React.FC = () => {
               Purity Calculator
             </h3>
             <div className="flex items-center gap-2">
-              {/* <button
-                type="button"
-                onClick={handleCopySummary}
-                className="flex items-center gap-1 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-[#5d4200] dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
-              >
-                <Copy className="h-3.5 w-3.5" /> 
-                <span>Copy</span>
-              </button> */}
               <button
                 type="button"
                 onClick={handleReset}
@@ -101,77 +86,59 @@ export const PurityManagement: React.FC = () => {
           <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
             {/* Current Gold Weight */}
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Current Gold Weight (g) <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  value={goldWeight}
-                  onChange={(e) => setGoldWeight(e.target.value)}
-                  placeholder="Enter weight in grams"
-                  className="w-full rounded-lg border border-[#d3c4af]/40 bg-white px-4 py-2.5 pr-12 text-sm font-medium text-[#1a1c1b] outline-none transition-all focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-amber-500"
-                />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Grams
-                </span>
-              </div>
+              <GenericInputField
+                label="Current Gold Weight (g)"
+                required
+                name="goldWeight"
+                inputMode="decimal"
+                decimalScale={3}
+                suffix="Grams"
+                placeholder="Enter weight in grams"
+                value={goldWeight}
+                onChange={(e) => setGoldWeight(e.target.value)}
+              />
             </div>
 
             {/* Current Purity */}
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Current Purity (%) <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="99.99"
-                  value={currentPurity}
-                  onChange={(e) => setCurrentPurity(e.target.value)}
-                  placeholder="Enter current purity percentage"
-                  className="w-full rounded-lg border border-[#d3c4af]/40 bg-white px-4 py-2.5 pr-10 text-sm font-medium text-[#1a1c1b] outline-none transition-all focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-amber-500"
-                />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                  %
-                </span>
-              </div>
+              <GenericInputField
+                label="Current Purity (%)"
+                required
+                name="currentPurity"
+                inputMode="decimal"
+                decimalScale={2}
+                suffix="%"
+                placeholder="Enter current purity percentage"
+                value={currentPurity}
+                onChange={(e) => setCurrentPurity(e.target.value)}
+              />
             </div>
 
             {/* Target Purity */}
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Target Purity (%) <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="99.99"
-                  value={targetPurity}
-                  onChange={(e) => setTargetPurity(e.target.value)}
-                  placeholder="Enter target purity percentage"
-                  className="w-full rounded-lg border border-[#d3c4af]/40 bg-white px-4 py-2.5 pr-10 text-sm font-medium text-[#1a1c1b] outline-none transition-all focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-amber-500"
-                />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                  %
-                </span>
-              </div>
+              <GenericInputField
+                label="Target Purity (%)"
+                required
+                name="targetPurity"
+                inputMode="decimal"
+                decimalScale={2}
+                suffix="%"
+                placeholder="Enter target purity percentage"
+                value={targetPurity}
+                onChange={(e) => setTargetPurity(e.target.value)}
+              />
             </div>
 
             {/* Pure Gold (100% Fine) to Add - Disabled Input */}
             <div className="pt-1">
-              <label className="mb-1.5 block text-sm font-bold text-[#785600] dark:text-amber-400">
-                Pure Gold to Add (g)
-              </label>
               <div className="relative">
-                <input
-                  type="text"
+                <GenericInputField
+                  label="Pure Gold to Add (g)"
+                  name="pureGoldToAdd"
+                  inputMode="decimal"
+                  decimalScale={3}
+                  suffix="Grams"
+                  readOnly
                   disabled
                   value={
                     pureGoldToAdd > 0
@@ -179,13 +146,10 @@ export const PurityManagement: React.FC = () => {
                       : ''
                   }
                   placeholder="Result will appear here"
-                  className="w-full cursor-not-allowed rounded-lg border-2 border-amber-500/40 bg-amber-50/60 px-4 py-2.5 pr-12 text-base font-bold text-[#785600] outline-none dark:border-amber-500/30 dark:bg-slate-950 dark:text-amber-400"
+                  className="!cursor-not-allowed !border-2 !border-amber-500/40 !bg-amber-50/60 !font-bold !text-[#785600] dark:!border-amber-500/30 dark:!bg-slate-950 dark:!text-amber-400"
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Grams
-                </span>
                 {pureGoldToAdd > 0 && (
-                  <div className="absolute -right-1 -top-1">
+                  <div className="absolute right-12 top-9">
                     <Sparkles className="h-3.5 w-3.5 animate-pulse text-amber-500" />
                   </div>
                 )}

@@ -338,6 +338,44 @@ export default function ClientReport() {
           )
         : Math.abs(entry.wt || entry.chainWt || entry.goldWt || 0);
 
+    const items =
+      rawItems.length > 0
+        ? rawItems.map((it) => {
+            const itemName = it.item?.name || 'Gold';
+            const isGold =
+              itemName.trim().toLowerCase() === 'gold' ||
+              itemName.trim().toLowerCase().includes('gold');
+            const purity = isGold
+              ? '100%'
+              : it.purity !== null && it.purity !== undefined
+                ? `${it.purity}%`
+                : '100%';
+            const weight = Math.abs(Number(it.weight) || 0);
+            return {
+              item: itemName + (it.size?.size ? ` (${it.size.size})` : ''),
+              purity,
+              fineWeight: weight,
+              weight,
+              remark: it.remark || '',
+            };
+          })
+        : [
+            {
+              item: entry.item || 'Gold',
+              purity:
+                entry.purity && entry.purity !== 'N/A'
+                  ? entry.purity.includes('%')
+                    ? entry.purity
+                    : `${entry.purity}%`
+                  : '100%',
+              fineWeight: Math.abs(
+                entry.wt || entry.chainWt || entry.goldWt || 0,
+              ),
+              weight: Math.abs(entry.wt || entry.chainWt || entry.goldWt || 0),
+              remark: entry.remark || '',
+            },
+          ];
+
     const newDue = Number((prevDue + totalWeight).toFixed(3));
 
     printClientReceipt(
@@ -351,6 +389,7 @@ export default function ClientReport() {
         previousBalance: prevDue,
         newBalance: newDue,
         dateTime: entry.dateTime,
+        items,
       },
       getpdfheaderdata,
     );

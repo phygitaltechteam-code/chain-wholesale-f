@@ -299,31 +299,24 @@ const SKundaDept: React.FC = () => {
             const kundaAmount = Number(updated.kundaGiven || 0);
             const receivedAmount = Number(updated.chainReceived || 0);
             const scrapAmount = Number(updated.scrap || 0);
+            const totalGiven = Number(updated.chainGiven || 0) + kundaAmount;
 
-            const hasAnyInputEntered =
-              (updated.kundaGivenRaw !== undefined &&
-                updated.kundaGivenRaw !== '') ||
-              (updated.chainReceivedRaw !== undefined &&
-                updated.chainReceivedRaw !== '') ||
-              (updated.scrapRaw !== undefined && updated.scrapRaw !== '') ||
-              kundaAmount > 0 ||
-              receivedAmount > 0 ||
-              scrapAmount > 0;
+            updated.loss = Math.max(
+              0,
+              Math.round((totalGiven - receivedAmount - scrapAmount) * 1000) /
+                1000,
+            );
 
-            if (hasAnyInputEntered) {
-              updated.loss = Math.max(
-                0,
-                Math.round(
-                  (updated.chainGiven +
-                    kundaAmount -
-                    receivedAmount -
-                    scrapAmount) *
-                    1000,
-                ) / 1000,
-              );
-            } else {
-              updated.loss = 0;
-            }
+            console.log(`[S/Kunda Field Change - Row #${index + 1}]`, {
+              fieldChanged: field,
+              newValue: value,
+              chainGiven: updated.chainGiven,
+              kundaGiven: kundaAmount,
+              chainReceived: receivedAmount,
+              scrap: scrapAmount,
+              calculatedLoss: updated.loss,
+              formula: `(${updated.chainGiven} Given + ${kundaAmount} Kunda) - ${receivedAmount} (Received) - ${scrapAmount} (Scrap) = ${updated.loss} G (Loss)`,
+            });
 
             updated.isDirty = true;
             return updated;

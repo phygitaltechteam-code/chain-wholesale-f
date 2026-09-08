@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import {Plus, X, ArrowLeft, Search, Edit, Trash2} from 'lucide-react';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
+import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import {useNavigate} from '@tanstack/react-router';
 import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import {
@@ -306,16 +307,14 @@ const ItemMaster: React.FC = () => {
                 <label className="mb-1 block text-[9px] font-bold uppercase text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
                   Item Name <span className="text-red-500">*</span>
                 </label>
-                <input
+                <GenericInputField
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
                   placeholder="e.g., Chain, Bracelet, Necklace"
-                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
-                    formErrors.name ? 'ring-2 ring-red-500' : ''
-                  }`}
-                  autoFocus
+                  className={formErrors.name ? 'ring-2 ring-red-500' : ''}
+                  compact
                 />
                 {formErrors.name && (
                   <p className="mt-1 text-[10px] text-red-500 sm:text-xs">

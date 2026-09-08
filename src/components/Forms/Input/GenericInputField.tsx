@@ -37,6 +37,7 @@ interface InputProps {
   max?: number | string;
 
   decimalScale?: number;
+  allowNegative?: boolean;
 }
 
 const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
@@ -64,6 +65,7 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
       min,
       max,
       decimalScale,
+      allowNegative = false,
     },
     ref,
   ) => {
@@ -105,7 +107,13 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
           return;
         }
 
-        if (!/^\d*\.?\d*$/.test(inputValue)) return;
+        if (allowNegative && (inputValue === '-' || inputValue === '+')) {
+          onChange?.(e);
+          return;
+        }
+
+        const validPattern = allowNegative ? /^[-+]?\d*\.?\d*$/ : /^\d*\.?\d*$/;
+        if (!validPattern.test(inputValue)) return;
 
         const parts = inputValue.split('.');
         if (parts.length > 2) return;
@@ -128,7 +136,7 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
           return;
         }
 
-        const invalidKeys = ['e', 'E', '+', '-'];
+        const invalidKeys = allowNegative ? ['e', 'E'] : ['e', 'E', '+', '-'];
 
         if (invalidKeys.includes(e.key)) {
           e.preventDefault();
@@ -162,6 +170,22 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
           if (currentValue.includes('.') && !isTextSelected) {
             e.preventDefault();
           }
+        } else if (allowNegative && (e.key === '-' || e.key === '+')) {
+          const input = e.target as HTMLInputElement;
+          const currentValue = input.value;
+          const isTextSelected =
+            input.selectionStart !== null &&
+            input.selectionEnd !== null &&
+            input.selectionStart !== input.selectionEnd;
+
+          if (input.selectionStart !== 0 && !isTextSelected) {
+            e.preventDefault();
+          } else if (
+            (currentValue.startsWith('-') || currentValue.startsWith('+')) &&
+            !isTextSelected
+          ) {
+            e.preventDefault();
+          }
         } else if (!/^\d$/.test(e.key)) {
           e.preventDefault();
         }
@@ -172,21 +196,32 @@ const GenericInputField = forwardRef<HTMLInputElement, InputProps>(
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       if (isDecimalInput && e.target.value) {
-        const numValue = parseFloat(e.target.value);
-
-        if (!isNaN(numValue)) {
-          const rounded = parseFloat(
-            numValue.toFixed(decimalScale!),
-          ).toString();
-          e.target.value = rounded;
-
+        if (e.target.value === '-' || e.target.value === '+') {
+          e.target.value = '';
           if (onChange) {
             const changeEvent = {
               ...e,
-              target: {...e.target, value: rounded},
+              target: {...e.target, value: ''},
             } as React.ChangeEvent<HTMLInputElement>;
-
             onChange(changeEvent);
+          }
+        } else {
+          const numValue = parseFloat(e.target.value);
+
+          if (!isNaN(numValue)) {
+            const rounded = parseFloat(
+              numValue.toFixed(decimalScale!),
+            ).toString();
+            e.target.value = rounded;
+
+            if (onChange) {
+              const changeEvent = {
+                ...e,
+                target: {...e.target, value: rounded},
+              } as React.ChangeEvent<HTMLInputElement>;
+
+              onChange(changeEvent);
+            }
           }
         }
       }

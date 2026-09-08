@@ -1,7 +1,8 @@
 import React from 'react';
 import {X} from 'lucide-react';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import {ScrapCardData} from './meltingUtils';
+import GenericInputField from '@/components/Forms/Input/GenericInputField';
+import {ScrapCardData, formatNumberDisplay} from './meltingUtils';
 
 interface AddDeptProps {
   showAddScrapModal: boolean;
@@ -16,8 +17,6 @@ interface AddDeptProps {
   isSubmittingScrap: boolean;
   modalScaleProps: any;
 }
-
-import {formatNumberDisplay} from './meltingUtils';
 
 const AddDept: React.FC<AddDeptProps> = ({
   showAddScrapModal,
@@ -36,35 +35,35 @@ const AddDept: React.FC<AddDeptProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-2xl border border-[#d3c4af]/30 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+      <div className="w-full max-w-md rounded-2xl border border-[#d3c4af]/30 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
         {/* Modal Header */}
-        <div className="border-gray-100 mb-4 flex items-center justify-between border-b pb-3 dark:border-slate-800">
-          <h3 className="text-base font-bold text-[#1a1c1b] dark:text-white">
-            Add Melting
+        <div className="mb-4 flex items-center justify-between border-b border-[#d3c4af]/20 pb-3 dark:border-slate-800">
+          <h3 className="font-semibold text-[#1a1c1b] dark:text-white">
+            Add Scrap for Melting
           </h3>
           <button
             type="button"
             onClick={() => setShowAddScrapModal(false)}
-            className="text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-lg p-1 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+            className="text-gray-400 hover:bg-gray-100 rounded-lg p-1 dark:hover:bg-slate-800"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmitAddScrap} className="flex flex-col gap-4">
-          {/* 1. Purity Dropdown */}
+        <form onSubmit={handleSubmitAddScrap} className="space-y-4">
+          {/* 1. Purity Select */}
           <div>
             <label className="mb-1 block text-xs font-semibold text-[#1a1c1b] dark:text-slate-200">
-              Purity %
+              Purity (टंच) <span className="text-red-500">*</span>
             </label>
             <select
               value={selectedPurity}
-              onChange={(e) =>
-                handleSelectPurity(
-                  e.target.value === '' ? '' : Number(e.target.value),
-                )
-              }
-              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              onChange={(e) => {
+                const val =
+                  e.target.value === '' ? '' : parseFloat(e.target.value);
+                handleSelectPurity(val);
+              }}
+              className="w-full rounded-lg border border-[#d3c4af]/40 bg-white px-3 py-2 text-sm text-[#1a1c1b] outline-none focus:border-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             >
               <option value="">Select Purity</option>
               {scrapCards.map((c) => (
@@ -80,16 +79,19 @@ const AddDept: React.FC<AddDeptProps> = ({
             <label className="mb-1 block text-xs font-semibold text-[#1a1c1b] dark:text-slate-200">
               Weight as per Purity (G)
             </label>
-            <input
+            <GenericInputField
               type="text"
               readOnly
+              decimalScale={3}
               value={
                 selectedPurity !== ''
-                  ? `${formatNumberDisplay(availableWeight)} G`
+                  ? formatNumberDisplay(availableWeight)
                   : ''
               }
-              placeholder="0.000 G"
-              className="font-mono w-full cursor-not-allowed rounded-lg border border-[#d3c4af]/20 bg-amber-50/50 px-2 py-1.5 pr-6 text-sm font-bold text-black outline-none dark:bg-amber-950/20 dark:text-amber-400"
+              placeholder="0.000"
+              suffix="G"
+              compact
+              className="font-mono cursor-not-allowed font-bold text-black dark:text-amber-400"
             />
           </div>
 
@@ -98,25 +100,23 @@ const AddDept: React.FC<AddDeptProps> = ({
             <label className="mb-1 block text-xs font-semibold text-[#1a1c1b] dark:text-slate-200">
               Scrap Weight (G)
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={scrapWeight}
-                {...modalScaleProps}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (/^\d*\.?\d*$/.test(val)) {
-                    setScrapWeight(val);
-                  }
-                }}
-                placeholder="Enter scrap weight"
-                className="font-mono w-full cursor-not-allowed rounded-lg border border-[#d3c4af]/20 bg-amber-50/50 px-2 py-1.5 pr-6 text-sm font-bold text-black outline-none dark:bg-amber-950/20 dark:text-amber-400"
-              />
-              <span className="text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold">
-                G
-              </span>
-            </div>
+            <GenericInputField
+              type="text"
+              inputMode="decimal"
+              decimalScale={3}
+              value={scrapWeight}
+              {...modalScaleProps}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (/^\d*\.?\d*$/.test(val)) {
+                  setScrapWeight(val);
+                }
+              }}
+              placeholder="Enter scrap weight"
+              suffix="G"
+              compact
+              className="font-mono"
+            />
           </div>
 
           {/* Action Buttons */}

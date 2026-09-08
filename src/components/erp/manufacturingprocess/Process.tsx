@@ -36,23 +36,15 @@ const Process: React.FC = () => {
   const [steps, setSteps] = useState<ProcessStep[]>([]);
   const [wasTarCompleted, setWasTarCompleted] = useState(false);
 
-  // Define process steps with their routes
+  // Define process steps with their routes (Melting is the last step)
   const processSteps: ProcessStep[] = [
-    {
-      id: 'melting',
-      name: 'Melting',
-      icon: <Flame className="h-4 w-4" />,
-      component: <MeltingDept />,
-      path: '/manufacturingprocess/melting',
-      status: 'active',
-    },
     {
       id: 'tar',
       name: 'Tar Management',
       icon: <TrendingUp className="h-4 w-4" />,
       component: <AddTar showBack={false} />,
       path: '/manufacturingprocess/addtar',
-      status: 'pending',
+      status: 'active',
     },
     {
       id: 'box',
@@ -92,6 +84,14 @@ const Process: React.FC = () => {
       icon: <CheckCircle className="h-4 w-4" />,
       component: <SKundaDept />,
       path: '/manufacturingprocess/skunda',
+      status: 'pending',
+    },
+    {
+      id: 'melting',
+      name: 'Melting',
+      icon: <Flame className="h-4 w-4" />,
+      component: <MeltingDept />,
+      path: '/manufacturingprocess/melting',
       status: 'pending',
     },
   ];

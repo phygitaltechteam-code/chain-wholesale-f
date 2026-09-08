@@ -3,6 +3,7 @@ import {X} from 'lucide-react';
 import toast from 'react-hot-toast';
 import {z} from 'zod';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
+import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import {useCreateClient} from '@/lib/api/client';
 
 const ClientSchema = z.object({
@@ -47,27 +48,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const {name, value} = e.target;
-
-    if (name === 'openingBalance') {
-      const sanitized = value.replace(/[^0-9.+-]/g, '');
-      const parts = sanitized.split('.');
-      const formatted =
-        parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : sanitized;
-
-      let finalValue = formatted;
-      const signMatch = formatted.match(/^([+-])/);
-      if (signMatch) {
-        const sign = signMatch[1];
-        const rest = formatted.substring(1).replace(/[+-]/g, '');
-        finalValue = sign + rest;
-      } else {
-        finalValue = formatted.replace(/[+-]/g, '');
-      }
-
-      setFormData((prev) => ({...prev, [name]: finalValue}));
-    } else {
-      setFormData((prev) => ({...prev, [name]: value}));
-    }
+    setFormData((prev) => ({...prev, [name]: value}));
 
     if (formErrors[name as keyof typeof formErrors]) {
       setFormErrors((prev) => ({...prev, [name]: undefined}));
@@ -143,19 +124,16 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
         <div className="space-y-4 p-3 sm:p-4">
           {/* Name */}
           <div>
-            <label className="mb-1 block text-[9px] font-bold uppercase text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
-              Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
+            <GenericInputField
+              label="Name"
+              required
               name="fullName"
               value={formData.fullName}
               onChange={handleInputChange}
               placeholder="Enter client name"
-              className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
-                formErrors.fullName ? 'ring-2 ring-red-500' : ''
-              }`}
-              autoFocus
+              className={
+                formErrors.fullName ? '!border-red-500 focus:!ring-red-500' : ''
+              }
             />
             {formErrors.fullName && (
               <p className="mt-1 text-[10px] text-red-500 sm:text-xs">
@@ -166,18 +144,19 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
 
           {/* Phone */}
           <div>
-            <label className="mb-1 block text-[9px] font-bold uppercase text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
-              Phone Number <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
+            <GenericInputField
+              label="Phone Number"
+              required
               name="phoneNumber"
+              type="tel"
               value={formData.phoneNumber}
               onChange={handleInputChange}
               placeholder="Enter phone number"
-              className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
-                formErrors.phoneNumber ? 'ring-2 ring-red-500' : ''
-              }`}
+              className={
+                formErrors.phoneNumber
+                  ? '!border-red-500 focus:!ring-red-500'
+                  : ''
+              }
             />
             {formErrors.phoneNumber && (
               <p className="mt-1 text-[10px] text-red-500 sm:text-xs">
@@ -188,8 +167,8 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
 
           {/* Address */}
           <div>
-            <label className="mb-1 block text-[9px] font-bold uppercase text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
-              Address <span className="text-red-500">*</span>
+            <label className="mb-1.5 block text-sm font-medium text-[#1a1c1b] dark:text-white">
+              Address <span className="ml-1 text-red-500">*</span>
             </label>
             <textarea
               name="address"
@@ -197,8 +176,8 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
               onChange={handleInputChange}
               placeholder="Enter address"
               rows={3}
-              className={`w-full resize-none rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
-                formErrors.address ? 'ring-2 ring-red-500' : ''
+              className={`w-full min-w-0 resize-none rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2.5 text-sm text-[#1a1c1b] outline-none transition-all duration-200 placeholder:text-[#817563] hover:border-[#785600]/50 focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 ${
+                formErrors.address ? '!border-red-500 focus:!ring-red-500' : ''
               }`}
             />
             {formErrors.address && (
@@ -210,17 +189,21 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
 
           {/* Opening Balance */}
           <div>
-            <label className="mb-1 block text-[9px] font-bold uppercase text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
-              Opening Balance (G) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
+            <GenericInputField
+              label="Opening Balance (G)"
+              required
               name="openingBalance"
+              inputMode="decimal"
+              decimalScale={3}
+              allowNegative={true}
+              suffix="G"
               value={formData.openingBalance}
               onChange={handleInputChange}
-              placeholder="e.g., 50.5"
-              className={`font-mono w-full rounded-lg border-0 bg-[#f4f4f2] px-3 py-2.5 text-xs text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white sm:px-4 sm:py-3 sm:text-sm ${
-                formErrors.openingBalance ? 'ring-2 ring-red-500' : ''
+              placeholder="e.g., -50.5 or 50.5"
+              className={`font-mono ${
+                formErrors.openingBalance
+                  ? '!border-red-500 focus:!ring-red-500'
+                  : ''
               }`}
             />
             {formErrors.openingBalance && (

@@ -114,7 +114,6 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
   // Query tar alert threshold rules
   const {data: tarAlertRaw} = useGetProcessAlert('tar');
 
-
   const alertRules: AlertRule[] = React.useMemo(() => {
     let list: any[] = [];
     if (Array.isArray(tarAlertRaw) && tarAlertRaw.length > 0) {
@@ -143,7 +142,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
 
     return list;
   }, [tarAlertRaw]);
- 
+
   // Mutation hooks
   const createTar = useCreateTar();
   const saveTar = useSaveTar();

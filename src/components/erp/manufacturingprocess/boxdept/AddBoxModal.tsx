@@ -1,5 +1,6 @@
 import React from 'react';
 import {Layers, X, Save} from 'lucide-react';
+import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import {formatNumberDisplay} from './boxUtils';
 
 interface AddBoxModalProps {
@@ -117,23 +118,21 @@ const AddBoxModal: React.FC<AddBoxModalProps> = ({
                         <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                           Available Tar Wt (G)
                         </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            readOnly
-                            value={
-                              card.purity
-                                ? formatNumberDisplay(
-                                    getAvailableTarQty(card.purity),
-                                  )
-                                : '0'
-                            }
-                            className="font-mono w-full cursor-not-allowed rounded-lg border border-[#d3c4af]/20 bg-amber-50/50 px-3 py-2 pr-7 text-sm font-bold text-[#785600] outline-none dark:bg-amber-950/20 dark:text-amber-400"
-                          />
-                          <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                            G
-                          </span>
-                        </div>
+                        <GenericInputField
+                          type="text"
+                          readOnly
+                          decimalScale={3}
+                          value={
+                            card.purity
+                              ? formatNumberDisplay(
+                                  getAvailableTarQty(card.purity),
+                                )
+                              : '0'
+                          }
+                          suffix="G"
+                          compact
+                          className="font-mono cursor-not-allowed font-bold text-[#785600] dark:text-amber-400"
+                        />
                       </div>
                     </div>
 
@@ -163,22 +162,20 @@ const AddBoxModal: React.FC<AddBoxModalProps> = ({
                         <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                           Tar Weight (G) <span className="text-red-500">*</span>
                         </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={card.tarWeight}
-                            {...getModalScaleProps(idx, 'tarWeight')}
-                            onChange={(e) =>
-                              handleCardChange(idx, 'tarWeight', e.target.value)
-                            }
-                            placeholder="0.000"
-                            className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                          />
-                          <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                            G
-                          </span>
-                        </div>
+                        <GenericInputField
+                          type="text"
+                          inputMode="decimal"
+                          decimalScale={3}
+                          value={card.tarWeight}
+                          {...getModalScaleProps(idx, 'tarWeight')}
+                          onChange={(e) =>
+                            handleCardChange(idx, 'tarWeight', e.target.value)
+                          }
+                          placeholder="0.000"
+                          suffix="G"
+                          compact
+                          className="font-mono"
+                        />
                       </div>
                     </div>
                   </div>

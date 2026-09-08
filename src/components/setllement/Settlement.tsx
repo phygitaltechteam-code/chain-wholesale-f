@@ -712,6 +712,15 @@ const Settlement: React.FC = () => {
               settlementDetail.pendingBalance +
               settlementDetail.settlementAmount,
             remark: settlementDetail.remark || 'Settlement (Given)',
+            items: [
+              {
+                item: 'Gold',
+                purity: '100%',
+                fineWeight: settlementDetail.settlementAmount,
+                weight: settlementDetail.settlementAmount,
+                remark: settlementDetail.remark || '',
+              },
+            ],
             dateTime: new Date().toLocaleDateString('en-IN', {
               day: '2-digit',
               month: '2-digit',

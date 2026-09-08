@@ -587,12 +587,15 @@ const RealTimeGoldReport: React.FC = () => {
     const apiGrandGross = summaryFromApi?.grandTotalWeight || 0;
     const apiGrandFine = summaryFromApi?.grandTotalFineWeight || 0;
 
+    const grandTotalWeight = apiGrandGross || totalGrossWeight;
+    const grandTotalFineWeight = apiGrandFine || totalFineWeight;
+
     return {
       totalGrossWeight,
       totalFineWeight,
       totalItems,
-      grandTotalWeight: apiGrandGross || totalGrossWeight,
-      grandTotalFineWeight: apiGrandFine || totalFineWeight,
+      grandTotalWeight,
+      grandTotalFineWeight,
       stockGrossWeight: stockTotals.gross,
       stockFineWeight: stockTotals.fine,
       stockAvgPurity: calculateAvgPurity(stockTotals.gross, stockTotals.fine),
@@ -602,6 +605,7 @@ const RealTimeGoldReport: React.FC = () => {
         processTotals.gross,
         processTotals.fine,
       ),
+      avgPurity: calculateAvgPurity(grandTotalWeight, grandTotalFineWeight),
       clientDueFineWeight: clientDueTotal.fine,
     };
   }, [stockTotals, processTotals, clientDueTotal, summaryFromApi]);
@@ -808,10 +812,7 @@ const RealTimeGoldReport: React.FC = () => {
     `;
     }
 
-    const grandPurity = calculateAvgPurity(
-      grandTotals.totalGrossWeight,
-      grandTotals.totalFineWeight,
-    );
+    const grandPurity = grandTotals.avgPurity;
 
     printContainer.innerHTML = `
     <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
@@ -1055,11 +1056,7 @@ const RealTimeGoldReport: React.FC = () => {
                 Avg Purity
               </span>
               <span className="text-lg font-black text-black dark:text-white">
-                {calculateAvgPurity(
-                  grandTotals.totalGrossWeight,
-                  grandTotals.totalFineWeight,
-                )}
-                %
+                {grandTotals.avgPurity}%
               </span>
             </div>
           </div>
@@ -1070,7 +1067,7 @@ const RealTimeGoldReport: React.FC = () => {
                 Total Fine WT
               </span>
               <span className="text-lg font-black text-black dark:text-white">
-                {formatNumberDisplay(grandTotals.totalFineWeight)} G
+                {formatNumberDisplay(grandTotals.grandTotalFineWeight)} G
               </span>
             </div>
           </div>

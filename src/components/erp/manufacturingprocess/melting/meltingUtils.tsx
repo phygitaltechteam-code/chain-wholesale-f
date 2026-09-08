@@ -3,6 +3,7 @@ import {Column} from '@/components/Forms/Table/GenericTable';
 import {PackageCheck} from 'lucide-react';
 import React from 'react';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
+import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
 
 export interface MeltingRow {
@@ -105,7 +106,14 @@ export const checkMeltingLossAlert = (
   expectedFine: number,
   alertRules?: AlertRule[],
 ): LossAlertResult | null => {
-  if (!alertRules || alertRules.length === 0 || !grossWt || grossWt <= 0) {
+  if (
+    !alertRules ||
+    alertRules.length === 0 ||
+    !grossWt ||
+    grossWt <= 0 ||
+    !fineWeight ||
+    fineWeight <= 0
+  ) {
     return null;
   }
 
@@ -254,20 +262,27 @@ export const getMeltingColumns = (
       render: (item, index) => {
         if (item.isEditing) {
           return (
-            <div className="relative inline-block">
-              <input
+            <div className="inline-block w-28">
+              <GenericInputField
                 type="text"
                 inputMode="decimal"
+                decimalScale={3}
+                value={
+                  item.fineWeightRaw !== undefined
+                    ? item.fineWeightRaw
+                    : item.fineWeight === 0
+                      ? ''
+                      : item.fineWeight
+                }
                 {...getScaleProps(index, 'fineWeight')}
                 onChange={(e) =>
                   handleInlineChange(index, 'fineWeight', e.target.value)
                 }
                 placeholder="0.000"
-                className="font-mono w-28 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-7 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                suffix="G"
+                compact
+                className="font-mono text-right"
               />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
-              </span>
             </div>
           );
         }
@@ -283,17 +298,23 @@ export const getMeltingColumns = (
       key: 'loss',
       header: 'Loss (G)',
       render: (item) => {
-        const loss = Math.max(
-          0,
-          Math.round((item.expectedFine - item.fineWeight) * 1000) / 1000,
-        );
-        const alertCheck = checkMeltingLossAlert(
-          item.grossWt,
-          item.purity,
-          item.fineWeight,
-          item.expectedFine,
-          alertRules,
-        );
+        const loss =
+          item.fineWeight > 0
+            ? Math.max(
+                0,
+                Math.round((item.expectedFine - item.fineWeight) * 1000) / 1000,
+              )
+            : 0;
+        const alertCheck =
+          item.fineWeight > 0
+            ? checkMeltingLossAlert(
+                item.grossWt,
+                item.purity,
+                item.fineWeight,
+                item.expectedFine,
+                alertRules,
+              )
+            : null;
 
         let colorClass = 'text-gray-500 dark:text-slate-400';
         if (alertCheck) {

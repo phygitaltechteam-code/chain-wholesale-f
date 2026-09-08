@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Search, Printer, Calendar, Eye } from 'lucide-react';
+import React, {useState, useEffect, useMemo} from 'react';
+import {useNavigate} from '@tanstack/react-router';
+import {ArrowLeft, Search, Printer, Calendar} from 'lucide-react';
 import toast from 'react-hot-toast';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { useGetStock } from '@/lib/api/stock';
-import { useGetLossReport } from '@/lib/api/lossreport';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {useGetStock} from '@/lib/api/stock';
+import {useGetLossReport} from '@/lib/api/lossreport';
 import {
   useGetStockLedgerReport,
   StockSummaryData,
@@ -47,31 +47,16 @@ export default function StockLedgerReport() {
   // Date filters (Defaulted to current app week range from admin settings)
   const initialDateRange = useMemo(() => {
     const range = getCurrentAppWeekRange();
-    return { from: range.fromDate, to: range.toDate };
+    return {from: range.fromDate, to: range.toDate};
   }, []);
 
   const [fromDate, setFromDate] = useState<Date | null>(initialDateRange.from);
   const [toDate, setToDate] = useState<Date | null>(initialDateRange.to);
-
-  // Applied date filters (triggered on "View Report" button click)
-  const [appliedFromDate, setAppliedFromDate] = useState<Date | null>(
-    initialDateRange.from,
-  );
-  const [appliedToDate, setAppliedToDate] = useState<Date | null>(
-    initialDateRange.to,
-  );
-
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch API data from POST /admin/stock/report with fromDate and toDate
-  const fromDateStr = useMemo(
-    () => formatDateToISO(appliedFromDate),
-    [appliedFromDate],
-  );
-  const toDateStr = useMemo(
-    () => formatDateToISO(appliedToDate),
-    [appliedToDate],
-  );
+  const fromDateStr = useMemo(() => formatDateToISO(fromDate), [fromDate]);
+  const toDateStr = useMemo(() => formatDateToISO(toDate), [toDate]);
 
   const {
     data: apiLedgerData,
@@ -137,16 +122,16 @@ export default function StockLedgerReport() {
             ),
             openingChain: Number(
               sec1?.openingChain ??
-              ovOpening?.chain ??
-              sumOpening?.openingChain ??
-              0,
+                ovOpening?.chain ??
+                sumOpening?.openingChain ??
+                0,
             ),
             srp: Number(sec1?.srp ?? ovOpening?.srp ?? sumOpening?.srp ?? 0),
             openingClientDue: Number(
               sec1?.openingClientDue ??
-              ovOpening?.clientDue ??
-              sumOpening?.openingClientDue ??
-              0,
+                ovOpening?.clientDue ??
+                sumOpening?.openingClientDue ??
+                0,
             ),
             inward: Number(
               sec1?.inward ?? ovOpening?.inward ?? sumOpening?.inward ?? 0,
@@ -161,15 +146,15 @@ export default function StockLedgerReport() {
             ),
             closingChain: Number(
               sec2?.closingChain ??
-              ovClosing?.chain ??
-              sumClosing?.closingChain ??
-              0,
+                ovClosing?.chain ??
+                sumClosing?.closingChain ??
+                0,
             ),
             closingClientDue: Number(
               sec2?.closingClientDue ??
-              ovClosing?.clientDue ??
-              sumClosing?.closingClientDue ??
-              0,
+                ovClosing?.clientDue ??
+                sumClosing?.closingClientDue ??
+                0,
             ),
             loss: Number(
               sec2?.loss ?? ovClosing?.loss ?? sumClosing?.loss ?? 0,
@@ -179,9 +164,9 @@ export default function StockLedgerReport() {
             ),
             profitLoss: Number(
               sec2?.profitLoss ??
-              ovClosing?.profitLoss ??
-              data?.summary?.profitLoss ??
-              0,
+                ovClosing?.profitLoss ??
+                data?.summary?.profitLoss ??
+                0,
             ),
           },
         });
@@ -304,14 +289,6 @@ export default function StockLedgerReport() {
     }
   }, [apiLedgerData]);
 
-  // Handle View Report click
-  const handleViewReport = () => {
-    setAppliedFromDate(fromDate);
-    setAppliedToDate(toDate);
-    refetchLedger();
-    toast.success('Stock report updated for selected date range');
-  };
-
   // Date change handlers
   const handleFromDateChange = (selectedDates: Date[]) => {
     if (selectedDates && selectedDates.length > 0) {
@@ -387,17 +364,17 @@ export default function StockLedgerReport() {
 
   // Date range formatted label for display
   const dateRangeLabel = useMemo(() => {
-    if (appliedFromDate && appliedToDate) {
-      return `${formatDateForDisplay(appliedFromDate)} to ${formatDateForDisplay(appliedToDate)}`;
+    if (fromDate && toDate) {
+      return `${formatDateForDisplay(fromDate)} to ${formatDateForDisplay(toDate)}`;
     }
-    if (appliedFromDate) {
-      return `From: ${formatDateForDisplay(appliedFromDate)}`;
+    if (fromDate) {
+      return `From: ${formatDateForDisplay(fromDate)}`;
     }
-    if (appliedToDate) {
-      return `To: ${formatDateForDisplay(appliedToDate)}`;
+    if (toDate) {
+      return `To: ${formatDateForDisplay(toDate)}`;
     }
     return formatDateForDisplay(new Date());
-  }, [appliedFromDate, appliedToDate]);
+  }, [fromDate, toDate]);
 
   const handlePrint = () => {
     // ============================================================
@@ -532,23 +509,23 @@ export default function StockLedgerReport() {
     const rawRows =
       filteredRawStock.length > 0
         ? filteredRawStock
-          .map(
-            (item) => `
+            .map(
+              (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.opening,
-            )}</td>
+                  item.opening,
+                )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.closing,
-            )}</td>
+                  item.closing,
+                )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-              item.due,
-            )}</td>
+                  item.due,
+                )}</td>
               </tr>
             `,
-          )
-          .join('')
+            )
+            .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -562,23 +539,23 @@ export default function StockLedgerReport() {
     const chainRows =
       filteredChainStock.length > 0
         ? filteredChainStock
-          .map(
-            (item) => `
+            .map(
+              (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.opening,
-            )}</td>
+                  item.opening,
+                )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.closing,
-            )}</td>
+                  item.closing,
+                )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-              item.due,
-            )}</td>
+                  item.due,
+                )}</td>
               </tr>
             `,
-          )
-          .join('')
+            )
+            .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -592,23 +569,23 @@ export default function StockLedgerReport() {
     const clientRows =
       filteredClient.length > 0
         ? filteredClient
-          .map(
-            (item) => `
+            .map(
+              (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.opening,
-            )}</td>
+                  item.opening,
+                )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.closing,
-            )}</td>
+                  item.closing,
+                )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-              item.difference,
-            )}</td>
+                  item.difference,
+                )}</td>
               </tr>
             `,
-          )
-          .join('')
+            )
+            .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -622,25 +599,27 @@ export default function StockLedgerReport() {
     const movementRows =
       filteredMovement.length > 0
         ? filteredMovement
-          .map(
-            (item) => `
+            .map(
+              (item) => `
               <tr class="movement-row">
                 <td class="movement-name center-cell">
                   <div class="movement-main">
                     ${item.inwardName || '-'}
                   </div>
 
-                  ${item.inwardSubtext
-                ? `<div class="movement-subtext">${item.inwardSubtext}</div>`
-                : ''
-              }
+                  ${
+                    item.inwardSubtext
+                      ? `<div class="movement-subtext">${item.inwardSubtext}</div>`
+                      : ''
+                  }
                 </td>
 
                 <td class="movement-number center-cell inward-number">
-                  ${item.inwardName && item.inward != null && item.inward > 0
-                ? formatNumberDisplay(item.inward)
-                : '-'
-              }
+                  ${
+                    item.inwardName && item.inward != null && item.inward > 0
+                      ? formatNumberDisplay(item.inward)
+                      : '-'
+                  }
                 </td>
 
                 <td class="movement-name center-cell">
@@ -648,22 +627,24 @@ export default function StockLedgerReport() {
                     ${item.outwardName || '-'}
                   </div>
 
-                  ${item.outwardSubtext
-                ? `<div class="movement-subtext">${item.outwardSubtext}</div>`
-                : ''
-              }
+                  ${
+                    item.outwardSubtext
+                      ? `<div class="movement-subtext">${item.outwardSubtext}</div>`
+                      : ''
+                  }
                 </td>
 
                 <td class="movement-number center-cell outward-number">
-                  ${item.outwardName && item.outward != null && item.outward > 0
-                ? formatNumberDisplay(item.outward)
-                : '-'
-              }
+                  ${
+                    item.outwardName && item.outward != null && item.outward > 0
+                      ? formatNumberDisplay(item.outward)
+                      : '-'
+                  }
                 </td>
               </tr>
             `,
-          )
-          .join('')
+            )
+            .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -790,8 +771,8 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value">
                         ${formatNumberDisplay(
-      summaryData.opening.openingClientDue,
-    )}
+                          summaryData.opening.openingClientDue,
+                        )}
                       </td>
                     </tr>
 
@@ -867,8 +848,8 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value">
                         ${formatNumberDisplay(
-      summaryData.closing.closingClientDue,
-    )}
+                          summaryData.closing.closingClientDue,
+                        )}
                       </td>
                     </tr>
 
@@ -902,8 +883,8 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value profit">
                         ${formatNumberDisplay(
-      summaryData.closing.profitLoss ?? 0,
-    )}
+                          summaryData.closing.profitLoss ?? 0,
+                        )}
                       </td>
 
                     </tr>
@@ -1906,8 +1887,20 @@ export default function StockLedgerReport() {
             </div>
           </div>
 
-          {/* Right Controls: Search, From Date, To Date, View Report Button, Print Button */}
+          {/* Right Controls: Search, From Date, To Date, Print Button */}
           <div className="flex w-full flex-wrap items-center justify-end gap-2.5 sm:w-auto">
+            {/* Search Input */}
+            <div className="relative w-full sm:w-48 md:w-56">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-1.5 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:py-2"
+              />
+            </div>
+
             {/* From Date */}
             <div className="flex items-center gap-1.5">
               <span className="hidden text-xs font-bold uppercase text-[#785600] dark:text-[#b8860b] lg:inline">
@@ -1936,21 +1929,6 @@ export default function StockLedgerReport() {
               />
             </div>
 
-            {/* View Report Button */}
-            <button
-              onClick={handleViewReport}
-              disabled={isLedgerFetching}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#785600] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#5d4200] active:scale-95 disabled:opacity-60 sm:py-2 sm:text-sm"
-              title="View Report for Selected Dates"
-            >
-              {isLedgerFetching ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-              <span>{isLedgerFetching ? 'Loading...' : 'View Report'}</span>
-            </button>
-
             {/* Print Button */}
             <button
               onClick={handlePrint}
@@ -1968,19 +1946,6 @@ export default function StockLedgerReport() {
       <div className="mx-auto max-w-[1440px] px-3 py-4 sm:px-6 sm:py-6">
         {/* Main Card Container */}
         <div className="overflow-hidden rounded-2xl border border-[#d3c4af]/30 bg-white shadow-md transition-all dark:border-slate-800 dark:bg-slate-900">
-          {/* Header Banner */}
-          <div className="border-b border-[#d3c4af]/20 bg-gradient-to-b from-white to-[#f9f9f7] px-4 py-4 text-center dark:from-slate-900 dark:to-slate-900/90">
-            <h2 className="text-base font-black uppercase tracking-wider text-[#1a1c1b] dark:text-white sm:text-lg md:text-xl">
-              BUSINESS 360 REPORT
-            </h2>
-            <div className="mt-1.5 flex items-center justify-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d3c4af]/40 bg-[#f4f1ea] px-3.5 py-0.5 text-xs font-bold text-[#785600] shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-[#b8860b]">
-                <Calendar className="h-3 w-3" />
-                Date: {dateRangeLabel}
-              </span>
-            </div>
-          </div>
-
           <div className="space-y-5 p-3 sm:p-5 md:p-6">
             {/* 1. OPENING / CLOSING Split Box */}
             <div className="overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
@@ -2317,8 +2282,8 @@ export default function StockLedgerReport() {
                           </td>
                           <td className="font-mono px-4 py-2.5 text-right font-bold text-green-700 dark:text-green-400">
                             {row.inwardName &&
-                              row.inward != null &&
-                              row.inward > 0
+                            row.inward != null &&
+                            row.inward > 0
                               ? formatNumberDisplay(row.inward)
                               : '-'}
                           </td>
@@ -2334,8 +2299,8 @@ export default function StockLedgerReport() {
                           </td>
                           <td className="font-mono px-4 py-2.5 text-right font-bold text-amber-700 dark:text-amber-400">
                             {row.outwardName &&
-                              row.outward != null &&
-                              row.outward > 0
+                            row.outward != null &&
+                            row.outward > 0
                               ? formatNumberDisplay(row.outward)
                               : '-'}
                           </td>

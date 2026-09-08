@@ -278,12 +278,236 @@ const LossReport: React.FC = () => {
     }
   };
 
-  // Print handler (keep existing implementation)
+  // Print handler
   const handlePrint = () => {
-    // ... (keep your existing print implementation)
+    if (!filteredData || filteredData.length === 0) {
+      toast.error('No loss data to print');
+      return;
+    }
+
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    printContainer.style.cssText = `
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 100%;
+      background: white;
+      padding: 4px;
+      z-index: 9999;
+    `;
+    document.body.appendChild(printContainer);
+
+    const rows = filteredData
+      .map((item, idx) => {
+        return `
+          <tr>
+            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;color:#000;">${idx + 1}</td>
+            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;white-space:nowrap;color:#000;">${item.dateTime}</td>
+            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;color:#000;">${item.particular}</td>
+            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;color:#000;">${item.purity > 0 ? `${formatNumberDisplay(item.purity)}%` : '-'}</td>
+            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-weight:bold;color:#785600;text-transform:capitalize;">${item.process || 'N/A'}</td>
+            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;font-weight:bold;color:#b91c1c;">${formatNumberDisplay(item.loss)} G</td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    const headerInfo =
+      getpdfheaderdata?.data?.data ||
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+    const leftInvocation =
+      headerInfo.leftInvocation ||
+      headerInfo.leftInovation ||
+      '॥ श्री गणेश प्रसन्न ॥';
+    const rightInvocation =
+      headerInfo.rightInvocation ||
+      headerInfo.rightInovation ||
+      '॥ श्री साई प्रसन्न ॥';
+    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+    const description =
+      headerInfo.description ||
+      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
+    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
+    const phoneNumbers =
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const invocationColor = headerInfo.invocationColor || '#a84b20';
+    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
+    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
+    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
+    const phoneColor = headerInfo.phoneColor || '#a84b20';
+    const factoryFontSize = headerInfo.factoryFontSize
+      ? `${headerInfo.factoryFontSize}px`
+      : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize
+      ? `${headerInfo.descriptionFontSize}px`
+      : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize
+      ? `${headerInfo.proprietorFontSize}px`
+      : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize
+      ? `${headerInfo.phoneFontSize}px`
+      : '9px';
+
+    const formatDateForDisplay = (date: Date | null) => {
+      if (!date) return '';
+      return date.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    };
+
+    printContainer.innerHTML = `
+      <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+        <div>
+          <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
+              <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
+              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
+            </div>
+            
+            <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
+              ${description}
+            </div>
+            
+            <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
+              ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
+            </div>
+            <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
+            <div style="flex:1;"></div>
+            <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
+              Loss Report ${selectedProcess !== 'all' ? `(${selectedProcess.toUpperCase()})` : ''}
+            </h2>
+            ${
+              fromDate || toDate
+                ? `
+            <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
+              ${fromDate ? `From: ${formatDateForDisplay(fromDate)}` : ''} 
+              ${fromDate && toDate ? '&nbsp;&nbsp;' : ''}
+              ${toDate ? `To: ${formatDateForDisplay(toDate)}` : ''}
+            </div>
+            `
+                : `<div style="flex:1;"></div>`
+            }
+          </div>
+
+          <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
+            <thead>
+              <tr style="background:#785600;color:white;font-weight:600;">
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Sr No.</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;white-space:nowrap;">Date & Time</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Particular</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Purity %</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Process</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Loss (G)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+              <tr style="background:#f9f9f7;font-weight:bold;">
+                <td colspan="5" style="border:1px solid #000;padding:3px 4px;text-align:right;font-size:10px;">Total Loss:</td>
+                <td style="border:1px solid #000;padding:3px 4px;text-align:center;font-size:10px;font-family:monospace;color:#b91c1c;">${formatNumberDisplay(totalLoss)} G</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="width:100%;margin-top:auto;padding-top:4px;">
+          <div style="border-top:1px solid #785600;padding-top:2px;text-align:center;">
+            <p style="margin:0;font-size:7px;color:#000;">
+              This is a computer generated report
+            </p>
+            <div style="margin-top:1px;font-size:6.5px;color:#000;display:flex;justify-content:center;gap:10px;">
+              <span>Powered by Matoshree Gold</span>
+              <span>|</span>
+              <span>Generated: ${new Date().toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              })} ${new Date().toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+              })}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      @media print {
+        html, body {
+          margin: 0;
+          padding: 0;
+          width: 210mm;
+          height: 297mm;
+        }
+        body * {
+          visibility: hidden;
+        }
+        #print-container, #print-container * {
+          visibility: visible;
+        }
+        #print-container {
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 210mm !important;
+          height: 297mm !important;
+          background: white !important;
+          padding: 4px !important;
+          overflow: auto !important;
+          z-index: 9999 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container table {
+          width: 100% !important;
+        }
+        #print-container tr {
+          page-break-inside: avoid !important;
+        }
+        #print-container thead tr {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #print-container thead tr th {
+          background: #785600 !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        if (document.body.contains(printContainer)) {
+          document.body.removeChild(printContainer);
+        }
+        if (document.head.contains(style)) {
+          document.head.removeChild(style);
+        }
+      }, 1000);
+    }, 500);
   };
 
-  // Define columns for GenericTable (add process column)
+  // Define columns for GenericTable
   const columns: Column<LossReportEntry>[] = [
     {
       key: 'dateTime',
@@ -309,8 +533,17 @@ const LossReport: React.FC = () => {
       key: 'particular',
       header: 'Particular',
       render: (item) => (
-        <span className="text-sm text-[#1a1c1b] dark:text-white">
+        <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
           {item.particular}
+        </span>
+      ),
+    },
+    {
+      key: 'purity',
+      header: 'Purity % (टंच)',
+      render: (item) => (
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+          {item.purity > 0 ? `${formatNumberDisplay(item.purity)}%` : '-'}
         </span>
       ),
     },
@@ -318,7 +551,7 @@ const LossReport: React.FC = () => {
       key: 'process',
       header: 'Process',
       render: (item) => (
-        <span className="text-sm font-medium text-[#785600] dark:text-amber-400">
+        <span className="inline-flex items-center rounded-md border border-[#d3c4af]/30 bg-amber-50/80 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-[#785600] dark:border-amber-800/30 dark:bg-amber-950/40 dark:text-amber-400">
           {item.process || 'N/A'}
         </span>
       ),
@@ -327,7 +560,7 @@ const LossReport: React.FC = () => {
       key: 'loss',
       header: 'Loss (G)',
       render: (item) => (
-        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
+        <span className="font-mono text-sm font-semibold text-red-600 dark:text-red-400">
           {formatNumberDisplay(item.loss)} G
         </span>
       ),

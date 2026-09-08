@@ -354,24 +354,27 @@ const JointDept: React.FC = () => {
               }
             }
 
-            const chainGiven = entry.chainReceived || entry.chainWeight || 0;
-            const hasReceived =
-              (updated.powderReceivedRaw !== undefined &&
-                updated.powderReceivedRaw !== '' &&
-                updated.powderReceived > 0) ||
-              updated.powderReceived > 0;
+            const chainGiven = Number(
+              entry.chainReceived || entry.chainWeight || 0,
+            );
+            const receivedAmount = Number(updated.powderReceived || 0);
+            const scrapAmount = Number(updated.scrap || 0);
 
-            if (hasReceived) {
-              const scrapAmount = updated.scrap || 0;
-              updated.loss = Math.max(
-                0,
-                Math.round(
-                  (chainGiven - updated.powderReceived - scrapAmount) * 1000,
-                ) / 1000,
-              );
-            } else {
-              updated.loss = 0;
-            }
+            updated.loss = Math.max(
+              0,
+              Math.round((chainGiven - receivedAmount - scrapAmount) * 1000) /
+                1000,
+            );
+
+            console.log(`[Joint Field Change - Row #${index + 1}]`, {
+              fieldChanged: field,
+              newValue: value,
+              chainGiven: chainGiven,
+              powderReceived: receivedAmount,
+              scrap: scrapAmount,
+              calculatedLoss: updated.loss,
+              formula: `${chainGiven} (Chain Given) - ${receivedAmount} (Powder Received) - ${scrapAmount} (Scrap) = ${updated.loss} G (Loss)`,
+            });
 
             updated.isDirty = true;
             return updated;

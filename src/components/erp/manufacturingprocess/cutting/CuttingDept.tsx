@@ -483,24 +483,25 @@ const CuttingDept: React.FC = () => {
               }
             }
 
-            const hasReceived =
-              (updated.chainReceivedRaw !== undefined &&
-                updated.chainReceivedRaw !== '' &&
-                updated.chainReceived > 0) ||
-              updated.chainReceived > 0;
+            const givenAmount = Number(updated.chainGiven || 0);
+            const receivedAmount = Number(updated.chainReceived || 0);
+            const scrapAmount = Number(updated.scrap || 0);
 
-            if (hasReceived) {
-              const scrapAmount = updated.scrap || 0;
-              updated.loss = Math.max(
-                0,
-                Math.round(
-                  (updated.chainGiven - updated.chainReceived - scrapAmount) *
-                    1000,
-                ) / 1000,
-              );
-            } else {
-              updated.loss = 0;
-            }
+            updated.loss = Math.max(
+              0,
+              Math.round((givenAmount - receivedAmount - scrapAmount) * 1000) /
+                1000,
+            );
+
+            console.log(`[Cutting Field Change - Row #${index + 1}]`, {
+              fieldChanged: field,
+              newValue: value,
+              chainGiven: givenAmount,
+              chainReceived: receivedAmount,
+              scrap: scrapAmount,
+              calculatedLoss: updated.loss,
+              formula: `${givenAmount} (Chain Given) - ${receivedAmount} (Chain Received) - ${scrapAmount} (Scrap) = ${updated.loss} G (Loss)`,
+            });
 
             updated.isDirty = true;
             return updated;

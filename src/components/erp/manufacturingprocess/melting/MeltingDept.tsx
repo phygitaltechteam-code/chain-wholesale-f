@@ -290,21 +290,27 @@ const MeltingDept: React.FC = () => {
           const purity = item.purity || 0;
           const expectedFine =
             item.expectedFine || calculateExpectedFine(grossWt, purity);
-          const fineWeight =
-            item.fineWeight || item.fineWeight || expectedFine || 0;
           const isSaved = item.isCompleted === true;
+          const fineWeight =
+            item.fineWeight !== undefined && item.fineWeight !== null
+              ? Number(item.fineWeight)
+              : 0;
 
           const loss = isSaved
             ? item.loss !== undefined && item.loss !== null
-              ? item.loss
-              : Math.max(
+              ? Number(item.loss)
+              : fineWeight > 0
+                ? Math.max(
+                    0,
+                    Math.round((expectedFine - fineWeight) * 1000) / 1000,
+                  )
+                : 0
+            : fineWeight > 0
+              ? Math.max(
                   0,
                   Math.round((expectedFine - fineWeight) * 1000) / 1000,
                 )
-            : Math.max(
-                0,
-                Math.round((expectedFine - fineWeight) * 1000) / 1000,
-              );
+              : 0;
 
           return {
             id: item.id || `melting-${index}`,
@@ -334,7 +340,7 @@ const MeltingDept: React.FC = () => {
             isEditing: !isSaved,
             isSaved: isSaved,
             grossWtRaw: grossWt ? grossWt.toString() : '',
-            fineWeightRaw: fineWeight ? fineWeight.toString() : '',
+            fineWeightRaw: fineWeight > 0 ? fineWeight.toString() : '',
             purityRaw: purity ? purity.toString() : '',
             isDirty: false,
           };
@@ -485,6 +491,15 @@ const MeltingDept: React.FC = () => {
                 Math.round((updated.expectedFine - updated.fineWeight) * 1000) /
                   1000,
               );
+
+              console.log(`[Melting Field Change - Row #${index + 1}]`, {
+                fieldChanged: field,
+                newValue: value,
+                expectedFine: updated.expectedFine,
+                fineWeight: updated.fineWeight,
+                calculatedLoss: updated.loss,
+                formula: `${updated.expectedFine} (Expected Fine) - ${updated.fineWeight} (Fine Wt) = ${updated.loss} G (Loss)`,
+              });
             }
             updated.isDirty = true;
             return updated;

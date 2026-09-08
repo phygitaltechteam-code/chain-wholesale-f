@@ -526,7 +526,15 @@ const Sidebar = ({
         )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-2">
+      <nav
+        className={`no-scrollbar flex-1 space-y-1 overflow-y-auto ${
+          isCollapsed && !isMobileDevice ? 'px-1' : 'px-2'
+        }`}
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}
+      >
         {menuItems.length > 0 ? (
           menuItems.map((item) => renderMenuItem(item))
         ) : (
@@ -602,7 +610,7 @@ const Sidebar = ({
           isMobileDevice && !isMobileMenuOpen
             ? '-translate-x-full'
             : 'translate-x-0'
-        }`}
+        } ${isCollapsed && !isMobileDevice ? 'overflow-hidden' : ''}`}
       >
         <SidebarContent />
       </aside>

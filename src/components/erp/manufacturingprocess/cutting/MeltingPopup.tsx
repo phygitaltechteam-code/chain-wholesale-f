@@ -2,6 +2,7 @@ import React, {useState, useEffect} from 'react';
 import {X} from 'lucide-react';
 import {useAddCuttingScrap} from '@/lib/api/processmelting';
 import {formatNoTrailingZeros3Dec} from './cuttingUtils';
+import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import toast from 'react-hot-toast';
 
 export interface ScrapModalItem {
@@ -211,56 +212,50 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
               <label className="mb-2 block text-center text-xs font-bold text-slate-700 dark:text-slate-300">
                 Received (%)
               </label>
-
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  value={receivedPurity}
-                  onChange={(e) => {
-                    setReceivedPurity(e.target.value);
-                    setIsManualLoss(false);
-                  }}
-                  placeholder="0.00"
-                  className="font-mono w-full rounded-lg border border-[#d3c4af]/50 bg-white px-2 py-2 text-right text-sm font-semibold text-[#1a1c1b] outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                />
-                <span className="text-xs font-bold text-[#785600] dark:text-amber-400">
-                  %
-                </span>
-              </div>
+              <GenericInputField
+                type="text"
+                inputMode="decimal"
+                decimalScale={2}
+                value={receivedPurity}
+                onChange={(e) => {
+                  setReceivedPurity(e.target.value);
+                  setIsManualLoss(false);
+                }}
+                placeholder="0.00"
+                suffix="%"
+                compact
+                className="font-mono text-right font-semibold"
+              />
             </div>
 
             {/* Wt */}
             <div>
               <label className="mb-2 block text-center text-xs font-bold text-slate-700 dark:text-slate-300">
-                Weight(G)
+                Weight (G)
               </label>
-
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  value={weight}
-                  onChange={(e) => {
-                    setWeight(e.target.value);
-                    setIsManualLoss(false);
-                  }}
-                  placeholder="0.000"
-                  className="font-mono w-full rounded-lg border border-[#d3c4af]/50 bg-white px-2 py-2 text-right text-sm font-semibold text-[#1a1c1b] outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                />
-                <span className="text-xs text-slate-500">g</span>
-              </div>
+              <GenericInputField
+                type="text"
+                inputMode="decimal"
+                decimalScale={3}
+                value={weight}
+                onChange={(e) => {
+                  setWeight(e.target.value);
+                  setIsManualLoss(false);
+                }}
+                placeholder="0.000"
+                suffix="g"
+                compact
+                className="font-mono text-right font-semibold"
+              />
             </div>
+
             {/* Fine Wt (auto-calculated, read-only) */}
             <div>
               <label className="mb-2 block text-center text-xs font-bold text-slate-700 dark:text-slate-300">
                 Fine Wt (G)
               </label>
-              <div className="flex items-center gap-1">
-                <div className="font-mono w-full rounded-lg border border-[#d3c4af]/50 bg-[#fffdf6] px-2 py-2 text-right text-sm font-semibold text-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400">
+              <div className="relative">
+                <div className="font-mono w-full rounded-md border border-[#d3c4af]/30 bg-[#fffdf6] px-1.5 py-1.5 pr-6 text-right text-xs font-semibold text-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400">
                   {(() => {
                     const w = parseFloat(weight);
                     const p = parseFloat(receivedPurity);
@@ -271,7 +266,9 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
                     return '0.0';
                   })()}
                 </div>
-                <span className="text-xs text-slate-500">g</span>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 select-none text-[10px] text-[#4f4535] dark:text-slate-400">
+                  g
+                </div>
               </div>
             </div>
 
@@ -280,21 +277,20 @@ const MeltingPopup: React.FC<MeltingPopupProps> = ({
               <label className="mb-2 block text-center text-xs font-bold text-slate-700 dark:text-slate-300">
                 Loss (Fine Wt) G
               </label>
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  value={lossFineWeight}
-                  onChange={(e) => {
-                    setLossFineWeight(e.target.value);
-                    setIsManualLoss(true);
-                  }}
-                  placeholder="0"
-                  className="font-mono w-full rounded-lg border border-[#d3c4af]/50 bg-white px-2 py-2 text-right text-sm font-semibold text-[#1a1c1b] outline-none focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                />
-                <span className="text-xs text-slate-500">g</span>
-              </div>
+              <GenericInputField
+                type="text"
+                inputMode="decimal"
+                decimalScale={3}
+                value={lossFineWeight}
+                onChange={(e) => {
+                  setLossFineWeight(e.target.value);
+                  setIsManualLoss(true);
+                }}
+                placeholder="0.000"
+                suffix="g"
+                compact
+                className="font-mono text-right font-semibold"
+              />
             </div>
           </div>
         </div>

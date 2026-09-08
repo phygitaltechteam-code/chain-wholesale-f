@@ -175,57 +175,78 @@ const ClientReceiptModal: React.FC<ClientReceiptModalProps> = ({
               </div>
             </div>
 
-            {/* Items Table if Bill */}
-            {hasItems && (
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full border-collapse border border-[#d3c4af]/30 text-[11px] dark:border-slate-700">
-                  <thead>
-                    <tr className="bg-[#785600] text-white">
-                      <th className="w-8 border border-[#785600] p-1.5 text-center">
-                        #
-                      </th>
-                      <th className="border border-[#785600] p-1.5 text-left">
-                        Item
-                      </th>
-                      <th className="w-16 border border-[#785600] p-1.5 text-center">
-                        Purity
-                      </th>
-                      <th className="w-16 border border-[#785600] p-1.5 text-center">
-                        Remark
-                      </th>
-                      <th className="w-24 border border-[#785600] p-1.5 text-right">
-                        Weight (G)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {receiptData.items!.map((item, idx) => (
-                      <tr
-                        key={idx}
-                        className="border-b border-[#d3c4af]/20 dark:border-slate-800"
-                      >
-                        <td className="p-1.5 text-center text-[#4f4535] dark:text-slate-400">
-                          {idx + 1}
-                        </td>
-                        <td className="p-1.5 font-bold text-[#1a1c1b] dark:text-white">
-                          {item.item || 'Gold'}
-                          {item.size ? ` (${item.size})` : ''}
-                        </td>
-                        <td className="p-1.5 text-center">
-                          {item.purity ? `${item.purity}%` : '-'}
-                        </td>
-                        <td className="p-1.5 text-center">
-                          {item.remark || '-'}
-                        </td>
-                        <td className="font-mono p-1.5 text-right font-bold text-[#785600] dark:text-amber-400">
-                          {formatNumber(item.weight || item.grossWeight || 0)} G
-                        </td>
+            {/* Items Table (3 Columns: Item, Purity, Fine Wt) */}
+            {(() => {
+              const displayItems =
+                receiptData.items && receiptData.items.length > 0
+                  ? receiptData.items
+                  : [
+                      {
+                        item: 'Gold',
+                        purity: '100%',
+                        fineWeight: receiptData.amount ?? 0,
+                        weight: receiptData.amount ?? 0,
+                      },
+                    ];
+
+              return (
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full border-collapse border border-[#d3c4af]/30 text-[11px] dark:border-slate-700">
+                    <thead>
+                      <tr className="bg-[#785600] text-white">
+                        <th className="border border-[#785600] p-1.5 text-left">
+                          Item
+                        </th>
+                        <th className="w-24 border border-[#785600] p-1.5 text-center">
+                          Purity
+                        </th>
+                        <th className="w-28 border border-[#785600] p-1.5 text-right">
+                          Fine Wt
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody>
+                      {displayItems.map((item, idx) => {
+                        const isGold = (item.item || 'Gold')
+                          .toLowerCase()
+                          .includes('gold');
+                        const purityStr =
+                          item.purity != null && item.purity !== ''
+                            ? String(item.purity).includes('%')
+                              ? item.purity
+                              : `${item.purity}%`
+                            : isGold
+                              ? '100%'
+                              : '100%';
+                        const fineVal =
+                          item.fineWeight ??
+                          item.weight ??
+                          receiptData.amount ??
+                          0;
+
+                        return (
+                          <tr
+                            key={idx}
+                            className="border-b border-[#d3c4af]/20 dark:border-slate-800"
+                          >
+                            <td className="p-1.5 font-bold text-[#1a1c1b] dark:text-white">
+                              {item.item || 'Gold'}
+                              {item.size ? ` (${item.size})` : ''}
+                            </td>
+                            <td className="p-1.5 text-center text-[#1a1c1b] dark:text-slate-300">
+                              {purityStr}
+                            </td>
+                            <td className="font-mono p-1.5 text-right font-bold text-[#785600] dark:text-amber-400">
+                              {formatNumber(Math.abs(Number(fineVal)))} G
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
 
             {/* Transaction / Balance Card */}
             <div className="ml-auto mt-3 max-w-xs rounded-lg border border-[#d3c4af]/30 bg-[#fcfbf9] p-3 dark:border-slate-700 dark:bg-slate-800/60">

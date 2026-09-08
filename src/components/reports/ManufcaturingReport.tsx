@@ -205,13 +205,26 @@ export default function ManufacturingReport() {
             })
           : '';
 
+        const itemWeight = Number(item.weight) || 0;
+        const itemScrap = Number(item.scrap) || 0;
+        const itemCurrentWeight = Number(item.currentWeight) || 0;
+        const calculatedLoss = Math.max(
+          0,
+          Math.round((itemWeight - itemScrap - itemCurrentWeight) * 1000) /
+            1000,
+        );
+        const itemLoss =
+          item.loss !== undefined && item.loss !== null && item.loss !== 0
+            ? Number(item.loss)
+            : calculatedLoss;
+
         return {
           id: item.id,
           dateTime: `${formattedDate} ${formattedTime}`.trim(),
-          weight: item.weight || 0,
-          scrap: item.scrap || 0,
-          loss: item.loss || 0,
-          currentWeight: item.currentWeight || 0,
+          weight: itemWeight,
+          scrap: itemScrap,
+          loss: itemLoss,
+          currentWeight: itemCurrentWeight,
           createdAt: item.createdAt,
         };
       });
@@ -819,7 +832,7 @@ export default function ManufacturingReport() {
                                 {formatNumber(item.scrap)} G
                               </td>
 
-                              <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm text-[#1a1c1b] dark:text-white">
+                              <td className="font-mono whitespace-nowrap px-3 py-3 text-center text-sm font-semibold text-red-600 dark:text-red-400">
                                 {formatNumber(item.loss)} G
                               </td>
 

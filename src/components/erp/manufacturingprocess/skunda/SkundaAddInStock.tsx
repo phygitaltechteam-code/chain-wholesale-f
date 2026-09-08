@@ -1,6 +1,7 @@
 import React, {useState, useEffect, useMemo, useRef} from 'react';
 import {X, Search, Loader2, Save, Package} from 'lucide-react';
 import toast from 'react-hot-toast';
+import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import {useGetStock} from '@/lib/api/stock';
 import {useGetItems} from '@/lib/api/items';
 import {useGetSizes} from '@/lib/api/sizes';
@@ -304,21 +305,19 @@ const SkundaAddInStock: React.FC<SkundaAddInStockProps> = ({
               <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Available Qty (G)
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  readOnly
-                  value={
-                    selectedStock
-                      ? formatNumberDisplay(selectedStock.weight)
-                      : '0'
-                  }
-                  className="font-mono w-full cursor-not-allowed rounded-lg border border-[#d3c4af]/20 bg-amber-50/50 px-3 py-2 pr-7 text-sm font-bold text-[#785600] outline-none dark:bg-amber-950/20 dark:text-amber-400"
-                />
-                <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-medium dark:text-slate-500">
-                  G
-                </span>
-              </div>
+              <GenericInputField
+                type="text"
+                readOnly
+                decimalScale={3}
+                value={
+                  selectedStock
+                    ? formatNumberDisplay(selectedStock.weight)
+                    : '0'
+                }
+                suffix="G"
+                compact
+                className="font-mono cursor-not-allowed font-bold text-[#785600] dark:text-amber-400"
+              />
             </div>
 
             {/* 3. Add Weight Input - 3 cols */}
@@ -326,20 +325,17 @@ const SkundaAddInStock: React.FC<SkundaAddInStockProps> = ({
               <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                 Add Weight (G) <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.001"
-                  min="0.001"
-                  value={enterWeight}
-                  onChange={(e) => setEnterWeight(e.target.value)}
-                  placeholder="0"
-                  className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                />
-                <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-medium dark:text-slate-500">
-                  G
-                </span>
-              </div>
+              <GenericInputField
+                type="text"
+                inputMode="decimal"
+                decimalScale={3}
+                value={enterWeight}
+                onChange={(e) => setEnterWeight(e.target.value)}
+                placeholder="0.000"
+                suffix="G"
+                compact
+                className="font-mono"
+              />
             </div>
           </div>
 

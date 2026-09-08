@@ -19,7 +19,10 @@ const StockSchema = z.object({
   itemId: z.string().min(1, 'Please select an item'),
   sizeId: z.string().optional(),
   purity: z.string().optional(),
-  stockQty: z.number().min(0.001, 'Please enter a valid quantity'),
+  stockQty: z.union([z.string(), z.number()]).refine((val) => {
+    const num = typeof val === 'number' ? val : parseFloat(val);
+    return !isNaN(num) && num > 0;
+  }, 'Please enter a valid quantity'),
   stockType: z.string().min(1, 'Please select stock type'),
   note: z.string().optional(),
 });
@@ -49,7 +52,7 @@ const StockManagment: React.FC = () => {
       itemId: '',
       sizeId: '',
       purity: '',
-      stockQty: 0,
+      stockQty: '',
       stockType: 'INWARD',
       note: '',
     },
@@ -73,7 +76,10 @@ const StockManagment: React.FC = () => {
 
   // Weighing Scale focus hook
   const scaleFocus = useScaleFocus((weight) => {
-    setValue('stockQty', weight, {shouldValidate: true, shouldDirty: true});
+    setValue('stockQty', String(weight), {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
   });
 
   // Stock type options
@@ -158,7 +164,8 @@ const StockManagment: React.FC = () => {
 
         const matchPurity =
           enteredPurityNum !== null
-            ? stockPurityNum !== null && Math.abs(stockPurityNum - enteredPurityNum) < 0.0001
+            ? stockPurityNum !== null &&
+              Math.abs(stockPurityNum - enteredPurityNum) < 0.0001
             : stockPurityNum === null || stockPurityNum === 0;
 
         return matchSize && matchPurity;
@@ -191,7 +198,10 @@ const StockManagment: React.FC = () => {
 
   // Handle save
   const onSubmit = async (data: StockFormData) => {
-    const stockQty = data.stockQty || 0;
+    const stockQty =
+      typeof data.stockQty === 'number'
+        ? data.stockQty
+        : parseFloat(data.stockQty) || 0;
 
     // For Gold: set sizeId and purity to null
     // For non-Gold: use the values from form
@@ -217,16 +227,14 @@ const StockManagment: React.FC = () => {
         : !s.sizeId || s.sizeId === null;
 
       const stockPurityNum =
-        s.purity !== null &&
-        s.purity !== undefined &&
-        s.purity !== '' &&
-        !isNaN(Number(s.purity))
+        s.purity !== null && s.purity !== undefined && !isNaN(Number(s.purity))
           ? Number(s.purity)
           : null;
 
       const matchPurity =
         finalPurity !== null
-          ? stockPurityNum !== null && Math.abs(stockPurityNum - finalPurity) < 0.0001
+          ? stockPurityNum !== null &&
+            Math.abs(stockPurityNum - finalPurity) < 0.001
           : stockPurityNum === null || stockPurityNum === 0;
 
       return matchSize && matchPurity;
@@ -299,7 +307,7 @@ const StockManagment: React.FC = () => {
         itemId: '',
         sizeId: '',
         purity: '',
-        stockQty: 0,
+        stockQty: '',
         stockType: 'INWARD',
         note: '',
       });
@@ -370,35 +378,25 @@ const StockManagment: React.FC = () => {
                   />
                 )}
 
-                {/* Purity Input Field (allows 3 decimals) - Hidden for GOLD */}
+                {/* Purity Input Field - Hidden for GOLD */}
                 {!isGold && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-[#4f4535] dark:text-slate-400">
-                      Purity (%)
-                    </label>
-                    <input
+                    <GenericInputField
+                      name="purity"
+                      label="Purity (%)"
                       type="text"
+                      inputMode="decimal"
+                      decimalScale={2}
                       value={watchedPurity || ''}
                       onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9.]/g, '');
-                        const parts = val.split('.');
-                        let formatted =
-                          parts.length > 2
-                            ? `${parts[0]}.${parts.slice(1).join('')}`
-                            : val;
-                        if (
-                          formatted.includes('.') &&
-                          formatted.split('.')[1]?.length > 3
-                        ) {
-                          formatted = `${formatted.split('.')[0]}.${formatted.split('.')[1].slice(0, 3)}`;
-                        }
-                        setValue('purity', formatted, {
+                        setValue('purity', e.target.value, {
                           shouldValidate: true,
                           shouldDirty: true,
                         });
                       }}
-                      placeholder="e.g. 91.600"
-                      className="font-mono mt-1 w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-left text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      placeholder="e.g. 91.60"
+                      suffix="%"
+                      className="font-mono"
                     />
                     {errors.purity && (
                       <p className="mt-1 text-xs text-red-500">
@@ -421,23 +419,29 @@ const StockManagment: React.FC = () => {
 
                 {/* Stock Quantity */}
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-[#4f4535] dark:text-slate-400">
-                    Quantity (G) <span className="text-red-500">*</span>
-                  </label>
-                  <input
+                  <GenericInputField
+                    name="stockQty"
+                    label="Quantity (G)"
+                    required
                     type="text"
-                    value={watchedStockQty || ''}
+                    inputMode="decimal"
+                    decimalScale={3}
+                    value={
+                      watchedStockQty !== undefined && watchedStockQty !== null
+                        ? String(watchedStockQty)
+                        : ''
+                    }
                     onFocus={scaleFocus.onFocus}
                     onBlur={scaleFocus.onBlur}
                     onChange={(e) => {
-                      const value = e.target.value.replace(/[^0-9.]/g, '');
-                      setValue('stockQty', parseFloat(value) || 0, {
+                      setValue('stockQty', e.target.value, {
                         shouldValidate: true,
                         shouldDirty: true,
                       });
                     }}
                     placeholder="0.000"
-                    className="font-mono mt-1 w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-left text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    suffix="G"
+                    className="font-mono"
                   />
                   {errors.stockQty && (
                     <p className="mt-1 text-xs text-red-500">

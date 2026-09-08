@@ -468,17 +468,24 @@ const BoxDept: React.FC = () => {
                 updated.purity = isNaN(numValue) ? 0 : numValue;
               }
             }
-            if (updated.chainWeight > 0 || updated.scrap > 0) {
-              updated.loss = Math.max(
-                0,
-                Math.round(
-                  (entry.tarWeight - updated.chainWeight - updated.scrap) *
-                    1000,
-                ) / 1000,
-              );
-            } else {
-              updated.loss = 0;
-            }
+            const tarVal = Number(entry.tarWeight || 0);
+            const chainVal = Number(updated.chainWeight || 0);
+            const scrapVal = Number(updated.scrap || 0);
+
+            updated.loss = Math.max(
+              0,
+              Math.round((tarVal - chainVal - scrapVal) * 1000) / 1000,
+            );
+
+            console.log(`[Box Field Change - Row #${index + 1}]`, {
+              fieldChanged: field,
+              newValue: value,
+              tarWeight: tarVal,
+              chainWeight: chainVal,
+              scrap: scrapVal,
+              calculatedLoss: updated.loss,
+              formula: `${tarVal} (Tar Wt) - ${chainVal} (Chain Wt) - ${scrapVal} (Scrap) = ${updated.loss} G (Loss)`,
+            });
 
             updated.isDirty = true;
             return updated;

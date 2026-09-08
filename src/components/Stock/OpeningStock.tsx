@@ -3,6 +3,7 @@ import {Plus, Save, X, Search, ArrowLeft} from 'lucide-react';
 import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
+import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import {useGetItems, Item} from '@/lib/api/items';
 import {useGetSizes, Size} from '@/lib/api/sizes';
@@ -461,7 +462,7 @@ const OpeningStock: React.FC = () => {
           </button>
           <button
             onClick={() => handleCancelAddRow(item.id)}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-gray-500 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-red-50 hover:text-red-600 active:scale-[0.98] dark:hover:bg-red-950/30 dark:hover:text-red-400"
+            className="text-gray-500 inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-red-50 hover:text-red-600 active:scale-[0.98] dark:hover:bg-red-950/30 dark:hover:text-red-400"
             title="Cancel"
           >
             <X className="h-4 w-4" />
@@ -554,9 +555,11 @@ const OpeningStock: React.FC = () => {
       render: (item, index) => {
         if (item.isEditing) {
           return (
-            <div className="relative inline-block">
-              <input
+            <div className="inline-block w-28">
+              <GenericInputField
                 type="text"
+                inputMode="decimal"
+                decimalScale={3}
                 value={
                   item.gramsRaw !== undefined
                     ? item.gramsRaw
@@ -569,11 +572,10 @@ const OpeningStock: React.FC = () => {
                   handleInlineChange(item.id, 'grams', e.target.value)
                 }
                 placeholder="0.000"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                suffix="G"
+                compact
+                className="font-mono text-right"
               />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
-              </span>
             </div>
           );
         }
@@ -598,9 +600,11 @@ const OpeningStock: React.FC = () => {
         }
         if (item.isEditing) {
           return (
-            <div className="relative inline-block">
-              <input
+            <div className="inline-block w-28">
+              <GenericInputField
                 type="text"
+                inputMode="decimal"
+                decimalScale={2}
                 value={
                   item.purityRaw !== undefined
                     ? item.purityRaw
@@ -612,11 +616,10 @@ const OpeningStock: React.FC = () => {
                   handleInlineChange(item.id, 'purity', e.target.value)
                 }
                 placeholder="e.g., 98"
-                className="w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 pr-6 text-right text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                suffix="%"
+                compact
+                className="font-mono text-right"
               />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                %
-              </span>
             </div>
           );
         }

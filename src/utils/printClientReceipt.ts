@@ -191,6 +191,70 @@ export const generateClientReceiptHtml = (
             </div>
           </div>
 
+          <!-- ITEMS TABLE (3 COLUMNS: ITEM, PURITY, FINE WT) -->
+          ${(() => {
+            const rawItems =
+              receiptData.items && receiptData.items.length > 0
+                ? receiptData.items
+                : [
+                    {
+                      item: 'Gold',
+                      purity: '100%',
+                      fineWeight: receiptData.amount ?? 0,
+                      weight: receiptData.amount ?? 0,
+                    },
+                  ];
+
+            const rowsHtml = rawItems
+              .map((it) => {
+                const itemName = it.item || 'Gold';
+                const isGold =
+                  itemName.trim().toLowerCase() === 'gold' ||
+                  itemName.trim().toLowerCase().includes('gold');
+                const purityStr =
+                  it.purity != null && it.purity !== ''
+                    ? String(it.purity).includes('%')
+                      ? it.purity
+                      : `${it.purity}%`
+                    : isGold
+                      ? '100%'
+                      : '100%';
+                const fineWtVal =
+                  it.fineWeight ?? it.weight ?? receiptData.amount ?? 0;
+                return `
+                  <tr>
+                    <td style="padding:4px 6px;text-align:left;border:1px solid #d6c08a;font-weight:bold;color:#111111;">
+                      ${itemName}${it.size ? ` (${it.size})` : ''}
+                    </td>
+                    <td style="padding:4px 6px;text-align:center;border:1px solid #d6c08a;color:#111111;">
+                      ${purityStr}
+                    </td>
+                    <td style="padding:4px 6px;text-align:right;border:1px solid #d6c08a;font-family:monospace;font-weight:bold;color:#785600;">
+                      ${formatNumber(Math.abs(Number(fineWtVal)))} G
+                    </td>
+                  </tr>
+                `;
+              })
+              .join('');
+
+            return `
+              <div style="margin:8px 0 6px 0;">
+                <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #785600;">
+                  <thead>
+                    <tr style="background-color:#785600;color:#ffffff;">
+                      <th style="padding:4px 6px;text-align:left;border:1px solid #785600;font-weight:bold;width:45%;">Item</th>
+                      <th style="padding:4px 6px;text-align:center;border:1px solid #785600;font-weight:bold;width:25%;">Purity</th>
+                      <th style="padding:4px 6px;text-align:right;border:1px solid #785600;font-weight:bold;width:30%;">Fine Wt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsHtml}
+                  </tbody>
+                </table>
+              </div>
+            `;
+          })()}
+
           <!-- PAYMENT SUMMARY CARD -->
           <div style="display:flex;justify-content:flex-end;margin-top:8px;">
             <div style="width:45%;min-width:210px;border:1px solid #d6c08a;border-radius:4px;background:#fffdf7 !important;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact;">

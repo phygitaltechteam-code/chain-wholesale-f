@@ -1,5 +1,6 @@
 import React from 'react';
 import {Plus, Trash2, Layers, X} from 'lucide-react';
+import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import {TarCardForm, formatNumber} from './tarUtils';
 
 interface AddTarModalProps {
@@ -74,17 +75,28 @@ const AddTarModal: React.FC<AddTarModalProps> = ({
                   key={card.id || idx}
                   className="relative flex flex-col justify-between rounded-xl border border-[#d3c4af]/30 bg-[#fbfaf8] p-4 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800/80"
                 >
-                  {modalCards.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveCard(idx)}
-                      disabled={isCardSaving}
-                      className="rounded-md p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40"
-                      title="Remove this card"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#785600]/10 text-xs font-bold text-[#785600] dark:bg-amber-900/30 dark:text-amber-400">
+                        {idx + 1}
+                      </span>
+                      <span className="text-xs font-semibold text-[#1a1c1b] dark:text-white">
+                        Tar Card #{idx + 1}
+                      </span>
+                    </div>
+
+                    {modalCards.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCard(idx)}
+                        disabled={isCardSaving}
+                        className="rounded-md p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40"
+                        title="Remove this card"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
 
                   {/* Card Inputs */}
                   <div className="space-y-3">
@@ -94,43 +106,39 @@ const AddTarModal: React.FC<AddTarModalProps> = ({
                         <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                           Gross Wt (G) <span className="text-red-500">*</span>
                         </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={card.grossWt}
-                            {...getModalScaleProps(idx, 'grossWt')}
-                            onChange={(e) =>
-                              handleCardChange(idx, 'grossWt', e.target.value)
-                            }
-                            placeholder="0.000"
-                            className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                          />
-                          <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                            G
-                          </span>
-                        </div>
+                        <GenericInputField
+                          type="text"
+                          inputMode="decimal"
+                          decimalScale={3}
+                          value={card.grossWt}
+                          {...getModalScaleProps(idx, 'grossWt')}
+                          onChange={(e) =>
+                            handleCardChange(idx, 'grossWt', e.target.value)
+                          }
+                          placeholder="0.000"
+                          suffix="G"
+                          compact
+                          className="font-mono"
+                        />
                       </div>
 
                       <div>
                         <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                           Purity (%) <span className="text-red-500">*</span>
                         </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={card.purity}
-                            onChange={(e) =>
-                              handleCardChange(idx, 'purity', e.target.value)
-                            }
-                            placeholder="e.g. 93"
-                            className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm text-[#1a1c1b] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                          />
-                          <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                            %
-                          </span>
-                        </div>
+                        <GenericInputField
+                          type="text"
+                          inputMode="decimal"
+                          decimalScale={2}
+                          value={card.purity}
+                          onChange={(e) =>
+                            handleCardChange(idx, 'purity', e.target.value)
+                          }
+                          placeholder="e.g. 93"
+                          suffix="%"
+                          compact
+                          className="font-mono"
+                        />
                       </div>
                     </div>
 
@@ -139,23 +147,21 @@ const AddTarModal: React.FC<AddTarModalProps> = ({
                       <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                         Fine Wt (लगड) <span className="text-red-500">*</span>
                       </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={card.fine}
-                          {...getModalScaleProps(idx, 'fine')}
-                          onChange={(e) =>
-                            handleCardChange(idx, 'fine', e.target.value)
-                          }
-                          disabled
-                          placeholder="0.000"
-                          className="font-mono w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-7 text-sm font-bold text-[#785600] outline-none transition-colors focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-amber-400"
-                        />
-                        <span className="text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                          G
-                        </span>
-                      </div>
+                      <GenericInputField
+                        type="text"
+                        inputMode="decimal"
+                        decimalScale={3}
+                        value={card.fine}
+                        {...getModalScaleProps(idx, 'fine')}
+                        onChange={(e) =>
+                          handleCardChange(idx, 'fine', e.target.value)
+                        }
+                        disabled
+                        placeholder="0.000"
+                        suffix="G"
+                        compact
+                        className="font-mono font-bold text-[#785600] dark:text-amber-400"
+                      />
 
                       {/* Gold Available Qty */}
                       <div className="mt-1.5 flex items-center justify-between rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-xs text-[#785600] dark:bg-amber-900/30 dark:text-amber-300">

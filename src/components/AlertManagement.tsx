@@ -28,12 +28,7 @@ export interface AlertRuleRow {
   adjustment: number | string;
 }
 
-export type ProcessTabId =
-  | 'melting'
-  | 'tar'
-  | 'box'
-  | 'cutting'
-  | 'skunda';
+export type ProcessTabId = 'melting' | 'tar' | 'box' | 'cutting' | 'skunda';
 
 interface ProcessTabConfig {
   id: ProcessTabId;
@@ -44,12 +39,15 @@ interface ProcessTabConfig {
 const STORAGE_KEY = 'chain_alert_management_settings_v2';
 
 const PROCESS_TABS: ProcessTabConfig[] = [
-  {id: 'melting', label: 'Melting', icon: <Flame className="h-4 w-4" />},
-  {id: 'tar', label: 'Tar Management', icon: <TrendingUp className="h-4 w-4" />},
+  {
+    id: 'tar',
+    label: 'Tar Management',
+    icon: <TrendingUp className="h-4 w-4" />,
+  },
   {id: 'box', label: 'Box Department', icon: <Box className="h-4 w-4" />},
- 
   {id: 'cutting', label: 'Cutting', icon: <Scissors className="h-4 w-4" />},
   {id: 'skunda', label: 'S / Kunda', icon: <CheckCircle className="h-4 w-4" />},
+  {id: 'melting', label: 'Melting', icon: <Flame className="h-4 w-4" />},
 ];
 
 const createDefaultRow = (grossWt: string = '100G'): AlertRuleRow => ({
@@ -61,15 +59,15 @@ const createDefaultRow = (grossWt: string = '100G'): AlertRuleRow => ({
 });
 
 const getDefaultAlertData = (): Record<ProcessTabId, AlertRuleRow[]> => ({
-  melting: [createDefaultRow('100G')],
   tar: [createDefaultRow('100G')],
   box: [createDefaultRow('100G')],
   cutting: [createDefaultRow('100G')],
   skunda: [createDefaultRow('100G')],
+  melting: [createDefaultRow('100G')],
 });
 
 export const AlertManagement: React.FC = () => {
-  const [activeProcess, setActiveProcess] = useState<ProcessTabId>('melting');
+  const [activeProcess, setActiveProcess] = useState<ProcessTabId>('tar');
   const [alertData, setAlertData] = useState<
     Record<ProcessTabId, AlertRuleRow[]>
   >(() => {

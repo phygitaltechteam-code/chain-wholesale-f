@@ -13,6 +13,23 @@ export interface Client {
   updatedAt?: string;
 }
 
+const extractErrorMessage = (error: any, defaultMsg: string): string => {
+  const backendMsg =
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.response?.data?.msg ||
+    error?.data?.message ||
+    error?.message;
+
+  if (Array.isArray(backendMsg)) {
+    return backendMsg.join(', ');
+  }
+  if (typeof backendMsg === 'string' && backendMsg.trim()) {
+    return backendMsg;
+  }
+  return defaultMsg;
+};
+
 // API Functions
 export const getClientsApi = async (): Promise<Client[]> => {
   try {
@@ -22,11 +39,9 @@ export const getClientsApi = async (): Promise<Client[]> => {
     if (data && Array.isArray(data.data)) return data.data;
     if (data && Array.isArray(data.clients)) return data.clients;
     return [];
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to fetch clients');
-    }
-    throw error;
+  } catch (error: any) {
+    const message = extractErrorMessage(error, 'Failed to fetch clients');
+    throw new Error(message);
   }
 };
 
@@ -36,11 +51,9 @@ export const createClientApi = async (
   try {
     const response = await api.post('/admin/client', data);
     return response.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message || 'Failed to create client');
-    }
-    throw error;
+  } catch (error: any) {
+    const message = extractErrorMessage(error, 'Failed to create client');
+    throw new Error(message);
   }
 };
 
@@ -54,13 +67,12 @@ export const updateClientApi = async ({
   try {
     const response = await api.put(`/admin/client/${id}`, data);
     return response.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(
-        error.message || `Failed to update client with ID: ${id}`,
-      );
-    }
-    throw error;
+  } catch (error: any) {
+    const message = extractErrorMessage(
+      error,
+      `Failed to update client with ID: ${id}`,
+    );
+    throw new Error(message);
   }
 };
 
@@ -68,13 +80,12 @@ export const deleteClientApi = async (id: string) => {
   try {
     const response = await api.delete(`/admin/client/${id}`);
     return response.data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(
-        error.message || `Failed to delete client with ID: ${id}`,
-      );
-    }
-    throw error;
+  } catch (error: any) {
+    const message = extractErrorMessage(
+      error,
+      `Failed to delete client with ID: ${id}`,
+    );
+    throw new Error(message);
   }
 };
 
@@ -94,13 +105,16 @@ export const useCreateClient = () => {
 
   return useMutation({
     mutationFn: createClientApi,
-    onSuccess: () => {
-      toast.success('Client created successfully');
+    onSuccess: (data: any) => {
+      const successMsg =
+        data?.message || data?.msg || 'Client created successfully';
+      toast.success(successMsg);
       queryClient.invalidateQueries({queryKey: ['clients']});
       queryClient.invalidateQueries({queryKey: ['settlements']});
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create client');
+    onError: (error: any) => {
+      const message = extractErrorMessage(error, 'Failed to create client');
+      toast.error(message);
     },
   });
 };
@@ -110,14 +124,17 @@ export const useUpdateClient = () => {
 
   return useMutation({
     mutationFn: updateClientApi,
-    onSuccess: () => {
-      toast.success('Client updated successfully');
+    onSuccess: (data: any) => {
+      const successMsg =
+        data?.message || data?.msg || 'Client updated successfully';
+      toast.success(successMsg);
       queryClient.invalidateQueries({queryKey: ['clients']});
       queryClient.invalidateQueries({queryKey: ['settlements']});
       queryClient.invalidateQueries({queryKey: ['client report']});
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update client');
+    onError: (error: any) => {
+      const message = extractErrorMessage(error, 'Failed to update client');
+      toast.error(message);
     },
   });
 };
@@ -127,14 +144,17 @@ export const useDeleteClient = () => {
 
   return useMutation({
     mutationFn: deleteClientApi,
-    onSuccess: async () => {
-      toast.success('Client deleted successfully');
+    onSuccess: async (data: any) => {
+      const successMsg =
+        data?.message || data?.msg || 'Client deleted successfully';
+      toast.success(successMsg);
       await queryClient.invalidateQueries({queryKey: ['clients']});
       await queryClient.invalidateQueries({queryKey: ['settlements']});
       await queryClient.invalidateQueries({queryKey: ['client report']});
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete client');
+    onError: (error: any) => {
+      const message = extractErrorMessage(error, 'Failed to delete client');
+      toast.error(message);
     },
   });
 };

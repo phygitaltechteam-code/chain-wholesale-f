@@ -2,6 +2,7 @@ import React from 'react';
 import toast from 'react-hot-toast';
 import {Column} from '@/components/Forms/Table/GenericTable';
 import {Flame, Save} from 'lucide-react';
+import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import {
   AlertRule,
   checkProcessLossAlert,
@@ -370,9 +371,11 @@ export const getCuttingColumns = (
       render: (item, index) => {
         if (item.isEditing) {
           return (
-            <div className="relative inline-block">
-              <input
+            <div className="inline-block w-24">
+              <GenericInputField
                 type="text"
+                inputMode="decimal"
+                decimalScale={3}
                 value={
                   item.chainReceivedRaw !== undefined
                     ? item.chainReceivedRaw
@@ -385,11 +388,10 @@ export const getCuttingColumns = (
                   handleInlineChange(index, 'chainReceived', e.target.value)
                 }
                 placeholder="0.000"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                suffix="G"
+                compact
+                className="font-mono text-center"
               />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
-              </span>
             </div>
           );
         }
@@ -406,9 +408,11 @@ export const getCuttingColumns = (
       render: (item, index) => {
         if (item.isEditing) {
           return (
-            <div className="relative inline-block">
-              <input
+            <div className="inline-block w-24">
+              <GenericInputField
                 type="text"
+                inputMode="decimal"
+                decimalScale={3}
                 value={
                   item.scrapRaw !== undefined
                     ? item.scrapRaw
@@ -421,11 +425,10 @@ export const getCuttingColumns = (
                   handleInlineChange(index, 'scrap', e.target.value)
                 }
                 placeholder="0.000"
-                className="font-mono w-24 rounded border-0 bg-[#f4f4f2] px-2 py-1.5 text-center text-sm outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-700 dark:text-white"
+                suffix="G"
+                compact
+                className="font-mono text-center"
               />
-              <span className="text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 text-xs dark:text-slate-500">
-                G
-              </span>
             </div>
           );
         }
