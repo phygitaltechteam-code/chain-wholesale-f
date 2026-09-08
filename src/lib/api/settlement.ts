@@ -58,6 +58,8 @@ export const useSubmitSettlement = () => {
       toast.success(data?.message || 'Settlement submitted successfully');
       queryClient.invalidateQueries({queryKey: ['settlements']});
       queryClient.invalidateQueries({queryKey: ['clients']});
+      queryClient.invalidateQueries({queryKey: ['client report']});
+      queryClient.invalidateQueries({queryKey: ['day report']});
     },
     onError: (error: any) => {
       toast.error(

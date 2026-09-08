@@ -247,8 +247,18 @@ const Settlement: React.FC = () => {
   // ======================================================
 
   useEffect(() => {
-    if (settlementsData && Array.isArray(settlementsData)) {
-      const apiData: SettlementEntry[] = settlementsData.map(
+    const rawList = Array.isArray(settlementsData)
+      ? settlementsData
+      : (settlementsData as any)?.data &&
+          Array.isArray((settlementsData as any).data)
+        ? (settlementsData as any).data
+        : (settlementsData as any)?.clients &&
+            Array.isArray((settlementsData as any).clients)
+          ? (settlementsData as any).clients
+          : [];
+
+    if (rawList.length > 0 || Array.isArray(settlementsData)) {
+      const apiData: SettlementEntry[] = rawList.map(
         (item: any, index: number) => ({
           id: item.id || `settlement-${index}`,
           srNo: index + 1,
@@ -288,10 +298,12 @@ const Settlement: React.FC = () => {
       );
 
       setSettlements(apiData);
-    } else if (settlementsData && !settlementsData?.status) {
+    } else if (settlementsData && (settlementsData as any)?.status === false) {
       toast.error(
-        settlementsData?.message || 'Failed to fetch settlement data',
+        (settlementsData as any)?.message || 'Failed to fetch settlement data',
       );
+      setSettlements([]);
+    } else {
       setSettlements([]);
     }
   }, [settlementsData]);
@@ -577,17 +589,9 @@ const Settlement: React.FC = () => {
     if (dates && dates.length > 0) {
       const selected = new Date(dates[0]);
       selected.setHours(0, 0, 0, 0);
-
-      setDateRange((prev) => ({
-        ...prev,
-        from: selected.toISOString().split('T')[0],
-      }));
+      setDateRange((prev) => [selected, prev[1] || selected]);
     } else {
-      // Clear - set to empty string
-      setDateRange((prev) => ({
-        ...prev,
-        from: '',
-      }));
+      setDateRange((prev) => [undefined as any, prev[1]]);
     }
   };
 
@@ -595,17 +599,9 @@ const Settlement: React.FC = () => {
     if (dates && dates.length > 0) {
       const selected = new Date(dates[0]);
       selected.setHours(23, 59, 59, 999);
-
-      setDateRange((prev) => ({
-        ...prev,
-        to: selected.toISOString().split('T')[0],
-      }));
+      setDateRange((prev) => [prev[0] || selected, selected]);
     } else {
-      // Clear - set to empty string
-      setDateRange((prev) => ({
-        ...prev,
-        to: '',
-      }));
+      setDateRange((prev) => [prev[0], undefined as any]);
     }
   };
   // ======================================================
@@ -777,7 +773,7 @@ const Settlement: React.FC = () => {
       (balanceFilter === 'zero' && entry.goldBalance === 0);
 
     let matchesDate = true;
-    if (dateRange && dateRange.length > 0) {
+    if (dateRange && (dateRange[0] || dateRange[1])) {
       const fromDate = dateRange[0] ? parseDateSafely(dateRange[0]) : null;
       const toDate = dateRange[1] ? parseDateSafely(dateRange[1]) : null;
 
@@ -807,15 +803,13 @@ const Settlement: React.FC = () => {
 
           matchesDate = hasMatchingBill;
         } else {
-          // Fallback to client record date if no bills array is available
-          const entryDate = parseDateSafely(entry.createdAt || entry.updatedAt);
+          // Check client creation/updated range, or keep clients with active balance visible
+          const entryDate = parseDateSafely(entry.updatedAt || entry.createdAt);
           if (entryDate) {
-            if (fromDate && entryDate.getTime() < fromDate.getTime()) {
-              matchesDate = false;
-            }
-            if (toDate && entryDate.getTime() > toDate.getTime()) {
-              matchesDate = false;
-            }
+            const inRange =
+              (!fromDate || entryDate.getTime() >= fromDate.getTime()) &&
+              (!toDate || entryDate.getTime() <= toDate.getTime());
+            matchesDate = inRange || entry.goldBalance !== 0;
           }
         }
       }
@@ -1402,15 +1396,7 @@ const Settlement: React.FC = () => {
               placeholder="DD/MM/YYYY"
               mode="from"
               initialDates={dateRange}
-              onDateChange={(dates) => {
-                if (dates && dates.length > 0) {
-                  const from = new Date(dates[0]);
-                  from.setHours(0, 0, 0, 0);
-                  setDateRange((prev) => [from, prev[1] || from]);
-                } else {
-                  setDateRange((prev) => [undefined as any, prev[1]]);
-                }
-              }}
+              onDateChange={handleFromDateChange}
               className="w-32 sm:w-36 md:w-40"
             />
 
@@ -1419,15 +1405,7 @@ const Settlement: React.FC = () => {
               placeholder="DD/MM/YYYY"
               mode="to"
               initialDates={dateRange}
-              onDateChange={(dates) => {
-                if (dates && dates.length > 0) {
-                  const to = new Date(dates[0]);
-                  to.setHours(23, 59, 59, 999);
-                  setDateRange((prev) => [prev[0] || to, to]);
-                } else {
-                  setDateRange((prev) => [prev[0], undefined as any]);
-                }
-              }}
+              onDateChange={handleToDateChange}
               className="w-32 sm:w-36 md:w-40"
             />
 

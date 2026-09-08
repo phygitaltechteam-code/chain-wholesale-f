@@ -14,10 +14,14 @@ export interface Client {
 }
 
 // API Functions
-export const getClientsApi = async () => {
+export const getClientsApi = async (): Promise<Client[]> => {
   try {
     const response = await api.get('/admin/client');
-    return response.data;
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.data)) return data.data;
+    if (data && Array.isArray(data.clients)) return data.clients;
+    return [];
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(error.message || 'Failed to fetch clients');
@@ -93,6 +97,7 @@ export const useCreateClient = () => {
     onSuccess: () => {
       toast.success('Client created successfully');
       queryClient.invalidateQueries({queryKey: ['clients']});
+      queryClient.invalidateQueries({queryKey: ['settlements']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create client');
@@ -108,6 +113,8 @@ export const useUpdateClient = () => {
     onSuccess: () => {
       toast.success('Client updated successfully');
       queryClient.invalidateQueries({queryKey: ['clients']});
+      queryClient.invalidateQueries({queryKey: ['settlements']});
+      queryClient.invalidateQueries({queryKey: ['client report']});
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update client');
@@ -120,21 +127,12 @@ export const useDeleteClient = () => {
 
   return useMutation({
     mutationFn: deleteClientApi,
-
-    onSuccess: async (_, deletedClientId) => {
+    onSuccess: async () => {
       toast.success('Client deleted successfully');
-
-      // Remove deleted client immediately from React Query cache
-      queryClient.setQueryData<Client[]>(['clients'], (oldClients = []) =>
-        oldClients.filter((client) => client.id !== deletedClientId),
-      );
-
-      // Make sure latest data comes from database
-      await queryClient.invalidateQueries({
-        queryKey: ['clients'],
-      });
+      await queryClient.invalidateQueries({queryKey: ['clients']});
+      await queryClient.invalidateQueries({queryKey: ['settlements']});
+      await queryClient.invalidateQueries({queryKey: ['client report']});
     },
-
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete client');
     },

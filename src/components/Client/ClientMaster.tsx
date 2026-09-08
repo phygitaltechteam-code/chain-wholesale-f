@@ -60,14 +60,20 @@ const ClientMaster: React.FC = () => {
   const deleteClient = useDeleteClient();
 
   // Filter clients based on search term
+  const clientList: Client[] = Array.isArray(clients)
+    ? clients
+    : (clients as any)?.data && Array.isArray((clients as any).data)
+      ? (clients as any).data
+      : [];
+
   const filteredClients = searchTerm
-    ? clients.filter(
+    ? clientList.filter(
         (client: Client) =>
           client.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           client.phoneNumber?.includes(searchTerm) ||
           client.address?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
-    : clients;
+    : clientList;
 
   // Handle form input change
   const handleInputChange = (
