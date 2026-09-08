@@ -1,35 +1,11 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {
-  Search,
-  Calendar,
-  User,
-  Phone,
-  Plus,
-  Minus,
-  CheckCircle,
-  X,
-  ArrowRight,
-  Wallet,
-  Users,
-  Clock,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  MapPin,
-  Printer,
-} from 'lucide-react';
-
+import {Search, Plus, CheckCircle, Printer} from 'lucide-react';
 import PageHeader from '@/components/Forms/Common/PageHeader';
 import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
-
 import toast from 'react-hot-toast';
-
 import {useSubmitSettlement} from '@/lib/api/settlement';
-
 import {Client, useGetClients} from '@/lib/api/client';
 import {useGetHeader} from '@/lib/api/headerapi';
-
-import GenericInputField from '../Forms/Input/GenericInputField';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
 import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
@@ -37,113 +13,27 @@ import {useScaleFocus} from '@/lib/hooks/useScaleFocus';
 import {useNavigate} from '@tanstack/react-router';
 import AddClientModal from '../Client/AddClientModal';
 import {printClientReceipt} from '@/utils/printClientReceipt';
+import {
+  SettlementEntry,
+  SettlementDetail,
+  parseDateSafely,
+  formatNumber,
+} from './settlementUtils';
+import {SettlementSummaryCards} from './SettlementSummaryCards';
+import {SettlementModal} from './SettlementModal';
+import {printSettlementReport} from './printSettlementReport';
 
-// ======================================================
-// TYPES
-// ======================================================
-
-interface SettlementEntry {
-  id: string;
-  srNo: number;
-  clientName: string;
-  phoneNumber: string;
-  goldBalance: number;
-  totalBill: number;
-  status: 'pending' | 'settled' | 'partial';
-  clientId: string;
-  openingBalance?: number;
-  due?: number | null;
-  address?: string;
-  totalBills?: number;
-  amount: number;
-  remark?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  bills?: Array<any>;
-  receipts?: Array<any>;
-}
-
-interface SettlementDetail {
-  clientName: string;
-  phoneNumber: string;
-  address: string;
-  pendingBalance: number;
-  totalBills: number;
-  settlementAmount: number;
-  settlementType: 'receive' | 'give';
-  date: string;
-  clientId: string;
-  openingBalance?: number;
-  due?: number | null;
-}
-
-// ======================================================
-// HELPER: Robust Date Parser
-// ======================================================
-const parseDateSafely = (dateVal: any): Date | null => {
-  if (!dateVal) return null;
-  if (dateVal instanceof Date) {
-    return Number.isNaN(dateVal.getTime()) ? null : dateVal;
-  }
-  if (typeof dateVal === 'number') {
-    const d = new Date(dateVal);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-  if (typeof dateVal === 'string') {
-    const trimmed = dateVal.trim();
-    if (!trimmed) return null;
-
-    // Check if it's DD/MM/YYYY or DD-MM-YYYY (e.g. 18/08/2026 or 18-08-2026)
-    const ddmmyyyyMatch = trimmed.match(
-      /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(.*)$/,
-    );
-    if (ddmmyyyyMatch) {
-      const day = parseInt(ddmmyyyyMatch[1], 10);
-      const month = parseInt(ddmmyyyyMatch[2], 10) - 1;
-      const year = parseInt(ddmmyyyyMatch[3], 10);
-      const rest = ddmmyyyyMatch[4].trim();
-
-      if (rest) {
-        const timeMatch = rest.match(
-          /(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?\s*(am|pm)?/i,
-        );
-        if (timeMatch) {
-          let hours = parseInt(timeMatch[1], 10);
-          const minutes = parseInt(timeMatch[2], 10);
-          const seconds = timeMatch[3] ? parseInt(timeMatch[3], 10) : 0;
-          const ampm = timeMatch[4] ? timeMatch[4].toLowerCase() : null;
-          if (ampm === 'pm' && hours < 12) hours += 12;
-          if (ampm === 'am' && hours === 12) hours = 0;
-          const d = new Date(year, month, day, hours, minutes, seconds);
-          if (!Number.isNaN(d.getTime())) return d;
-        }
-      }
-      const d = new Date(year, month, day);
-      if (!Number.isNaN(d.getTime())) return d;
-    }
-
-    // Try standard ISO or string date constructor
-    const d = new Date(trimmed);
-    if (!Number.isNaN(d.getTime())) return d;
-  }
-  return null;
-};
-
-// ======================================================
-// COMPONENT
-// ======================================================
 const Settlement: React.FC = () => {
   const navigate = useNavigate();
   const getpdfheaderdata = useGetHeader();
-  // ----------------------------------------------------
-  // TABLE STATES
-  // ----------------------------------------------------
 
+  // ----------------------------------------------------
+  // TABLE & FILTER STATES
+  // ----------------------------------------------------
   const [settlements, setSettlements] = useState<SettlementEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [balanceFilter, setBalanceFilter] = useState<string>('all');
 
-  // Helper function to get week start and end based on admin week setting
   const getDefaultWeekRange = () => {
     const {fromDate, toDate} = getCurrentAppWeekRange();
     return {monday: fromDate, sunday: toDate};
@@ -171,21 +61,14 @@ const Settlement: React.FC = () => {
   // ----------------------------------------------------
   // MODAL STATES
   // ----------------------------------------------------
-
   const [showSettleModal, setShowSettleModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
 
   // ----------------------------------------------------
-  // AMOUNT STATE
+  // AMOUNT & DETAIL STATES
   // ----------------------------------------------------
-
   const [localAmount, setLocalAmount] = useState<string>('');
-
-  // ----------------------------------------------------
-  // SETTLEMENT DETAIL
-  // ----------------------------------------------------
-
   const [settlementDetail, setSettlementDetail] = useState<SettlementDetail>({
     clientName: '',
     phoneNumber: '',
@@ -201,9 +84,8 @@ const Settlement: React.FC = () => {
   });
 
   // ----------------------------------------------------
-  // INPUT REF & SCALE FOCUS
+  // SCALE FOCUS & INPUT REF
   // ----------------------------------------------------
-
   const inputRef = useRef<HTMLInputElement>(null);
 
   const scaleFocus = useScaleFocus((weight) => {
@@ -215,25 +97,18 @@ const Settlement: React.FC = () => {
     }));
   });
 
-  // ======================================================
-  // AUTO FOCUS WHEN SETTLEMENT MODAL OPENS
-  // ======================================================
-
   useEffect(() => {
     if (!showSettleModal) return;
-
     const timer = setTimeout(() => {
       inputRef.current?.focus();
       inputRef.current?.select();
     }, 150);
-
     return () => clearTimeout(timer);
   }, [showSettleModal]);
 
-  // ======================================================
+  // ----------------------------------------------------
   // API
-  // ======================================================
-
+  // ----------------------------------------------------
   const {
     data: settlementsData,
     isLoading: isSettlementsLoading,
@@ -241,10 +116,6 @@ const Settlement: React.FC = () => {
   } = useGetClients();
 
   const submitSettlementMutation = useSubmitSettlement();
-
-  // ======================================================
-  // PROCESS API DATA
-  // ======================================================
 
   useEffect(() => {
     const rawList = Array.isArray(settlementsData)
@@ -308,283 +179,9 @@ const Settlement: React.FC = () => {
     }
   }, [settlementsData]);
 
-  // ======================================================
-  // NUMBER FORMAT
-  // ======================================================
-
-  const formatNumber = (value: number | string | null | undefined) => {
-    const numberValue = Number(value ?? 0);
-    if (Number.isNaN(numberValue)) {
-      return '0';
-    }
-    return parseFloat(numberValue.toFixed(3)).toString();
-  };
-
-  // ======================================================
-  // BALANCE COLOR
-  // ======================================================
-
-  const getBalanceColor = (balance: number) => {
-    if (balance > 0) return 'text-green-600 dark:text-green-400';
-    if (balance < 0) return 'text-red-600 dark:text-red-400';
-    return 'text-gray-600 dark:text-gray-400';
-  };
-
-  // ======================================================
-  // BALANCE ICON
-  // ======================================================
-
-  const getBalanceIcon = (balance: number) => {
-    if (balance > 0) return <Plus className="h-3 w-3" />;
-    if (balance < 0) return <Minus className="h-3 w-3" />;
-    return null;
-  };
-
-  // ======================================================
-  // STATUS BADGE
-  // ======================================================
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'settled':
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
-            <CheckCircle className="h-3 w-3" />
-            Settled
-          </span>
-        );
-      case 'pending':
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-            <Clock className="h-3 w-3" />
-            Pending
-          </span>
-        );
-      case 'partial':
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-            <Clock className="h-3 w-3" />
-            Partial
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
-
-  // ======================================================
-  // PRINT TABLE REPORT
-  // ======================================================
-  const handlePrintTable = () => {
-    if (!filteredSettlements || filteredSettlements.length === 0) {
-      toast.error('No records available to print');
-      return;
-    }
-
-    const printContainer = document.createElement('div');
-    printContainer.id = 'print-container-settlement';
-    printContainer.style.cssText = `
-      position: fixed;
-      left: -9999px;
-      top: 0;
-      width: 210mm;
-      background: white;
-      padding: 0;
-      z-index: 9999;
-    `;
-    document.body.appendChild(printContainer);
-
-    const formatDateForDisplay = (dateStr: string) => {
-      if (!dateStr) return '';
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
-    };
-
-    const rows = filteredSettlements
-      .map((entry, index) => {
-        return `
-          <tr>
-            <td style="border:1px solid #000;padding:3px 5px;text-align:center;font-size:8px;color:#000;">${index + 1}</td>
-            <td style="border:1px solid #000;padding:3px 5px;text-align:left;font-size:8px;color:#000;">${entry.clientName}</td>
-            <td style="border:1px solid #000;padding:3px 5px;text-align:center;font-size:8px;color:#000;">${entry.phoneNumber}</td>
-            <td style="border:1px solid #000;padding:3px 5px;text-align:right;font-family:monospace;font-size:8px;color:#000;font-weight:bold;">${formatNumber(Math.abs(entry.goldBalance))}</td>
-            <td style="border:1px solid #000;padding:3px 5px;text-align:center;font-size:8px;color:#000;">${entry.totalBills || 0}</td>
-          </tr>
-        `;
-      })
-      .join('');
-
-    const headerInfo =
-      getpdfheaderdata?.data?.data ||
-      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
-    const leftInvocation =
-      headerInfo.leftInvocation ||
-      headerInfo.leftInovation ||
-      '॥ श्री गणेश प्रसन्न ॥';
-    const rightInvocation =
-      headerInfo.rightInvocation ||
-      headerInfo.rightInovation ||
-      '॥ श्री साई प्रसन्न ॥';
-    const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
-    const description =
-      headerInfo.description ||
-      'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
-    const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers =
-      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
-    const invocationColor = headerInfo.invocationColor || '#a84b20';
-    const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
-    const descriptionColor = headerInfo.descriptionColor || '#8b451f';
-    const proprietorColor = headerInfo.proprietorColor || '#a84b20';
-    const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize
-      ? `${headerInfo.factoryFontSize}px`
-      : '20px';
-    const descriptionFontSize = headerInfo.descriptionFontSize
-      ? `${headerInfo.descriptionFontSize}px`
-      : '9px';
-    const proprietorFontSize = headerInfo.proprietorFontSize
-      ? `${headerInfo.proprietorFontSize}px`
-      : '9px';
-    const phoneFontSize = headerInfo.phoneFontSize
-      ? `${headerInfo.phoneFontSize}px`
-      : '9px';
-
-    printContainer.innerHTML = `
-      <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
-        <div>
-          <div style="width:100%;text-align:center;margin:0;padding:1px 0;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 2px 0;padding:0;">
-              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${leftInvocation}</span>
-              <span style="font-size:${factoryFontSize};font-weight:bold;color:${factoryNameColor};">${factoryName}</span>
-              <span style="font-size:11px;font-weight:bold;color:${invocationColor};">${rightInvocation}</span>
-            </div>
-            <div style="margin:1px 0 0 0;padding:0;font-size:${descriptionFontSize};font-weight:bold;color:${descriptionColor};line-height:1.2;">
-              ${description}
-            </div>
-            <div style="margin:1px 0 0 0;padding:0;font-size:${proprietorFontSize};font-weight:bold;color:${proprietorColor};line-height:1.2;">
-              ${proprietorName}&nbsp;&nbsp; <span style="color:${phoneColor};font-size:${phoneFontSize};">${phoneNumbers}</span>
-            </div>
-            <div style="border-bottom:2px solid ${factoryNameColor};margin:2px 0 4px 0;"></div>
-          </div>
-
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
-            <div style="flex:1;"></div>
-            <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
-              Settlement Report
-            </h2>
-            ${
-              dateRange && dateRange[0] && dateRange[1]
-                ? `
-            <div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
-              From: ${formatDateForDisplay(dateRange[0])} 
-              &nbsp;&nbsp; To: ${formatDateForDisplay(dateRange[1])}
-            </div>
-            `
-                : `<div style="flex:1;"></div>`
-            }
-          </div>
-
-          <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
-            <thead>
-              <tr style="background:#785600;color:white;font-weight:600;">
-                <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:7.5px;">Sr</th>
-                <th style="border:1px solid #785600;padding:4px 5px;text-align:left;font-size:7.5px;">Client Name</th>
-                <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:7.5px;">Phone</th>
-                <th style="border:1px solid #785600;padding:4px 5px;text-align:right;font-size:7.5px;">Due Balance (g)</th>
-                <th style="border:1px solid #785600;padding:4px 5px;text-align:center;font-size:7.5px;">Total Bills</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-
-    const style = document.createElement('style');
-    style.textContent = `
-      @page {
-        size: A4 portrait;
-        margin: 0;
-      }
-      @media print {
-        html, body {
-          margin: 0;
-          padding: 0;
-          width: 210mm;
-          height: 297mm;
-        }
-        body * {
-          visibility: hidden;
-        }
-        #print-container-settlement, #print-container-settlement * {
-          visibility: visible;
-        }
-        #print-container-settlement {
-          position: fixed !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 210mm !important;
-          height: 297mm !important;
-          background: white !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          overflow: hidden !important;
-          z-index: 9999 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        #print-container-settlement > div {
-          width: 210mm !important;
-          min-height: 297mm !important;
-          padding: 6mm 5mm !important;
-          box-sizing: border-box !important;
-        }
-        #print-container-settlement table {
-          width: 100% !important;
-        }
-        #print-container-settlement tr {
-          page-break-inside: avoid !important;
-        }
-        #print-container-settlement thead tr {
-          background: #785600 !important;
-          color: white !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        #print-container-settlement thead tr th {
-          background: #785600 !important;
-          color: white !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
-    setTimeout(() => {
-      window.print();
-
-      setTimeout(() => {
-        if (document.body.contains(printContainer)) {
-          document.body.removeChild(printContainer);
-        }
-        if (document.head.contains(style)) {
-          document.head.removeChild(style);
-        }
-      }, 1000);
-    }, 500);
-  };
-  // ======================================================
-  // HANDLE DATE CHANGES - FIXED CLEAR
-  // ======================================================
-
+  // ----------------------------------------------------
+  // DATE HANDLERS
+  // ----------------------------------------------------
   const handleFromDateChange = (dates: Date[]) => {
     if (dates && dates.length > 0) {
       const selected = new Date(dates[0]);
@@ -604,10 +201,10 @@ const Settlement: React.FC = () => {
       setDateRange((prev) => [prev[0], undefined as any]);
     }
   };
-  // ======================================================
-  // OPEN SETTLEMENT MODAL
-  // ======================================================
 
+  // ----------------------------------------------------
+  // MODAL HANDLERS
+  // ----------------------------------------------------
   const handleSettle = (entry: SettlementEntry) => {
     const balance = Number(entry.goldBalance || 0);
 
@@ -629,10 +226,6 @@ const Settlement: React.FC = () => {
     setShowSettleModal(true);
   };
 
-  // ======================================================
-  // CLOSE SETTLEMENT MODAL
-  // ======================================================
-
   const closeSettlementModal = () => {
     setShowSettleModal(false);
     setLocalAmount('');
@@ -651,39 +244,26 @@ const Settlement: React.FC = () => {
     });
   };
 
-  // ======================================================
-  // PROCEED TO CONFIRM
-  // ======================================================
-
   const handleProceedToConfirm = () => {
     const amount = Number(settlementDetail.settlementAmount);
-
     if (!amount || Number.isNaN(amount) || amount <= 0) {
       toast.error('Please enter a valid settlement amount');
       return;
     }
-
     if (!settlementDetail.clientId) {
       toast.error('Client ID is missing');
       return;
     }
-
     setShowConfirmModal(true);
   };
-
-  // ======================================================
-  // SAVE SETTLEMENT
-  // ======================================================
 
   const handleSaveSettlement = async () => {
     try {
       const amount = Number(settlementDetail.settlementAmount);
-
       if (!amount || Number.isNaN(amount) || amount <= 0) {
         toast.error('Please enter a valid amount');
         return;
       }
-
       if (!settlementDetail.clientId) {
         toast.error('Client ID is missing');
         return;
@@ -757,20 +337,17 @@ const Settlement: React.FC = () => {
       });
 
       await refetchSettlements();
-      // toast.success('Settlement saved successfully');
     } catch (error) {
       console.error('Settlement error:', error);
       toast.error('Failed to save settlement');
     }
   };
 
-  // ======================================================
-  // FILTER
-  // ======================================================
-
+  // ----------------------------------------------------
+  // FILTERING LOGIC
+  // ----------------------------------------------------
   const filteredSettlements = settlements.filter((entry) => {
     const search = searchTerm.toLowerCase();
-
     const matchesSearch =
       entry.clientName.toLowerCase().includes(search) ||
       entry.phoneNumber.includes(search);
@@ -793,7 +370,6 @@ const Settlement: React.FC = () => {
         const allBills = [...(entry.bills || []), ...(entry.receipts || [])];
 
         if (allBills.length > 0) {
-          // Check if ANY bill was created in the selected date range
           const hasMatchingBill = allBills.some((bill: any) => {
             const billDateStr =
               bill?.createdAt ||
@@ -812,7 +388,6 @@ const Settlement: React.FC = () => {
 
           matchesDate = hasMatchingBill;
         } else {
-          // Check client creation/updated range, or keep clients with active balance visible
           const entryDate = parseDateSafely(entry.updatedAt || entry.createdAt);
           if (entryDate) {
             const inRange =
@@ -827,10 +402,9 @@ const Settlement: React.FC = () => {
     return matchesSearch && matchesBalance && matchesDate;
   });
 
-  // ======================================================
-  // TOTALS
-  // ======================================================
-
+  // ----------------------------------------------------
+  // TOTALS COMPUTATION
+  // ----------------------------------------------------
   const totalPositiveBalance = filteredSettlements.reduce(
     (sum, item) => (item.goldBalance > 0 ? sum + item.goldBalance : sum),
     0,
@@ -856,10 +430,25 @@ const Settlement: React.FC = () => {
     }
   };
 
-  // ======================================================
-  // ACTION BUTTON
-  // ======================================================
+  const handlePrint = () => {
+    if (!filteredSettlements || filteredSettlements.length === 0) {
+      toast.error('No records to print');
+      return;
+    }
+    const headerInfo =
+      getpdfheaderdata?.data?.data ||
+      (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
 
+    printSettlementReport({
+      settlements: filteredSettlements,
+      headerInfo,
+      dateRange,
+    });
+  };
+
+  // ----------------------------------------------------
+  // TABLE COLUMNS & ACTIONS
+  // ----------------------------------------------------
   const renderActions = (item: SettlementEntry) => {
     if (Number(item.goldBalance || 0) === 0) {
       return (
@@ -884,10 +473,6 @@ const Settlement: React.FC = () => {
       </button>
     );
   };
-
-  // ======================================================
-  // TABLE COLUMNS
-  // ======================================================
 
   const columns: Column<SettlementEntry>[] = [
     {
@@ -937,368 +522,6 @@ const Settlement: React.FC = () => {
     },
   ];
 
-  // ======================================================
-  // SETTLEMENT MODAL
-  // ======================================================
-
-  const renderSettlementModal = () => {
-    if (!showSettleModal) return null;
-
-    const remainingBalance =
-      settlementDetail.settlementType === 'receive'
-        ? settlementDetail.pendingBalance - settlementDetail.settlementAmount
-        : settlementDetail.pendingBalance + settlementDetail.settlementAmount;
-
-    return (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        onMouseDown={(e) => {
-          if (e.target === e.currentTarget) {
-            closeSettlementModal();
-          }
-        }}
-      >
-        <div
-          className="relative w-full max-w-sm rounded-xl bg-white shadow-2xl dark:bg-slate-900"
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          {/* HEADER */}
-          <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-5 py-3 dark:border-slate-700">
-            <div className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-[#785600]" />
-              <h2 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
-                Settlement
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={closeSettlementModal}
-              className="text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-lg p-1.5 dark:hover:bg-slate-800"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          {/* BODY */}
-          <div className="p-5">
-            {/* CLIENT INFORMATION */}
-            <div className="mb-4 space-y-2 border-b border-[#d3c4af]/20 pb-4 dark:border-slate-700">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-[#785600]" />
-                <span className="text-sm font-semibold text-[#1a1c1b] dark:text-white">
-                  {settlementDetail.clientName}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-[#785600]" />
-                <span className="text-sm text-[#1a1c1b] dark:text-white">
-                  {settlementDetail.phoneNumber}
-                </span>
-              </div>
-              {settlementDetail.address && (
-                <div className="flex items-start gap-2">
-                  <MapPin className="mt-0.5 h-4 w-4 text-[#785600]" />
-                  <span className="text-sm text-[#1a1c1b] dark:text-white">
-                    {settlementDetail.address}
-                  </span>
-                </div>
-              )}
-              <div className="mt-2 grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400">
-                    Due Balance
-                  </p>
-                  <p className="text-sm font-bold text-[#1a1c1b] dark:text-white">
-                    {formatNumber(settlementDetail.pendingBalance)} g
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-medium text-[#4f4535] dark:text-slate-400">
-                    Total Bills
-                  </p>
-                  <p className="text-sm font-bold text-[#1a1c1b] dark:text-white">
-                    {settlementDetail.totalBills}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* RECEIVE / GIVE */}
-            <div className="mb-4 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setSettlementDetail((prev) => ({
-                    ...prev,
-                    settlementType: 'receive',
-                  }));
-                  setTimeout(() => {
-                    inputRef.current?.focus();
-                    inputRef.current?.select();
-                  }, 50);
-                }}
-                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                  settlementDetail.settlementType === 'receive'
-                    ? 'border-[#785600] bg-[#785600] text-white'
-                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                }`}
-              >
-                <Minus className="h-4 w-4" />
-                Receive
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSettlementDetail((prev) => ({
-                    ...prev,
-                    settlementType: 'give',
-                  }));
-                  setTimeout(() => {
-                    inputRef.current?.focus();
-                    inputRef.current?.select();
-                  }, 50);
-                }}
-                className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                  settlementDetail.settlementType === 'give'
-                    ? 'border-[#785600] bg-[#785600] text-white'
-                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                }`}
-              >
-                <Plus className="h-4 w-4" />
-                Give
-              </button>
-            </div>
-
-            {/* AMOUNT INPUT */}
-            <div className="mb-3">
-              <GenericInputField
-                ref={inputRef}
-                name="settlementAmount"
-                type="text"
-                inputMode="decimal"
-                label="Amount (g)"
-                value={localAmount}
-                onFocus={() => {
-                  scaleFocus.onFocus();
-                }}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (!/^\d*\.?\d{0,3}$/.test(value)) {
-                    return;
-                  }
-                  setLocalAmount(value);
-                  if (value === '') {
-                    setSettlementDetail((prev) => ({
-                      ...prev,
-                      settlementAmount: 0,
-                    }));
-                    return;
-                  }
-                  const numberValue = Number(value);
-                  if (!Number.isNaN(numberValue)) {
-                    setSettlementDetail((prev) => ({
-                      ...prev,
-                      settlementAmount: numberValue,
-                    }));
-                  }
-                }}
-                onBlur={() => {
-                  scaleFocus.onBlur();
-                  const amount = Number(localAmount);
-                  if (localAmount === '' || Number.isNaN(amount)) {
-                    setLocalAmount('');
-                    setSettlementDetail((prev) => ({
-                      ...prev,
-                      settlementAmount: 0,
-                    }));
-                    return;
-                  }
-                  const finalAmount = Number(Math.max(amount, 0).toFixed(3));
-                  setSettlementDetail((prev) => ({
-                    ...prev,
-                    settlementAmount: finalAmount,
-                  }));
-                  setLocalAmount(
-                    finalAmount > 0
-                      ? parseFloat(finalAmount.toFixed(3)).toString()
-                      : '',
-                  );
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleProceedToConfirm();
-                  }
-                  if (e.key === 'Escape') {
-                    e.preventDefault();
-                    closeSettlementModal();
-                  }
-                }}
-                placeholder="Enter amount (g)"
-                suffix="G"
-              />
-            </div>
-
-            {/* REMAINING / NEW BALANCE */}
-            {settlementDetail.settlementAmount > 0 && (
-              <div className="mb-4 rounded-lg border border-[#d3c4af]/20 bg-[#f9f9f7] px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/50">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-[#4f4535] dark:text-slate-400">
-                    New Due Balance:
-                  </span>
-                  <span className="text-sm font-bold text-[#785600] dark:text-amber-400">
-                    {formatNumber(remainingBalance)} g
-                  </span>
-                </div>
-                {/* <div className="mt-1 flex items-center justify-between text-[11px] text-[#817563] dark:text-slate-400">
-                  <span>Calculation:</span>
-                  <span className="font-mono">
-                    {formatNumber(settlementDetail.pendingBalance)} g{' '}
-                    {settlementDetail.settlementType === 'receive' ? '-' : '+'}{' '}
-                    {formatNumber(settlementDetail.settlementAmount)} g ={' '}
-                    {formatNumber(remainingBalance)} g
-                  </span>
-                </div> */}
-              </div>
-            )}
-
-            {/* ACTION BUTTONS */}
-            <button
-              type="button"
-              onClick={handleProceedToConfirm}
-              disabled={
-                submitSettlementMutation.isPending ||
-                settlementDetail.settlementAmount <= 0
-              }
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#785600] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#5d4200] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <ArrowRight className="h-4 w-4" />
-              Proceed to Confirm
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ======================================================
-  // CONFIRMATION MODAL
-  // ======================================================
-
-  const renderConfirmModal = () => {
-    if (!showConfirmModal) return null;
-
-    const newBalance =
-      settlementDetail.settlementType === 'receive'
-        ? settlementDetail.pendingBalance - settlementDetail.settlementAmount
-        : settlementDetail.pendingBalance + settlementDetail.settlementAmount;
-
-    const signedAmount =
-      settlementDetail.settlementType === 'receive'
-        ? `-${formatNumber(settlementDetail.settlementAmount)}`
-        : `+${formatNumber(settlementDetail.settlementAmount)}`;
-
-    return (
-      <div
-        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
-        onMouseDown={(e) => {
-          if (e.target === e.currentTarget) {
-            setShowConfirmModal(false);
-          }
-        }}
-      >
-        <div
-          className="relative w-full max-w-sm rounded-xl bg-white shadow-2xl dark:bg-slate-900"
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            onClick={() => setShowConfirmModal(false)}
-            className="text-gray-400 hover:bg-gray-100 hover:text-gray-600 absolute right-3 top-3 rounded-lg p-1.5 dark:hover:bg-slate-800"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          <div className="p-6">
-            <div className="mb-4 text-center">
-              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#785600]/10">
-                <CheckCircle className="h-6 w-6 text-[#785600]" />
-              </div>
-              <h2 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
-                Confirm Settlement
-              </h2>
-              <p className="text-sm text-[#4f4535] dark:text-slate-400">
-                Please review the details below
-              </p>
-            </div>
-
-            <div className="mb-5 space-y-2.5 rounded-lg border border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-800/50">
-              <div className="flex justify-between text-sm">
-                <span className="text-[#4f4535] dark:text-slate-400">
-                  Client:
-                </span>
-                <span className="font-medium text-[#1a1c1b] dark:text-white">
-                  {settlementDetail.clientName}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-[#4f4535] dark:text-slate-400">
-                  Current Due:
-                </span>
-                <span className="font-medium text-[#1a1c1b] dark:text-white">
-                  {formatNumber(settlementDetail.pendingBalance)} g
-                </span>
-              </div>
-              {/* <div className="flex justify-between text-sm">
-                <span className="text-[#4f4535] dark:text-slate-400">
-                  Action:
-                </span>
-                <span
-                  className={`font-semibold ${
-                    settlementDetail.settlementType === 'receive'
-                      ? 'text-green-600 dark:text-green-400'
-                      : 'text-amber-600 dark:text-amber-400'
-                  }`}
-                >
-                  {settlementDetail.settlementType === 'receive'
-                    ? `Receive (-${formatNumber(settlementDetail.settlementAmount)} g)`
-                    : `Give (+${formatNumber(settlementDetail.settlementAmount)} g)`}
-                </span>
-              </div> */}
-              <div className="flex justify-between border-t border-[#d3c4af]/20 pt-2 text-sm dark:border-slate-700">
-                <span className="font-semibold text-[#4f4535] dark:text-slate-300">
-                  New Due Balance:
-                </span>
-                <span className="font-bold text-[#785600] dark:text-amber-400">
-                  {formatNumber(newBalance)} g
-                </span>
-              </div>
-            </div>
-
-            <div className="flex">
-              <button
-                type="button"
-                onClick={handleSaveSettlement}
-                disabled={submitSettlementMutation.isPending}
-                className="flex-1 rounded-lg bg-[#785600] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#5d4200] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {submitSettlementMutation.isPending ? (
-                  <div className="mx-auto h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                ) : (
-                  'Confirm & Save'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ======================================================
-  // MAIN RETURN
-  // ======================================================
-
   return (
     <div className="bg-[#f9f9f7] dark:bg-slate-950">
       <div className="px-4 py-4 md:px-8 md:py-6">
@@ -1317,72 +540,13 @@ const Settlement: React.FC = () => {
           </GenericButton>
         </div>
 
-        {/* STATISTICS */}
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
-            <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                  Total Clients
-                </span>
-                <span className="text-lg font-bold text-black dark:text-white">
-                  {filteredSettlements.length}
-                </span>
-              </div>
-              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-blue-700/30 dark:bg-blue-900/30">
-                <Users className="h-4 w-4 text-[#785600] dark:text-blue-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
-            <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                  Pending Settlements
-                </span>
-                <span className="text-lg font-bold text-black dark:text-white">
-                  {totalPending}
-                </span>
-              </div>
-              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-yellow-700/30 dark:bg-yellow-900/30">
-                <Clock className="h-4 w-4 text-[#785600] dark:text-yellow-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
-            <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                  Settled
-                </span>
-                <span className="text-lg font-bold text-black dark:text-white">
-                  {totalSettled}
-                </span>
-              </div>
-              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-green-700/30 dark:bg-green-900/30">
-                <CheckCircle className="h-4 w-4 text-[#785600] dark:text-green-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
-            <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                  Net Balance
-                </span>
-                <span className="text-lg font-bold text-black dark:text-white">
-                  {formatNumber(totalPositiveBalance - totalNegativeBalance)} G
-                </span>
-              </div>
-              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-amber-700/30 dark:bg-amber-900/30">
-                <Wallet className="h-4 w-4 text-[#785600] dark:text-amber-400" />
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* SUMMARY CARDS */}
+        <SettlementSummaryCards
+          totalClients={filteredSettlements.length}
+          totalPending={totalPending}
+          totalSettled={totalSettled}
+          netBalance={totalPositiveBalance - totalNegativeBalance}
+        />
 
         {/* FILTERS */}
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1430,13 +594,7 @@ const Settlement: React.FC = () => {
             />
 
             <GenericButton
-              onClick={() => {
-                if (filteredSettlements.length === 0) {
-                  toast.error('No records to print');
-                  return;
-                }
-                handlePrintTable();
-              }}
+              onClick={handlePrint}
               className="!bg-[#785600] !text-white hover:!bg-[#5d4200]"
             >
               <Printer className="h-4 w-4" />
@@ -1466,8 +624,21 @@ const Settlement: React.FC = () => {
       </div>
 
       {/* MODALS */}
-      {renderSettlementModal()}
-      {renderConfirmModal()}
+      <SettlementModal
+        showSettleModal={showSettleModal}
+        showConfirmModal={showConfirmModal}
+        settlementDetail={settlementDetail}
+        setSettlementDetail={setSettlementDetail}
+        localAmount={localAmount}
+        setLocalAmount={setLocalAmount}
+        inputRef={inputRef}
+        scaleFocus={scaleFocus}
+        onCloseSettle={closeSettlementModal}
+        onProceedToConfirm={handleProceedToConfirm}
+        onCloseConfirm={() => setShowConfirmModal(false)}
+        onConfirmSave={handleSaveSettlement}
+        isSubmitting={submitSettlementMutation.isPending}
+      />
       <AddClientModal
         isOpen={showAddClientModal}
         onClose={() => setShowAddClientModal(false)}
