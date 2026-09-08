@@ -428,7 +428,6 @@ export const getHistoryTarColumns = (
       );
       const colorClass = getProcessLossColorClass(alertCheck);
       const diff = alertCheck?.diff || 0;
-
       return (
         <div className="flex flex-col items-center justify-center">
           <span className={`font-mono text-sm ${colorClass}`}>

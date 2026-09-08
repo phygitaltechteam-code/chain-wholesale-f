@@ -114,6 +114,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
   // Query tar alert threshold rules
   const {data: tarAlertRaw} = useGetProcessAlert('tar');
 
+
   const alertRules: AlertRule[] = React.useMemo(() => {
     let list: any[] = [];
     if (Array.isArray(tarAlertRaw) && tarAlertRaw.length > 0) {
@@ -142,7 +143,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
 
     return list;
   }, [tarAlertRaw]);
-
+ 
   // Mutation hooks
   const createTar = useCreateTar();
   const saveTar = useSaveTar();
@@ -631,6 +632,17 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
             0,
             Math.round((grossVal - tarVal - scrapVal) * 1000) / 1000,
           );
+
+          console.log(`[Tar Field Change - Row #${index + 1}]`, {
+            fieldChanged: field,
+            newValue: value,
+            grossWeight: grossVal,
+            purity: updated.purity,
+            tar: tarVal,
+            scrap: scrapVal,
+            calculatedLoss: updated.loss,
+            formula: `${grossVal} (Gross) - ${tarVal} (Tar) - ${scrapVal} (Scrap) = ${updated.loss} G (Loss)`,
+          });
 
           updated.isDirty = true;
           return updated;

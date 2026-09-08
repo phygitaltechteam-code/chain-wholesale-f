@@ -150,6 +150,7 @@ const SkundaAddInStock: React.FC<SkundaAddInStockProps> = ({
     setSelectedStock(stock);
     setIsDropdownOpen(false);
     setSearchTerm(stock.displayName);
+    setEnterWeight(stock.weight > 0 ? formatNumberDisplay(stock.weight) : '');
   };
 
   // Handle save
@@ -250,6 +251,7 @@ const SkundaAddInStock: React.FC<SkundaAddInStockProps> = ({
                         e.target.value !== selectedStock.displayName
                       ) {
                         setSelectedStock(null);
+                        setEnterWeight('');
                       }
                     }}
                     onFocus={() => setIsDropdownOpen(true)}

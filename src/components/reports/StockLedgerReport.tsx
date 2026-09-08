@@ -1,12 +1,12 @@
-import React, {useState, useEffect, useMemo} from 'react';
-import {useNavigate} from '@tanstack/react-router';
-import {ArrowLeft, Search, Printer, Calendar, Eye} from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { ArrowLeft, Search, Printer, Calendar, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
-import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
-import {useGetHeader} from '@/lib/api/headerapi';
-import {useGetStock} from '@/lib/api/stock';
-import {useGetLossReport} from '@/lib/api/lossreport';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
+import { useGetHeader } from '@/lib/api/headerapi';
+import { useGetStock } from '@/lib/api/stock';
+import { useGetLossReport } from '@/lib/api/lossreport';
 import {
   useGetStockLedgerReport,
   StockSummaryData,
@@ -47,7 +47,7 @@ export default function StockLedgerReport() {
   // Date filters (Defaulted to current app week range from admin settings)
   const initialDateRange = useMemo(() => {
     const range = getCurrentAppWeekRange();
-    return {from: range.fromDate, to: range.toDate};
+    return { from: range.fromDate, to: range.toDate };
   }, []);
 
   const [fromDate, setFromDate] = useState<Date | null>(initialDateRange.from);
@@ -137,16 +137,16 @@ export default function StockLedgerReport() {
             ),
             openingChain: Number(
               sec1?.openingChain ??
-                ovOpening?.chain ??
-                sumOpening?.openingChain ??
-                0,
+              ovOpening?.chain ??
+              sumOpening?.openingChain ??
+              0,
             ),
             srp: Number(sec1?.srp ?? ovOpening?.srp ?? sumOpening?.srp ?? 0),
             openingClientDue: Number(
               sec1?.openingClientDue ??
-                ovOpening?.clientDue ??
-                sumOpening?.openingClientDue ??
-                0,
+              ovOpening?.clientDue ??
+              sumOpening?.openingClientDue ??
+              0,
             ),
             inward: Number(
               sec1?.inward ?? ovOpening?.inward ?? sumOpening?.inward ?? 0,
@@ -161,15 +161,15 @@ export default function StockLedgerReport() {
             ),
             closingChain: Number(
               sec2?.closingChain ??
-                ovClosing?.chain ??
-                sumClosing?.closingChain ??
-                0,
+              ovClosing?.chain ??
+              sumClosing?.closingChain ??
+              0,
             ),
             closingClientDue: Number(
               sec2?.closingClientDue ??
-                ovClosing?.clientDue ??
-                sumClosing?.closingClientDue ??
-                0,
+              ovClosing?.clientDue ??
+              sumClosing?.closingClientDue ??
+              0,
             ),
             loss: Number(
               sec2?.loss ?? ovClosing?.loss ?? sumClosing?.loss ?? 0,
@@ -179,9 +179,9 @@ export default function StockLedgerReport() {
             ),
             profitLoss: Number(
               sec2?.profitLoss ??
-                ovClosing?.profitLoss ??
-                data?.summary?.profitLoss ??
-                0,
+              ovClosing?.profitLoss ??
+              data?.summary?.profitLoss ??
+              0,
             ),
           },
         });
@@ -532,23 +532,23 @@ export default function StockLedgerReport() {
     const rawRows =
       filteredRawStock.length > 0
         ? filteredRawStock
-            .map(
-              (item) => `
+          .map(
+            (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-                  item.opening,
-                )}</td>
+              item.opening,
+            )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-                  item.closing,
-                )}</td>
+              item.closing,
+            )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-                  item.due,
-                )}</td>
+              item.due,
+            )}</td>
               </tr>
             `,
-            )
-            .join('')
+          )
+          .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -562,23 +562,23 @@ export default function StockLedgerReport() {
     const chainRows =
       filteredChainStock.length > 0
         ? filteredChainStock
-            .map(
-              (item) => `
+          .map(
+            (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-                  item.opening,
-                )}</td>
+              item.opening,
+            )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-                  item.closing,
-                )}</td>
+              item.closing,
+            )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-                  item.due,
-                )}</td>
+              item.due,
+            )}</td>
               </tr>
             `,
-            )
-            .join('')
+          )
+          .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -592,23 +592,23 @@ export default function StockLedgerReport() {
     const clientRows =
       filteredClient.length > 0
         ? filteredClient
-            .map(
-              (item) => `
+          .map(
+            (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-                  item.opening,
-                )}</td>
+              item.opening,
+            )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-                  item.closing,
-                )}</td>
+              item.closing,
+            )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-                  item.difference,
-                )}</td>
+              item.difference,
+            )}</td>
               </tr>
             `,
-            )
-            .join('')
+          )
+          .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -622,27 +622,25 @@ export default function StockLedgerReport() {
     const movementRows =
       filteredMovement.length > 0
         ? filteredMovement
-            .map(
-              (item) => `
+          .map(
+            (item) => `
               <tr class="movement-row">
                 <td class="movement-name center-cell">
                   <div class="movement-main">
                     ${item.inwardName || '-'}
                   </div>
 
-                  ${
-                    item.inwardSubtext
-                      ? `<div class="movement-subtext">${item.inwardSubtext}</div>`
-                      : ''
-                  }
+                  ${item.inwardSubtext
+                ? `<div class="movement-subtext">${item.inwardSubtext}</div>`
+                : ''
+              }
                 </td>
 
                 <td class="movement-number center-cell inward-number">
-                  ${
-                    item.inwardName && item.inward != null && item.inward > 0
-                      ? formatNumberDisplay(item.inward)
-                      : '-'
-                  }
+                  ${item.inwardName && item.inward != null && item.inward > 0
+                ? formatNumberDisplay(item.inward)
+                : '-'
+              }
                 </td>
 
                 <td class="movement-name center-cell">
@@ -650,24 +648,22 @@ export default function StockLedgerReport() {
                     ${item.outwardName || '-'}
                   </div>
 
-                  ${
-                    item.outwardSubtext
-                      ? `<div class="movement-subtext">${item.outwardSubtext}</div>`
-                      : ''
-                  }
+                  ${item.outwardSubtext
+                ? `<div class="movement-subtext">${item.outwardSubtext}</div>`
+                : ''
+              }
                 </td>
 
                 <td class="movement-number center-cell outward-number">
-                  ${
-                    item.outwardName && item.outward != null && item.outward > 0
-                      ? formatNumberDisplay(item.outward)
-                      : '-'
-                  }
+                  ${item.outwardName && item.outward != null && item.outward > 0
+                ? formatNumberDisplay(item.outward)
+                : '-'
+              }
                 </td>
               </tr>
             `,
-            )
-            .join('')
+          )
+          .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -794,8 +790,8 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value">
                         ${formatNumberDisplay(
-                          summaryData.opening.openingClientDue,
-                        )}
+      summaryData.opening.openingClientDue,
+    )}
                       </td>
                     </tr>
 
@@ -871,8 +867,8 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value">
                         ${formatNumberDisplay(
-                          summaryData.closing.closingClientDue,
-                        )}
+      summaryData.closing.closingClientDue,
+    )}
                       </td>
                     </tr>
 
@@ -906,8 +902,8 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value profit">
                         ${formatNumberDisplay(
-                          summaryData.closing.profitLoss ?? 0,
-                        )}
+      summaryData.closing.profitLoss ?? 0,
+    )}
                       </td>
 
                     </tr>
@@ -1312,7 +1308,7 @@ export default function StockLedgerReport() {
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 9px;
+      font-size: 8px;
     }
 
     .summary-table th,
@@ -1322,16 +1318,17 @@ export default function StockLedgerReport() {
 
     .summary-heading {
       width: 50%;
-      padding: 3px 6px;
-      background: #785600;
-      color: white;
+      padding: 3px 4px;
+      background: #f5f5f5;
+      color: #000;
       text-align: center;
       font-weight: bold;
       font-size: 8px;
+      border-bottom: 2px solid #000 !important;
     }
 
     .summary-column {
-      padding: 3px;
+      padding: 0;
       vertical-align: top;
     }
 
@@ -1343,32 +1340,39 @@ export default function StockLedgerReport() {
 
     .summary-inner-table td {
       border: 0;
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .summary-inner-table tr:last-child td {
+      border-bottom: 0;
     }
 
     .summary-label {
-      padding: 2px 4px;
+      padding: 3px 4px;
       color: #000;
       text-align: left;
-      font-weight: 500;
+      font-size: 8px;
     }
 
     .summary-value {
-      padding: 2px 4px;
+      padding: 3px 4px;
       color: #000;
       text-align: center;
       font-family: monospace;
+      font-size: 8px;
       font-variant-numeric: tabular-nums;
     }
 
     .summary-total-row td {
-      border-top: 1.5px solid #000 !important;
+      border-top: 2px solid #000 !important;
       background: #fef3c7;
+      font-weight: bold;
     }
 
     .profit-loss-row td {
       border-top: 1px solid #000 !important;
       background: #ecfdf5;
+      font-weight: bold;
     }
 
     .bold {
@@ -2313,8 +2317,8 @@ export default function StockLedgerReport() {
                           </td>
                           <td className="font-mono px-4 py-2.5 text-right font-bold text-green-700 dark:text-green-400">
                             {row.inwardName &&
-                            row.inward != null &&
-                            row.inward > 0
+                              row.inward != null &&
+                              row.inward > 0
                               ? formatNumberDisplay(row.inward)
                               : '-'}
                           </td>
@@ -2330,8 +2334,8 @@ export default function StockLedgerReport() {
                           </td>
                           <td className="font-mono px-4 py-2.5 text-right font-bold text-amber-700 dark:text-amber-400">
                             {row.outwardName &&
-                            row.outward != null &&
-                            row.outward > 0
+                              row.outward != null &&
+                              row.outward > 0
                               ? formatNumberDisplay(row.outward)
                               : '-'}
                           </td>

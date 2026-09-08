@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useMemo} from 'react';
-import {Plus, Save, X, Edit, Trash2, Search, ArrowLeft} from 'lucide-react';
+import {Plus, Save, X, Search, ArrowLeft} from 'lucide-react';
 import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
@@ -433,95 +433,45 @@ const OpeningStock: React.FC = () => {
     );
   };
 
+  // Handle cancel adding new unsaved row
+  const handleCancelAddRow = (id: string) => {
+    setOpeningEntries((prev) =>
+      prev
+        .filter((e) => e.id !== id)
+        .map((e, idx) => ({
+          ...e,
+          srNo: idx + 1,
+        })),
+    );
+  };
+
   // Custom action renderer for GenericTable with matching theme
   const renderActions = (item: OpeningStockEntry) => {
-    // When a row is newly added and not saved yet: only show Save option (no delete option)
+    // When a row is newly added and not saved yet: only show Save and Cancel option
     if (!item.isSaved) {
       return (
-        <div className="flex">
+        <div className="flex items-center justify-center gap-1.5">
           <button
             onClick={() => handleRowSave(item.id)}
             disabled={createStock.isPending || updateStock.isPending}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-            title="Save"
-          >
-            <Save className="h-4 w-4" />
-          </button>
-        </div>
-      );
-    }
-
-    // For gold row (saved), only show Edit button when not editing, Save button when editing
-    if (isGoldRow(item)) {
-      if (item.isEditing) {
-        return (
-          <div className="flex">
-            <button
-              onClick={() => handleRowSave(item.id)}
-              disabled={createStock.isPending || updateStock.isPending}
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-              title="Save"
-            >
-              <Save className="h-4 w-4" />
-            </button>
-          </div>
-        );
-      }
-      return (
-        <div className="flex">
-          <button
-            onClick={() => handleRowEdit(item.id)}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-            title="Edit"
-          >
-            <Edit className="h-4 w-4" />
-          </button>
-        </div>
-      );
-    }
-
-    // When editing an already saved non-gold row:
-    if (item.isEditing) {
-      return (
-        <div className="flex">
-          <button
-            onClick={() => handleRowSave(item.id)}
-            disabled={createStock.isPending || updateStock.isPending}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
             title="Save"
           >
             <Save className="h-4 w-4" />
           </button>
           <button
-            onClick={() => handleDelete(item.id)}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-            title="Delete"
+            onClick={() => handleCancelAddRow(item.id)}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-gray-500 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-red-50 hover:text-red-600 active:scale-[0.98] dark:hover:bg-red-950/30 dark:hover:text-red-400"
+            title="Cancel"
           >
-            <Trash2 className="h-4 w-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
       );
     }
 
-    // Show Edit and Delete for saved rows (non-gold)
-    return (
-      <div className="flex">
-        <button
-          onClick={() => handleRowEdit(item.id)}
-          className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-          title="Edit"
-        >
-          <Edit className="h-4 w-4" />
-        </button>
-        <button
-          onClick={() => handleDelete(item.id)}
-          className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[#785600] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-[#785600]/10 hover:shadow-md active:scale-[0.98] dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-          title="Delete"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </div>
-    );
+    // For already saved rows, do not show Edit or Delete
+    return null;
   };
 
   // Define columns for GenericTable
@@ -682,6 +632,10 @@ const OpeningStock: React.FC = () => {
   const isSubmitting =
     createStock.isPending || updateStock.isPending || deleteStock.isPending;
 
+  const hasUnsavedRows = useMemo(() => {
+    return openingEntries.some((entry) => !entry.isSaved);
+  }, [openingEntries]);
+
   return (
     <div className="bg-[#f9f9f7] dark:bg-slate-950">
       {/* Header with Title, Search and Add Button */}
@@ -733,7 +687,7 @@ const OpeningStock: React.FC = () => {
             onSave={(item) => handleRowSave(item.id)}
             emptyMessage="No opening stock entries found. Click 'Add Row' to create one."
             isLoading={isSubmitting}
-            renderActions={renderActions}
+            renderActions={hasUnsavedRows ? renderActions : undefined}
             showSrNo={true}
             srNoLabel="Sr No."
           />

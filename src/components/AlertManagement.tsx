@@ -32,8 +32,6 @@ export type ProcessTabId =
   | 'melting'
   | 'tar'
   | 'box'
-  | 'soldering'
-  | 'joint'
   | 'cutting'
   | 'skunda';
 
@@ -47,15 +45,14 @@ const STORAGE_KEY = 'chain_alert_management_settings_v2';
 
 const PROCESS_TABS: ProcessTabConfig[] = [
   {id: 'melting', label: 'Melting', icon: <Flame className="h-4 w-4" />},
-  {id: 'tar', label: 'Tar', icon: <TrendingUp className="h-4 w-4" />},
-  {id: 'box', label: 'Box', icon: <Box className="h-4 w-4" />},
-  {id: 'soldering', label: 'Soldering', icon: <Flame className="h-4 w-4" />},
-  {id: 'joint', label: 'Joint', icon: <Hammer className="h-4 w-4" />},
+  {id: 'tar', label: 'Tar Management', icon: <TrendingUp className="h-4 w-4" />},
+  {id: 'box', label: 'Box Department', icon: <Box className="h-4 w-4" />},
+ 
   {id: 'cutting', label: 'Cutting', icon: <Scissors className="h-4 w-4" />},
   {id: 'skunda', label: 'S / Kunda', icon: <CheckCircle className="h-4 w-4" />},
 ];
 
-const createDefaultRow = (grossWt: string = '10G'): AlertRuleRow => ({
+const createDefaultRow = (grossWt: string = '100G'): AlertRuleRow => ({
   id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
   grossWt: grossWt,
   purity: '',
@@ -64,13 +61,11 @@ const createDefaultRow = (grossWt: string = '10G'): AlertRuleRow => ({
 });
 
 const getDefaultAlertData = (): Record<ProcessTabId, AlertRuleRow[]> => ({
-  melting: [createDefaultRow('10G')],
-  tar: [createDefaultRow('10G')],
-  box: [createDefaultRow('10G')],
-  soldering: [createDefaultRow('10G')],
-  joint: [createDefaultRow('10G')],
-  cutting: [createDefaultRow('10G')],
-  skunda: [createDefaultRow('10G')],
+  melting: [createDefaultRow('100G')],
+  tar: [createDefaultRow('100G')],
+  box: [createDefaultRow('100G')],
+  cutting: [createDefaultRow('100G')],
+  skunda: [createDefaultRow('100G')],
 });
 
 export const AlertManagement: React.FC = () => {
@@ -87,7 +82,13 @@ export const AlertManagement: React.FC = () => {
           getDefaultAlertData();
         PROCESS_TABS.forEach((tab) => {
           if (Array.isArray(parsed[tab.id]) && parsed[tab.id].length > 0) {
-            merged[tab.id] = parsed[tab.id];
+            merged[tab.id] = parsed[tab.id].map((row: any) => ({
+              ...row,
+              grossWt:
+                row.grossWt === '10G' || row.grossWt === 10
+                  ? '100G'
+                  : row.grossWt || '100G',
+            }));
           }
         });
         return merged;
@@ -142,7 +143,7 @@ export const AlertManagement: React.FC = () => {
                 : String(item.grossWt).includes('G')
                   ? item.grossWt
                   : `${item.grossWt}G`
-              : '10G',
+              : '100G',
           purity:
             item.purity !== undefined && item.purity !== null
               ? item.purity
@@ -159,7 +160,7 @@ export const AlertManagement: React.FC = () => {
     }
   }, [serverAlerts, activeProcess]);
 
-  const currentRows = alertData[activeProcess] || [createDefaultRow('10G')];
+  const currentRows = alertData[activeProcess] || [createDefaultRow('100G')];
 
   const submitalert = useSubmitProcessAlert();
   const deleteAlertMutation = useDeleteProcessAlert();
@@ -184,7 +185,7 @@ export const AlertManagement: React.FC = () => {
   };
 
   const handleAddRow = (index?: number) => {
-    const newRow = createDefaultRow('10G');
+    const newRow = createDefaultRow('100G');
     setAlertData((prev) => {
       const list = [...(prev[activeProcess] || [])];
       if (typeof index === 'number') {
@@ -201,34 +202,74 @@ export const AlertManagement: React.FC = () => {
   };
 
   const handleDeleteRow = async (rowId: string) => {
-    if (currentRows.length <= 1) {
-      toast.error('At least one row is required.');
-      return;
-    }
+    // 1. Calculate remaining rows
+    const remaining = (alertData[activeProcess] || []).filter(
+      (r) => r.id !== rowId,
+    );
+    const updated =
+      remaining.length > 0 ? remaining : [createDefaultRow('100G')];
 
-    try {
-      if (rowId && !rowId.includes('-')) {
+    // 2. Update local state immediately
+    setAlertData((prev) => ({
+      ...prev,
+      [activeProcess]: updated,
+    }));
+
+    // 3. Update localStorage
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({...alertData, [activeProcess]: updated}),
+    );
+
+    // 4. If row had a real server ID, attempt single delete API
+    if (
+      rowId &&
+      !rowId.startsWith('rule-') &&
+      !rowId.includes('.') &&
+      !rowId.includes('-')
+    ) {
+      try {
         await deleteAlertMutation.mutateAsync({
           process: activeProcess,
           id: rowId,
         });
+      } catch (e) {
+        console.error('Single delete API error:', e);
       }
-    } catch (e) {
-      console.error('Delete API error', e);
     }
 
-    setAlertData((prev) => {
-      const updated = (prev[activeProcess] || []).filter((r) => r.id !== rowId);
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({...prev, [activeProcess]: updated}),
-      );
-      return {
-        ...prev,
-        [activeProcess]: updated,
-      };
-    });
-    toast.success('Row removed');
+    // 5. Sync the updated remaining rows array to the backend
+    try {
+      const payload = remaining
+        .filter(
+          (r) =>
+            (r.purity !== '' && r.purity !== undefined) ||
+            (r.loss !== '' && r.loss !== undefined) ||
+            (r.adjustment !== '' && r.adjustment !== undefined),
+        )
+        .map((row) => ({
+          grossWt:
+            typeof row.grossWt === 'number'
+              ? row.grossWt
+              : parseFloat(String(row.grossWt).replace(/[^0-9.]/g, '')) || 100,
+          purity: parseFloat(String(row.purity)) || 0,
+          loss: parseFloat(String(row.loss)) || 0,
+          lossWt: parseFloat(String(row.loss)) || 0,
+          adjustment:
+            parseFloat(String(row.adjustment).replace(/[^0-9.-]/g, '')) || 0,
+          adjsutment:
+            parseFloat(String(row.adjustment).replace(/[^0-9.-]/g, '')) || 0,
+        }));
+
+      await submitalert.mutateAsync({
+        process: activeProcess,
+        data: payload,
+      });
+    } catch (e) {
+      console.error('Sync alert settings after delete error:', e);
+    }
+
+    toast.success('Row deleted successfully');
   };
 
   const handleSave = async () => {
@@ -237,7 +278,7 @@ export const AlertManagement: React.FC = () => {
         const grossWtNumber =
           typeof row.grossWt === 'number'
             ? row.grossWt
-            : parseFloat(String(row.grossWt).replace(/[^0-9.]/g, '')) || 10;
+            : parseFloat(String(row.grossWt).replace(/[^0-9.]/g, '')) || 100;
 
         const adjustmentNumber =
           typeof row.adjustment === 'number'
@@ -262,7 +303,7 @@ export const AlertManagement: React.FC = () => {
       });
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(alertData));
-      toast.success('Alert settings saved successfully');
+      // toast.success('Alert settings saved successfully');
     } catch (error) {
       console.error('Failed to submit alert settings:', error);
       toast.error('Failed to save alert settings');

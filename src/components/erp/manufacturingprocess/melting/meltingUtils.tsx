@@ -120,7 +120,7 @@ export const checkMeltingLossAlert = (
       const gWt =
         typeof r.grossWt === 'number'
           ? r.grossWt
-          : parseFloat(String(r.grossWt).replace(/[^0-9.]/g, '')) || 10;
+          : parseFloat(String(r.grossWt).replace(/[^0-9.]/g, '')) || 100;
       const pur = parseFloat(String(r.purity)) || 0;
       const l =
         parseFloat(
@@ -153,11 +153,9 @@ export const checkMeltingLossAlert = (
     );
   }
 
-  // 2. Scale expected base loss according to gross weight & purity ratio
-  let baseLoss = (matchedRule.loss / matchedRule.grossWt) * grossWt;
-  if (matchedRule.purity > 0 && purity > 0) {
-    baseLoss = baseLoss * (purity / matchedRule.purity);
-  }
+  // 2. Scale expected base loss according to gross weight (based on 100G standard from matched rule)
+  const ruleGrossWt = matchedRule.grossWt > 0 ? matchedRule.grossWt : 100;
+  let baseLoss = (matchedRule.loss / ruleGrossWt) * grossWt;
   baseLoss = Math.round(baseLoss * 1000) / 1000;
 
   // 3. Max allowed loss with tolerance adjustment (+/- %)

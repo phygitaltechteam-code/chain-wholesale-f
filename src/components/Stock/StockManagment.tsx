@@ -127,6 +127,14 @@ const StockManagment: React.FC = () => {
   // Automatically find current stock when Item, Size, or Purity changes
   useEffect(() => {
     if (watchedItemId) {
+      const enteredPurityNum =
+        watchedPurity !== undefined &&
+        watchedPurity !== null &&
+        watchedPurity.trim() !== '' &&
+        !isNaN(Number(watchedPurity))
+          ? Number(watchedPurity)
+          : null;
+
       const matchingStock = stockData.find((s: any) => {
         if (s.itemId !== watchedItemId) return false;
 
@@ -139,9 +147,20 @@ const StockManagment: React.FC = () => {
         const matchSize = watchedSizeId
           ? s.sizeId === watchedSizeId
           : !s.sizeId || s.sizeId === null;
-        const matchPurity = watchedPurity
-          ? String(s.purity) === String(watchedPurity)
-          : true;
+
+        const stockPurityNum =
+          s.purity !== null &&
+          s.purity !== undefined &&
+          s.purity !== '' &&
+          !isNaN(Number(s.purity))
+            ? Number(s.purity)
+            : null;
+
+        const matchPurity =
+          enteredPurityNum !== null
+            ? stockPurityNum !== null && Math.abs(stockPurityNum - enteredPurityNum) < 0.0001
+            : stockPurityNum === null || stockPurityNum === 0;
+
         return matchSize && matchPurity;
       });
 
@@ -179,7 +198,7 @@ const StockManagment: React.FC = () => {
     const finalSizeId = isGold ? null : data.sizeId || null;
     const finalPurity = isGold
       ? null
-      : data.purity
+      : data.purity && data.purity.trim() !== '' && !isNaN(Number(data.purity))
         ? parseFloat(data.purity)
         : null;
 
@@ -196,8 +215,20 @@ const StockManagment: React.FC = () => {
       const matchSize = finalSizeId
         ? s.sizeId === finalSizeId
         : !s.sizeId || s.sizeId === null;
+
+      const stockPurityNum =
+        s.purity !== null &&
+        s.purity !== undefined &&
+        s.purity !== '' &&
+        !isNaN(Number(s.purity))
+          ? Number(s.purity)
+          : null;
+
       const matchPurity =
-        finalPurity !== null ? Number(s.purity) === Number(finalPurity) : true;
+        finalPurity !== null
+          ? stockPurityNum !== null && Math.abs(stockPurityNum - finalPurity) < 0.0001
+          : stockPurityNum === null || stockPurityNum === 0;
+
       return matchSize && matchPurity;
     });
 
