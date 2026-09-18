@@ -1323,16 +1323,26 @@ const BillEdit: React.FC = () => {
             />
           </div>
 
-          {billNo && (
-            <div className="flex items-center gap-2 rounded-xl border border-[#785600]/20 bg-amber-50 px-4 py-2 dark:border-amber-900/40 dark:bg-amber-950/30">
-              <span className="text-xs font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                Bill No:
-              </span>
-              <span className="font-mono text-base font-bold text-[#785600] dark:text-amber-400">
-                {billNo}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {billNo && (
+              <div className="flex items-center gap-2 rounded-xl border border-[#785600]/20 bg-amber-50 px-4 py-2 dark:border-amber-900/40 dark:bg-amber-950/30">
+                <span className="text-xs font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                  Bill No:
+                </span>
+                <span className="font-mono text-base font-bold text-[#785600] dark:text-amber-400">
+                  {billNo}
+                </span>
+              </div>
+            )}
+            <GenericButton
+              type="button"
+              onClick={() => handlePrintReceipt(billResponse?.data || billResponse?.bill || billResponse)}
+              className="bg-[#785600] text-white hover:bg-[#604500]"
+            >
+              <Printer className="h-4 w-4" />
+              <span>Print Receipt</span>
+            </GenericButton>
+          </div>
         </div>
 
         {/* Client Section */}

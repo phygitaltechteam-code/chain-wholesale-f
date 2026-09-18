@@ -28,8 +28,8 @@ import {useGetSizes} from '@/lib/api/sizes';
 import toast from 'react-hot-toast';
 import {z} from 'zod';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
-import {useGetQuantity, useGetBillByid, useBillUpdate} from '@/lib/api/bill';
-import {Route} from '@/routes/_app/billiupdate.$id';
+import {useGetKarigarBillByid, useUpdateKarigarBill} from '@/lib/api/karigarBill';
+import {Route} from '@/routes/_app/karigarbilliupdate.$id';
 import GenericInputField from '../Forms/Input/GenericInputField';
 import {useGetHeader} from '@/lib/api/headerapi';
 import {KarigarSearch} from '../reciept/KarigarSearch';
@@ -175,9 +175,8 @@ const KarigarBillEdit: React.FC = () => {
   const createKarigar = useAddKarigar();
 
   const getpdfheaderdata = useGetHeader();
-  const getQuantity = useGetQuantity();
-  const {data: billResponse, isLoading: isLoadingBill} = useGetBillByid(id);
-  const updateBill = useBillUpdate();
+  const {data: billResponse, isLoading: isLoadingBill} = useGetKarigarBillByid(id);
+  const updateBill = useUpdateKarigarBill();
 
   // Weighing Scale table focus hook
   const {getScaleProps} = useTableScaleFocus<keyof ReceiptItem>(
@@ -264,11 +263,10 @@ const KarigarBillEdit: React.FC = () => {
       return;
     }
     loadedBillIdRef.current = billData.id;
-    initialStockFetchedRef.current = false;
 
     // Handle receipt items
     const receiptItems =
-      billData.receiptItems || billData.items || billData.billItems || [];
+      billData.karigarPurchaseItems || billData.receiptItems || billData.items || billData.billItems || [];
 
     console.log('Receipt Items:', receiptItems);
 
@@ -346,16 +344,18 @@ const KarigarBillEdit: React.FC = () => {
     // Map the data to form fields
     const mappedData = {
       KarigarId:
-        billData.KarigarID || billData.KarigarId || billData.Karigar?.id || '',
+        billData.karigarId || billData.karigar?.id || billData.KarigarID || billData.KarigarId || billData.Karigar?.id || '',
       KarigarName:
+        billData.karigar?.fullName ||
         billData.Karigar?.fullName ||
         billData.KarigarName ||
         billData.Karigar?.fullname ||
         '',
-      date: billData.receiptDate
-        ? new Date(billData.receiptDate).toISOString().split('T')[0]
+      date: (billData.purchaseDate || billData.receiptDate)
+        ? new Date(billData.purchaseDate || billData.receiptDate).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0],
       customerWeight:
+        billData.karigarWeight ??
         billData.customerWeight ??
         billData.advance ??
         billData.receivedWeight ??
@@ -459,103 +459,7 @@ const KarigarBillEdit: React.FC = () => {
     }));
     toast.success('Item removed');
   };
-  // ─── Update the fetchQuantity function in KarigarBillEdit ────────────────────────
-  const initialStockFetchedRef = useRef(false);
 
-  const fetchQuantity = async (
-    index: number,
-    item: string,
-    size: string,
-    purity: number,
-  ) => {
-    if (!item || !size || !purity || purity <= 0) {
-      return;
-    }
-
-    const selectedItem = items.find(
-      (i: any) => i.name === item || i.id === item,
-    );
-    const selectedSize = sizes.find(
-      (s: any) => s.size === size || s.id === size,
-    );
-
-    const itemId = selectedItem?.id || formData.items[index]?.itemId;
-    const sizeId = selectedSize?.id || formData.items[index]?.sizeId;
-
-    if (!itemId || !sizeId) {
-      return;
-    }
-
-    // Removed blocking lastFetchRef check so all rows with same purity/item/size fetch available quantity
-    setFormData((prev) => ({
-      ...prev,
-      items: prev.items.map((entry, i) =>
-        i === index ? {...entry, isLoadingQty: true} : entry,
-      ),
-    }));
-
-    try {
-      const response = await getQuantity.mutateAsync({
-        customerId: formData.KarigarId,
-        itemId: selectedItem.id,
-        sizeId: selectedSize.id,
-        purity: purity,
-      });
-
-      let weight = 0;
-      let srpValue = 0;
-
-      // Extract weight
-      if (
-        response?.data?.weight !== undefined &&
-        response.data.weight !== null
-      ) {
-        weight = Number(response.data.weight);
-      } else if (response?.weight !== undefined && response.weight !== null) {
-        weight = Number(response.weight);
-      } else if (
-        response?.data?.quantity !== undefined &&
-        response.data.quantity !== null
-      ) {
-        weight = Number(response.data.quantity);
-      } else if (
-        response?.quantity !== undefined &&
-        response.quantity !== null
-      ) {
-        weight = Number(response.quantity);
-      }
-
-      if (!isNaN(weight) && weight >= 0) {
-        setFormData((prev) => ({
-          ...prev,
-          items: prev.items.map((entry, i) =>
-            i === index
-              ? {
-                  ...entry,
-                  availableQty: weight,
-                  isLoadingQty: false,
-                }
-              : entry,
-          ),
-        }));
-      } else {
-        setFormData((prev) => ({
-          ...prev,
-          items: prev.items.map((entry, i) =>
-            i === index ? {...entry, isLoadingQty: false} : entry,
-          ),
-        }));
-      }
-    } catch (error: any) {
-      console.error('Error fetching quantity:', error);
-      setFormData((prev) => ({
-        ...prev,
-        items: prev.items.map((entry, i) =>
-          i === index ? {...entry, isLoadingQty: false} : entry,
-        ),
-      }));
-    }
-  };
 
   const handleItemChange = (
     index: number,
@@ -611,20 +515,6 @@ const KarigarBillEdit: React.FC = () => {
       items: updatedItems,
       totalFine: newTotalFine,
     }));
-
-    // Fetch quantity if purity, item, or size changed
-    if (field === 'purity' || field === 'item' || field === 'size') {
-      const currentItem = updatedItems[index];
-      const purityNum = Number(currentItem.purity) || 0;
-      if (currentItem.item && currentItem.size && purityNum > 0) {
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-        }
-        debounceTimerRef.current = setTimeout(() => {
-          fetchQuantity(index, currentItem.item, currentItem.size, purityNum);
-        }, 300);
-      }
-    }
   };
 
   useEffect(() => {
@@ -635,27 +525,7 @@ const KarigarBillEdit: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (
-      !isDataLoaded ||
-      !formData.KarigarId ||
-      formData.items.length === 0 ||
-      initialStockFetchedRef.current
-    ) {
-      return;
-    }
-    if (items.length === 0 || sizes.length === 0) {
-      return;
-    }
 
-    initialStockFetchedRef.current = true;
-    formData.items.forEach((item, index) => {
-      const purityNum = Number(item.purity) || 0;
-      if (item.item && item.size && purityNum > 0) {
-        fetchQuantity(index, item.item, item.size, purityNum);
-      }
-    });
-  }, [isDataLoaded, items, sizes, formData.KarigarId, formData.items]);
 
   useEffect(() => {
     if (formData.items.length === 0 && !isLoadingBill && isDataLoaded) {
@@ -684,12 +554,6 @@ const KarigarBillEdit: React.FC = () => {
       }
       if (srpNum < 0) {
         toast.error(`Row ${i + 1}: Please enter a valid SRP`);
-        return false;
-      }
-      if (item.isLoadingQty) {
-        toast.loading(`Row ${i + 1}: Fetching available quantity...`, {
-          duration: 2000,
-        });
         return false;
       }
     }
@@ -841,18 +705,19 @@ const KarigarBillEdit: React.FC = () => {
 
     printReceipt(
       {
-        KarigarName:
+        clientName:
           responseData?.KarigarName ||
           formData.KarigarName ||
-          Karigar?.fullName ||
+          currentKarigar?.fullName ||
           'N/A',
-        phoneNumber: responseData?.phoneNumber || Karigar?.phoneNumber || 'N/A',
+        phoneNumber: responseData?.phoneNumber || currentKarigar?.phoneNumber || 'N/A',
         dateTime: responseData?.dateTime || dateStr,
         items: itemsList,
         totalFineWt,
         receive: advance,
         dueBalance: KarigarDue,
         remainingBalance: remaining,
+        hideLaborRate: true,
       },
       getpdfheaderdata,
     );
@@ -882,13 +747,13 @@ const KarigarBillEdit: React.FC = () => {
       const remainingWeight = calculateRemainingWeight();
 
       const billData = {
-        KarigarId: formData.KarigarId,
-        receiptDate: formData.date,
+        karigarId: formData.KarigarId,
+        purchaseDate: formData.date,
         items: formData.items.map((item) => ({
-          itemId:
+          itemID:
             items.find((i: any) => i.name === item.item)?.id || item.itemId,
           itemName: item.item,
-          sizeId:
+          sizeID:
             sizes.find((s: any) => s.size === item.size)?.id || item.sizeId,
           size: item.size,
           purity: Number(item.purity) || 0,
@@ -898,7 +763,7 @@ const KarigarBillEdit: React.FC = () => {
           fineWeight: Number(Number(item.fineWt || 0).toFixed(3)),
           laborRate: Number(item.laborRate) || 0,
         })),
-        customerWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
+        karigarWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
         remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
         totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
         type: 'DRAFT',
@@ -944,13 +809,13 @@ const KarigarBillEdit: React.FC = () => {
       const remainingWeight = calculateRemainingWeight();
 
       const billData = {
-        KarigarId: formData.KarigarId,
-        receiptDate: formData.date,
+        karigarId: formData.KarigarId,
+        purchaseDate: formData.date,
         items: formData.items.map((item) => ({
-          itemId:
+          itemID:
             items.find((i: any) => i.name === item.item)?.id || item.itemId,
           itemName: item.item,
-          sizeId:
+          sizeID:
             sizes.find((s: any) => s.size === item.size)?.id || item.sizeId,
           size: item.size,
           purity: Number(item.purity) || 0,
@@ -960,7 +825,7 @@ const KarigarBillEdit: React.FC = () => {
           fineWeight: Number(Number(item.fineWt || 0).toFixed(3)),
           laborRate: Number(item.laborRate) || 0,
         })),
-        customerWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
+        karigarWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
         remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
         totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
         type: 'BILL',
@@ -1136,30 +1001,7 @@ const KarigarBillEdit: React.FC = () => {
           );
         },
       },
-    ];
-
-    if (!isReadOnly) {
-      cols.push({
-        key: 'availableQty',
-        header: 'Available Qty',
-        render: (item) => (
-          <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#c5b497] bg-[#eae3d5] px-2 py-1.5 text-xs shadow-inner dark:border-slate-600 dark:bg-slate-800">
-            <span className="font-mono font-bold text-black dark:text-white">
-              {item.availableQty !== undefined &&
-              item.availableQty !== null &&
-              item.availableQty !== ''
-                ? formatNumberThreeDecimals(Number(item.availableQty))
-                : '0'}
-            </span>
-            <span className="text-gray-500 text-[10px] dark:text-slate-400">
-              G
-            </span>
-          </div>
-        ),
-      });
-    }
-
-    cols.push(
+      // Removed Available Qty
       {
         key: 'grossWt',
         header: 'Gross Wt (G)',
@@ -1246,46 +1088,8 @@ const KarigarBillEdit: React.FC = () => {
             </span>
           </div>
         ),
-      },
-      {
-        key: 'laborRate',
-        header: 'Labor Rate (G)',
-        render: (item, index) => {
-          if (isReadOnly) {
-            return (
-              <span className="font-mono text-sm text-[#4f4535] dark:text-slate-300">
-                {item.laborRate !== undefined &&
-                item.laborRate !== null &&
-                item.laborRate !== ''
-                  ? `${formatNumberThreeDecimals(Number(item.laborRate))} G`
-                  : '0 G'}
-              </span>
-            );
-          }
-          const actualIndex = formData.items.indexOf(item);
-          return (
-            <GenericInputField
-              type="text"
-              inputMode="decimal"
-              step="0.001"
-              min="0"
-              value={
-                item.laborRate !== undefined && item.laborRate !== null
-                  ? item.laborRate
-                  : ''
-              }
-              onChange={(e) =>
-                handleItemChange(actualIndex, 'laborRate', e.target.value)
-              }
-              placeholder="0.000"
-              suffix="G"
-              className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
-              decimalScale={3}
-            />
-          );
-        },
-      },
-    );
+      }
+    ];
 
     return cols;
   }, [formData.items, isReadOnly, items, sizes]);
@@ -1326,16 +1130,26 @@ const KarigarBillEdit: React.FC = () => {
             />
           </div>
 
-          {billNo && (
-            <div className="flex items-center gap-2 rounded-xl border border-[#785600]/20 bg-amber-50 px-4 py-2 dark:border-amber-900/40 dark:bg-amber-950/30">
-              <span className="text-xs font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                Bill No:
-              </span>
-              <span className="font-mono text-base font-bold text-[#785600] dark:text-amber-400">
-                {billNo}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {billNo && (
+              <div className="flex items-center gap-2 rounded-xl border border-[#785600]/20 bg-amber-50 px-4 py-2 dark:border-amber-900/40 dark:bg-amber-950/30">
+                <span className="text-xs font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+                  Bill No:
+                </span>
+                <span className="font-mono text-base font-bold text-[#785600] dark:text-amber-400">
+                  {billNo}
+                </span>
+              </div>
+            )}
+            <GenericButton
+              type="button"
+              onClick={() => handlePrintReceipt(billResponse?.data || billResponse?.bill || billResponse)}
+              className="bg-[#785600] text-white hover:bg-[#604500]"
+            >
+              <Printer className="h-4 w-4" />
+              <span>Print Receipt</span>
+            </GenericButton>
+          </div>
         </div>
 
         {/* Karigar Section */}

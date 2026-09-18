@@ -98,9 +98,6 @@ export const KarigarSearch: React.FC<KarigarSearchProps> = ({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white">
                 {getKarigarName(selectedKarigar)}
-                {selectedKarigar.phoneNumber && (
-                  <> - {selectedKarigar.phoneNumber}</>
-                )}
               </p>
 
               {selectedKarigar.address && (

@@ -31,6 +31,7 @@ export interface ReceiptPrintData {
   dueBalance?: number | string;
   remainingBalance?: number | string;
   headerInfo?: any;
+  hideLaborRate?: boolean;
 }
 
 const format3Decimals = (value: number | string | undefined | null): string => {
@@ -104,6 +105,8 @@ export const printReceipt = (
           ? Number(receiptData.total)
           : 0;
 
+  const hasLabor = !receiptData.hideLaborRate;
+
   let itemsRows = '';
   items.forEach((item) => {
     const itemName = item.item || '-';
@@ -124,7 +127,7 @@ export const printReceipt = (
         <td style="border:1px solid #333;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${gross}</td>
         <td style="border:1px solid #333;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${srp}</td>
         <td style="border:1px solid #333;padding:4px 6px;text-align:center;font-family:monospace;font-weight:bold;font-size:10px;color:#000;">${fine}</td>
-        <td style="border:1px solid #333;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${labor}</td>
+        ${hasLabor ? `<td style="border:1px solid #333;padding:4px 6px;text-align:center;font-family:monospace;font-size:10px;color:#000;">${labor}</td>` : ''}
       </tr>
     `;
   });
@@ -286,11 +289,11 @@ export const printReceipt = (
                 <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9.5px;color:#ffffff;background:#785600 !important;">Gross Wt (G)</th>
                 <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9.5px;color:#ffffff;background:#785600 !important;">SRP (G)</th>
                 <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9.5px;color:#ffffff;background:#785600 !important;">Fine Wt (G)</th>
-                <th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9.5px;color:#ffffff;background:#785600 !important;">Labor Rate (G)</th>
+                ${hasLabor ? `<th style="border:1px solid #785600;padding:4px 6px;text-align:center;font-size:9.5px;color:#ffffff;background:#785600 !important;">Labor Rate (G)</th>` : ''}
               </tr>
             </thead>
             <tbody>
-              ${itemsRows || '<tr><td colspan="7" style="text-align:center;padding:8px;border:1px solid #333;">No items</td></tr>'}
+              ${itemsRows || `<tr><td colspan="${hasLabor ? 7 : 6}" style="text-align:center;padding:8px;border:1px solid #333;">No items</td></tr>`}
             </tbody>
           </table>
 

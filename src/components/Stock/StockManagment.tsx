@@ -198,6 +198,17 @@ const StockManagment: React.FC = () => {
 
   // Handle save
   const onSubmit = async (data: StockFormData) => {
+    // Validate purity for INWARD of non-gold items
+    if (data.stockType === 'INWARD' && !isGold) {
+      if (!data.purity || data.purity.trim() === '') {
+        methods.setError('purity', {
+          type: 'manual',
+          message: 'Purity is required for non-gold items',
+        });
+        return;
+      }
+    }
+
     const stockQty =
       typeof data.stockQty === 'number'
         ? data.stockQty

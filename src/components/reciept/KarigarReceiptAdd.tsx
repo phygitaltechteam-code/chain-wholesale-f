@@ -27,12 +27,12 @@ import { useGetItems } from '@/lib/api/items';
 import { useGetSizes } from '@/lib/api/sizes';
 import toast from 'react-hot-toast';
 import { z } from 'zod';
-import { useGetQuantity, useBill } from '@/lib/api/bill';
 import GenericInputField from '../Forms/Input/GenericInputField';
 import { KarigarSearch } from './KarigarSearch';
 import { useGetHeader } from '@/lib/api/headerapi';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 import { printReceipt } from '@/utils/printReceipt';
+import { useKarigarBill } from '@/lib/api/karigarBill';
 
 interface ReceiptItem {
   id: string;
@@ -168,8 +168,7 @@ const ReceiptAdd: React.FC = () => {
 
   // API hooks
   const getpdfheaderdata = useGetHeader();
-  const getQuantity = useGetQuantity();
-  const savebill = useBill();
+  const savebill = useKarigarBill();
 
   // Weighing Scale table focus hook
   const { getScaleProps } = useTableScaleFocus<keyof ReceiptItem>(
@@ -267,92 +266,7 @@ const ReceiptAdd: React.FC = () => {
     toast.success('Item removed');
   };
 
-  // ─── Update the fetchQuantity function ────────────────────────────────────────
-  const fetchQuantity = async (
-    index: number,
-    item: string,
-    size: string,
-    purity: number,
-  ) => {
-    if (!item || !size || !purity || purity <= 0) {
-      return;
-    }
 
-    const selectedItem = items.find((i: any) => i.name === item);
-    const selectedSize = sizes.find((s: any) => s.size === size);
-
-    if (!selectedItem || !selectedSize) {
-      return;
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      items: prev.items.map((entry, i) =>
-        i === index ? { ...entry, isLoadingQty: true } : entry,
-      ),
-    }));
-
-    try {
-      const response = await getQuantity.mutateAsync({
-        customerId: formData.KarigarId,
-        itemId: selectedItem.id,
-        sizeId: selectedSize.id,
-        purity: purity,
-      });
-
-      let weight = 0;
-
-      // Extract weight
-      if (
-        response?.data?.weight !== undefined &&
-        response.data.weight !== null
-      ) {
-        weight = Number(response.data.weight);
-      } else if (response?.weight !== undefined && response.weight !== null) {
-        weight = Number(response.weight);
-      } else if (
-        response?.data?.quantity !== undefined &&
-        response.data.quantity !== null
-      ) {
-        weight = Number(response.data.quantity);
-      } else if (
-        response?.quantity !== undefined &&
-        response.quantity !== null
-      ) {
-        weight = Number(response.quantity);
-      }
-
-      if (!isNaN(weight) && weight >= 0) {
-        setFormData((prev) => ({
-          ...prev,
-          items: prev.items.map((entry, i) =>
-            i === index
-              ? {
-                ...entry,
-                availableQty: weight,
-                isLoadingQty: false,
-              }
-              : entry,
-          ),
-        }));
-      } else {
-        setFormData((prev) => ({
-          ...prev,
-          items: prev.items.map((entry, i) =>
-            i === index ? { ...entry, isLoadingQty: false } : entry,
-          ),
-        }));
-      }
-    } catch (error: any) {
-      console.error('Error fetching quantity:', error);
-      setFormData((prev) => ({
-        ...prev,
-        items: prev.items.map((entry, i) =>
-          i === index ? { ...entry, isLoadingQty: false } : entry,
-        ),
-      }));
-    }
-  };
 
   const calculateFineWeight = (
     purity: number,
@@ -426,20 +340,6 @@ const ReceiptAdd: React.FC = () => {
       items: updatedItems,
       totalFine: newTotalFine,
     });
-
-    // Fetch quantity if purity, item, or size changed
-    if (field === 'purity' || field === 'item' || field === 'size') {
-      const currentItem = updatedItems[index];
-      const purityNum = Number(currentItem.purity) || 0;
-      if (currentItem.item && currentItem.size && purityNum > 0) {
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-        }
-        debounceTimerRef.current = setTimeout(() => {
-          fetchQuantity(index, currentItem.item, currentItem.size, purityNum);
-        }, 300);
-      }
-    }
   };
 
   useEffect(() => {
@@ -477,12 +377,6 @@ const ReceiptAdd: React.FC = () => {
       }
       if (srpNum < 0) {
         toast.error(`Row ${i + 1}: Please enter a valid SRP`);
-        return false;
-      }
-      if (item.isLoadingQty) {
-        toast.loading(`Row ${i + 1}: Fetching available quantity...`, {
-          duration: 2000,
-        });
         return false;
       }
     }
@@ -571,7 +465,7 @@ const ReceiptAdd: React.FC = () => {
 
     printReceipt(
       {
-        KarigarName: formData.KarigarName || Karigar?.fullName || 'N/A',
+        clientName: formData.KarigarName || Karigar?.fullName || 'N/A',
         phoneNumber: Karigar?.phoneNumber || 'N/A',
         dateTime: dateStr,
         items: itemsList,
@@ -579,6 +473,7 @@ const ReceiptAdd: React.FC = () => {
         receive: advance,
         dueBalance: KarigarDue,
         remainingBalance: remaining,
+        hideLaborRate: true,
       },
       getpdfheaderdata,
     );
@@ -608,8 +503,8 @@ const ReceiptAdd: React.FC = () => {
       const remainingWeight = calculateRemainingWeight();
 
       const billData = {
-        KarigarId: formData.KarigarId,
-        receiptDate: formData.date,
+        karigarId: formData.KarigarId,
+        purchaseDate: formData.date,
         items: formData.items.map((item) => ({
           itemId: items.find((i: any) => i.name === item.item)?.id,
           itemName: item.item,
@@ -622,7 +517,7 @@ const ReceiptAdd: React.FC = () => {
           fineWeight: Number(Number(item.fineWt || 0).toFixed(3)),
           laborRate: Number(item.laborRate) || 0,
         })),
-        customerWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
+        karigarWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
         remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
         totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
         type: 'DRAFT',
@@ -668,8 +563,8 @@ const ReceiptAdd: React.FC = () => {
       const remainingWeight = calculateRemainingWeight();
 
       const billData = {
-        KarigarId: formData.KarigarId,
-        receiptDate: formData.date,
+        karigarId: formData.KarigarId,
+        purchaseDate: formData.date,
         items: formData.items.map((item) => ({
           itemId: items.find((i: any) => i.name === item.item)?.id,
           itemName: item.item,
@@ -682,7 +577,7 @@ const ReceiptAdd: React.FC = () => {
           fineWeight: Number(Number(item.fineWt || 0).toFixed(3)),
           laborRate: Number(item.laborRate) || 0,
         })),
-        customerWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
+        karigarWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
         remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
         totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
         type: 'BILL',

@@ -17,6 +17,9 @@ export interface ClientReportEntry {
   isFirstInGroup: boolean;
   groupRowSpan: number;
   rawGroupItems?: ApiDataItem[];
+  fineWeight?: number | null;
+  given?: number | null;
+  pending?: number | null;
 }
 
 export interface ApiResponse {
@@ -53,6 +56,16 @@ export interface ApiDataItem {
     createdAt: string;
     updatedAt: string;
   } | null;
+  karigarPurchase?: any;
+  clientPurchase?: any;
+  bill?: any;
+  billing?: any;
+  receipt?: any;
+  clientReceipt?: any;
+  totalFinWt?: number;
+  receive?: number;
+  paid?: number;
+  pending?: number;
 }
 
 export const formatIndianDate = (date: Date | null) => {

@@ -104,9 +104,33 @@ export const ClientReportTable: React.FC<ClientReportTableProps> = ({
                         rowSpan={entry.groupRowSpan}
                         className="whitespace-nowrap border-r border-[#f4f4f2] px-3 py-3 align-middle text-sm dark:border-slate-700"
                       >
-                        <span className="text-base font-bold text-black dark:text-[#785600]">
-                          {entry.billNo || ''}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          {entry.billNo ? (
+                            <span className="text-base font-bold text-black dark:text-[#785600]">
+                              {entry.billNo}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                          
+                          {entry.fineWeight !== null && entry.fineWeight !== undefined && entry.fineWeight > 0 && (
+                            <div className="text-[11px] text-gray-600 dark:text-gray-400">
+                              <span className="font-semibold text-gray-800 dark:text-gray-200">Total Fine Wt:</span> {formatNumber(entry.fineWeight)} G
+                            </div>
+                          )}
+                          
+                          {entry.given !== null && entry.given !== undefined && entry.given > 0 && (
+                            <div className="text-[11px] text-gray-600 dark:text-gray-400">
+                              <span className="font-semibold text-gray-800 dark:text-gray-200">Advance:</span> {formatNumber(entry.given)} G
+                            </div>
+                          )}
+                          
+                          {entry.pending !== null && entry.pending !== undefined && (
+                            <div className="text-[11px] text-gray-600 dark:text-gray-400">
+                              <span className="font-semibold text-gray-800 dark:text-gray-200">Remaining:</span> {formatNumber(entry.pending)} G
+                            </div>
+                          )}
+                        </div>
                       </td>
                     )}
                     <td className="px-3 py-3 text-left align-middle text-sm text-[#1a1c1b] dark:text-white">

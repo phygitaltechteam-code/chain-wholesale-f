@@ -181,6 +181,9 @@ export default function ClientReport() {
           isFirstInGroup: isFirstInBill,
           groupRowSpan,
           rawGroupItems: isFirstInBill ? items : undefined,
+          fineWeight: isFirstInBill ? (firstItem.clientPurchase?.totalWeight ?? firstItem.bill?.totalWeight ?? firstItem.billing?.totalWeight ?? firstItem.receipt?.totalWeight ?? firstItem.clientReceipt?.totalWeight ?? firstItem.totalFinWt ?? firstItem.totalWeight) : undefined,
+          given: isFirstInBill ? (firstItem.clientPurchase?.paid ?? firstItem.bill?.paid ?? firstItem.billing?.paid ?? firstItem.receipt?.paid ?? firstItem.clientReceipt?.paid ?? firstItem.receive ?? firstItem.paid) : undefined,
+          pending: isFirstInBill ? (firstItem.clientPurchase?.pending ?? firstItem.bill?.pending ?? firstItem.billing?.pending ?? firstItem.receipt?.pending ?? firstItem.clientReceipt?.pending ?? firstItem.pending) : undefined,
         });
       });
     });

@@ -2,21 +2,14 @@ import {api} from '@/utils/axios';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
-export const useGetQuantity = () => {
-  return useMutation({
-    mutationFn: getQuantityApi,
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to fetch quantity');
-    },
-  });
-};
 
-export const useBill = () => {
+export const useKarigarBill = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: saveBillApi,
+    mutationFn: saveKarigarBillApi,
     onSuccess: () => {
       toast.success('Bill added successfully');
+      queryClient.invalidateQueries({queryKey: ['karigar-bill']});
       queryClient.invalidateQueries({queryKey: ['bill']});
       queryClient.invalidateQueries({queryKey: ['clients']});
       queryClient.invalidateQueries({queryKey: ['stock-report']});
@@ -27,34 +20,25 @@ export const useBill = () => {
   });
 };
 
-const saveBillApi = async (data: any) => {
-  const response = await api.post('/admin/karigar/billing', data);
+const saveKarigarBillApi = async (data: any) => {
+  const response = await api.post('/admin/karigar-purchase', data);
   return response.data;
 };
 
-const getQuantityApi = async (payload: {
-  itemId: string;
-  sizeId: string;
-  purity: number;
-  customerId: string;
-}) => {
-  const response = await api.put('/admin/karigar/billing/check', payload);
-  return response.data;
-};
 
-export const useGetBill = () => {
+export const useGetKarigarBill = () => {
   return useQuery({
-    queryKey: ['bill'],
-    queryFn: getbillAll,
+    queryKey: ['karigar-bill'],
+    queryFn: getKarigarBillAll,
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: 'always',
   });
 };
 
-export const getbillAll = async () => {
+export const getKarigarBillAll = async () => {
   try {
-    const response = await api.get('/admin/karigar/billing');
+    const response = await api.get('/admin/karigar-purchase');
     return response.data;
   } catch (error) {
     if (error instanceof Error) {
@@ -64,11 +48,11 @@ export const getbillAll = async () => {
   }
 };
 
-export const useGetBillByid = (id: string) => {
+export const useGetKarigarBillByid = (id: string) => {
   return useQuery({
-    queryKey: ['bill', id],
+    queryKey: ['karigar-bill', id],
     queryFn: async () => {
-      const response = await api.get(`/admin/karigar/billing/${id}`);
+      const response = await api.get(`/admin/karigar-purchase/${id}`);
       return response.data;
     },
     enabled: !!id,
@@ -78,16 +62,17 @@ export const useGetBillByid = (id: string) => {
   });
 };
 
-const deleteBillApi = async (id: string) => {
-  const response = await api.delete(`/admin/karigar/billing/${id}`);
+const deleteKarigarBillApi = async (id: string) => {
+  const response = await api.delete(`/admin/karigar-purchase/${id}`);
   return response.data;
 };
 
-export const useDeleteBill = () => {
+export const useDeleteKarigarBill = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: deleteBillApi,
+    mutationFn: deleteKarigarBillApi,
     onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ['karigar-bill']});
       queryClient.invalidateQueries({queryKey: ['bill']});
       queryClient.invalidateQueries({queryKey: ['clients']});
       queryClient.invalidateQueries({queryKey: ['stock-report']});
@@ -98,12 +83,13 @@ export const useDeleteBill = () => {
   });
 };
 
-export const useBillUpdate = () => {
+export const useUpdateKarigarBill = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: updateBillApi,
+    mutationFn: updateKarigarBillApi,
     onSuccess: () => {
       toast.success('Bill updated successfully');
+      queryClient.invalidateQueries({queryKey: ['karigar-bill']});
       queryClient.invalidateQueries({queryKey: ['bill']});
       queryClient.invalidateQueries({queryKey: ['clients']});
       queryClient.invalidateQueries({queryKey: ['stock-report']});
@@ -114,7 +100,7 @@ export const useBillUpdate = () => {
   });
 };
 
-export const updateBillApi = async ({id, data}: {id: string; data: any}) => {
-  const response = await api.put(`/admin/karigar/billing/${id}`, data);
+export const updateKarigarBillApi = async ({id, data}: {id: string; data: any}) => {
+  const response = await api.put(`/admin/karigar-purchase/${id}`, data);
   return response.data;
 };

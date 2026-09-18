@@ -14,7 +14,7 @@ import PageHeader from '@/components/Forms/Common/PageHeader';
 import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import toast from 'react-hot-toast';
 import GenericButton from '../Forms/Buttons/GenericButton';
-import {useDeleteBill, useGetBill} from '@/lib/api/karigarbill';
+import {useDeleteKarigarBill, useGetKarigarBill} from '@/lib/api/karigarBill';
 import {useGetKarigars} from '@/components/joborder/karigar/karigarapi';
 import {useGetHeader} from '@/lib/api/headerapi';
 import {printReceipt} from '@/utils/printReceipt';
@@ -168,7 +168,7 @@ const Billing: React.FC = () => {
     );
   };
 
-  const deleteClient = useDeleteBill();
+  const deleteClient = useDeleteKarigarBill();
   const [isLoading, setIsLoading] = useState(true);
 
   const formatToLocalDateString = (d: Date) => {
@@ -207,7 +207,7 @@ const Billing: React.FC = () => {
   const fromDatePickerRef = useRef<any>(null);
   const toDatePickerRef = useRef<any>(null);
 
-  const {data: billData, isLoading: billLoading} = useGetBill();
+  const {data: billData, isLoading: billLoading} = useGetKarigarBill();
   const {data: clientsData, isLoading: isClientsLoading} = useGetKarigars();
 
   useEffect(() => {
@@ -245,7 +245,7 @@ const Billing: React.FC = () => {
     if (billData && Array.isArray(billData)) {
       const groups: BillGroup[] = billData.map(
         (receipt: ReceiptData, index: number) => {
-          const rawDate = receipt.createdAt || receipt.receiptDate;
+          const rawDate = (receipt as any).purchaseDate || receipt.createdAt || receipt.receiptDate;
           let formattedDate = '-';
           if (rawDate) {
             const dateObj = new Date(rawDate);
@@ -264,8 +264,9 @@ const Billing: React.FC = () => {
           }
 
           // Map all items
+          const itemsList = (receipt as any).karigarPurchaseItems || receipt.receiptItems || [];
           const items =
-            receipt.receiptItems?.map((item) => ({
+            itemsList.map((item: any) => ({
               itemId:
                 item.itemID || (item as any).itemId || item.item?.id || '',
               sizeId:
@@ -308,18 +309,20 @@ const Billing: React.FC = () => {
             srNo: index + 1,
             dateTime: formattedDate,
             billNo: billNumber,
-            clientName: receipt.client?.fullName || 'N/A',
-            phoneNumber: receipt.client?.phoneNumber || 'N/A',
-            receive: receipt.customerWeight || 0,
+            clientName: receipt.client?.fullName || (receipt as any).karigar?.fullName || (receipt as any).Karigar?.fullName || 'N/A',
+            phoneNumber: receipt.client?.phoneNumber || (receipt as any).karigar?.phoneNumber || (receipt as any).Karigar?.phoneNumber || 'N/A',
+            receive: receipt.customerWeight ?? (receipt as any).karigarWeight ?? 0,
             pending: receipt.remainingWeight || 0,
             dueBalance:
               receipt.client?.due !== undefined && receipt.client?.due !== null
                 ? Number(receipt.client.due)
-                : Number(receipt.client?.openingBalance) || 0,
+                : (receipt as any).karigar?.due !== undefined && (receipt as any).karigar?.due !== null
+                  ? Number((receipt as any).karigar.due)
+                  : Number(receipt.client?.openingBalance) || Number((receipt as any).karigar?.openingBalance) || 0,
             type:
               (receipt.type as 'DRAFT' | 'BILL') ||
               (receipt.remainingWeight === 0 ? 'BILL' : 'DRAFT'),
-            createdAt: receipt.createdAt || receipt.receiptDate,
+            createdAt: (receipt as any).purchaseDate || receipt.createdAt || receipt.receiptDate,
             items: items,
             displayItems: displayItems,
             displaySizes: displaySizes,
@@ -1907,14 +1910,40 @@ const Billing: React.FC = () => {
       key: 'billNo',
       header: 'Bill No',
       render: (item) => (
-        <span className="text-sm font-semibold text-[#785600] dark:text-amber-400">
-          {item.billNo}
-        </span>
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-semibold text-[#785600] dark:text-amber-400">
+            {item.billNo}
+          </span>
+          {/* {item.totalFinWt !== undefined && item.totalFinWt > 0 && (
+            <div className="text-[11px] text-gray-600 dark:text-gray-400">
+              <span className="font-semibold text-gray-800 dark:text-gray-200">
+                Total Fine Wt:
+              </span>{' '}
+              {formatNumberWithDecimals(item.totalFinWt)} G
+            </div>
+          )}
+          {item.receive !== undefined && item.receive > 0 && (
+            <div className="text-[11px] text-gray-600 dark:text-gray-400">
+              <span className="font-semibold text-gray-800 dark:text-gray-200">
+                Advance:
+              </span>{' '}
+              {formatNumberWithDecimals(item.receive)} G
+            </div>
+          )}
+          {item.pending !== undefined && item.pending !== 0 && (
+            <div className="text-[11px] text-gray-600 dark:text-gray-400">
+              <span className="font-semibold text-gray-800 dark:text-gray-200">
+                Remaining:
+              </span>{' '}
+              {formatNumberWithDecimals(item.pending)} G
+            </div>
+          )} */}
+        </div>
       ),
     },
     {
       key: 'clientName',
-      header: 'Client',
+      header: 'Karigar Name',
       render: (item) => (
         <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">
           {item.clientName}

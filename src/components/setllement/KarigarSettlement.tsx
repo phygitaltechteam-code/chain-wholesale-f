@@ -427,7 +427,7 @@ const Settlement: React.FC = () => {
   const handleRowClick = (client: Client) => {
     const targetId = client?.id || (client as any)?._id;
     if (targetId) {
-      navigate({to: '/client/clientreport/$id', params: {id: targetId}});
+      navigate({to: '/karigar/karigarreport/$id', params: {id: targetId}});
     }
   };
 

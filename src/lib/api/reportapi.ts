@@ -26,6 +26,31 @@ export const getclientreport = async (id: string) => {
   }
 };
 
+export const useGetKarigarReport = (id: string) => {
+  return useQuery({
+    queryKey: ['karigar report', id],
+    queryFn: () => getkarigarreport(id),
+    enabled: !!id,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+  });
+};
+
+export const getkarigarreport = async (id: string) => {
+  try {
+    const response = await api.get(`admin/karigar/pay/${id}`);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+        error?.message ||
+        'Failed to fetch karigar settlements',
+    );
+  }
+};
+
+
 export const useGetStockReport = (id: string) => {
   return useQuery({
     queryKey: ['stock report', id],
