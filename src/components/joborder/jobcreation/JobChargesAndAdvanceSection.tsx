@@ -28,7 +28,9 @@ interface JobChargesAndAdvanceSectionProps {
   onGoldAdvanceChange: (val: number) => void;
 }
 
-export const JobChargesAndAdvanceSection: React.FC<JobChargesAndAdvanceSectionProps> = ({
+export const JobChargesAndAdvanceSection: React.FC<
+  JobChargesAndAdvanceSectionProps
+> = ({
   metal = 'Gold',
   grossWt = 0,
   metalMakingCharges,
@@ -40,13 +42,16 @@ export const JobChargesAndAdvanceSection: React.FC<JobChargesAndAdvanceSectionPr
   goldAdvance,
   onGoldAdvanceChange,
 }) => {
-  const [isMakingChargesCollapsed, setIsMakingChargesCollapsed] = useState(false);
+  const [isMakingChargesCollapsed, setIsMakingChargesCollapsed] =
+    useState(false);
   const [isAdvanceCollapsed, setIsAdvanceCollapsed] = useState(false);
 
   // Auto calculate cash making charges amount if per_gm or amount changes
   useEffect(() => {
     if (cashMakingCharges.subtype === 'PER_GM') {
-      const calc = Number(((cashMakingCharges.enteredValue || 0) * (grossWt || 0)).toFixed(2));
+      const calc = Number(
+        ((cashMakingCharges.enteredValue || 0) * (grossWt || 0)).toFixed(2),
+      );
       if (calc !== cashMakingCharges.calculatedValue) {
         onCashMakingChargesChange({
           ...cashMakingCharges,
@@ -64,7 +69,10 @@ export const JobChargesAndAdvanceSection: React.FC<JobChargesAndAdvanceSectionPr
     }
   }, [cashMakingCharges.subtype, cashMakingCharges.enteredValue, grossWt]);
 
-  const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, allowDecimal = true) => {
+  const handleNumericKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    allowDecimal = true,
+  ) => {
     const allowedKeys = [
       'Backspace',
       'Delete',
@@ -76,7 +84,10 @@ export const JobChargesAndAdvanceSection: React.FC<JobChargesAndAdvanceSectionPr
       'Home',
       'End',
     ];
-    if (allowedKeys.includes(e.key) || (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))) {
+    if (
+      allowedKeys.includes(e.key) ||
+      (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))
+    ) {
       return;
     }
     if (allowDecimal && e.key === '.') {
@@ -90,13 +101,12 @@ export const JobChargesAndAdvanceSection: React.FC<JobChargesAndAdvanceSectionPr
     }
   };
 
-  const displayMetal =
-    metal.toUpperCase() === 'SILVER' ? 'Silver' : 'Gold';
+  const displayMetal = metal.toUpperCase() === 'SILVER' ? 'Silver' : 'Gold';
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
       {/* Making Charges Card (Spans 2 cols) */}
-      <div className="rounded-xl border border-[#e5ded3] border-l-4 border-l-[#785600] bg-white p-4 shadow-sm dark:border-slate-800 dark:border-l-[#c59a3f] dark:bg-slate-900 lg:col-span-2">
+      <div className="rounded-xl border border-l-4 border-[#e5ded3] border-l-[#785600] bg-white p-4 shadow-sm dark:border-slate-800 dark:border-l-[#c59a3f] dark:bg-slate-900 lg:col-span-2">
         <div
           onClick={() => setIsMakingChargesCollapsed(!isMakingChargesCollapsed)}
           className="flex cursor-pointer items-center justify-between pb-2"
@@ -104,8 +114,15 @@ export const JobChargesAndAdvanceSection: React.FC<JobChargesAndAdvanceSectionPr
           <h3 className="font-['Playfair_Display'] text-base font-bold text-[#785600] dark:text-amber-400">
             Making Charges
           </h3>
-          <button type="button" className="text-slate-500 hover:text-slate-700 dark:text-slate-400">
-            {isMakingChargesCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+          <button
+            type="button"
+            className="text-slate-500 hover:text-slate-700 dark:text-slate-400"
+          >
+            {isMakingChargesCollapsed ? (
+              <ChevronDown size={18} />
+            ) : (
+              <ChevronUp size={18} />
+            )}
           </button>
         </div>
 
@@ -134,7 +151,11 @@ export const JobChargesAndAdvanceSection: React.FC<JobChargesAndAdvanceSectionPr
                   type="text"
                   inputMode="decimal"
                   placeholder="Enter gm"
-                  value={metalMakingCharges.enteredValue === 0 ? '' : metalMakingCharges.enteredValue}
+                  value={
+                    metalMakingCharges.enteredValue === 0
+                      ? ''
+                      : metalMakingCharges.enteredValue
+                  }
                   onKeyDown={(e) => handleNumericKeyDown(e, true)}
                   onChange={(e) => {
                     const val = e.target.value.replace(/[^0-9.]/g, '');
@@ -174,7 +195,11 @@ export const JobChargesAndAdvanceSection: React.FC<JobChargesAndAdvanceSectionPr
                     const st = e.target.value;
                     const calculated =
                       st === 'PER_GM'
-                        ? Number(((cashMakingCharges.enteredValue || 0) * grossWt).toFixed(2))
+                        ? Number(
+                            (
+                              (cashMakingCharges.enteredValue || 0) * grossWt
+                            ).toFixed(2),
+                          )
                         : cashMakingCharges.enteredValue || 0;
                     onCashMakingChargesChange({
                       ...cashMakingCharges,
@@ -193,9 +218,7 @@ export const JobChargesAndAdvanceSection: React.FC<JobChargesAndAdvanceSectionPr
               {/* Dynamic Amount / Per-GM Input */}
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-300">
-                  {cashMakingCharges.subtype === 'PER_GM'
-                    ? 'PER/GM'
-                    : 'AMOUNT'}
+                  {cashMakingCharges.subtype === 'PER_GM' ? 'PER/GM' : 'AMOUNT'}
                 </label>
                 <input
                   type="text"
@@ -204,11 +227,15 @@ export const JobChargesAndAdvanceSection: React.FC<JobChargesAndAdvanceSectionPr
                     cashMakingCharges.subtype === 'PER_GM'
                       ? 'Enter per/gm'
                       : cashMakingCharges.subtype === 'AMOUNT'
-                      ? 'Enter amount'
-                      : 'Enter value'
+                        ? 'Enter amount'
+                        : 'Enter value'
                   }
                   disabled={!cashMakingCharges.subtype}
-                  value={cashMakingCharges.enteredValue === 0 ? '' : cashMakingCharges.enteredValue}
+                  value={
+                    cashMakingCharges.enteredValue === 0
+                      ? ''
+                      : cashMakingCharges.enteredValue
+                  }
                   onKeyDown={(e) => handleNumericKeyDown(e, true)}
                   onChange={(e) => {
                     const val = e.target.value.replace(/[^0-9.]/g, '');
@@ -251,7 +278,7 @@ export const JobChargesAndAdvanceSection: React.FC<JobChargesAndAdvanceSectionPr
       </div>
 
       {/* Advance Card (Spans 1 col) */}
-      <div className="rounded-xl border border-[#e5ded3] border-l-4 border-l-[#785600] bg-white p-4 shadow-sm dark:border-slate-800 dark:border-l-[#c59a3f] dark:bg-slate-900 lg:col-span-1">
+      <div className="rounded-xl border border-l-4 border-[#e5ded3] border-l-[#785600] bg-white p-4 shadow-sm dark:border-slate-800 dark:border-l-[#c59a3f] dark:bg-slate-900 lg:col-span-1">
         <div
           onClick={() => setIsAdvanceCollapsed(!isAdvanceCollapsed)}
           className="flex cursor-pointer items-center justify-between pb-2"
@@ -259,8 +286,15 @@ export const JobChargesAndAdvanceSection: React.FC<JobChargesAndAdvanceSectionPr
           <h3 className="font-['Playfair_Display'] text-base font-bold text-[#785600] dark:text-amber-400">
             Advance
           </h3>
-          <button type="button" className="text-slate-500 hover:text-slate-700 dark:text-slate-400">
-            {isAdvanceCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+          <button
+            type="button"
+            className="text-slate-500 hover:text-slate-700 dark:text-slate-400"
+          >
+            {isAdvanceCollapsed ? (
+              <ChevronDown size={18} />
+            ) : (
+              <ChevronUp size={18} />
+            )}
           </button>
         </div>
 
@@ -309,4 +343,3 @@ export const JobChargesAndAdvanceSection: React.FC<JobChargesAndAdvanceSectionPr
 };
 
 export default JobChargesAndAdvanceSection;
-

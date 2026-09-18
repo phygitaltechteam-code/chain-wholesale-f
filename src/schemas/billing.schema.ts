@@ -6,7 +6,10 @@ export const BillingItemSchema = z.object({
   item: z.string().min(1, 'Item name is required'),
   sizeId: z.string().optional().nullable(),
   size: z.string().optional().default(''),
-  purity: z.number().min(0, 'Purity must be at least 0').max(100, 'Purity cannot exceed 100'),
+  purity: z
+    .number()
+    .min(0, 'Purity must be at least 0')
+    .max(100, 'Purity cannot exceed 100'),
   availableQty: z.number().optional().default(0),
   grossWt: z.number().min(0, 'Gross weight must be positive'),
   wastage: z.number().min(0).default(0),

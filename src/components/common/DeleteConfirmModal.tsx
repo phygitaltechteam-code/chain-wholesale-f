@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Trash2, X } from 'lucide-react';
+import React, {useEffect} from 'react';
+import {Trash2, X} from 'lucide-react';
 
 export interface DeleteConfirmModalProps {
   isOpen: boolean;

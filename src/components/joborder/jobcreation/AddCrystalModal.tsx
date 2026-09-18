@@ -63,7 +63,10 @@ export const AddCrystalModal: React.FC<AddCrystalModalProps> = ({
     });
   };
 
-  const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, allowDecimal = true) => {
+  const handleNumericKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    allowDecimal = true,
+  ) => {
     const allowedKeys = [
       'Backspace',
       'Delete',
@@ -75,7 +78,10 @@ export const AddCrystalModal: React.FC<AddCrystalModalProps> = ({
       'Home',
       'End',
     ];
-    if (allowedKeys.includes(e.key) || (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))) {
+    if (
+      allowedKeys.includes(e.key) ||
+      (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))
+    ) {
       return;
     }
     if (allowDecimal && e.key === '.') {
@@ -152,8 +158,20 @@ export const AddCrystalModal: React.FC<AddCrystalModalProps> = ({
                 onChange={(e) => setForm({...form, clarity: e.target.value})}
                 className="w-full rounded-xl border border-[#d3c4af]/30 bg-white px-3 py-2.5 text-sm text-[#1a1c1b] outline-none transition-all focus:border-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
-                {['VS1', 'VVS1', 'VVS2', 'SI1', 'SI2', 'I1', 'I2', 'FL', 'IF'].map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                {[
+                  'VS1',
+                  'VVS1',
+                  'VVS2',
+                  'SI1',
+                  'SI2',
+                  'I1',
+                  'I2',
+                  'FL',
+                  'IF',
+                ].map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
               </select>
             </div>
@@ -168,7 +186,9 @@ export const AddCrystalModal: React.FC<AddCrystalModalProps> = ({
                 className="w-full rounded-xl border border-[#d3c4af]/30 bg-white px-3 py-2.5 text-sm text-[#1a1c1b] outline-none transition-all focus:border-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
                 {['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'].map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
               </select>
             </div>
@@ -183,7 +203,9 @@ export const AddCrystalModal: React.FC<AddCrystalModalProps> = ({
                 className="w-full rounded-xl border border-[#d3c4af]/30 bg-white px-3 py-2.5 text-sm text-[#1a1c1b] outline-none transition-all focus:border-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
                 {['GIA', 'IGI', 'HRD', 'AGS', 'None'].map((l) => (
-                  <option key={l} value={l}>{l}</option>
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
                 ))}
               </select>
             </div>
@@ -197,8 +219,20 @@ export const AddCrystalModal: React.FC<AddCrystalModalProps> = ({
                 onChange={(e) => setForm({...form, shape: e.target.value})}
                 className="w-full rounded-xl border border-[#d3c4af]/30 bg-white px-3 py-2.5 text-sm text-[#1a1c1b] outline-none transition-all focus:border-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
-                {['Round', 'Princess', 'Emerald', 'Oval', 'Pear', 'Heart', 'Marquise', 'Cushion', 'Radiant'].map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                {[
+                  'Round',
+                  'Princess',
+                  'Emerald',
+                  'Oval',
+                  'Pear',
+                  'Heart',
+                  'Marquise',
+                  'Cushion',
+                  'Radiant',
+                ].map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
             </div>
@@ -216,7 +250,9 @@ export const AddCrystalModal: React.FC<AddCrystalModalProps> = ({
                 className="w-full rounded-xl border border-[#d3c4af]/30 bg-white px-3 py-2.5 text-sm text-[#1a1c1b] outline-none transition-all focus:border-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               >
                 {['Small', 'Medium', 'Large', 'Very Large'].map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
             </div>
@@ -287,8 +323,16 @@ export const AddCrystalModal: React.FC<AddCrystalModalProps> = ({
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^0-9.]/g, '');
                   const rateNum = parseFloat(val) || 0;
-                  const amt = Number((rateNum * (form.wt || form.carat || form.qty || 1)).toFixed(2));
-                  setForm({...form, rate: rateNum, amount: form.amount === 0 ? amt : form.amount});
+                  const amt = Number(
+                    (
+                      rateNum * (form.wt || form.carat || form.qty || 1)
+                    ).toFixed(2),
+                  );
+                  setForm({
+                    ...form,
+                    rate: rateNum,
+                    amount: form.amount === 0 ? amt : form.amount,
+                  });
                 }}
                 className="w-full rounded-xl border border-[#d3c4af]/30 bg-white px-3.5 py-2.5 text-sm text-[#1a1c1b] outline-none transition-all focus:border-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
@@ -320,7 +364,9 @@ export const AddCrystalModal: React.FC<AddCrystalModalProps> = ({
                   <input
                     type="checkbox"
                     checked={form.isInHouse}
-                    onChange={(e) => setForm({...form, isInHouse: e.target.checked})}
+                    onChange={(e) =>
+                      setForm({...form, isInHouse: e.target.checked})
+                    }
                     className="h-4 w-4 rounded accent-[#785600]"
                   />
                   <span className="text-sm font-medium text-[#1a1c1b] dark:text-white">

@@ -41,7 +41,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               Disburse Labour Payment
             </h3>
             <p className="text-xs text-[#4f4535] dark:text-slate-400">
-              Artisan: <span className="font-semibold text-[#785600] dark:text-amber-400">{karigarName}</span>
+              Artisan:{' '}
+              <span className="font-semibold text-[#785600] dark:text-amber-400">
+                {karigarName}
+              </span>
             </p>
           </div>
           <button
@@ -56,19 +59,27 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         <div className="mb-5 grid grid-cols-2 gap-3 rounded-xl bg-[#f4f4f2]/60 p-3.5 text-xs dark:bg-slate-800/50">
           <div>
             <span className="text-[#817563]">Job Reference:</span>
-            <p className="font-bold text-[#1a1c1b] dark:text-white">{stage.jobNo}</p>
+            <p className="font-bold text-[#1a1c1b] dark:text-white">
+              {stage.jobNo}
+            </p>
           </div>
           <div>
             <span className="text-[#817563]">Process Dept:</span>
-            <p className="font-bold text-[#1a1c1b] dark:text-white">{stage.processName}</p>
+            <p className="font-bold text-[#1a1c1b] dark:text-white">
+              {stage.processName}
+            </p>
           </div>
           <div>
             <span className="text-[#817563]">Stage Pending:</span>
-            <p className="font-bold text-amber-600 dark:text-amber-400">{formatCurrency(stage.pendingAmount)}</p>
+            <p className="font-bold text-amber-600 dark:text-amber-400">
+              {formatCurrency(stage.pendingAmount)}
+            </p>
           </div>
           <div>
             <span className="text-[#817563]">Overall Pending:</span>
-            <p className="font-bold text-[#785600] dark:text-amber-400">{formatCurrency(totalPendingAllStages)}</p>
+            <p className="font-bold text-[#785600] dark:text-amber-400">
+              {formatCurrency(totalPendingAllStages)}
+            </p>
           </div>
         </div>
 
@@ -85,13 +96,18 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 step="0.01"
                 max={stage.pendingAmount}
                 value={paymentAmount || ''}
-                onChange={(e) => onAmountChange(parseFloat(e.target.value) || 0)}
+                onChange={(e) =>
+                  onAmountChange(parseFloat(e.target.value) || 0)
+                }
                 placeholder="Enter disbursement amount"
                 className="w-full rounded-xl border border-[#d3c4af]/30 bg-white py-2.5 pl-10 pr-4 text-sm font-semibold text-[#1a1c1b] outline-none transition-all focus:border-[#785600] focus:ring-1 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
             <div className="mt-1 flex justify-between text-[11px] text-[#817563]">
-              <span>Max allowed for this stage: {formatCurrency(stage.pendingAmount)}</span>
+              <span>
+                Max allowed for this stage:{' '}
+                {formatCurrency(stage.pendingAmount)}
+              </span>
               <button
                 type="button"
                 onClick={() => onAmountChange(stage.pendingAmount)}
@@ -114,12 +130,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               <option value="">Select Account / Payment Mode</option>
               {accounts.map((acc: any) => (
                 <option key={acc.id || acc._id} value={acc.id || acc._id}>
-                  {acc.name || acc.accountName || acc.title || 'Cash Account'} {acc.balance ? `(₹${acc.balance})` : ''}
+                  {acc.name || acc.accountName || acc.title || 'Cash Account'}{' '}
+                  {acc.balance ? `(₹${acc.balance})` : ''}
                 </option>
               ))}
             </select>
             {accountsLoading && (
-              <p className="mt-1 text-[11px] text-slate-400">Loading accounts...</p>
+              <p className="mt-1 text-[11px] text-slate-400">
+                Loading accounts...
+              </p>
             )}
           </div>
         </div>

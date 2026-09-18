@@ -265,7 +265,9 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
               <button
                 type="button"
                 onClick={onProceedToConfirm}
-                disabled={isSubmitting || settlementDetail.settlementAmount <= 0}
+                disabled={
+                  isSubmitting || settlementDetail.settlementAmount <= 0
+                }
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#785600] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#5d4200] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ArrowRight className="h-4 w-4" />

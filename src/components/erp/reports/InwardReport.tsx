@@ -1,16 +1,11 @@
-import { useNavigate } from '@tanstack/react-router';
-import { useState, useEffect, useMemo } from 'react';
-import {
-  Search,
-  Printer,
-  AlertCircle,
-  TrendingUp,
-} from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
+import {useState, useEffect, useMemo} from 'react';
+import {Search, Printer, AlertCircle, TrendingUp} from 'lucide-react';
 import toast from 'react-hot-toast';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
 import React from 'react';
 
 // ======================================================
@@ -52,12 +47,12 @@ interface ApiDataItem {
 // HELPER FUNCTIONS
 // ======================================================
 const getDefaultWeekRange = () => {
-  const { fromDate, toDate } = getCurrentAppWeekRange();
-  return { monday: fromDate, sunday: toDate };
+  const {fromDate, toDate} = getCurrentAppWeekRange();
+  return {monday: fromDate, sunday: toDate};
 };
 
 const formatDate = (dateString: string) => {
-  if (!dateString) return { date: '-', time: '-' };
+  if (!dateString) return {date: '-', time: '-'};
   const date = new Date(dateString);
   return {
     date: date.toLocaleDateString('en-IN', {
@@ -93,18 +88,17 @@ const formatNumberDisplay = (value: unknown): string => {
 const InwardReport: React.FC = () => {
   const getpdfheaderdata = useGetHeader();
 
-
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProcess, setSelectedProcess] = useState<string>('all');
   const [reportData, setReportData] = useState<InwardReportEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [fromDate, setFromDate] = useState<Date | null>(() => {
-    const { monday } = getDefaultWeekRange();
+    const {monday} = getDefaultWeekRange();
     return monday;
   });
   const [toDate, setToDate] = useState<Date | null>(() => {
-    const { sunday } = getDefaultWeekRange();
+    const {sunday} = getDefaultWeekRange();
     return sunday;
   });
 
@@ -113,18 +107,21 @@ const InwardReport: React.FC = () => {
   const inwardReportData: ApiResponse | undefined = undefined;
   const isLoading = false;
   const isError = false;
-  const refetch = () => { };
+  const refetch = () => {};
 
   // Listen for week cycle setting updates
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
-      const { monday, sunday } = getDefaultWeekRange();
+      const {monday, sunday} = getDefaultWeekRange();
       setFromDate(monday);
       setToDate(sunday);
     };
     window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
     return () => {
-      window.removeEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
+      window.removeEventListener(
+        'app_week_cycle_changed',
+        handleWeekCycleUpdate,
+      );
     };
   }, []);
 
@@ -161,24 +158,27 @@ const InwardReport: React.FC = () => {
 
     // Sort by date (newest first)
     const sortedItems = [...filteredApiItems].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
 
     // Transform
-    const transformedData: InwardReportEntry[] = sortedItems.map((item, index) => {
-      const { date, time } = formatDate(item.createdAt);
-      return {
-        id: item.id,
-        srNo: index + 1,
-        dateTime: `${date} ${time}`,
-        karigarName: item.karigarName || 'N/A',
-        item: item.item || 'N/A',
-        purity: toNumber(item.purity),
-        wt: toNumber(item.wt),
-        srp: toNumber(item.srp),
-        process: item.process || item.type || 'Unknown',
-      };
-    });
+    const transformedData: InwardReportEntry[] = sortedItems.map(
+      (item, index) => {
+        const {date, time} = formatDate(item.createdAt);
+        return {
+          id: item.id,
+          srNo: index + 1,
+          dateTime: `${date} ${time}`,
+          karigarName: item.karigarName || 'N/A',
+          item: item.item || 'N/A',
+          purity: toNumber(item.purity),
+          wt: toNumber(item.wt),
+          srp: toNumber(item.srp),
+          process: item.process || item.type || 'Unknown',
+        };
+      },
+    );
 
     setReportData(transformedData);
     setLoading(false);
@@ -300,24 +300,37 @@ const InwardReport: React.FC = () => {
       getpdfheaderdata?.data?.data ||
       (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
     const leftInvocation =
-      headerInfo.leftInvocation || headerInfo.leftInovation || '॥ श्री गणेश प्रसन्न ॥';
+      headerInfo.leftInvocation ||
+      headerInfo.leftInovation ||
+      '॥ श्री गणेश प्रसन्न ॥';
     const rightInvocation =
-      headerInfo.rightInvocation || headerInfo.rightInovation || '॥ श्री साई प्रसन्न ॥';
+      headerInfo.rightInvocation ||
+      headerInfo.rightInovation ||
+      '॥ श्री साई प्रसन्न ॥';
     const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
     const description =
       headerInfo.description ||
       'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
     const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-    const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+    const phoneNumbers =
+      headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
     const invocationColor = headerInfo.invocationColor || '#a84b20';
     const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
     const descriptionColor = headerInfo.descriptionColor || '#8b451f';
     const proprietorColor = headerInfo.proprietorColor || '#a84b20';
     const phoneColor = headerInfo.phoneColor || '#a84b20';
-    const factoryFontSize = headerInfo.factoryFontSize ? `${headerInfo.factoryFontSize}px` : '20px';
-    const descriptionFontSize = headerInfo.descriptionFontSize ? `${headerInfo.descriptionFontSize}px` : '9px';
-    const proprietorFontSize = headerInfo.proprietorFontSize ? `${headerInfo.proprietorFontSize}px` : '9px';
-    const phoneFontSize = headerInfo.phoneFontSize ? `${headerInfo.phoneFontSize}px` : '9px';
+    const factoryFontSize = headerInfo.factoryFontSize
+      ? `${headerInfo.factoryFontSize}px`
+      : '20px';
+    const descriptionFontSize = headerInfo.descriptionFontSize
+      ? `${headerInfo.descriptionFontSize}px`
+      : '9px';
+    const proprietorFontSize = headerInfo.proprietorFontSize
+      ? `${headerInfo.proprietorFontSize}px`
+      : '9px';
+    const phoneFontSize = headerInfo.phoneFontSize
+      ? `${headerInfo.phoneFontSize}px`
+      : '9px';
 
     const formatDateForDisplay = (date: Date | null) => {
       if (!date) return '';
@@ -351,14 +364,15 @@ const InwardReport: React.FC = () => {
             <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
               Inward Report ${selectedProcess !== 'all' ? `(${selectedProcess.toUpperCase()})` : ''}
             </h2>
-            ${fromDate || toDate
-        ? `<div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
+            ${
+              fromDate || toDate
+                ? `<div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
                     ${fromDate ? `From: ${formatDateForDisplay(fromDate)}` : ''}
                     ${fromDate && toDate ? '&nbsp;&nbsp;' : ''}
                     ${toDate ? `To: ${formatDateForDisplay(toDate)}` : ''}
                   </div>`
-        : `<div style="flex:1;"></div>`
-      }
+                : `<div style="flex:1;"></div>`
+            }
           </div>
 
           <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
@@ -391,14 +405,14 @@ const InwardReport: React.FC = () => {
               <span>Powered by Matoshree Gold</span>
               <span>|</span>
               <span>Generated: ${new Date().toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      })} ${new Date().toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      })}</span>
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              })} ${new Date().toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+              })}</span>
             </div>
           </div>
         </div>
@@ -435,7 +449,8 @@ const InwardReport: React.FC = () => {
     setTimeout(() => {
       window.print();
       setTimeout(() => {
-        if (document.body.contains(printContainer)) document.body.removeChild(printContainer);
+        if (document.body.contains(printContainer))
+          document.body.removeChild(printContainer);
         if (document.head.contains(style)) document.head.removeChild(style);
       }, 1000);
     }, 500);
@@ -452,8 +467,12 @@ const InwardReport: React.FC = () => {
         const timePart = parts.slice(1).join(' ') || '';
         return (
           <div className="flex flex-col items-center">
-            <span className="text-sm text-[#1a1c1b] dark:text-white">{datePart}</span>
-            <span className="text-sm text-[#1a1c1b] dark:text-white">{timePart}</span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {datePart}
+            </span>
+            <span className="text-sm text-[#1a1c1b] dark:text-white">
+              {timePart}
+            </span>
           </div>
         );
       },
@@ -471,7 +490,9 @@ const InwardReport: React.FC = () => {
       key: 'item',
       header: 'Items',
       render: (item) => (
-        <span className="text-sm text-[#1a1c1b] dark:text-white">{item.item}</span>
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {item.item}
+        </span>
       ),
     },
     {
@@ -503,7 +524,6 @@ const InwardReport: React.FC = () => {
     },
   ];
 
-
   if (isLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] dark:bg-slate-950">
@@ -526,7 +546,7 @@ const InwardReport: React.FC = () => {
           <h3 className="text-xl font-bold text-red-600 dark:text-red-400">
             Error Loading Report
           </h3>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             Failed to fetch inward report data.
           </p>
           <button
@@ -548,7 +568,7 @@ const InwardReport: React.FC = () => {
           <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
             <div className="h-5 w-px flex-shrink-0 bg-[#d3c4af]/30 dark:bg-slate-600" />
             <div className="flex items-center gap-2">
-              <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl dark:text-white">
+              <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] dark:text-white sm:text-3xl lg:text-4xl">
                 Inward Report
               </h2>
             </div>
@@ -625,7 +645,7 @@ const InwardReport: React.FC = () => {
                   {totalEntries}
                 </span>
               </div>
-              <div className="rounded-lg bg-gray-100 p-2 dark:bg-gray-800">
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2">
                 <AlertCircle className="h-5 w-5 text-black dark:text-white" />
               </div>
             </div>
@@ -641,7 +661,7 @@ const InwardReport: React.FC = () => {
                   {formatNumberDisplay(totalWt)} G
                 </span>
               </div>
-              <div className="rounded-lg bg-gray-100 p-2 dark:bg-gray-800">
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2">
                 <TrendingUp className="h-5 w-5 text-black dark:text-white" />
               </div>
             </div>

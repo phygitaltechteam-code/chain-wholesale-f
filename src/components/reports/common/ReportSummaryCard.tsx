@@ -28,7 +28,8 @@ export const ReportSummaryCard: React.FC<ReportSummaryCardProps> = ({
         <span
           className={`text-base font-black text-[#1a1c1b] dark:text-white sm:text-lg ${valueClassName}`}
         >
-          {value} {unit ? <span className="text-xs font-semibold">{unit}</span> : null}
+          {value}{' '}
+          {unit ? <span className="text-xs font-semibold">{unit}</span> : null}
         </span>
         {subtitle && (
           <span className="mt-0.5 text-[10px] text-[#817563] dark:text-slate-400">

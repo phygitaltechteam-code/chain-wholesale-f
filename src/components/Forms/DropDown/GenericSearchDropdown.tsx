@@ -165,7 +165,7 @@ export const GenericSearchDropdown: React.FC<GenericSearchDropdownProps> = ({
                 }`}
               >
                 <div>
-                  <p className="font-semibold text-xs text-[#1a1c1b] dark:text-white">
+                  <p className="text-xs font-semibold text-[#1a1c1b] dark:text-white">
                     {item.title}
                   </p>
                   {item.subtitle && (

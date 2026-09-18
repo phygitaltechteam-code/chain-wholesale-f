@@ -29,8 +29,16 @@ const JobCreation: React.FC = () => {
   const [fromDate, setFromDate] = useState<Date | null>(null);
   const [toDate, setToDate] = useState<Date | null>(null);
 
-  const {data: jobsData, refetch: refetchJobs, isLoading: jobsLoading} = useGetJobs();
-  const {data: clientsData, isLoading: clientsLoading, refetch: refetchClients} = useGetClients();
+  const {
+    data: jobsData,
+    refetch: refetchJobs,
+    isLoading: jobsLoading,
+  } = useGetJobs();
+  const {
+    data: clientsData,
+    isLoading: clientsLoading,
+    refetch: refetchClients,
+  } = useGetClients();
 
   const clients = Array.isArray(clientsData) ? clientsData : [];
 
@@ -82,7 +90,7 @@ const JobCreation: React.FC = () => {
   const hasActiveFilters = Boolean(searchTerm || fromDate || toDate);
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] p-4 sm:p-6 lg:p-8 dark:bg-slate-950">
+    <div className="min-h-screen bg-[#f9f9f7] p-4 dark:bg-slate-950 sm:p-6 lg:p-8">
       <div>
         {/* Page Header & Action */}
         <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -155,10 +163,7 @@ const JobCreation: React.FC = () => {
         </div>
 
         {/* Job List View */}
-        <JobCreationDisplay
-          jobs={filteredJobs}
-          isLoading={jobsLoading}
-        />
+        <JobCreationDisplay jobs={filteredJobs} isLoading={jobsLoading} />
 
         {/* Add Job Modal */}
         <AddJobModal

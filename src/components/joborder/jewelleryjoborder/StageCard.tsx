@@ -1,5 +1,13 @@
 import React from 'react';
-import {CheckCircle2, Clock, Edit2, RotateCcw, User, Gem, Sparkles} from 'lucide-react';
+import {
+  CheckCircle2,
+  Clock,
+  Edit2,
+  RotateCcw,
+  User,
+  Gem,
+  Sparkles,
+} from 'lucide-react';
 import {ProcessStage} from './types';
 import {formatCurrency} from '@/utils/utilities';
 
@@ -46,7 +54,7 @@ export const StageCard: React.FC<StageCardProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#d3c4af]/15 pb-3 dark:border-slate-800">
         <div className="flex items-center gap-2.5">
           <div
-            className={`flex h-9 w-9 items-center justify-center rounded-xl font-bold text-xs ${
+            className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold ${
               isCompleted
                 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
                 : 'bg-amber-100 text-[#785600] dark:bg-amber-950/60 dark:text-amber-400'
@@ -61,7 +69,10 @@ export const StageCard: React.FC<StageCardProps> = ({
             <div className="flex items-center gap-1.5 text-xs text-[#817563]">
               <User size={12} />
               <span className="font-medium text-[#4f4535] dark:text-slate-300">
-                Karigar: <strong className="text-[#1a1c1b] dark:text-white">{karigarNames}</strong>
+                Karigar:{' '}
+                <strong className="text-[#1a1c1b] dark:text-white">
+                  {karigarNames}
+                </strong>
               </span>
             </div>
           </div>
@@ -104,29 +115,37 @@ export const StageCard: React.FC<StageCardProps> = ({
       {/* Metrics Row */}
       <div className="mt-3.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
         <div className="rounded-xl border border-[#d3c4af]/15 bg-[#f9f9f7] p-2 dark:border-slate-800 dark:bg-slate-800/40">
-          <p className="text-[10px] font-bold uppercase text-[#817563]">Issued Gold</p>
-          <p className="mt-0.5 font-bold text-xs text-[#785600] dark:text-amber-400">
+          <p className="text-[10px] font-bold uppercase text-[#817563]">
+            Issued Gold
+          </p>
+          <p className="mt-0.5 text-xs font-bold text-[#785600] dark:text-amber-400">
             {stage.fineGoldIssued.toFixed(3)} g
           </p>
         </div>
 
         <div className="rounded-xl border border-[#d3c4af]/15 bg-[#f9f9f7] p-2 dark:border-slate-800 dark:bg-slate-800/40">
-          <p className="text-[10px] font-bold uppercase text-[#817563]">Purity / Gross</p>
-          <p className="mt-0.5 font-semibold text-xs text-[#1a1c1b] dark:text-white">
+          <p className="text-[10px] font-bold uppercase text-[#817563]">
+            Purity / Gross
+          </p>
+          <p className="mt-0.5 text-xs font-semibold text-[#1a1c1b] dark:text-white">
             {stage.purity}% • {stage.grossWeight}g
           </p>
         </div>
 
         <div className="rounded-xl border border-[#d3c4af]/15 bg-[#f9f9f7] p-2 dark:border-slate-800 dark:bg-slate-800/40">
-          <p className="text-[10px] font-bold uppercase text-[#817563]">Issue Date</p>
-          <p className="mt-0.5 font-semibold text-xs text-[#1a1c1b] dark:text-white">
+          <p className="text-[10px] font-bold uppercase text-[#817563]">
+            Issue Date
+          </p>
+          <p className="mt-0.5 text-xs font-semibold text-[#1a1c1b] dark:text-white">
             {formatDate(stage.dateIssued)}
           </p>
         </div>
 
         <div className="rounded-xl border border-[#d3c4af]/15 bg-[#f9f9f7] p-2 dark:border-slate-800 dark:bg-slate-800/40">
-          <p className="text-[10px] font-bold uppercase text-[#817563]">Labour Charge</p>
-          <p className="mt-0.5 font-semibold text-xs text-[#1a1c1b] dark:text-white">
+          <p className="text-[10px] font-bold uppercase text-[#817563]">
+            Labour Charge
+          </p>
+          <p className="mt-0.5 text-xs font-semibold text-[#1a1c1b] dark:text-white">
             {stage.labourType === 'percentage'
               ? `${stage.labourCharges}% (${formatCurrency(stage.labourAmount || 0)})`
               : formatCurrency(stage.labourCharges)}
@@ -134,15 +153,19 @@ export const StageCard: React.FC<StageCardProps> = ({
         </div>
 
         <div className="rounded-xl border border-[#d3c4af]/15 bg-[#f9f9f7] p-2 dark:border-slate-800 dark:bg-slate-800/40">
-          <p className="text-[10px] font-bold uppercase text-[#817563]">Wastage</p>
-          <p className="mt-0.5 font-semibold text-xs text-[#1a1c1b] dark:text-white">
+          <p className="text-[10px] font-bold uppercase text-[#817563]">
+            Wastage
+          </p>
+          <p className="mt-0.5 text-xs font-semibold text-[#1a1c1b] dark:text-white">
             {stage.wastage} g
           </p>
         </div>
 
         <div className="rounded-xl border border-[#d3c4af]/15 bg-[#f9f9f7] p-2 dark:border-slate-800 dark:bg-slate-800/40">
-          <p className="text-[10px] font-bold uppercase text-[#817563]">Return Date</p>
-          <p className="mt-0.5 font-semibold text-xs text-[#1a1c1b] dark:text-white">
+          <p className="text-[10px] font-bold uppercase text-[#817563]">
+            Return Date
+          </p>
+          <p className="mt-0.5 text-xs font-semibold text-[#1a1c1b] dark:text-white">
             {formatDate(stage.returnDate)}
           </p>
         </div>
@@ -151,10 +174,18 @@ export const StageCard: React.FC<StageCardProps> = ({
       {/* Return Summary (If completed) */}
       {isCompleted && (
         <div className="mt-3 flex flex-wrap items-center gap-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-2.5 text-xs dark:border-emerald-900/40 dark:bg-emerald-950/20">
-          <span className="font-bold text-emerald-800 dark:text-emerald-300">Return Ledger:</span>
-          <span>Received: <strong>{stage.goldReceived || 0}g</strong></span>
-          <span>Scrap: <strong>{stage.scrap || 0}g</strong></span>
-          <span>Return Wastage: <strong>{stage.returnWastage || 0}g</strong></span>
+          <span className="font-bold text-emerald-800 dark:text-emerald-300">
+            Return Ledger:
+          </span>
+          <span>
+            Received: <strong>{stage.goldReceived || 0}g</strong>
+          </span>
+          <span>
+            Scrap: <strong>{stage.scrap || 0}g</strong>
+          </span>
+          <span>
+            Return Wastage: <strong>{stage.returnWastage || 0}g</strong>
+          </span>
         </div>
       )}
 

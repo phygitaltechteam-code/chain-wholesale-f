@@ -145,6 +145,12 @@ const Sidebar = ({
       roles: ['ADMIN'],
     },
     {
+      path: '/reports/stockledgerreport',
+      label: 'Bussiness 360 Report',
+      icon: <MdAssessment size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
       path: '/reports/todayreport',
       label: 'Daily Report',
       icon: <MdAssessment size={22} />,

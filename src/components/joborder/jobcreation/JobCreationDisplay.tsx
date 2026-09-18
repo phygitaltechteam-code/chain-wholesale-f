@@ -18,9 +18,12 @@ interface JobCreationDisplayProps {
 }
 
 const statusColors: Record<string, string> = {
-  PENDING: 'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
-  IN_PROGRESS: 'bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400',
-  COMPLETED: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400',
+  PENDING:
+    'bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
+  IN_PROGRESS:
+    'bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400',
+  COMPLETED:
+    'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400',
   CANCELLED: 'bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-400',
 };
 
@@ -60,13 +63,19 @@ export const JobCreationDisplay: React.FC<JobCreationDisplayProps> = ({
     const color = statusColors[status] || 'bg-slate-100 text-slate-800';
     const label = statusLabels[status] || status;
     return (
-      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${color}`}>
+      <span
+        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${color}`}
+      >
         {label}
       </span>
     );
   };
 
-  const openImageModal = (images: JobImage[], startIndex: number = 0, e: React.MouseEvent) => {
+  const openImageModal = (
+    images: JobImage[],
+    startIndex: number = 0,
+    e: React.MouseEvent,
+  ) => {
     e.stopPropagation();
     setCurrentImages(images);
     setCurrentImageIndex(startIndex);
@@ -239,7 +248,8 @@ export const JobCreationDisplay: React.FC<JobCreationDisplayProps> = ({
       key: 'status',
       header: 'Status',
       align: 'center',
-      render: (job) => getStatusBadge(job.calculatedStatus || job.status || 'PENDING'),
+      render: (job) =>
+        getStatusBadge(job.calculatedStatus || job.status || 'PENDING'),
     },
     {
       key: 'action',
@@ -269,8 +279,10 @@ export const JobCreationDisplay: React.FC<JobCreationDisplayProps> = ({
           const count =
             status === 'all'
               ? jobs.length
-              : jobs.filter((j) => (j.calculatedStatus || j.status) === status).length;
-          const label = status === 'all' ? 'All Orders' : statusLabels[status] || status;
+              : jobs.filter((j) => (j.calculatedStatus || j.status) === status)
+                  .length;
+          const label =
+            status === 'all' ? 'All Orders' : statusLabels[status] || status;
           return (
             <button
               key={status}
@@ -283,7 +295,7 @@ export const JobCreationDisplay: React.FC<JobCreationDisplayProps> = ({
             >
               <span>{label}</span>
               <span
-                className={`rounded-full px-1.5 py-0.2 text-[10px] ${
+                className={`py-0.2 rounded-full px-1.5 text-[10px] ${
                   selectedStatus === status
                     ? 'bg-white/20 text-white'
                     : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'

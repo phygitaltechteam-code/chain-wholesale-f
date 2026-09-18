@@ -35,10 +35,32 @@ export const ReturnEntryModal: React.FC<ReturnEntryModalProps> = ({
 }) => {
   if (!isOpen || !stage) return null;
 
-  const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, allowDecimal = true) => {
-    const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
-    if (allowed.includes(e.key) || (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))) return;
-    if (allowDecimal && e.key === '.' && !(e.target as HTMLInputElement).value.includes('.')) return;
+  const handleNumericKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    allowDecimal = true,
+  ) => {
+    const allowed = [
+      'Backspace',
+      'Delete',
+      'Tab',
+      'Escape',
+      'Enter',
+      'ArrowLeft',
+      'ArrowRight',
+      'Home',
+      'End',
+    ];
+    if (
+      allowed.includes(e.key) ||
+      (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))
+    )
+      return;
+    if (
+      allowDecimal &&
+      e.key === '.' &&
+      !(e.target as HTMLInputElement).value.includes('.')
+    )
+      return;
     if (!/^\d$/.test(e.key)) e.preventDefault();
   };
 
@@ -56,7 +78,8 @@ export const ReturnEntryModal: React.FC<ReturnEntryModalProps> = ({
                 Record Stage Return
               </h3>
               <p className="text-xs text-[#817563]">
-                Process: <strong>{stage.processName}</strong> (Issued: {stage.fineGoldIssued}g)
+                Process: <strong>{stage.processName}</strong> (Issued:{' '}
+                {stage.fineGoldIssued}g)
               </p>
             </div>
           </div>

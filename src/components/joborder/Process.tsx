@@ -103,7 +103,10 @@ const Process: React.FC = () => {
     if (!editingId) return;
 
     try {
-      await updateProcess.mutateAsync({id: editingId, name: editingName.trim()});
+      await updateProcess.mutateAsync({
+        id: editingId,
+        name: editingName.trim(),
+      });
       toast.success('Process updated successfully');
       setIsEditing(false);
       setEditingId(null);
@@ -234,7 +237,7 @@ const Process: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] p-4 sm:p-6 dark:bg-slate-950">
+    <div className="min-h-screen bg-[#f9f9f7] p-4 dark:bg-slate-950 sm:p-6">
       {/* PIN Verification Modal */}
       {showPinModal && (
         <PinPopUp onSuccess={handlePinSuccess} onClose={handlePinClose} />
@@ -289,7 +292,8 @@ const Process: React.FC = () => {
                 All Processes
               </h2>
               <p className="text-xs text-[#4f4535] dark:text-slate-400">
-                Total {processes.length} process{processes.length !== 1 ? 'es' : ''}
+                Total {processes.length} process
+                {processes.length !== 1 ? 'es' : ''}
               </p>
             </div>
           </div>
@@ -317,8 +321,10 @@ const Process: React.FC = () => {
             </h3>
             <p className="mt-2 text-sm text-[#4f4535] dark:text-slate-300">
               Are you sure you want to delete{' '}
-              <span className="font-semibold text-red-600">{itemToDelete.name}</span>? This
-              action cannot be undone.
+              <span className="font-semibold text-red-600">
+                {itemToDelete.name}
+              </span>
+              ? This action cannot be undone.
             </p>
             <div className="mt-6 flex gap-3">
               <button

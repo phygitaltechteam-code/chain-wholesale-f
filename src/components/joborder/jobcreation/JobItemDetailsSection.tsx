@@ -146,7 +146,9 @@ export const JobItemDetailsSection: React.FC<JobItemDetailsSectionProps> = ({
           </label>
           <select
             value={item.metal}
-            onChange={(e) => onChange({...item, metal: e.target.value as 'GOLD' | 'SILVER'})}
+            onChange={(e) =>
+              onChange({...item, metal: e.target.value as 'GOLD' | 'SILVER'})
+            }
             className="w-full rounded-xl border border-[#d3c4af]/30 bg-white px-3.5 py-2 text-sm outline-none focus:border-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
             <option value="GOLD">Gold</option>
@@ -172,8 +174,15 @@ export const JobItemDetailsSection: React.FC<JobItemDetailsSectionProps> = ({
           </label>
           <div className="flex flex-wrap items-center gap-2">
             {item.imagePreviews.map((preview, index) => (
-              <div key={index} className="relative h-12 w-12 overflow-hidden rounded-xl border border-[#d3c4af]/30">
-                <img src={preview} alt={`Upload ${index + 1}`} className="h-full w-full object-cover" />
+              <div
+                key={index}
+                className="relative h-12 w-12 overflow-hidden rounded-xl border border-[#d3c4af]/30"
+              >
+                <img
+                  src={preview}
+                  alt={`Upload ${index + 1}`}
+                  className="h-full w-full object-cover"
+                />
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
@@ -190,7 +199,9 @@ export const JobItemDetailsSection: React.FC<JobItemDetailsSectionProps> = ({
                 className="flex h-12 w-12 flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#d3c4af]/40 bg-slate-50 text-slate-400 transition-colors hover:border-[#785600] hover:text-[#785600] dark:bg-slate-800"
               >
                 <Upload size={14} />
-                <span className="text-[8px] font-semibold">{4 - item.images.length} left</span>
+                <span className="text-[8px] font-semibold">
+                  {4 - item.images.length} left
+                </span>
               </button>
             )}
             <input

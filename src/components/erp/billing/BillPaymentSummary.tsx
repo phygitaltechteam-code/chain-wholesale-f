@@ -61,7 +61,7 @@ export const BillPaymentSummary: React.FC<BillPaymentSummaryProps> = ({
               value={customerWeight || ''}
               onChange={onCustomerWeightChange}
               placeholder="0.000"
-              className="font-mono w-28 rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-slate-700 dark:bg-slate-800 dark:text-emerald-400 dark:disabled:bg-slate-900"
+              className="font-mono disabled:bg-gray-100 w-28 rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-800 dark:text-emerald-400 dark:disabled:bg-slate-900"
             />
             <span className="pointer-events-none absolute right-2.5 text-xs text-[#817563] dark:text-slate-400">
               G

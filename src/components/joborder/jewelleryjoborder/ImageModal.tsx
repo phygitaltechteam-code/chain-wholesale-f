@@ -6,7 +6,10 @@ interface ImageModalProps {
   onClose: () => void;
 }
 
-export const ImageModal: React.FC<ImageModalProps> = ({selectedImage, onClose}) => {
+export const ImageModal: React.FC<ImageModalProps> = ({
+  selectedImage,
+  onClose,
+}) => {
   if (!selectedImage) return null;
 
   return (

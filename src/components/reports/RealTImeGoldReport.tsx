@@ -23,12 +23,7 @@ const RealTimeGoldReport: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-  const {
-    data: goldData,
-    isLoading,
-    isError,
-    refetch,
-  } = useGetRealTimeGold();
+  const {data: goldData, isLoading, isError, refetch} = useGetRealTimeGold();
 
   const rawData = useMemo(() => {
     if (!goldData) return null;
@@ -133,7 +128,11 @@ const RealTimeGoldReport: React.FC = () => {
   const karigarStockTotals = useMemo(() => {
     const gross = karigarStockGroup ? karigarStockGroup.totalGrossWeight : 0;
     const fine = karigarStockGroup ? karigarStockGroup.totalFineWeight : 0;
-    return {gross, fine, count: karigarStockGroup ? karigarStockGroup.count : 0};
+    return {
+      gross,
+      fine,
+      count: karigarStockGroup ? karigarStockGroup.count : 0,
+    };
   }, [karigarStockGroup]);
 
   const clientDueTotal = useMemo(() => {
@@ -144,9 +143,15 @@ const RealTimeGoldReport: React.FC = () => {
   const grandTotals = useMemo(() => {
     const totalGrossWeight = stockTotals.gross + karigarStockTotals.gross;
     const totalFineWeight =
-      stockTotals.fine + karigarStockTotals.fine + clientDueTotal.fine + karigarDueTotal.fine;
+      stockTotals.fine +
+      karigarStockTotals.fine +
+      clientDueTotal.fine +
+      karigarDueTotal.fine;
     const totalItems =
-      stockTotals.count + karigarStockTotals.count + clientDueTotal.count + karigarDueTotal.count;
+      stockTotals.count +
+      karigarStockTotals.count +
+      clientDueTotal.count +
+      karigarDueTotal.count;
 
     const apiGrandGross = Number(summaryFromApi?.grandTotalWeight || 0);
     const apiGrandFine = Number(summaryFromApi?.grandTotalFineWeight || 0);
@@ -162,7 +167,13 @@ const RealTimeGoldReport: React.FC = () => {
       grandTotalFineWeight,
       avgPurity: calculateAvgPurity(grandTotalWeight, grandTotalFineWeight),
     };
-  }, [stockTotals, karigarStockTotals, clientDueTotal, karigarDueTotal, summaryFromApi]);
+  }, [
+    stockTotals,
+    karigarStockTotals,
+    clientDueTotal,
+    karigarDueTotal,
+    summaryFromApi,
+  ]);
 
   const handlePrint = () => {
     printRealTimeGoldReport({

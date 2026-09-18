@@ -537,7 +537,7 @@ const Settlement: React.FC = () => {
             variant="primary"
           >
             <Plus className="h-4 w-4" />
-            <span>Add Client</span>
+            <span>Add Kariger</span>
           </GenericButton>
         </div>
 

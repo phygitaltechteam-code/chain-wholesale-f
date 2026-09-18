@@ -29,7 +29,10 @@ export const getKarigarSettlements = async () => {
 // POST - Submit settlement
 export const submitKarigarSettlement = async (data: KarigarSettlementData) => {
   try {
-    const response = await api.post(`/admin/karigar/pay/${data.clientId}`, data);
+    const response = await api.post(
+      `/admin/karigar/pay/${data.clientId}`,
+      data,
+    );
     return response.data;
   } catch (error) {
     if (error instanceof Error) {

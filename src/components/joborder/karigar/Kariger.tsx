@@ -33,7 +33,9 @@ const Kariger: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<ExtendedKarigarData | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<ExtendedKarigarData | null>(
+    null,
+  );
 
   // PIN verification states
   const [showPinModal, setShowPinModal] = useState(false);
@@ -200,7 +202,7 @@ const Kariger: React.FC = () => {
 
   if (isEditing && editingKarigar) {
     return (
-      <div className="min-h-screen bg-[#f9f9f7] p-4 sm:p-6 dark:bg-slate-950">
+      <div className="min-h-screen bg-[#f9f9f7] p-4 dark:bg-slate-950 sm:p-6">
         {showPinModal && (
           <PinPopUp onSuccess={handlePinSuccess} onClose={handlePinClose} />
         )}
@@ -232,7 +234,7 @@ const Kariger: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] p-4 sm:p-6 lg:p-8 dark:bg-slate-950">
+    <div className="min-h-screen bg-[#f9f9f7] p-4 dark:bg-slate-950 sm:p-6 lg:p-8">
       {showPinModal && (
         <PinPopUp onSuccess={handlePinSuccess} onClose={handlePinClose} />
       )}
@@ -254,7 +256,7 @@ const Kariger: React.FC = () => {
                     setSearchTerm(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full rounded-xl border border-[#d3c4af]/30 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition-all placeholder:text-[#817563] focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 sm:w-72 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                  className="w-full rounded-xl border border-[#d3c4af]/30 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition-all placeholder:text-[#817563] focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-900 dark:text-white sm:w-72"
                   placeholder="Search name, phone, address..."
                   type="text"
                 />
@@ -312,7 +314,10 @@ const Kariger: React.FC = () => {
             </h3>
             <p className="mt-2 text-sm text-[#4f4535] dark:text-slate-300">
               Are you sure you want to delete artisan{' '}
-              <span className="font-semibold text-red-600">{itemToDelete.name}</span>? This action cannot be undone.
+              <span className="font-semibold text-red-600">
+                {itemToDelete.name}
+              </span>
+              ? This action cannot be undone.
             </p>
             <div className="mt-6 flex gap-3">
               <button

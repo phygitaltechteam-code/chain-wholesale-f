@@ -13,10 +13,18 @@ export const calculateBoxLoss = (
 };
 
 export const calculateBoxTotals = (
-  rows: Array<{boxGiven?: number; boxReceived?: number; scrap?: number; loss?: number}>,
+  rows: Array<{
+    boxGiven?: number;
+    boxReceived?: number;
+    scrap?: number;
+    loss?: number;
+  }>,
 ) => {
   const totalGiven = rows.reduce((sum, r) => sum + Number(r.boxGiven || 0), 0);
-  const totalReceived = rows.reduce((sum, r) => sum + Number(r.boxReceived || 0), 0);
+  const totalReceived = rows.reduce(
+    (sum, r) => sum + Number(r.boxReceived || 0),
+    0,
+  );
   const totalScrap = rows.reduce((sum, r) => sum + Number(r.scrap || 0), 0);
   const totalLoss = rows.reduce((sum, r) => sum + Number(r.loss || 0), 0);
 

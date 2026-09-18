@@ -13,7 +13,9 @@ interface BillingSubscriptionModalProps {
   isPending: boolean;
 }
 
-export const BillingSubscriptionModal: React.FC<BillingSubscriptionModalProps> = ({
+export const BillingSubscriptionModal: React.FC<
+  BillingSubscriptionModalProps
+> = ({
   isExpired,
   profileData,
   expiryDate,

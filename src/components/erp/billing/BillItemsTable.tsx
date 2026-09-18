@@ -2,10 +2,7 @@ import React from 'react';
 import {Plus, Minus, Loader2} from 'lucide-react';
 import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericInputField from '@/components/Forms/Input/GenericInputField';
-import {
-  ReceiptItem,
-  formatNumberThreeDecimals,
-} from './billFormTypes';
+import {ReceiptItem, formatNumberThreeDecimals} from './billFormTypes';
 
 interface BillItemsTableProps {
   items: ReceiptItem[];
@@ -69,9 +66,7 @@ export const BillItemsTable: React.FC<BillItemsTableProps> = ({
         return (
           <select
             value={item.item}
-            onChange={(e) =>
-              onItemChange(actualIndex, 'item', e.target.value)
-            }
+            onChange={(e) => onItemChange(actualIndex, 'item', e.target.value)}
             className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-white px-1.5 py-1.5 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
             <option value="">Select Item</option>
@@ -99,9 +94,7 @@ export const BillItemsTable: React.FC<BillItemsTableProps> = ({
         return (
           <select
             value={item.size}
-            onChange={(e) =>
-              onItemChange(actualIndex, 'size', e.target.value)
-            }
+            onChange={(e) => onItemChange(actualIndex, 'size', e.target.value)}
             className="w-full min-w-0 rounded-md border border-[#d3c4af]/30 bg-white px-1.5 py-1.5 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
             <option value="">Select Size</option>
@@ -120,8 +113,10 @@ export const BillItemsTable: React.FC<BillItemsTableProps> = ({
       render: (item) => {
         if (isReadOnly) {
           return (
-            <div className="flex w-full items-center justify-end font-mono font-medium text-[#1a1c1b] dark:text-white">
-              {item.purity !== undefined && item.purity !== null && item.purity !== ''
+            <div className="font-mono flex w-full items-center justify-end font-medium text-[#1a1c1b] dark:text-white">
+              {item.purity !== undefined &&
+              item.purity !== null &&
+              item.purity !== ''
                 ? `${item.purity}%`
                 : '-'}
             </div>
@@ -180,7 +175,7 @@ export const BillItemsTable: React.FC<BillItemsTableProps> = ({
       render: (item) => {
         if (isReadOnly) {
           return (
-            <div className="flex w-full items-center justify-end font-mono font-bold text-[#1a1c1b] dark:text-white">
+            <div className="font-mono flex w-full items-center justify-end font-bold text-[#1a1c1b] dark:text-white">
               {formatNumberThreeDecimals(item.grossWt)} G
             </div>
           );
@@ -215,7 +210,7 @@ export const BillItemsTable: React.FC<BillItemsTableProps> = ({
       render: (item) => {
         if (isReadOnly) {
           return (
-            <div className="flex w-full items-center justify-end font-mono text-[#1a1c1b] dark:text-white">
+            <div className="font-mono flex w-full items-center justify-end text-[#1a1c1b] dark:text-white">
               {formatNumberThreeDecimals(item.srp)} G
             </div>
           );
@@ -228,9 +223,7 @@ export const BillItemsTable: React.FC<BillItemsTableProps> = ({
             step="0.001"
             min="0"
             value={item.srp !== undefined && item.srp !== null ? item.srp : ''}
-            onChange={(e) =>
-              onItemChange(actualIndex, 'srp', e.target.value)
-            }
+            onChange={(e) => onItemChange(actualIndex, 'srp', e.target.value)}
             placeholder="0.000"
             suffix="G"
             className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
@@ -259,7 +252,7 @@ export const BillItemsTable: React.FC<BillItemsTableProps> = ({
       render: (item) => {
         if (isReadOnly) {
           return (
-            <div className="flex w-full items-center justify-end font-mono text-[#1a1c1b] dark:text-white">
+            <div className="font-mono flex w-full items-center justify-end text-[#1a1c1b] dark:text-white">
               {formatNumberThreeDecimals(item.laborRate)} G
             </div>
           );

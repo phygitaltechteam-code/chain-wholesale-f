@@ -17,7 +17,9 @@ export const useReturnEntry = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [returnDate, setReturnDate] = useState(new Date().toISOString().split('T')[0]);
+  const [returnDate, setReturnDate] = useState(
+    new Date().toISOString().split('T')[0],
+  );
   const [goldReceived, setGoldReceived] = useState<number>(0);
   const [returnWastage, setReturnWastage] = useState<number>(0);
   const [scrap, setScrap] = useState<number>(0);
@@ -64,7 +66,9 @@ export const useReturnEntry = ({
       handleCloseReturn();
     } catch (error: any) {
       console.error('Return submit error:', error);
-      toast.error(error?.response?.data?.message || 'Failed to record return entry');
+      toast.error(
+        error?.response?.data?.message || 'Failed to record return entry',
+      );
     } finally {
       setIsSubmitting(false);
     }

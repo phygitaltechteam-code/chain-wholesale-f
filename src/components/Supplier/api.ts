@@ -49,7 +49,9 @@ const updatesupplier = async ({
       const response = await api.put(`/admin/supplier/${id}`, data);
       return response.data;
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to update supplier');
+      toast.error(
+        error?.response?.data?.message || 'Failed to update supplier',
+      );
       throw error;
     }
   }
@@ -83,7 +85,9 @@ export const useUpdatesupplier = (id: string) => {
       queryClient.invalidateQueries({queryKey: ['suppliers']});
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to update supplier');
+      toast.error(
+        error?.response?.data?.message || 'Failed to update supplier',
+      );
     },
   });
 };
@@ -118,7 +122,9 @@ export const useDeletesupplier = () => {
       queryClient.invalidateQueries({queryKey: ['suppliers']});
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to delete supplier');
+      toast.error(
+        error?.response?.data?.message || 'Failed to delete supplier',
+      );
     },
   });
 };

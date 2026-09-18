@@ -8,35 +8,36 @@ import GenericDropdown from '@/components/Forms/DropDown/GenericDropDown';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 
 // Karigar Zod Schema
-export const karigarSchema = z.object({
-  name: z
-    .string()
-    .min(2, 'Name must be at least 2 characters')
-    .regex(/^[a-zA-Z\s]+$/, 'Name should only contain letters and spaces'),
-  phoneNumber: z
-    .string()
-    .length(10, 'Phone number must be exactly 10 digits')
-    .regex(/^\d{10}$/, 'Phone number must contain 10 digits only'),
-  address: z.string().optional(),
-  employmentType: z.enum(['inhouse', 'outhouse']),
-  salary: z.coerce.number().optional(),
-  due: z.coerce.number().optional(),
-  openingBalance: z.coerce.number().optional(),
-  password: z
-    .string()
-    .min(1, 'Password is required'),
-}).refine(
-  (data) => {
-    if (data.employmentType === 'inhouse') {
-      return data.salary !== undefined && data.salary > 0;
-    }
-    return true;
-  },
-  {
-    message: 'Monthly salary is required and must be greater than 0 for inhouse karigar',
-    path: ['salary'],
-  }
-);
+export const karigarSchema = z
+  .object({
+    name: z
+      .string()
+      .min(2, 'Name must be at least 2 characters')
+      .regex(/^[a-zA-Z\s]+$/, 'Name should only contain letters and spaces'),
+    phoneNumber: z
+      .string()
+      .length(10, 'Phone number must be exactly 10 digits')
+      .regex(/^\d{10}$/, 'Phone number must contain 10 digits only'),
+    address: z.string().optional(),
+    employmentType: z.enum(['inhouse', 'outhouse']),
+    salary: z.coerce.number().optional(),
+    due: z.coerce.number().optional(),
+    openingBalance: z.coerce.number().optional(),
+    password: z.string().min(1, 'Password is required'),
+  })
+  .refine(
+    (data) => {
+      if (data.employmentType === 'inhouse') {
+        return data.salary !== undefined && data.salary > 0;
+      }
+      return true;
+    },
+    {
+      message:
+        'Monthly salary is required and must be greater than 0 for inhouse karigar',
+      path: ['salary'],
+    },
+  );
 
 export type KarigarFormData = z.infer<typeof karigarSchema>;
 
@@ -62,7 +63,8 @@ export const KarigarForm: React.FC<KarigarFormProps> = ({
       phoneNumber: initialData?.phoneNumber || '',
       address: initialData?.address || '',
       employmentType:
-        initialData?.type === 'IN_HOUSE' || initialData?.employmentType === 'inhouse'
+        initialData?.type === 'IN_HOUSE' ||
+        initialData?.employmentType === 'inhouse'
           ? 'inhouse'
           : 'outhouse',
       salary: initialData?.salary || undefined,
@@ -90,7 +92,8 @@ export const KarigarForm: React.FC<KarigarFormProps> = ({
         phoneNumber: initialData.phoneNumber || '',
         address: initialData.address || '',
         employmentType:
-          initialData.type === 'IN_HOUSE' || initialData.employmentType === 'inhouse'
+          initialData.type === 'IN_HOUSE' ||
+          initialData.employmentType === 'inhouse'
             ? 'inhouse'
             : 'outhouse',
         salary: initialData.salary || undefined,
@@ -119,7 +122,10 @@ export const KarigarForm: React.FC<KarigarFormProps> = ({
       'Home',
       'End',
     ];
-    if (allowedKeys.includes(e.key) || (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))) {
+    if (
+      allowedKeys.includes(e.key) ||
+      (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))
+    ) {
       return;
     }
     if (!/^\d$/.test(e.key)) {
@@ -141,7 +147,10 @@ export const KarigarForm: React.FC<KarigarFormProps> = ({
       'End',
       ' ',
     ];
-    if (allowedKeys.includes(e.key) || (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))) {
+    if (
+      allowedKeys.includes(e.key) ||
+      (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))
+    ) {
       return;
     }
     if (!/^[a-zA-Z]$/.test(e.key)) {
@@ -172,7 +181,9 @@ export const KarigarForm: React.FC<KarigarFormProps> = ({
           <div className="mb-5 flex items-center justify-between border-b border-[#d3c4af]/10 pb-4 dark:border-slate-800">
             <div>
               <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#1a1c1b] dark:text-white">
-                {isEditMode ? 'Edit Artisan Profile' : 'Add New Artisan (Karigar)'}
+                {isEditMode
+                  ? 'Edit Artisan Profile'
+                  : 'Add New Artisan (Karigar)'}
               </h3>
               <p className="text-xs text-[#4f4535] dark:text-slate-400">
                 Configure artisan credentials, employment type & wage structure
@@ -208,7 +219,9 @@ export const KarigarForm: React.FC<KarigarFormProps> = ({
                 )}
               />
               {errors.name && (
-                <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.name.message}
+                </p>
               )}
             </div>
 
@@ -227,14 +240,18 @@ export const KarigarForm: React.FC<KarigarFormProps> = ({
                     required
                     onKeyDown={handlePhoneKeyDown}
                     onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      const val = e.target.value
+                        .replace(/\D/g, '')
+                        .slice(0, 10);
                       field.onChange(val);
                     }}
                   />
                 )}
               />
               {errors.phoneNumber && (
-                <p className="mt-1 text-xs text-red-500">{errors.phoneNumber.message}</p>
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.phoneNumber.message}
+                </p>
               )}
             </div>
 
@@ -248,7 +265,9 @@ export const KarigarForm: React.FC<KarigarFormProps> = ({
                 required
               />
               {errors.employmentType && (
-                <p className="mt-1 text-xs text-red-500">{errors.employmentType.message}</p>
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.employmentType.message}
+                </p>
               )}
             </div>
 
@@ -269,14 +288,19 @@ export const KarigarForm: React.FC<KarigarFormProps> = ({
                       placeholder="Enter salary in ₹"
                       required
                       onChange={(e) => {
-                        const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                        const val =
+                          e.target.value === ''
+                            ? undefined
+                            : parseFloat(e.target.value);
                         field.onChange(val);
                       }}
                     />
                   )}
                 />
                 {errors.salary && (
-                  <p className="mt-1 text-xs text-red-500">{errors.salary.message}</p>
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.salary.message}
+                  </p>
                 )}
               </div>
             )}
@@ -297,7 +321,9 @@ export const KarigarForm: React.FC<KarigarFormProps> = ({
                 )}
               />
               {errors.password && (
-                <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.password.message}
+                </p>
               )}
             </div>
 
@@ -315,7 +341,10 @@ export const KarigarForm: React.FC<KarigarFormProps> = ({
                     decimalScale={2}
                     placeholder="Enter due amount"
                     onChange={(e) => {
-                      const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                      const val =
+                        e.target.value === ''
+                          ? undefined
+                          : parseFloat(e.target.value);
                       field.onChange(val);
                     }}
                   />
@@ -337,7 +366,10 @@ export const KarigarForm: React.FC<KarigarFormProps> = ({
                     decimalScale={2}
                     placeholder="Enter opening balance"
                     onChange={(e) => {
-                      const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                      const val =
+                        e.target.value === ''
+                          ? undefined
+                          : parseFloat(e.target.value);
                       field.onChange(val);
                     }}
                   />
@@ -346,7 +378,11 @@ export const KarigarForm: React.FC<KarigarFormProps> = ({
             </div>
 
             {/* Address */}
-            <div className={watchedEmploymentType === 'inhouse' ? 'sm:col-span-2' : ''}>
+            <div
+              className={
+                watchedEmploymentType === 'inhouse' ? 'sm:col-span-2' : ''
+              }
+            >
               <Controller
                 name="address"
                 control={control}

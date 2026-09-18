@@ -62,10 +62,32 @@ export const AddStageModal: React.FC<AddStageModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, allowDecimal = true) => {
-    const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
-    if (allowed.includes(e.key) || (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))) return;
-    if (allowDecimal && e.key === '.' && !(e.target as HTMLInputElement).value.includes('.')) return;
+  const handleNumericKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    allowDecimal = true,
+  ) => {
+    const allowed = [
+      'Backspace',
+      'Delete',
+      'Tab',
+      'Escape',
+      'Enter',
+      'ArrowLeft',
+      'ArrowRight',
+      'Home',
+      'End',
+    ];
+    if (
+      allowed.includes(e.key) ||
+      (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))
+    )
+      return;
+    if (
+      allowDecimal &&
+      e.key === '.' &&
+      !(e.target as HTMLInputElement).value.includes('.')
+    )
+      return;
     if (!/^\d$/.test(e.key)) e.preventDefault();
   };
 
@@ -243,7 +265,9 @@ export const AddStageModal: React.FC<AddStageModalProps> = ({
 
             <div>
               <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-300">
-                {labourType === 'percentage' ? 'Labour Rate (%)' : 'Labour Amount (₹)'}
+                {labourType === 'percentage'
+                  ? 'Labour Rate (%)'
+                  : 'Labour Amount (₹)'}
               </label>
               <input
                 type="text"
@@ -276,7 +300,11 @@ export const AddStageModal: React.FC<AddStageModalProps> = ({
             disabled={isSubmitting}
             className="flex items-center gap-2 rounded-xl bg-[#785600] px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#785600]/20 transition-all hover:bg-[#986d00] disabled:opacity-50"
           >
-            {isSubmitting ? 'Submitting...' : isEditMode ? 'Update Stage' : 'Assign Process'}
+            {isSubmitting
+              ? 'Submitting...'
+              : isEditMode
+                ? 'Update Stage'
+                : 'Assign Process'}
           </button>
         </div>
       </div>

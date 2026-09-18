@@ -3,7 +3,10 @@
  * Centralized calculation utility - change here to update all melting calculations app-wide.
  */
 
-export const calculateExpectedFine = (grossWt: number, purity: number): number => {
+export const calculateExpectedFine = (
+  grossWt: number,
+  purity: number,
+): number => {
   if (!grossWt || !purity || grossWt <= 0 || purity <= 0) return 0;
   return Math.round(((grossWt * purity) / 100) * 1000) / 1000;
 };
@@ -17,10 +20,18 @@ export const calculateMeltingLoss = (
 };
 
 export const calculateMeltingTotals = (
-  rows: Array<{grossWt?: number; expectedFine?: number; fineWeight?: number; loss?: number}>,
+  rows: Array<{
+    grossWt?: number;
+    expectedFine?: number;
+    fineWeight?: number;
+    loss?: number;
+  }>,
 ) => {
   const totalGross = rows.reduce((acc, r) => acc + Number(r.grossWt || 0), 0);
-  const totalExpectedFine = rows.reduce((acc, r) => acc + Number(r.expectedFine || 0), 0);
+  const totalExpectedFine = rows.reduce(
+    (acc, r) => acc + Number(r.expectedFine || 0),
+    0,
+  );
   const totalFine = rows.reduce((acc, r) => acc + Number(r.fineWeight || 0), 0);
   const totalLoss = rows.reduce((acc, r) => acc + Number(r.loss || 0), 0);
 

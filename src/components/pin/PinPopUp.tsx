@@ -39,7 +39,10 @@ const PinPopUp: React.FC<PinPopUpProps> = ({
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
     if (e.key === 'Backspace' && !pin[index] && index > 0) {
       inputRefs[index - 1].current?.focus();
     }

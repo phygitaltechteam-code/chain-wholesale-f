@@ -41,14 +41,18 @@ export const AddJobModal: React.FC<AddJobModalProps> = ({
   const saveJobMutation = useSaveJob();
   const {data: allCrystalsData, refetch: refetchCrystals} = useGetCrystal();
 
-  const allCrystals: any[] = Array.isArray(allCrystalsData?.data || allCrystalsData)
+  const allCrystals: any[] = Array.isArray(
+    allCrystalsData?.data || allCrystalsData,
+  )
     ? allCrystalsData?.data || allCrystalsData
     : [];
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showAddCrystalModal, setShowAddCrystalModal] = useState(false);
   const [selectedCrystalObj, setSelectedCrystalObj] = useState<any>(null);
-  const [selectedCrystalsList, setSelectedCrystalsList] = useState<SelectedCrystalRow[]>([]);
+  const [selectedCrystalsList, setSelectedCrystalsList] = useState<
+    SelectedCrystalRow[]
+  >([]);
 
   // Job Item Form State
   const [itemData, setItemData] = useState<{
@@ -93,34 +97,52 @@ export const AddJobModal: React.FC<AddJobModalProps> = ({
     const formData = new FormData();
     if (selectedClient) formData.append('clientId', selectedClient.id);
     if (itemData.itemName) formData.append('itemName', itemData.itemName);
-    if (itemData.description) formData.append('description', itemData.description);
+    if (itemData.description)
+      formData.append('description', itemData.description);
     if (itemData.metal) formData.append('metal', itemData.metal);
-    if (itemData.grossWt) formData.append('grossWeight', itemData.grossWt.toString());
+    if (itemData.grossWt)
+      formData.append('grossWeight', itemData.grossWt.toString());
     if (itemData.fineWt) {
       formData.append('fineWeight', itemData.fineWt.toString());
       formData.append('netWeight', itemData.fineWt.toString());
     }
     if (itemData.purity) formData.append('purity', itemData.purity.toString());
     if (itemData.deliveryDate) {
-      formData.append('deliveryDate', new Date(itemData.deliveryDate).toISOString());
+      formData.append(
+        'deliveryDate',
+        new Date(itemData.deliveryDate).toISOString(),
+      );
     }
 
     if (cashAdvance) formData.append('cashAdvance', cashAdvance.toString());
     if (goldAdvance) formData.append('goldAdvance', goldAdvance.toString());
-    if (silverAdvance) formData.append('silverAdvance', silverAdvance.toString());
+    if (silverAdvance)
+      formData.append('silverAdvance', silverAdvance.toString());
 
     if (metalMakingCharges.enteredValue > 0) {
       formData.append('makingChargesType', 'METAL');
       formData.append('makingChargesSubType', '');
-      formData.append('makingChargesValue', metalMakingCharges.enteredValue.toString());
-      formData.append('makingChargesAmount', metalMakingCharges.calculatedValue.toString());
+      formData.append(
+        'makingChargesValue',
+        metalMakingCharges.enteredValue.toString(),
+      );
+      formData.append(
+        'makingChargesAmount',
+        metalMakingCharges.calculatedValue.toString(),
+      );
     }
 
     if (cashMakingCharges.subtype && cashMakingCharges.enteredValue > 0) {
       formData.append('cashMakingChargesType', 'CASH');
       formData.append('cashMakingChargesSubType', cashMakingCharges.subtype);
-      formData.append('cashMakingChargesValue', cashMakingCharges.enteredValue.toString());
-      formData.append('cashMakingChargesAmount', cashMakingCharges.calculatedValue.toString());
+      formData.append(
+        'cashMakingChargesValue',
+        cashMakingCharges.enteredValue.toString(),
+      );
+      formData.append(
+        'cashMakingChargesAmount',
+        cashMakingCharges.calculatedValue.toString(),
+      );
     }
 
     if (itemData.images?.length) {
@@ -209,18 +231,19 @@ export const AddJobModal: React.FC<AddJobModalProps> = ({
           />
 
           {/* Job Item Details */}
-          <JobItemDetailsSection
-            item={itemData}
-            onChange={setItemData}
-          />
+          <JobItemDetailsSection item={itemData} onChange={setItemData} />
 
           {/* Crystal Details */}
           <JobCrystalSection
             allCrystals={allCrystals}
             selectedCrystalsList={selectedCrystalsList}
-            onAddCrystal={(row) => setSelectedCrystalsList((prev) => [...prev, row])}
+            onAddCrystal={(row) =>
+              setSelectedCrystalsList((prev) => [...prev, row])
+            }
             onRemoveCrystal={(index) =>
-              setSelectedCrystalsList((prev) => prev.filter((_, i) => i !== index))
+              setSelectedCrystalsList((prev) =>
+                prev.filter((_, i) => i !== index),
+              )
             }
             onOpenAddCrystalModal={() => setShowAddCrystalModal(true)}
             selectedCrystalObj={selectedCrystalObj}

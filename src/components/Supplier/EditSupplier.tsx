@@ -64,7 +64,10 @@ export const EditSupplier: React.FC<EditSupplierProps> = ({
       'Home',
       'End',
     ];
-    if (allowedKeys.includes(e.key) || (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))) {
+    if (
+      allowedKeys.includes(e.key) ||
+      (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase()))
+    ) {
       return;
     }
     if (!/^\d$/.test(e.key)) {
@@ -119,7 +122,9 @@ export const EditSupplier: React.FC<EditSupplierProps> = ({
                 placeholder="Enter supplier contact name"
                 required
                 value={formData.fullname}
-                onChange={(e) => setFormData({...formData, fullname: e.target.value})}
+                onChange={(e) =>
+                  setFormData({...formData, fullname: e.target.value})
+                }
               />
             </div>
 
@@ -128,7 +133,9 @@ export const EditSupplier: React.FC<EditSupplierProps> = ({
                 label="Shop / Business Name"
                 placeholder="Enter company or shop name"
                 value={formData.shopName || ''}
-                onChange={(e) => setFormData({...formData, shopName: e.target.value})}
+                onChange={(e) =>
+                  setFormData({...formData, shopName: e.target.value})
+                }
               />
             </div>
 
@@ -161,7 +168,9 @@ export const EditSupplier: React.FC<EditSupplierProps> = ({
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    secondaryPhoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10),
+                    secondaryPhoneNumber: e.target.value
+                      .replace(/\D/g, '')
+                      .slice(0, 10),
                   })
                 }
               />
@@ -172,7 +181,9 @@ export const EditSupplier: React.FC<EditSupplierProps> = ({
                 label="City"
                 placeholder="Enter city"
                 value={formData.city || ''}
-                onChange={(e) => setFormData({...formData, city: e.target.value})}
+                onChange={(e) =>
+                  setFormData({...formData, city: e.target.value})
+                }
               />
             </div>
 
@@ -181,7 +192,9 @@ export const EditSupplier: React.FC<EditSupplierProps> = ({
                 label="GST Number"
                 placeholder="e.g. 27AABCT1234D1Z5"
                 value={formData.GST || ''}
-                onChange={(e) => setFormData({...formData, GST: e.target.value.toUpperCase()})}
+                onChange={(e) =>
+                  setFormData({...formData, GST: e.target.value.toUpperCase()})
+                }
               />
             </div>
 
@@ -190,7 +203,9 @@ export const EditSupplier: React.FC<EditSupplierProps> = ({
                 label="PAN Number"
                 placeholder="e.g. AABCT1234D"
                 value={formData.PAN || ''}
-                onChange={(e) => setFormData({...formData, PAN: e.target.value.toUpperCase()})}
+                onChange={(e) =>
+                  setFormData({...formData, PAN: e.target.value.toUpperCase()})
+                }
               />
             </div>
 
@@ -214,7 +229,9 @@ export const EditSupplier: React.FC<EditSupplierProps> = ({
                 label="Complete Address"
                 placeholder="Workshop, office, or store street address"
                 value={formData.address || ''}
-                onChange={(e) => setFormData({...formData, address: e.target.value})}
+                onChange={(e) =>
+                  setFormData({...formData, address: e.target.value})
+                }
               />
             </div>
           </div>

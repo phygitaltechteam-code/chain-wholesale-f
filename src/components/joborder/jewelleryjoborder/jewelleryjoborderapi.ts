@@ -70,7 +70,9 @@ export const useSubmitJobKarigar = () => {
       queryClient.invalidateQueries({queryKey: ['jobs']});
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to submit process stage');
+      toast.error(
+        error?.response?.data?.message || 'Failed to submit process stage',
+      );
     },
   });
 };
@@ -98,7 +100,10 @@ export const useUpdateJobStage = () => {
         qty: number;
       }[];
     }) => {
-      const response = await api.patch(`/admin/karigar/stage/${data.stageId}`, data);
+      const response = await api.patch(
+        `/admin/karigar/stage/${data.stageId}`,
+        data,
+      );
       return response.data;
     },
     onSuccess: (_, variables) => {
@@ -124,7 +129,10 @@ export const useSubmitReturnEntry = () => {
       scrap: number;
       status?: string;
     }) => {
-      const response = await api.patch(`/admin/karigar/stage/${data.stageId}/return`, data);
+      const response = await api.patch(
+        `/admin/karigar/stage/${data.stageId}/return`,
+        data,
+      );
       return response.data;
     },
     onSuccess: (_, variables) => {
@@ -133,7 +141,9 @@ export const useSubmitReturnEntry = () => {
       queryClient.invalidateQueries({queryKey: ['jobs']});
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to record return entry');
+      toast.error(
+        error?.response?.data?.message || 'Failed to record return entry',
+      );
     },
   });
 };

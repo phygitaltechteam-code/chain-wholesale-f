@@ -51,13 +51,25 @@ export const JobStagesTable: React.FC<JobStagesTableProps> = ({
         <table className="w-full min-w-[1000px] border-collapse">
           <thead>
             <tr className="border-b border-[#d3c4af]/10 bg-[#f4f4f2]/60 text-xs uppercase tracking-[0.15em] text-[#4f4535] dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-300">
-              <th className="px-4 py-3.5 text-left font-semibold">Job Details</th>
-              <th className="px-4 py-3.5 text-left font-semibold">Process & Metal</th>
-              <th className="px-4 py-3.5 text-left font-semibold">Date Issued</th>
-              <th className="px-4 py-3.5 text-right font-semibold">Issued Wt</th>
-              <th className="px-4 py-3.5 text-right font-semibold">Received Wt</th>
+              <th className="px-4 py-3.5 text-left font-semibold">
+                Job Details
+              </th>
+              <th className="px-4 py-3.5 text-left font-semibold">
+                Process & Metal
+              </th>
+              <th className="px-4 py-3.5 text-left font-semibold">
+                Date Issued
+              </th>
+              <th className="px-4 py-3.5 text-right font-semibold">
+                Issued Wt
+              </th>
+              <th className="px-4 py-3.5 text-right font-semibold">
+                Received Wt
+              </th>
               <th className="px-4 py-3.5 text-right font-semibold">Wastage</th>
-              <th className="px-4 py-3.5 text-right font-semibold">Labour Amount</th>
+              <th className="px-4 py-3.5 text-right font-semibold">
+                Labour Amount
+              </th>
               <th className="px-4 py-3.5 text-right font-semibold">Paid</th>
               <th className="px-4 py-3.5 text-right font-semibold">Pending</th>
               <th className="px-4 py-3.5 text-center font-semibold">Status</th>
@@ -160,7 +172,10 @@ export const JobStagesTable: React.FC<JobStagesTableProps> = ({
             ))}
             {stages.length === 0 && (
               <tr>
-                <td colSpan={11} className="py-12 text-center text-xs text-[#4f4535] dark:text-slate-400">
+                <td
+                  colSpan={11}
+                  className="py-12 text-center text-xs text-[#4f4535] dark:text-slate-400"
+                >
                   No job stages found matching the selected filters.
                 </td>
               </tr>

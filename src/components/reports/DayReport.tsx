@@ -1270,7 +1270,9 @@ const DayReport: React.FC = () => {
                         return (
                           <React.Fragment key={client.clientName}>
                             <tr
-                              onClick={() => toggleKarigarDue(client.clientName)}
+                              onClick={() =>
+                                toggleKarigarDue(client.clientName)
+                              }
                               className={`cursor-pointer transition-colors ${
                                 isExpanded
                                   ? 'bg-[#785600]/10 dark:bg-amber-900/20'

@@ -36,8 +36,7 @@ export const printBillingTableReport = (
     headerInfo.description ||
     'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
   const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-  const phoneNumbers =
-    headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+  const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
 
   const invocationColor = headerInfo.invocationColor || '#a84b20';
   const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
@@ -124,9 +123,22 @@ export const printBillingTableReport = (
     })
     .join('');
 
-  const totalFineAll = filteredGroups.reduce((s, g) => s + (g.totalFinWt || 0), 0);
-  const totalReceiveAll = filteredGroups.reduce((s, g) => s + (g.receive || 0), 0);
-  const totalPendingAll = filteredGroups.reduce((s, g) => s + (g.remainingWeight !== undefined && g.remainingWeight !== null ? g.remainingWeight : g.pending || 0), 0);
+  const totalFineAll = filteredGroups.reduce(
+    (s, g) => s + (g.totalFinWt || 0),
+    0,
+  );
+  const totalReceiveAll = filteredGroups.reduce(
+    (s, g) => s + (g.receive || 0),
+    0,
+  );
+  const totalPendingAll = filteredGroups.reduce(
+    (s, g) =>
+      s +
+      (g.remainingWeight !== undefined && g.remainingWeight !== null
+        ? g.remainingWeight
+        : g.pending || 0),
+    0,
+  );
 
   const reportHtml = `
   <!DOCTYPE html>

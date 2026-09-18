@@ -11,12 +11,7 @@ interface ManufacturingItemPickerModalProps {
 
 export const ManufacturingItemPickerModal: React.FC<
   ManufacturingItemPickerModalProps
-> = ({
-  showManufacturingItemPicker,
-  onClose,
-  onSelectItem,
-  onSendAll,
-}) => {
+> = ({showManufacturingItemPicker, onClose, onSelectItem, onSendAll}) => {
   if (!showManufacturingItemPicker) return null;
 
   return (
@@ -47,8 +42,8 @@ export const ManufacturingItemPickerModal: React.FC<
 
         <div className="max-h-[60vh] space-y-2.5 overflow-y-auto p-4">
           <p className="mb-2 text-xs text-[#4f4535] dark:text-slate-300">
-            Click on an item to send its details (Item, Size, Gross
-            Weight, Purity) to the <strong>Tar Department</strong>:
+            Click on an item to send its details (Item, Size, Gross Weight,
+            Purity) to the <strong>Tar Department</strong>:
           </p>
           {showManufacturingItemPicker.items.map((it, idx) => (
             <button
@@ -66,13 +61,10 @@ export const ManufacturingItemPickerModal: React.FC<
                 <div className="mt-1 flex items-center gap-3 text-xs text-[#4f4535] dark:text-slate-300">
                   <span>
                     Gross:{' '}
-                    <strong className="font-mono">
-                      {it.grossWeight}g
-                    </strong>
+                    <strong className="font-mono">{it.grossWeight}g</strong>
                   </span>
                   <span>
-                    Purity:{' '}
-                    <strong className="font-mono">{it.purity}%</strong>
+                    Purity: <strong className="font-mono">{it.purity}%</strong>
                   </span>
                   <span>
                     Fine:{' '}

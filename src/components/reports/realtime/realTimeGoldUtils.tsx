@@ -97,7 +97,10 @@ export const toNumber = (value: unknown): number => {
   return Number.isFinite(num) ? num : 0;
 };
 
-export const formatNumberDisplay = (value: unknown, minDecimals = 3): string => {
+export const formatNumberDisplay = (
+  value: unknown,
+  minDecimals = 3,
+): string => {
   if (value === null || value === undefined || value === '') return '0.000';
   const num = Number(value);
   if (!Number.isFinite(num)) return '0.000';

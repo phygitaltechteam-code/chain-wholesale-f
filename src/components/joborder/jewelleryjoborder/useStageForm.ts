@@ -27,11 +27,15 @@ export const useStageForm = ({
   // Form states
   const [selectedProcessId, setSelectedProcessId] = useState('');
   const [selectedKarigarIds, setSelectedKarigarIds] = useState<string[]>([]);
-  const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
+  const [issueDate, setIssueDate] = useState(
+    new Date().toISOString().split('T')[0],
+  );
   const [fineGoldIssued, setFineGoldIssued] = useState<number>(0);
   const [purity, setPurity] = useState<number>(defaultPurity);
   const [grossWeight, setGrossWeight] = useState<number>(0);
-  const [labourType, setLabourType] = useState<'percentage' | 'fixed'>('percentage');
+  const [labourType, setLabourType] = useState<'percentage' | 'fixed'>(
+    'percentage',
+  );
   const [labourCharges, setLabourCharges] = useState<number>(0);
   const [wastage, setWastage] = useState<number>(0);
   const [stageCrystals, setStageCrystals] = useState<StageCrystalItem[]>([]);
@@ -60,8 +64,16 @@ export const useStageForm = ({
     setEditingStage(stage);
     setIsEditMode(true);
     setSelectedProcessId(stage.processId);
-    setSelectedKarigarIds(stage.karigarIds.length ? stage.karigarIds : stage.karigarDetails.map((k) => k.id));
-    setIssueDate(stage.dateIssued ? stage.dateIssued.split('T')[0] : new Date().toISOString().split('T')[0]);
+    setSelectedKarigarIds(
+      stage.karigarIds.length
+        ? stage.karigarIds
+        : stage.karigarDetails.map((k) => k.id),
+    );
+    setIssueDate(
+      stage.dateIssued
+        ? stage.dateIssued.split('T')[0]
+        : new Date().toISOString().split('T')[0],
+    );
     setFineGoldIssued(stage.fineGoldIssued);
     setPurity(stage.purity || defaultPurity);
     setGrossWeight(stage.grossWeight);
@@ -83,7 +95,7 @@ export const useStageForm = ({
           ct: c.ct,
           rate: c.rate,
           qty: c.qty || 1,
-        }))
+        })),
       );
     } else {
       setStageCrystals([]);
@@ -94,7 +106,9 @@ export const useStageForm = ({
 
   const handleKarigarToggle = (karigarId: string) => {
     if (selectedKarigarIds.includes(karigarId)) {
-      setSelectedKarigarIds(selectedKarigarIds.filter((id) => id !== karigarId));
+      setSelectedKarigarIds(
+        selectedKarigarIds.filter((id) => id !== karigarId),
+      );
     } else {
       setSelectedKarigarIds([...selectedKarigarIds, karigarId]);
     }

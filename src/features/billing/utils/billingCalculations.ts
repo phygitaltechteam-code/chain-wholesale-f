@@ -11,13 +11,22 @@ export interface BillingItemCalc {
   fineWt?: number;
 }
 
-export const calculateItemFineWeight = (grossWt: number, purity: number): number => {
+export const calculateItemFineWeight = (
+  grossWt: number,
+  purity: number,
+): number => {
   if (!grossWt || grossWt <= 0 || !purity || purity <= 0) return 0;
   return Number(((grossWt * purity) / 100).toFixed(3));
 };
 
 export const calculateBillingTotals = (
-  items: Array<{grossWeight?: number; grossWt?: number; finWt?: number; fineWt?: number; srp?: number}>,
+  items: Array<{
+    grossWeight?: number;
+    grossWt?: number;
+    finWt?: number;
+    fineWt?: number;
+    srp?: number;
+  }>,
   customerWeight: number = 0,
   previousDue: number = 0,
 ) => {
@@ -29,10 +38,7 @@ export const calculateBillingTotals = (
     (sum, it) => sum + Number(it.finWt ?? it.fineWt ?? 0),
     0,
   );
-  const totalSRP = items.reduce(
-    (sum, it) => sum + Number(it.srp ?? 0),
-    0,
-  );
+  const totalSRP = items.reduce((sum, it) => sum + Number(it.srp ?? 0), 0);
 
   const netPayableFine = Math.max(0, totalFineWt - Number(customerWeight || 0));
   const newBalance = Number((previousDue + netPayableFine).toFixed(3));

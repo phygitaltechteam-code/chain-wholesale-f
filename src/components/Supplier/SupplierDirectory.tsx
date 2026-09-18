@@ -102,7 +102,9 @@ export const SupplierDirectory: React.FC = () => {
     setTimeout(() => {
       if (pendingAction?.type === 'edit' && pendingAction.supplier) {
         const supplier = pendingAction.supplier;
-        const raw = rawList.find((d: any) => String(d.id || d._id) === supplier.id);
+        const raw = rawList.find(
+          (d: any) => String(d.id || d._id) === supplier.id,
+        );
         setSelectedSupplierId(supplier.id);
         setSelectedSupplierData(raw || supplier);
         setIsEditOpen(true);
@@ -148,9 +150,15 @@ export const SupplierDirectory: React.FC = () => {
   const paginatedData = filteredSuppliers.slice(startIdx, endIdx);
 
   const totalSuppliers = suppliers.length;
-  const suppliersWithGST = suppliers.filter((c) => c.GST && c.GST.trim() !== '').length;
-  const suppliersWithPAN = suppliers.filter((c) => c.PAN && c.PAN.trim() !== '').length;
-  const suppliersWithAadhar = suppliers.filter((c) => c.aadhar && c.aadhar.trim() !== '').length;
+  const suppliersWithGST = suppliers.filter(
+    (c) => c.GST && c.GST.trim() !== '',
+  ).length;
+  const suppliersWithPAN = suppliers.filter(
+    (c) => c.PAN && c.PAN.trim() !== '',
+  ).length;
+  const suppliersWithAadhar = suppliers.filter(
+    (c) => c.aadhar && c.aadhar.trim() !== '',
+  ).length;
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '—';
@@ -177,7 +185,7 @@ export const SupplierDirectory: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] p-4 sm:p-6 lg:p-8 dark:bg-slate-950">
+    <div className="min-h-screen bg-[#f9f9f7] p-4 dark:bg-slate-950 sm:p-6 lg:p-8">
       {/* PIN Verification Modal */}
       {showPinModal && (
         <PinPopUp onSuccess={handlePinSuccess} onClose={handlePinClose} />
@@ -200,7 +208,7 @@ export const SupplierDirectory: React.FC = () => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full rounded-xl border border-[#d3c4af]/30 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition-all placeholder:text-[#817563] focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 sm:w-72 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                className="w-full rounded-xl border border-[#d3c4af]/30 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition-all placeholder:text-[#817563] focus:border-[#785600] focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-900 dark:text-white sm:w-72"
                 placeholder="Search name, shop, phone, GST..."
                 type="text"
               />
@@ -265,7 +273,8 @@ export const SupplierDirectory: React.FC = () => {
               All Suppliers
             </h2>
             <p className="text-xs text-[#4f4535] dark:text-slate-400">
-              Total {filteredSuppliers.length} supplier{filteredSuppliers.length !== 1 ? 's' : ''}
+              Total {filteredSuppliers.length} supplier
+              {filteredSuppliers.length !== 1 ? 's' : ''}
             </p>
           </div>
         </div>
@@ -274,13 +283,23 @@ export const SupplierDirectory: React.FC = () => {
           <table className="w-full min-w-[900px] border-collapse">
             <thead>
               <tr className="border-b border-[#d3c4af]/10 bg-[#f4f4f2]/60 text-xs uppercase tracking-[0.15em] text-[#4f4535] dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-300">
-                <th className="px-5 py-4 text-left font-semibold">Created Date & Time</th>
-                <th className="px-5 py-4 text-left font-semibold">Supplier Name</th>
+                <th className="px-5 py-4 text-left font-semibold">
+                  Created Date & Time
+                </th>
+                <th className="px-5 py-4 text-left font-semibold">
+                  Supplier Name
+                </th>
                 <th className="px-5 py-4 text-left font-semibold">Contact</th>
                 <th className="px-5 py-4 text-left font-semibold">GST/PAN</th>
                 <th className="px-5 py-4 text-left font-semibold">Address</th>
-                <th className="px-5 py-4 text-left font-semibold">Balance Due</th>
-                {canEdit && <th className="px-5 py-4 text-center font-semibold">Actions</th>}
+                <th className="px-5 py-4 text-left font-semibold">
+                  Balance Due
+                </th>
+                {canEdit && (
+                  <th className="px-5 py-4 text-center font-semibold">
+                    Actions
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#d3c4af]/10 dark:divide-slate-800">
@@ -291,101 +310,107 @@ export const SupplierDirectory: React.FC = () => {
                   </td>
                 </tr>
               )}
-              {!isLoading && paginatedData.map((supplier) => (
-                <tr
-                  key={supplier.id}
-                  className="group cursor-pointer transition-colors hover:bg-[#f4f4f2]/40 dark:hover:bg-slate-800/40"
-                  onClick={() => handleSupplierClick(supplier)}
-                >
-                  <td className="px-5 py-4">
-                    <span className="block text-sm font-medium text-[#1a1c1b] dark:text-white">
-                      {formatDate(supplier.createdAt)}
-                    </span>
-                    <span className="block text-xs text-[#817563]">
-                      {formatTime(supplier.createdAt)}
-                    </span>
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <span className="block text-sm font-semibold text-[#1a1c1b] dark:text-white">
-                      {supplier.fullname || 'N/A'}
-                    </span>
-                    {supplier.shopName && (
-                      <span className="inline-block text-xs font-medium text-[#785600] dark:text-amber-400">
-                        {supplier.shopName}
+              {!isLoading &&
+                paginatedData.map((supplier) => (
+                  <tr
+                    key={supplier.id}
+                    className="group cursor-pointer transition-colors hover:bg-[#f4f4f2]/40 dark:hover:bg-slate-800/40"
+                    onClick={() => handleSupplierClick(supplier)}
+                  >
+                    <td className="px-5 py-4">
+                      <span className="block text-sm font-medium text-[#1a1c1b] dark:text-white">
+                        {formatDate(supplier.createdAt)}
                       </span>
-                    )}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <span className="block text-sm text-[#4f4535] dark:text-slate-300">
-                      {supplier.phoneNumber || 'N/A'}
-                    </span>
-                    {supplier.city && (
                       <span className="block text-xs text-[#817563]">
-                        {supplier.city}
+                        {formatTime(supplier.createdAt)}
                       </span>
-                    )}
-                  </td>
+                    </td>
 
-                  <td className="px-5 py-4">
-                    <div className="space-y-0.5 text-xs">
-                      {supplier.GST ? (
-                        <p className="text-[#4f4535] dark:text-slate-300">
-                          GST: <span className="font-medium">{supplier.GST}</span>
-                        </p>
-                      ) : null}
-                      {supplier.PAN ? (
-                        <p className="text-[#4f4535] dark:text-slate-300">
-                          PAN: <span className="font-medium">{supplier.PAN}</span>
-                        </p>
-                      ) : null}
-                      {!supplier.GST && !supplier.PAN && (
-                        <span className="text-slate-400">—</span>
+                    <td className="px-5 py-4">
+                      <span className="block text-sm font-semibold text-[#1a1c1b] dark:text-white">
+                        {supplier.fullname || 'N/A'}
+                      </span>
+                      {supplier.shopName && (
+                        <span className="inline-block text-xs font-medium text-[#785600] dark:text-amber-400">
+                          {supplier.shopName}
+                        </span>
                       )}
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="px-5 py-4">
-                    <span
-                      className="block max-w-[200px] truncate text-sm text-[#4f4535] dark:text-slate-300"
-                      title={supplier.address}
-                    >
-                      {supplier.address || '—'}
-                    </span>
-                  </td>
+                    <td className="px-5 py-4">
+                      <span className="block text-sm text-[#4f4535] dark:text-slate-300">
+                        {supplier.phoneNumber || 'N/A'}
+                      </span>
+                      {supplier.city && (
+                        <span className="block text-xs text-[#817563]">
+                          {supplier.city}
+                        </span>
+                      )}
+                    </td>
 
-                  <td className="px-5 py-4">
-                    <span className="text-sm font-semibold text-[#785600] dark:text-amber-400">
-                      ₹{supplier.due?.toLocaleString() || 0}
-                    </span>
-                  </td>
-
-                  {canEdit && (
-                    <td className="px-5 py-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={(e) => handleEditSupplier(supplier, e)}
-                          className="rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-amber-400"
-                          title="Edit"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={(e) => handleDeleteClick(supplier, e)}
-                          className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-950/30"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                    <td className="px-5 py-4">
+                      <div className="space-y-0.5 text-xs">
+                        {supplier.GST ? (
+                          <p className="text-[#4f4535] dark:text-slate-300">
+                            GST:{' '}
+                            <span className="font-medium">{supplier.GST}</span>
+                          </p>
+                        ) : null}
+                        {supplier.PAN ? (
+                          <p className="text-[#4f4535] dark:text-slate-300">
+                            PAN:{' '}
+                            <span className="font-medium">{supplier.PAN}</span>
+                          </p>
+                        ) : null}
+                        {!supplier.GST && !supplier.PAN && (
+                          <span className="text-slate-400">—</span>
+                        )}
                       </div>
                     </td>
-                  )}
-                </tr>
-              ))}
+
+                    <td className="px-5 py-4">
+                      <span
+                        className="block max-w-[200px] truncate text-sm text-[#4f4535] dark:text-slate-300"
+                        title={supplier.address}
+                      >
+                        {supplier.address || '—'}
+                      </span>
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <span className="text-sm font-semibold text-[#785600] dark:text-amber-400">
+                        ₹{supplier.due?.toLocaleString() || 0}
+                      </span>
+                    </td>
+
+                    {canEdit && (
+                      <td className="px-5 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={(e) => handleEditSupplier(supplier, e)}
+                            className="rounded-lg p-2 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-amber-400"
+                            title="Edit"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteClick(supplier, e)}
+                            className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-950/30"
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
               {!isLoading && paginatedData.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#4f4535] dark:text-slate-400">
+                  <td
+                    colSpan={7}
+                    className="py-12 text-center text-[#4f4535] dark:text-slate-400"
+                  >
                     No suppliers found. Click "Add Supplier" to add one.
                   </td>
                 </tr>
@@ -396,9 +421,10 @@ export const SupplierDirectory: React.FC = () => {
 
         {/* Pagination */}
         {totalItems > itemsPerPage && (
-          <div className="flex flex-col justify-between gap-4 border-t border-[#d3c4af]/10 p-5 sm:flex-row sm:items-center dark:border-slate-800">
+          <div className="flex flex-col justify-between gap-4 border-t border-[#d3c4af]/10 p-5 dark:border-slate-800 sm:flex-row sm:items-center">
             <span className="text-xs text-[#4f4535] dark:text-slate-400">
-              Showing {startIdx + 1} to {Math.min(endIdx, totalItems)} of {totalItems} entries
+              Showing {startIdx + 1} to {Math.min(endIdx, totalItems)} of{' '}
+              {totalItems} entries
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -412,7 +438,9 @@ export const SupplierDirectory: React.FC = () => {
                 {currentPage} / {totalPages}
               </span>
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
                 disabled={currentPage === totalPages}
                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#d3c4af]/30 transition-colors hover:bg-slate-100 disabled:opacity-40 dark:border-slate-700 dark:hover:bg-slate-800"
               >
@@ -452,7 +480,10 @@ export const SupplierDirectory: React.FC = () => {
             </h3>
             <p className="mt-2 text-sm text-[#4f4535] dark:text-slate-300">
               Are you sure you want to delete supplier{' '}
-              <span className="font-semibold text-red-600">{itemToDelete.fullname}</span>? This action cannot be undone.
+              <span className="font-semibold text-red-600">
+                {itemToDelete.fullname}
+              </span>
+              ? This action cannot be undone.
             </p>
             <div className="mt-6 flex gap-3">
               <button

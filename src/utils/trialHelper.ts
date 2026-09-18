@@ -58,11 +58,11 @@ export const isTrialUser = (): boolean => {
 // 1. DEFAULT ITEMS FOR TRIAL
 // ==========================================
 export const DEFAULT_TRIAL_ITEMS = [
-  { id: 'trial-item-gold', name: 'GOLD' },
-  { id: 'trial-item-shiva', name: 'shiva' },
-  { id: 'trial-item-indrajit', name: 'indrajit' },
-  { id: 'trial-item-highway', name: 'highway' },
-  { id: 'trial-item-kamal', name: 'kamal' },
+  {id: 'trial-item-gold', name: 'GOLD'},
+  {id: 'trial-item-shiva', name: 'shiva'},
+  {id: 'trial-item-indrajit', name: 'indrajit'},
+  {id: 'trial-item-highway', name: 'highway'},
+  {id: 'trial-item-kamal', name: 'kamal'},
 ];
 
 const TRIAL_ITEMS_KEY = 'trial_items_data_v1';
@@ -74,7 +74,7 @@ export const getTrialItems = () => {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
-  } catch (e) { }
+  } catch (e) {}
   localStorage.setItem(TRIAL_ITEMS_KEY, JSON.stringify(DEFAULT_TRIAL_ITEMS));
   return DEFAULT_TRIAL_ITEMS;
 };
@@ -82,17 +82,17 @@ export const getTrialItems = () => {
 export const saveTrialItems = (items: any[]) => {
   try {
     localStorage.setItem(TRIAL_ITEMS_KEY, JSON.stringify(items));
-  } catch (e) { }
+  } catch (e) {}
 };
 
 // ==========================================
 // 2. DEFAULT SIZES FOR TRIAL
 // ==========================================
 export const DEFAULT_TRIAL_SIZES = [
-  { id: 'trial-size-1', size: '1' },
-  { id: 'trial-size-2', size: '2' },
-  { id: 'trial-size-2.5', size: '2.5' },
-  { id: 'trial-size-4box', size: '4Box' },
+  {id: 'trial-size-1', size: '1'},
+  {id: 'trial-size-2', size: '2'},
+  {id: 'trial-size-2.5', size: '2.5'},
+  {id: 'trial-size-4box', size: '4Box'},
 ];
 
 const TRIAL_SIZES_KEY = 'trial_sizes_data_v1';
@@ -104,7 +104,7 @@ export const getTrialSizes = () => {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
-  } catch (e) { }
+  } catch (e) {}
   localStorage.setItem(TRIAL_SIZES_KEY, JSON.stringify(DEFAULT_TRIAL_SIZES));
   return DEFAULT_TRIAL_SIZES;
 };
@@ -112,7 +112,7 @@ export const getTrialSizes = () => {
 export const saveTrialSizes = (sizes: any[]) => {
   try {
     localStorage.setItem(TRIAL_SIZES_KEY, JSON.stringify(sizes));
-  } catch (e) { }
+  } catch (e) {}
 };
 
 // ==========================================
@@ -151,7 +151,7 @@ export const getTrialClients = () => {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
-  } catch (e) { }
+  } catch (e) {}
   localStorage.setItem(
     TRIAL_CLIENTS_KEY,
     JSON.stringify(DEFAULT_TRIAL_CLIENTS),
@@ -162,7 +162,7 @@ export const getTrialClients = () => {
 export const saveTrialClients = (clients: any[]) => {
   try {
     localStorage.setItem(TRIAL_CLIENTS_KEY, JSON.stringify(clients));
-  } catch (e) { }
+  } catch (e) {}
 };
 
 // ==========================================
@@ -527,8 +527,8 @@ export const DEFAULT_TRIAL_LOSS_REPORT = [
     expectedLoss: 0.05,
     actualLoss: 0.05,
     diffLoss: 0.0,
-    item: { id: 'trial-item-shiva', name: 'shiva' },
-    size: { id: 'trial-size-1', size: '1' },
+    item: {id: 'trial-item-shiva', name: 'shiva'},
+    size: {id: 'trial-size-1', size: '1'},
   },
   {
     id: 'trial-loss-2',
@@ -542,8 +542,8 @@ export const DEFAULT_TRIAL_LOSS_REPORT = [
     expectedLoss: 0.05,
     actualLoss: 0.05,
     diffLoss: 0.0,
-    item: { id: 'trial-item-indrajit', name: 'indrajit' },
-    size: { id: 'trial-size-2', size: '2' },
+    item: {id: 'trial-item-indrajit', name: 'indrajit'},
+    size: {id: 'trial-size-2', size: '2'},
   },
   {
     id: 'trial-loss-3',
@@ -557,8 +557,8 @@ export const DEFAULT_TRIAL_LOSS_REPORT = [
     expectedLoss: 0.05,
     actualLoss: 0.05,
     diffLoss: 0.0,
-    item: { id: 'trial-item-highway', name: 'highway' },
-    size: { id: 'trial-size-2.5', size: '2.5' },
+    item: {id: 'trial-item-highway', name: 'highway'},
+    size: {id: 'trial-size-2.5', size: '2.5'},
   },
 ];
 
@@ -694,8 +694,8 @@ export const DEFAULT_TRIAL_BILLS = [
         srp: 42.09,
         availableQty: 1,
         laborRate: 50,
-        item: { id: 'trial-item-shiva', name: 'shiva' },
-        size: { id: 'trial-size-1', size: '1' },
+        item: {id: 'trial-item-shiva', name: 'shiva'},
+        size: {id: 'trial-size-1', size: '1'},
       },
     ],
   },
@@ -729,8 +729,8 @@ export const DEFAULT_TRIAL_BILLS = [
         srp: 63.25,
         availableQty: 1,
         laborRate: 50,
-        item: { id: 'trial-item-indrajit', name: 'indrajit' },
-        size: { id: 'trial-size-2', size: '2' },
+        item: {id: 'trial-item-indrajit', name: 'indrajit'},
+        size: {id: 'trial-size-2', size: '2'},
       },
     ],
   },
@@ -764,8 +764,8 @@ export const DEFAULT_TRIAL_BILLS = [
         srp: 84.41,
         availableQty: 1,
         laborRate: 50,
-        item: { id: 'trial-item-highway', name: 'highway' },
-        size: { id: 'trial-size-2.5', size: '2.5' },
+        item: {id: 'trial-item-highway', name: 'highway'},
+        size: {id: 'trial-size-2.5', size: '2.5'},
       },
     ],
   },
@@ -799,8 +799,8 @@ export const DEFAULT_TRIAL_BILLS = [
         srp: 50.5,
         availableQty: 1,
         laborRate: 50,
-        item: { id: 'trial-item-kamal', name: 'kamal' },
-        size: { id: 'trial-size-4box', size: '4Box' },
+        item: {id: 'trial-item-kamal', name: 'kamal'},
+        size: {id: 'trial-size-4box', size: '4Box'},
       },
     ],
   },
@@ -813,7 +813,8 @@ export const getTrialBills = () => {
     const stored = localStorage.getItem(TRIAL_BILLS_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length >= DEFAULT_TRIAL_BILLS.length) return parsed;
+      if (Array.isArray(parsed) && parsed.length >= DEFAULT_TRIAL_BILLS.length)
+        return parsed;
     }
   } catch (e) {}
   localStorage.setItem(TRIAL_BILLS_KEY, JSON.stringify(DEFAULT_TRIAL_BILLS));
@@ -899,8 +900,8 @@ export const getTrialClientReport = (clientId?: string) => {
       receiptId: 'trial-receipt-1',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      item: { id: 'trial-item-shiva', name: 'shiva' },
-      size: { id: 'trial-size-1', size: '1' },
+      item: {id: 'trial-item-shiva', name: 'shiva'},
+      size: {id: 'trial-size-1', size: '1'},
     },
     {
       id: 'trial-cr-2',
@@ -919,8 +920,8 @@ export const getTrialClientReport = (clientId?: string) => {
       receiptId: 'trial-receipt-2',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      item: { id: 'trial-item-indrajit', name: 'indrajit' },
-      size: { id: 'trial-size-2', size: '2' },
+      item: {id: 'trial-item-indrajit', name: 'indrajit'},
+      size: {id: 'trial-size-2', size: '2'},
     },
     {
       id: 'trial-cr-3',
@@ -939,8 +940,8 @@ export const getTrialClientReport = (clientId?: string) => {
       receiptId: 'trial-receipt-3',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      item: { id: 'trial-item-highway', name: 'highway' },
-      size: { id: 'trial-size-2.5', size: '2.5' },
+      item: {id: 'trial-item-highway', name: 'highway'},
+      size: {id: 'trial-size-2.5', size: '2.5'},
     },
     {
       id: 'trial-cr-4',
@@ -959,8 +960,8 @@ export const getTrialClientReport = (clientId?: string) => {
       receiptId: 'trial-receipt-4',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      item: { id: 'trial-item-kamal', name: 'kamal' },
-      size: { id: 'trial-size-4box', size: '4Box' },
+      item: {id: 'trial-item-kamal', name: 'kamal'},
+      size: {id: 'trial-size-4box', size: '4Box'},
     },
   ];
 
@@ -997,21 +998,75 @@ export const DEFAULT_TRIAL_STOCK_LEDGER = {
       },
     },
     rawStock: [
-      { id: 'rs-1', name: 'GOLD 99.5', opening: 500.0, closing: 500.0, difference: 0 },
+      {
+        id: 'rs-1',
+        name: 'GOLD 99.5',
+        opening: 500.0,
+        closing: 500.0,
+        difference: 0,
+      },
     ],
     chainStock: [
-      { id: 'cs-1', name: 'shiva (1)', opening: 45.95, closing: 45.95, difference: 0 },
-      { id: 'cs-2', name: 'indrajit (2)', opening: 69.05, closing: 69.05, difference: 0 },
-      { id: 'cs-3', name: 'highway (2.5)', opening: 92.15, closing: 92.15, difference: 0 },
+      {
+        id: 'cs-1',
+        name: 'shiva (1)',
+        opening: 45.95,
+        closing: 45.95,
+        difference: 0,
+      },
+      {
+        id: 'cs-2',
+        name: 'indrajit (2)',
+        opening: 69.05,
+        closing: 69.05,
+        difference: 0,
+      },
+      {
+        id: 'cs-3',
+        name: 'highway (2.5)',
+        opening: 92.15,
+        closing: 92.15,
+        difference: 0,
+      },
     ],
     client: [
-      { id: 'cl-1', name: 'Shiva Jewellers', due: 3.4, opening: 3.4, closing: 3.4 },
-      { id: 'cl-2', name: 'Indrajit Gold Works', due: 18.45, opening: 5.2, closing: 18.45 },
-      { id: 'cl-3', name: 'Highway Ornaments', due: 26.21, opening: 1.8, closing: 26.21 },
+      {
+        id: 'cl-1',
+        name: 'Shiva Jewellers',
+        due: 3.4,
+        opening: 3.4,
+        closing: 3.4,
+      },
+      {
+        id: 'cl-2',
+        name: 'Indrajit Gold Works',
+        due: 18.45,
+        opening: 5.2,
+        closing: 18.45,
+      },
+      {
+        id: 'cl-3',
+        name: 'Highway Ornaments',
+        due: 26.21,
+        opening: 1.8,
+        closing: 26.21,
+      },
     ],
     stockMovement: [
-      { id: 'sm-1', inwardName: 'Opening Gold Inward', inward: 100.0, outwardName: 'BILL00001 (Shiva Jewellers)', outward: 42.09 },
-      { id: 'sm-2', inwardName: 'Workshop Batch Inward', inward: 50.0, outwardName: '-', outward: 0 },
+      {
+        id: 'sm-1',
+        inwardName: 'Opening Gold Inward',
+        inward: 100.0,
+        outwardName: 'BILL00001 (Shiva Jewellers)',
+        outward: 42.09,
+      },
+      {
+        id: 'sm-2',
+        inwardName: 'Workshop Batch Inward',
+        inward: 50.0,
+        outwardName: '-',
+        outward: 0,
+      },
     ],
   },
 };
@@ -1027,7 +1082,7 @@ export const DEFAULT_TRIAL_STOCKS = [
     weight: 500.0,
     purity: '99.5',
     type: 'GOLD',
-    item: { id: 'trial-item-gold', name: 'GOLD' },
+    item: {id: 'trial-item-gold', name: 'GOLD'},
     size: null,
     stockQty: 1,
     createdAt: new Date().toISOString(),
@@ -1039,8 +1094,8 @@ export const DEFAULT_TRIAL_STOCKS = [
     weight: 45.95,
     purity: '91.6',
     type: 'CHAIN',
-    item: { id: 'trial-item-shiva', name: 'shiva' },
-    size: { id: 'trial-size-1', size: '1' },
+    item: {id: 'trial-item-shiva', name: 'shiva'},
+    size: {id: 'trial-size-1', size: '1'},
     stockQty: 1,
     createdAt: new Date().toISOString(),
   },
@@ -1051,8 +1106,8 @@ export const DEFAULT_TRIAL_STOCKS = [
     weight: 69.05,
     purity: '91.6',
     type: 'CHAIN',
-    item: { id: 'trial-item-indrajit', name: 'indrajit' },
-    size: { id: 'trial-size-2', size: '2' },
+    item: {id: 'trial-item-indrajit', name: 'indrajit'},
+    size: {id: 'trial-size-2', size: '2'},
     stockQty: 1,
     createdAt: new Date().toISOString(),
   },
@@ -1063,8 +1118,8 @@ export const DEFAULT_TRIAL_STOCKS = [
     weight: 92.15,
     purity: '91.6',
     type: 'CHAIN',
-    item: { id: 'trial-item-highway', name: 'highway' },
-    size: { id: 'trial-size-2.5', size: '2.5' },
+    item: {id: 'trial-item-highway', name: 'highway'},
+    size: {id: 'trial-size-2.5', size: '2.5'},
     stockQty: 1,
     createdAt: new Date().toISOString(),
   },
@@ -1106,7 +1161,9 @@ export const getStoredTrialTar = () => {
 export const revertStoredTrialTar = (id: string) => {
   try {
     const current = getStoredTrialTar();
-    const filtered = current.filter((item: any) => String(item.id || item._id) !== String(id));
+    const filtered = current.filter(
+      (item: any) => String(item.id || item._id) !== String(id),
+    );
     localStorage.setItem(TRIAL_TAR_KEY, JSON.stringify(filtered));
   } catch (e) {}
 };
@@ -1127,7 +1184,9 @@ export const getStoredTrialBox = () => {
 export const revertStoredTrialBox = (id: string) => {
   try {
     const current = getStoredTrialBox();
-    const filtered = current.filter((item: any) => String(item.id || item._id) !== String(id));
+    const filtered = current.filter(
+      (item: any) => String(item.id || item._id) !== String(id),
+    );
     localStorage.setItem(TRIAL_BOX_KEY, JSON.stringify(filtered));
   } catch (e) {}
 };
@@ -1141,17 +1200,19 @@ export const getStoredTrialSoldering = () => {
       if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) {}
-  localStorage.setItem(TRIAL_SOLDERING_KEY, JSON.stringify(DEFAULT_TRIAL_SOLDERING));
+  localStorage.setItem(
+    TRIAL_SOLDERING_KEY,
+    JSON.stringify(DEFAULT_TRIAL_SOLDERING),
+  );
   return DEFAULT_TRIAL_SOLDERING;
 };
 
 export const revertStoredTrialSoldering = (id: string) => {
   try {
     const current = getStoredTrialSoldering();
-    const filtered = current.filter((item: any) => String(item.id || item._id) !== String(id));
+    const filtered = current.filter(
+      (item: any) => String(item.id || item._id) !== String(id),
+    );
     localStorage.setItem(TRIAL_SOLDERING_KEY, JSON.stringify(filtered));
   } catch (e) {}
 };
-
-
-

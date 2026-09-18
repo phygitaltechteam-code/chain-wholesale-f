@@ -22,14 +22,16 @@ export const ProcessOrchestration: React.FC<ProcessOrchestrationProps> = ({
   onReturnStage,
   canEdit = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<'all' | 'in_progress' | 'completed'>('all');
+  const [activeTab, setActiveTab] = useState<
+    'all' | 'in_progress' | 'completed'
+  >('all');
 
   const displayedStages =
     activeTab === 'completed'
       ? completedStages
       : activeTab === 'in_progress'
-      ? inProgressStages
-      : processStages;
+        ? inProgressStages
+        : processStages;
 
   return (
     <div className="rounded-2xl border border-[#d3c4af]/20 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -71,7 +73,7 @@ export const ProcessOrchestration: React.FC<ProcessOrchestrationProps> = ({
           }`}
         >
           <span>All Stages</span>
-          <span className="rounded-full bg-black/10 px-1.5 py-0.2 text-[10px] dark:bg-white/10">
+          <span className="py-0.2 rounded-full bg-black/10 px-1.5 text-[10px] dark:bg-white/10">
             {processStages.length}
           </span>
         </button>
@@ -86,7 +88,7 @@ export const ProcessOrchestration: React.FC<ProcessOrchestrationProps> = ({
         >
           <Clock size={12} />
           <span>In Progress</span>
-          <span className="rounded-full bg-black/10 px-1.5 py-0.2 text-[10px] dark:bg-white/10">
+          <span className="py-0.2 rounded-full bg-black/10 px-1.5 text-[10px] dark:bg-white/10">
             {inProgressStages.length}
           </span>
         </button>
@@ -101,7 +103,7 @@ export const ProcessOrchestration: React.FC<ProcessOrchestrationProps> = ({
         >
           <CheckCircle2 size={12} />
           <span>Completed</span>
-          <span className="rounded-full bg-black/10 px-1.5 py-0.2 text-[10px] dark:bg-white/10">
+          <span className="py-0.2 rounded-full bg-black/10 px-1.5 text-[10px] dark:bg-white/10">
             {completedStages.length}
           </span>
         </button>
@@ -125,8 +127,8 @@ export const ProcessOrchestration: React.FC<ProcessOrchestrationProps> = ({
               {activeTab === 'completed'
                 ? 'No completed stages yet.'
                 : activeTab === 'in_progress'
-                ? 'No stages currently in progress.'
-                : 'No process stages have been assigned to this job yet.'}
+                  ? 'No stages currently in progress.'
+                  : 'No process stages have been assigned to this job yet.'}
             </p>
             {canEdit && activeTab === 'all' && (
               <button

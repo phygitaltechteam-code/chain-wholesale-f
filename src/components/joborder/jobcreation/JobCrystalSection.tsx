@@ -2,7 +2,9 @@ import React, {useState} from 'react';
 import {ChevronDown, ChevronUp, Plus, X} from 'lucide-react';
 import toast from 'react-hot-toast';
 import {SelectedCrystalRow} from './AddJobModal';
-import GenericSearchDropdown, {DropdownItem} from '@/components/Forms/DropDown/GenericSearchDropdown';
+import GenericSearchDropdown, {
+  DropdownItem,
+} from '@/components/Forms/DropDown/GenericSearchDropdown';
 
 interface JobCrystalSectionProps {
   allCrystals: any[];
@@ -56,16 +58,21 @@ export const JobCrystalSection: React.FC<JobCrystalSectionProps> = ({
         return;
       }
       const newRow: SelectedCrystalRow = {
-        id: String(selectedCrystalObj.id || selectedCrystalObj._id || Date.now()),
+        id: String(
+          selectedCrystalObj.id || selectedCrystalObj._id || Date.now(),
+        ),
         isClient: false,
         name: selectedCrystalObj.name || 'Crystal',
         shape: selectedCrystalObj.shape || 'Round',
         color: selectedCrystalObj.color || 'G',
-        weight: parseFloat(String(selectedCrystalObj.wt || selectedCrystalObj.weight || 0)),
+        weight: parseFloat(
+          String(selectedCrystalObj.wt || selectedCrystalObj.weight || 0),
+        ),
         qty: Number(qty) || 1,
         amount:
-          parseFloat(String(selectedCrystalObj.amount || selectedCrystalObj.rate || 0)) *
-          (Number(qty) || 1),
+          parseFloat(
+            String(selectedCrystalObj.amount || selectedCrystalObj.rate || 0),
+          ) * (Number(qty) || 1),
         size: selectedCrystalObj.size || 'Medium',
       };
       onAddCrystal(newRow);
@@ -132,7 +139,7 @@ export const JobCrystalSection: React.FC<JobCrystalSectionProps> = ({
 
             {/* Crystal Combobox or Client Input */}
             {crystalType === 'Shop' ? (
-              <div className="flex-1 min-w-[220px]">
+              <div className="min-w-[220px] flex-1">
                 <GenericSearchDropdown
                   label="CRYSTAL"
                   placeholder="Type to search crystal..."
@@ -144,7 +151,7 @@ export const JobCrystalSection: React.FC<JobCrystalSectionProps> = ({
                 />
               </div>
             ) : (
-              <div className="flex flex-1 flex-wrap items-end gap-2 min-w-[220px]">
+              <div className="flex min-w-[220px] flex-1 flex-wrap items-end gap-2">
                 <div className="flex-1">
                   <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                     CRYSTAL NAME
@@ -166,7 +173,9 @@ export const JobCrystalSection: React.FC<JobCrystalSectionProps> = ({
                     step="0.01"
                     placeholder="0.00"
                     value={clientWeight || ''}
-                    onChange={(e) => setClientWeight(parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      setClientWeight(parseFloat(e.target.value) || 0)
+                    }
                     className="w-full rounded-xl border border-[#d3c4af]/30 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   />
                 </div>
@@ -182,7 +191,9 @@ export const JobCrystalSection: React.FC<JobCrystalSectionProps> = ({
                 type="number"
                 min="1"
                 value={qty}
-                onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
+                onChange={(e) =>
+                  setQty(Math.max(1, Number(e.target.value) || 1))
+                }
                 className="w-full rounded-xl border border-[#d3c4af]/30 bg-white px-3 py-2.5 text-sm text-[#1a1c1b] outline-none focus:border-[#785600] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
@@ -226,7 +237,10 @@ export const JobCrystalSection: React.FC<JobCrystalSectionProps> = ({
                   </thead>
                   <tbody className="divide-y divide-[#d3c4af]/10 dark:divide-slate-800">
                     {selectedCrystalsList.map((row, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                      <tr
+                        key={idx}
+                        className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30"
+                      >
                         <td className="px-4 py-3 font-semibold text-[#1a1c1b] dark:text-white">
                           {row.name}
                         </td>

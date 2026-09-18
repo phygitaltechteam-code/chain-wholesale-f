@@ -17,7 +17,9 @@ export const formatNumberDisplay = (
   });
 };
 
-export const formatIndianDate = (date: Date | string | null | undefined): string => {
+export const formatIndianDate = (
+  date: Date | string | null | undefined,
+): string => {
   if (!date) return '';
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) return '';
@@ -28,7 +30,9 @@ export const formatIndianDate = (date: Date | string | null | undefined): string
   });
 };
 
-export const formatIndianDateTime = (date: Date | string | null | undefined): string => {
+export const formatIndianDateTime = (
+  date: Date | string | null | undefined,
+): string => {
   if (!date) return '';
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) return '';
@@ -58,7 +62,12 @@ export const calculateAveragePurity = (
 };
 
 export const formatPurityPercentage = (purity: unknown): string => {
-  if (purity === null || purity === undefined || purity === '' || purity === 'N/A') {
+  if (
+    purity === null ||
+    purity === undefined ||
+    purity === '' ||
+    purity === 'N/A'
+  ) {
     return '-';
   }
   const str = String(purity).trim();

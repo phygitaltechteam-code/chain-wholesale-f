@@ -8,7 +8,12 @@ export const calculateAveragePurity = (
   totalGrossWeight: number,
   decimals: number = 2,
 ): string => {
-  if (!totalGrossWeight || totalGrossWeight <= 0 || !totalFineWeight || totalFineWeight <= 0) {
+  if (
+    !totalGrossWeight ||
+    totalGrossWeight <= 0 ||
+    !totalFineWeight ||
+    totalFineWeight <= 0
+  ) {
     return '0.00';
   }
   const purity = (Number(totalFineWeight) / Number(totalGrossWeight)) * 100;

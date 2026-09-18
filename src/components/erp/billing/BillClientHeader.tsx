@@ -81,4 +81,3 @@ export const BillClientHeader: React.FC<BillClientHeaderProps> = ({
 };
 
 export default BillClientHeader;
-

@@ -27,7 +27,7 @@ export const BillingSummaryCard: React.FC<BillingSummaryCardProps> = ({
       </h3>
       <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3 lg:grid-cols-6">
         <div className="rounded-lg bg-white p-2.5 shadow-sm dark:bg-slate-800">
-          <span className="text-[10px] font-semibold text-gray-500 dark:text-slate-400">
+          <span className="text-gray-500 text-[10px] font-semibold dark:text-slate-400">
             Total Gross WT
           </span>
           <p className="font-mono text-sm font-bold text-[#1a1c1b] dark:text-white">
@@ -36,7 +36,7 @@ export const BillingSummaryCard: React.FC<BillingSummaryCardProps> = ({
         </div>
 
         <div className="rounded-lg bg-white p-2.5 shadow-sm dark:bg-slate-800">
-          <span className="text-[10px] font-semibold text-gray-500 dark:text-slate-400">
+          <span className="text-gray-500 text-[10px] font-semibold dark:text-slate-400">
             Total Fine WT
           </span>
           <p className="font-mono text-sm font-bold text-[#785600] dark:text-amber-400">
@@ -46,7 +46,7 @@ export const BillingSummaryCard: React.FC<BillingSummaryCardProps> = ({
 
         {showSRP && (
           <div className="rounded-lg bg-white p-2.5 shadow-sm dark:bg-slate-800">
-            <span className="text-[10px] font-semibold text-gray-500 dark:text-slate-400">
+            <span className="text-gray-500 text-[10px] font-semibold dark:text-slate-400">
               Total SRP
             </span>
             <p className="font-mono text-sm font-bold text-[#1a1c1b] dark:text-white">
@@ -56,7 +56,7 @@ export const BillingSummaryCard: React.FC<BillingSummaryCardProps> = ({
         )}
 
         <div className="rounded-lg bg-white p-2.5 shadow-sm dark:bg-slate-800">
-          <span className="text-[10px] font-semibold text-gray-500 dark:text-slate-400">
+          <span className="text-gray-500 text-[10px] font-semibold dark:text-slate-400">
             Customer WT
           </span>
           <p className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">
@@ -65,10 +65,10 @@ export const BillingSummaryCard: React.FC<BillingSummaryCardProps> = ({
         </div>
 
         <div className="rounded-lg bg-white p-2.5 shadow-sm dark:bg-slate-800">
-          <span className="text-[10px] font-semibold text-gray-500 dark:text-slate-400">
+          <span className="text-gray-500 text-[10px] font-semibold dark:text-slate-400">
             Previous Due
           </span>
-          <p className="font-mono text-sm font-bold text-gray-700 dark:text-slate-300">
+          <p className="font-mono text-gray-700 text-sm font-bold dark:text-slate-300">
             {formatNumberDisplay(previousDue)} G
           </p>
         </div>

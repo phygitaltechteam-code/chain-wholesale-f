@@ -48,7 +48,7 @@ export interface BillGroup {
   phoneNumber: string;
   receive: number;
   pending: number;
-  remainingWeight:number;
+  remainingWeight: number;
   type: 'DRAFT' | 'BILL';
   createdAt: string;
   items: {

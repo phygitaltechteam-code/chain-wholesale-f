@@ -32,7 +32,9 @@ export const ReportFilterBar: React.FC<ReportFilterBarProps> = ({
         <div className="flex items-center gap-2.5">
           {showBackButton && (
             <button
-              onClick={() => (backUrl ? navigate({to: backUrl as any}) : window.history.back())}
+              onClick={() =>
+                backUrl ? navigate({to: backUrl as any}) : window.history.back()
+              }
               className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#d3c4af]/40 bg-white text-[#785600] transition-colors hover:bg-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400"
               title="Back"
             >
@@ -44,7 +46,9 @@ export const ReportFilterBar: React.FC<ReportFilterBarProps> = ({
               {title}
             </h1>
             {subtitle && (
-              <p className="text-xs text-[#817563] dark:text-slate-400">{subtitle}</p>
+              <p className="text-xs text-[#817563] dark:text-slate-400">
+                {subtitle}
+              </p>
             )}
           </div>
         </div>

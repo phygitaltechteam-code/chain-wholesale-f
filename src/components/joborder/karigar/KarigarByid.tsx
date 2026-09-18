@@ -286,7 +286,7 @@ const KarigarByid: React.FC = () => {
 
   if (isError || !karigar) {
     return (
-      <div className="min-h-screen bg-[#f9f9f7] p-4 sm:p-6 lg:p-8 dark:bg-slate-950">
+      <div className="min-h-screen bg-[#f9f9f7] p-4 dark:bg-slate-950 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl">
           <button
             onClick={() => navigate({to: '/joborder/kariger'})}
@@ -297,7 +297,9 @@ const KarigarByid: React.FC = () => {
           </button>
           <div className="overflow-hidden rounded-2xl border border-red-200 bg-red-50 p-8 text-center dark:border-red-900/30 dark:bg-red-950/20">
             <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-            <p className="mt-3 font-semibold text-red-600">Failed to load artisan details</p>
+            <p className="mt-3 font-semibold text-red-600">
+              Failed to load artisan details
+            </p>
           </div>
         </div>
       </div>
@@ -305,7 +307,7 @@ const KarigarByid: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] p-4 sm:p-6 lg:p-8 dark:bg-slate-950">
+    <div className="min-h-screen bg-[#f9f9f7] p-4 dark:bg-slate-950 sm:p-6 lg:p-8">
       <div>
         <button
           onClick={() => navigate({to: '/joborder/kariger'})}
@@ -351,7 +353,10 @@ const KarigarByid: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3">
             {/* Date Filter */}
             <div className="flex items-center gap-2 rounded-xl border border-[#d3c4af]/30 bg-white px-3 py-1.5 dark:border-slate-700 dark:bg-slate-900">
-              <Calendar size={14} className="text-[#785600] dark:text-amber-400" />
+              <Calendar
+                size={14}
+                className="text-[#785600] dark:text-amber-400"
+              />
               <input
                 type="date"
                 value={fromDate}
@@ -380,14 +385,21 @@ const KarigarByid: React.FC = () => {
 
             {/* Metal Filter */}
             <div className="flex items-center gap-2 rounded-xl border border-[#d3c4af]/30 bg-white px-3 py-1.5 dark:border-slate-700 dark:bg-slate-900">
-              <Filter size={14} className="text-[#785600] dark:text-amber-400" />
+              <Filter
+                size={14}
+                className="text-[#785600] dark:text-amber-400"
+              />
               <select
                 value={selectedMetal}
                 onChange={(e) => setSelectedMetal(e.target.value)}
                 className="rounded border-none bg-transparent text-xs text-[#1a1c1b] focus:outline-none dark:text-white"
               >
                 {metalOptions.map((option) => (
-                  <option key={option.value} value={option.value} className="dark:bg-slate-900">
+                  <option
+                    key={option.value}
+                    value={option.value}
+                    className="dark:bg-slate-900"
+                  >
                     {option.label}
                   </option>
                 ))}
@@ -410,7 +422,9 @@ const KarigarByid: React.FC = () => {
             {canEdit && (
               <button
                 onClick={() => {
-                  const pendingStage = filteredStages.find((s) => s.pendingAmount > 0);
+                  const pendingStage = filteredStages.find(
+                    (s) => s.pendingAmount > 0,
+                  );
                   if (pendingStage) {
                     setSelectedStageForPayment(pendingStage);
                     setPaymentAmount(pendingStage.pendingAmount);
@@ -431,7 +445,9 @@ const KarigarByid: React.FC = () => {
         {activeTab === 'jobs' && (
           <JobStagesTable
             stages={filteredStages}
-            onViewJob={(jobId) => navigate({to: `/joborder/jewelleryjoborder/${jobId}` as any})}
+            onViewJob={(jobId) =>
+              navigate({to: `/joborder/jewelleryjoborder/${jobId}` as any})
+            }
             onMakePayment={
               canEdit
                 ? (stage) => {

@@ -1,4 +1,8 @@
-import {ClientReportEntry, formatIndianDate, formatNumber} from './clientReportUtils';
+import {
+  ClientReportEntry,
+  formatIndianDate,
+  formatNumber,
+} from './clientReportUtils';
 
 interface PrintClientReportOptions {
   filteredData: ClientReportEntry[];
@@ -98,8 +102,7 @@ export const printClientReportDoc = ({
     headerInfo.description ||
     'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
   const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-  const phoneNumbers =
-    headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+  const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
   const invocationColor = headerInfo.invocationColor || '#a84b20';
   const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
   const descriptionColor = headerInfo.descriptionColor || '#8b451f';

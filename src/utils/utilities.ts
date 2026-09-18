@@ -42,4 +42,3 @@ export const formatCurrency = (amount?: number | null) => {
   if (amount === undefined || amount === null || isNaN(amount)) return '₹0';
   return `₹${amount.toLocaleString('en-IN')}`;
 };
-

@@ -2,7 +2,13 @@ import React, {useState} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import {Route} from '@/routes/_app/joborder/jewelleryjoborder.$id';
 import {usePermission} from '@/hooks/usePermission';
-import {useGetJobById, useSubmitJobKarigar, useUpdateJobStage, useSubmitReturnEntry, useEditJob} from './jewelleryjoborderapi';
+import {
+  useGetJobById,
+  useSubmitJobKarigar,
+  useUpdateJobStage,
+  useSubmitReturnEntry,
+  useEditJob,
+} from './jewelleryjoborderapi';
 import {useGetProcesses} from '../processapi';
 import {useGetKarigars} from '../karigarapi';
 import {useJobData} from './useJobData';
@@ -27,13 +33,23 @@ export const JewelleryJobOrder: React.FC = () => {
   const canEdit = canEditKarigar || canEditJob;
 
   // Query hooks
-  const {data: jobByIdData, isLoading: isLoadingJob, refetch: refetchJob} = useGetJobById(id || '');
+  const {
+    data: jobByIdData,
+    isLoading: isLoadingJob,
+    refetch: refetchJob,
+  } = useGetJobById(id || '');
   const {data: processesData} = useGetProcesses();
   const {data: karigarsData} = useGetKarigars();
-  const {data: clientsData, isLoading: clientsLoading, refetch: refetchClients} = useGetClients();
+  const {
+    data: clientsData,
+    isLoading: clientsLoading,
+    refetch: refetchClients,
+  } = useGetClients();
 
   const processes = processesData || [];
-  const karigars = Array.isArray(karigarsData?.data || karigarsData) ? karigarsData?.data || karigarsData : [];
+  const karigars = Array.isArray(karigarsData?.data || karigarsData)
+    ? karigarsData?.data || karigarsData
+    : [];
   const clients = Array.isArray(clientsData) ? clientsData : [];
 
   // Mutations
@@ -42,7 +58,8 @@ export const JewelleryJobOrder: React.FC = () => {
   const submitReturnEntry = useSubmitReturnEntry();
 
   // Custom data hook
-  const {jobData, processStages, completedStages, inProgressStages} = useJobData(jobByIdData);
+  const {jobData, processStages, completedStages, inProgressStages} =
+    useJobData(jobByIdData);
 
   // Stage form hook
   const stageForm = useStageForm({
@@ -78,7 +95,9 @@ export const JewelleryJobOrder: React.FC = () => {
       <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] dark:bg-slate-950">
         <div className="text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#785600] border-t-transparent"></div>
-          <p className="mt-3 text-xs font-semibold text-[#4f4535] dark:text-slate-400">Loading manufacturing order...</p>
+          <p className="mt-3 text-xs font-semibold text-[#4f4535] dark:text-slate-400">
+            Loading manufacturing order...
+          </p>
         </div>
       </div>
     );
@@ -88,7 +107,9 @@ export const JewelleryJobOrder: React.FC = () => {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f9f9f7] p-6 dark:bg-slate-950">
         <div className="text-center">
-          <p className="text-sm font-bold text-[#4f4535] dark:text-slate-300">Job Order Not Found</p>
+          <p className="text-sm font-bold text-[#4f4535] dark:text-slate-300">
+            Job Order Not Found
+          </p>
           <button
             onClick={handleBack}
             className="mt-4 rounded-xl bg-[#785600] px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-[#986d00]"

@@ -1,6 +1,8 @@
 import React from 'react';
 import {Client} from '@/lib/api/client';
-import GenericSearchDropdown, {DropdownItem} from '@/components/Forms/DropDown/GenericSearchDropdown';
+import GenericSearchDropdown, {
+  DropdownItem,
+} from '@/components/Forms/DropDown/GenericSearchDropdown';
 
 interface ClientSelectorProps {
   clients: Client[];
@@ -19,7 +21,8 @@ export const ClientSelector: React.FC<ClientSelectorProps> = ({
   const items: DropdownItem[] = clients.map((c) => ({
     id: String(c.id || ''),
     title: c.fullName || 'Unnamed Client',
-    subtitle: `${c.phoneNumber || 'No phone'}${c.address ? ` • ${c.address}` : ''}`.trim(),
+    subtitle:
+      `${c.phoneNumber || 'No phone'}${c.address ? ` • ${c.address}` : ''}`.trim(),
     data: c,
   }));
 

@@ -396,8 +396,6 @@ const AdminProfile: React.FC = () => {
                 </div>
 
                 <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-
-
                   {/* Current Password */}
                   <div>
                     <label className="text-gray-500 mb-1 block text-[11px] font-semibold dark:text-slate-400">

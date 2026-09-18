@@ -13,12 +13,9 @@ interface RealTimeKarigarStockPanelProps {
   toggleRow: (id: string) => void;
 }
 
-export const RealTimeKarigarStockPanel: React.FC<RealTimeKarigarStockPanelProps> = ({
-  karigarStockGroup,
-  karigarStockTotals,
-  expandedRows,
-  toggleRow,
-}) => {
+export const RealTimeKarigarStockPanel: React.FC<
+  RealTimeKarigarStockPanelProps
+> = ({karigarStockGroup, karigarStockTotals, expandedRows, toggleRow}) => {
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
       <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">

@@ -30,7 +30,10 @@ interface StatsCardsProps {
   formatCurrency: (amount?: number | null) => string;
 }
 
-export const StatsCards: React.FC<StatsCardsProps> = ({data, formatCurrency}) => {
+export const StatsCards: React.FC<StatsCardsProps> = ({
+  data,
+  formatCurrency,
+}) => {
   return (
     <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5">
       {/* Total Works */}
@@ -154,7 +157,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({data, formatCurrency}) =>
       </div>
 
       {/* Last Paid Date */}
-      <div className="col-span-2 rounded-2xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm transition-all hover:shadow-md sm:col-span-1 md:col-span-2 dark:border-slate-800 dark:bg-slate-900">
+      <div className="col-span-2 rounded-2xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:col-span-1 md:col-span-2">
         <div className="flex items-center justify-between">
           <p className="text-[11px] font-bold uppercase tracking-wider text-[#4f4535]/80 dark:text-slate-400">
             Last Disbursed Date

@@ -192,8 +192,7 @@ export const ClientReportTable: React.FC<ClientReportTableProps> = ({
                             entry.rawGroupItems &&
                             entry.rawGroupItems.length > 0
                               ? entry.rawGroupItems.reduce(
-                                  (acc, it) =>
-                                    acc + (Number(it.weight) || 0),
+                                  (acc, it) => acc + (Number(it.weight) || 0),
                                   0,
                                 )
                               : entry.wt !== undefined && entry.wt !== null

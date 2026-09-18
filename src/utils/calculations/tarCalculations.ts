@@ -18,7 +18,13 @@ export const calculateTarLoss = (
 };
 
 export const calculateTarTotals = (
-  rows: Array<{grosswt?: number; fine?: number; tar?: number; scrap?: number; loss?: number}>,
+  rows: Array<{
+    grosswt?: number;
+    fine?: number;
+    tar?: number;
+    scrap?: number;
+    loss?: number;
+  }>,
 ) => {
   const totalGross = rows.reduce((sum, r) => sum + Number(r.grosswt || 0), 0);
   const totalFine = rows.reduce((sum, r) => sum + Number(r.fine || 0), 0);

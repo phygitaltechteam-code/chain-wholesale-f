@@ -1835,7 +1835,7 @@ const Billing: React.FC = () => {
   };
 
   const handleRowClick = (item: BillGroup) => {
-    navigate({to: `/billiupdate/${item.id}`});
+    navigate({to: `/karigarbilliupdate/${item.id}`});
   };
 
   const renderActions = (item: BillGroup, index: number) => (
@@ -2061,11 +2061,11 @@ const Billing: React.FC = () => {
         <div className="mb-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <PageHeader title="Billing" />
+              <PageHeader title="Karigar Billing" />
             </div>
             <GenericButton
               type="button"
-              onClick={() => navigate({to: '/receipt/addreciept'})}
+              onClick={() => navigate({to: '/karigarbillingadd'})}
             >
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span>Add Bill</span>

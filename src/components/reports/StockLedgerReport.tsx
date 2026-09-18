@@ -137,10 +137,7 @@ export default function StockLedgerReport() {
                 0,
             ),
             openingSr: Number(
-              sec1?.openingSr ??
-                ovOpening?.sr ??
-                sumOpening?.openingSr ??
-                0,
+              sec1?.openingSr ?? ovOpening?.sr ?? sumOpening?.openingSr ?? 0,
             ),
             inward: Number(
               sec1?.inward ?? ovOpening?.inward ?? sumOpening?.inward ?? 0,
@@ -169,10 +166,7 @@ export default function StockLedgerReport() {
                 0,
             ),
             closingSrp: Number(
-              sec2?.closingSrp ??
-                ovClosing?.srp ??
-                sumClosing?.closingSrp ??
-                0,
+              sec2?.closingSrp ?? ovClosing?.srp ?? sumClosing?.closingSrp ?? 0,
             ),
             loss: Number(
               sec2?.loss ?? ovClosing?.loss ?? sumClosing?.loss ?? 0,
@@ -1975,58 +1969,57 @@ export default function StockLedgerReport() {
                       OPENING
                     </span>
                   </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        Gold Stock
-                      </span>
-                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(summaryData.opening.gold)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        Chain Stock
-                      </span>
-                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(summaryData.opening.openingChain)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        Client Due
-                      </span>
-                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(
-                          summaryData.opening.openingClientDue,
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        Karigar Due
-                      </span>
-                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(
-                          summaryData.opening.openingKarigarDue,
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        SR (Received)
-                      </span>
-                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(summaryData.opening.openingSr)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between bg-[#f4f1ea]/60 px-4 py-2.5 dark:bg-slate-800/50">
-                      <span className="font-bold text-[#1a1c1b] dark:text-white">
-                        Inward
-                      </span>
-                      <span className="font-mono text-sm font-bold text-green-700 dark:text-green-400">
-                        {formatNumberDisplay(summaryData.opening.inward)}
-                      </span>
-                    </div>
+                  <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                    <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                      Gold Stock
+                    </span>
+                    <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                      {formatNumberDisplay(summaryData.opening.gold)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                    <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                      Chain Stock
+                    </span>
+                    <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                      {formatNumberDisplay(summaryData.opening.openingChain)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                    <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                      Client Due
+                    </span>
+                    <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                      {formatNumberDisplay(
+                        summaryData.opening.openingClientDue,
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                    <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                      Karigar Due
+                    </span>
+                    <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                      {formatNumberDisplay(
+                        summaryData.opening.openingKarigarDue,
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                    <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                      SR (Received)
+                    </span>
+                    <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                      {formatNumberDisplay(summaryData.opening.openingSr)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between bg-[#f4f1ea]/60 px-4 py-2.5 dark:bg-slate-800/50">
+                    <span className="font-bold text-[#1a1c1b] dark:text-white">
+                      Inward
+                    </span>
+                    <span className="font-mono text-sm font-bold text-green-700 dark:text-green-400">
+                      {formatNumberDisplay(summaryData.opening.inward)}
+                    </span>
                   </div>
                 </div>
 
@@ -2079,9 +2072,7 @@ export default function StockLedgerReport() {
                         SRP (Given)
                       </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(
-                          summaryData.closing.closingSrp,
-                        )}
+                        {formatNumberDisplay(summaryData.closing.closingSrp)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between bg-[#f4f1ea]/60 px-4 py-2.5 dark:bg-slate-800/50">
@@ -2114,226 +2105,45 @@ export default function StockLedgerReport() {
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* 2, 3, 4: MANUFACTURING STOCK, CHAIN STOCK, & CLIENT in ONE ROW */}
-            <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-3">
-              {/* MANUFACTURING STOCK Table */}
-              <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
-                <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-                  <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
-                    MANUFACTURING STOCK
-                  </span>
-                </div>
-                <div className="flex flex-1 flex-col overflow-x-auto">
-                  <table className="w-full text-left text-xs sm:text-sm">
-                    <thead>
-                      <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                        <th className="px-3.5 py-2.5">Name</th>
-                        <th className="px-3.5 py-2.5 text-right">Opening</th>
-                        <th className="px-3.5 py-2.5 text-right">Closing</th>
-                        <th className="px-3.5 py-2.5 text-right">Difference</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
-                      {filteredRawStock.length > 0 ? (
-                        filteredRawStock.map((row) => (
-                          <tr
-                            key={row.id}
-                            className="transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40"
-                          >
-                            <td className="px-3.5 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
-                              {row.name}
-                            </td>
-                            <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
-                              {formatNumberDisplay(row.opening)}
-                            </td>
-                            <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
-                              {formatNumberDisplay(row.closing)}
-                            </td>
-                            <td className="font-mono px-3.5 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
-                              {formatNumberDisplay(row.due)}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={4}
-                            className="text-gray-500 px-3.5 py-6 text-center text-xs"
-                          >
-                            No manufacturing stock data found.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* CHAIN STOCK Table */}
-              <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
-                <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-                  <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
-                    CHAIN STOCK
-                  </span>
-                </div>
-                <div className="flex flex-1 flex-col overflow-x-auto">
-                  <table className="w-full text-left text-xs sm:text-sm">
-                    <thead>
-                      <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                        <th className="px-3.5 py-2.5">Name</th>
-                        <th className="px-3.5 py-2.5 text-right">Opening</th>
-                        <th className="px-3.5 py-2.5 text-right">Closing</th>
-                        <th className="px-3.5 py-2.5 text-right">Difference</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
-                      {filteredChainStock.length > 0 ? (
-                        filteredChainStock.map((row) => (
-                          <tr
-                            key={row.id}
-                            className="transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40"
-                          >
-                            <td className="px-3.5 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
-                              {row.name}
-                            </td>
-                            <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
-                              {formatNumberDisplay(row.opening)}
-                            </td>
-                            <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
-                              {formatNumberDisplay(row.closing)}
-                            </td>
-                            <td className="font-mono px-3.5 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
-                              {formatNumberDisplay(row.due)}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={4}
-                            className="text-gray-500 px-3.5 py-6 text-center text-xs"
-                          >
-                            No chain stock data found.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* CLIENT Table */}
-              <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
-                <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-                  <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
-                    CLIENT
-                  </span>
-                </div>
-                <div className="flex flex-1 flex-col overflow-x-auto">
-                  <table className="w-full text-left text-xs sm:text-sm">
-                    <thead>
-                      <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                        <th className="px-3.5 py-2.5">Name</th>
-                        <th className="px-3.5 py-2.5 text-right">Opening</th>
-                        <th className="px-3.5 py-2.5 text-right">Closing</th>
-                        <th className="px-3.5 py-2.5 text-right">Difference</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
-                      {filteredClient.length > 0 ? (
-                        filteredClient.map((row) => (
-                          <tr
-                            key={row.id}
-                            className="transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40"
-                          >
-                            <td className="px-3.5 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
-                              {row.name}
-                            </td>
-                            <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
-                              {formatNumberDisplay(row.opening)}
-                            </td>
-                            <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
-                              {formatNumberDisplay(row.closing)}
-                            </td>
-                            <td className="font-mono px-3.5 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
-                              {formatNumberDisplay(row.difference)}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={4}
-                            className="text-gray-500 px-3.5 py-6 text-center text-xs"
-                          >
-                            No client records found.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            {/* 5. INWARD OUTWARD HISTORY Table */}
-            <div className="overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
-              <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2 text-center dark:bg-slate-800/60">
+          {/* 2, 3, 4: MANUFACTURING STOCK, CHAIN STOCK, & CLIENT in ONE ROW */}
+          <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-3">
+            {/* KARIGER STOCK Table */}
+            <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+              <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
                 <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
-                  INWARD OUTWARD HISTORY
+                  KARIGER STOCK
                 </span>
               </div>
-              <div className="overflow-x-auto">
+              <div className="flex flex-1 flex-col overflow-x-auto">
                 <table className="w-full text-left text-xs sm:text-sm">
                   <thead>
                     <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                      <th className="px-4 py-2.5">INWARD NAME</th>
-                      <th className="px-4 py-2.5 text-right">INWARD</th>
-                      <th className="px-4 py-2.5">OUTWARD NAME</th>
-                      <th className="px-4 py-2.5 text-right">OUTWARD</th>
+                      <th className="px-3.5 py-2.5">Name</th>
+                      <th className="px-3.5 py-2.5 text-right">Opening</th>
+                      <th className="px-3.5 py-2.5 text-right">Closing</th>
+                      <th className="px-3.5 py-2.5 text-right">Difference</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
-                    {filteredMovement.length > 0 ? (
-                      filteredMovement.map((row) => (
+                    {filteredRawStock.length > 0 ? (
+                      filteredRawStock.map((row) => (
                         <tr
                           key={row.id}
                           className="transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40"
                         >
-                          <td className="px-4 py-2.5">
-                            <div className="font-medium text-[#1a1c1b] dark:text-white">
-                              {row.inwardName ? row.inwardName : '-'}
-                            </div>
-                            {row.inwardSubtext && (
-                              <div className="text-gray-500 dark:text-gray-400 text-[11px]">
-                                {row.inwardSubtext}
-                              </div>
-                            )}
+                          <td className="px-3.5 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                            {row.name}
                           </td>
-                          <td className="font-mono px-4 py-2.5 text-right font-bold text-green-700 dark:text-green-400">
-                            {row.inwardName &&
-                            row.inward != null &&
-                            row.inward > 0
-                              ? formatNumberDisplay(row.inward)
-                              : '-'}
+                          <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
+                            {formatNumberDisplay(row.opening)}
                           </td>
-                          <td className="px-4 py-2.5">
-                            <div className="font-medium text-[#1a1c1b] dark:text-white">
-                              {row.outwardName ? row.outwardName : '-'}
-                            </div>
-                            {row.outwardSubtext && (
-                              <div className="text-gray-500 dark:text-gray-400 text-[11px]">
-                                {row.outwardSubtext}
-                              </div>
-                            )}
+                          <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
+                            {formatNumberDisplay(row.closing)}
                           </td>
-                          <td className="font-mono px-4 py-2.5 text-right font-bold text-amber-700 dark:text-amber-400">
-                            {row.outwardName &&
-                            row.outward != null &&
-                            row.outward > 0
-                              ? formatNumberDisplay(row.outward)
-                              : '-'}
+                          <td className="font-mono px-3.5 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
+                            {formatNumberDisplay(row.due)}
                           </td>
                         </tr>
                       ))
@@ -2341,9 +2151,115 @@ export default function StockLedgerReport() {
                       <tr>
                         <td
                           colSpan={4}
-                          className="text-gray-500 px-4 py-4 text-center text-xs"
+                          className="text-gray-500 px-3.5 py-6 text-center text-xs"
                         >
-                          No stock movement records found.
+                          No manufacturing stock data found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* CLIENT Table */}
+            <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+              <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
+                <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
+                  CLIENT
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      <th className="px-3.5 py-2.5">Name</th>
+                      <th className="px-3.5 py-2.5 text-right">Opening</th>
+                      <th className="px-3.5 py-2.5 text-right">Closing</th>
+                      <th className="px-3.5 py-2.5 text-right">Difference</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
+                    {filteredClient.length > 0 ? (
+                      filteredClient.map((row) => (
+                        <tr
+                          key={row.id}
+                          className="transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40"
+                        >
+                          <td className="px-3.5 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                            {row.name}
+                          </td>
+                          <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
+                            {formatNumberDisplay(row.opening)}
+                          </td>
+                          <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
+                            {formatNumberDisplay(row.closing)}
+                          </td>
+                          <td className="font-mono px-3.5 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
+                            {formatNumberDisplay(row.difference)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="text-gray-500 px-3.5 py-6 text-center text-xs"
+                        >
+                          No client records found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* CHAIN STOCK Table */}
+            <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+              <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
+                <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
+                  CHAIN STOCK
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      <th className="px-3.5 py-2.5">Name</th>
+                      <th className="px-3.5 py-2.5 text-right">Opening</th>
+                      <th className="px-3.5 py-2.5 text-right">Closing</th>
+                      <th className="px-3.5 py-2.5 text-right">Difference</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
+                    {filteredChainStock.length > 0 ? (
+                      filteredChainStock.map((row) => (
+                        <tr
+                          key={row.id}
+                          className="transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40"
+                        >
+                          <td className="px-3.5 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                            {row.name}
+                          </td>
+                          <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
+                            {formatNumberDisplay(row.opening)}
+                          </td>
+                          <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
+                            {formatNumberDisplay(row.closing)}
+                          </td>
+                          <td className="font-mono px-3.5 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
+                            {formatNumberDisplay(row.due)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="text-gray-500 px-3.5 py-6 text-center text-xs"
+                        >
+                          No chain stock data found.
                         </td>
                       </tr>
                     )}
@@ -2352,7 +2268,83 @@ export default function StockLedgerReport() {
               </div>
             </div>
           </div>
+
+          {/* 5. INWARD OUTWARD HISTORY Table */}
+          <div className="overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+            <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2 text-center dark:bg-slate-800/60">
+              <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
+                INWARD OUTWARD HISTORY
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs sm:text-sm">
+                <thead>
+                  <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    <th className="px-4 py-2.5">INWARD NAME</th>
+                    <th className="px-4 py-2.5 text-right">INWARD</th>
+                    <th className="px-4 py-2.5">OUTWARD NAME</th>
+                    <th className="px-4 py-2.5 text-right">OUTWARD</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
+                  {filteredMovement.length > 0 ? (
+                    filteredMovement.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40"
+                      >
+                        <td className="px-4 py-2.5">
+                          <div className="font-medium text-[#1a1c1b] dark:text-white">
+                            {row.inwardName ? row.inwardName : '-'}
+                          </div>
+                          {row.inwardSubtext && (
+                            <div className="text-gray-500 dark:text-gray-400 text-[11px]">
+                              {row.inwardSubtext}
+                            </div>
+                          )}
+                        </td>
+                        <td className="font-mono px-4 py-2.5 text-right font-bold text-green-700 dark:text-green-400">
+                          {row.inwardName &&
+                          row.inward != null &&
+                          row.inward > 0
+                            ? formatNumberDisplay(row.inward)
+                            : '-'}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <div className="font-medium text-[#1a1c1b] dark:text-white">
+                            {row.outwardName ? row.outwardName : '-'}
+                          </div>
+                          {row.outwardSubtext && (
+                            <div className="text-gray-500 dark:text-gray-400 text-[11px]">
+                              {row.outwardSubtext}
+                            </div>
+                          )}
+                        </td>
+                        <td className="font-mono px-4 py-2.5 text-right font-bold text-amber-700 dark:text-amber-400">
+                          {row.outwardName &&
+                          row.outward != null &&
+                          row.outward > 0
+                            ? formatNumberDisplay(row.outward)
+                            : '-'}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="text-gray-500 px-4 py-4 text-center text-xs"
+                      >
+                        No stock movement records found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
+    </div>
   );
 }
