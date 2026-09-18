@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 export interface KarigarData {
   id: string;
-  name: string;
+  fullName: string;
   phoneNumber: string;
   address?: string;
   type: 'IN_HOUSE' | 'OUT_SOURCE';
@@ -30,7 +30,7 @@ export const useAddKarigar = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: {
-      name: string;
+      fullName: string;
       phoneNumber: string;
       address?: string;
       type: 'IN_HOUSE' | 'OUT_SOURCE';
@@ -57,7 +57,7 @@ export const useUpdateKarigar = () => {
   return useMutation({
     mutationFn: async ({
       id,
-      name,
+      fullName,
       phoneNumber,
       address,
       type,
@@ -65,7 +65,7 @@ export const useUpdateKarigar = () => {
       salary,
     }: {
       id: string;
-      name: string;
+      fullName: string;
       phoneNumber: string;
       address?: string;
       type: 'IN_HOUSE' | 'OUT_SOURCE';
@@ -73,7 +73,7 @@ export const useUpdateKarigar = () => {
       salary?: number;
     }) => {
       const response = await api.patch(`/admin/karigar/${id}`, {
-        name,
+        fullName,
         phoneNumber,
         address,
         type,

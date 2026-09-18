@@ -7,7 +7,7 @@ import GenericInputField from '@/components/Forms/Input/GenericInputField';
 import {useAddKarigar} from '@/components/joborder/karigar/karigarapi';
 
 const KarigarSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  fullName: z.string().min(1, 'Name is required'),
   phoneNumber: z
     .string()
     .min(10, 'Phone number must be at least 10 digits')
@@ -28,13 +28,13 @@ export const AddKarigarModal: React.FC<AddKarigarModalProps> = ({
   onSuccess,
 }) => {
   const [formData, setFormData] = useState({
-    name: '',
+    fullName: '',
     phoneNumber: '',
     address: '',
     openingBalance: '',
   });
   const [formErrors, setFormErrors] = useState<{
-    name?: string;
+    fullName?: string;
     phoneNumber?: string;
     address?: string;
     openingBalance?: string;
@@ -58,7 +58,7 @@ export const AddKarigarModal: React.FC<AddKarigarModalProps> = ({
   const validateForm = (): boolean => {
     try {
       KarigarSchema.parse({
-        name: formData.name.trim(),
+        fullName: formData.fullName.trim(),
         phoneNumber: formData.phoneNumber.trim(),
         address: formData.address.trim(),
         openingBalance: parseFloat(formData.openingBalance) || 0,
@@ -85,14 +85,14 @@ export const AddKarigarModal: React.FC<AddKarigarModalProps> = ({
 
     try {
       await addKarigar.mutateAsync({
-        name: formData.name.trim(),
+        fullName: formData.fullName.trim(),
         phoneNumber: formData.phoneNumber.trim(),
         address: formData.address.trim(),
         openingBalance: parseFloat(formData.openingBalance) || 0,
         type: 'OUT_SOURCE',
       });
       setFormData({
-        name: '',
+        fullName: '',
         phoneNumber: '',
         address: '',
         openingBalance: '',
@@ -128,17 +128,17 @@ export const AddKarigarModal: React.FC<AddKarigarModalProps> = ({
             <GenericInputField
               label="Name"
               required
-              name="name"
-              value={formData.name}
+              name="fullName"
+              value={formData.fullName}
               onChange={handleInputChange}
               placeholder="Enter karigar name"
               className={
-                formErrors.name ? '!border-red-500 focus:!ring-red-500' : ''
+                formErrors.fullName ? '!border-red-500 focus:!ring-red-500' : ''
               }
             />
-            {formErrors.name && (
+            {formErrors.fullName && (
               <p className="mt-1 text-[10px] text-red-500 sm:text-xs">
-                {formErrors.name}
+                {formErrors.fullName}
               </p>
             )}
           </div>
