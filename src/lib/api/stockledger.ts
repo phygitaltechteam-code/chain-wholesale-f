@@ -4,17 +4,18 @@ import {useQuery} from '@tanstack/react-query';
 export interface StockSummaryData {
   opening: {
     gold: number;
-    raw: number;
     openingChain: number;
-    srp: number;
     openingClientDue: number;
+    openingKarigarDue: number;
+    openingSr: number;
     inward: number;
   };
   closing: {
     gold: number;
-    raw: number;
     closingChain: number;
     closingClientDue: number;
+    closingKarigarDue: number;
+    closingSrp: number;
     outward: number;
     loss: number;
     profitLoss?: number;

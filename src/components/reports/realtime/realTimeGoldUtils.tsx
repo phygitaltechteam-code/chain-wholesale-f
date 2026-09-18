@@ -430,5 +430,73 @@ export const buildCategoryGroups = (data: any | undefined): CategoryGroup[] => {
     }
   }
 
+  // 4. Karigar Due Data Categories
+  const karigarDueItems =
+    data.karigarDues ||
+    data.karigarDue ||
+    data.karigar_due ||
+    data.stocks?.karigarDues ||
+    data.stocks?.karigarDue;
+  if (karigarDueItems && Array.isArray(karigarDueItems)) {
+    const activeDueItems = karigarDueItems
+      .filter((i: any) => {
+        const dueVal = toNumber(
+          i.due ??
+            i.fineWeight ??
+            i.fineweight ??
+            i.grossWeight ??
+            i.grossweight ??
+            0,
+        );
+        return dueVal > 0;
+      })
+      .map((i: any) => {
+        const dueVal = toNumber(
+          i.due ??
+            i.fineWeight ??
+            i.fineweight ??
+            i.grossWeight ??
+            i.grossweight ??
+            0,
+        );
+        const karigarName = i.karigarName || i.name || 'Unnamed Karigar';
+        return {
+          id: i.id || `karigar-due-${karigarName}-${dueVal}`,
+          name: karigarName,
+          grossWeight: 0,
+          grossweight: 0,
+          fineWeight: dueVal,
+          fineweight: dueVal,
+          purity: null,
+          category: 'Karigar Due',
+          type: 'Stock' as const,
+        };
+      });
+
+    if (activeDueItems.length > 0) {
+      const totalDue = activeDueItems.reduce((sum, i) => sum + i.fineWeight, 0);
+      groups.push({
+        id: 'karigar-due',
+        name: 'Karigar Due',
+        type: 'Stock',
+        items: activeDueItems,
+        totalGrossWeight: 0,
+        totalFineWeight: totalDue,
+        count: activeDueItems.length,
+      });
+    }
+  }
+
+  // 5. Karigar Stock Data Categories
+  const karigarStockItems =
+    data.karigarStocks ||
+    data.karigarStock ||
+    data.karigar_stock ||
+    data.stocks?.karigarStocks ||
+    data.stocks?.karigarStock;
+  if (karigarStockItems && Array.isArray(karigarStockItems)) {
+    addGroup('karigar-stock', 'Karigar Stock', 'Stock', karigarStockItems);
+  }
+
   return groups;
 };

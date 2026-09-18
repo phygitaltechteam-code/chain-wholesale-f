@@ -22,6 +22,11 @@ import {
   MdPictureAsPdf,
   MdAutoGraph,
   MdAddAlert,
+  MdEngineering,
+  MdBuild,
+  MdHandyman,
+  MdAddTask,
+  MdLocalShipping,
 } from 'react-icons/md';
 import {useAuthContext} from '@/context/AuthContext';
 import {EPinIcon} from '@/icons';
@@ -40,6 +45,7 @@ interface MenuItem {
   path?: string;
   icon?: React.ReactNode;
   roles: string[];
+  moduleKey?: string;
   subroutes?: SubMenuItem[];
 }
 
@@ -48,6 +54,8 @@ interface SubMenuItem {
   path: string;
   roles: string[];
   icon?: React.ReactNode;
+  moduleKey?: string;
+  permission?: string;
 }
 
 const Sidebar = ({
@@ -105,23 +113,18 @@ const Sidebar = ({
       roles: ['ADMIN'],
     },
     {
-      label: 'Manufacturing',
-      path: '/manufacturingprocess/process',
-      icon: <MdPrecisionManufacturing size={22} />,
+      label: 'Karigar Billing',
+      path: '/karigarbilling',
+      icon: <MdReceipt size={22} />,
       roles: ['ADMIN'],
     },
+
     {
       label: 'Stocks',
       path: '/Stocks/stockpage',
       icon: <MdInventory2 size={22} />,
       roles: ['ADMIN'],
     },
-    // {
-    //   label: 'Client',
-    //   path: '/client/client',
-    //   icon: <MdGroups size={22} />,
-    //   roles: ['ADMIN'],
-    // },
     {
       label: 'Client & Settlement',
       path: '/setlment/settlement',
@@ -129,20 +132,15 @@ const Sidebar = ({
       roles: ['ADMIN'],
     },
     {
-      label: 'Manufacturing Report',
-      path: '/reports/manufacturingreport',
-      icon: <MdAssessment size={22} />,
+      label: 'Karigar Settlement',
+      path: '/karigarsetlment',
+      icon: <MdGroups size={22} />,
       roles: ['ADMIN'],
     },
+
     {
-      label: 'Loss Report',
-      path: '/lossreportdata',
-      icon: <TrendingDown size={22} />,
-      roles: ['ADMIN'],
-    },
-    {
-      label: 'Business 360 Report',
-      path: '/reports/stockreport',
+      label: 'Karigar Inward Report',
+      path: '/reports/inwardreport',
       icon: <MdAssessment size={22} />,
       roles: ['ADMIN'],
     },
@@ -153,30 +151,11 @@ const Sidebar = ({
       roles: ['ADMIN'],
     },
     {
-      label: 'Alert Management',
-      path: '/alertmanagement',
-      roles: ['ADMIN'],
-      icon: <MdAddAlert size={22} />,
-    },
-    {
-      label: 'Purity Management',
-      path: '/puritymanagement',
-      icon: <Calculator size={22} />,
-      roles: ['ADMIN'],
-    },
-    {
       label: 'Add Admin',
       path: '/addadmin',
       icon: <MdPersonAdd size={22} />,
       roles: ['SUPERADMIN'],
     },
-
-    // {
-    //   label: 'E-PIN Request',
-    //   path: '/epinrequest',
-    //   icon: <EPinIcon size={22} />,
-    //   roles: ['SUPERADMIN'],
-    // },
     {
       label: 'Admin Profile',
       path: '/adminprofile',

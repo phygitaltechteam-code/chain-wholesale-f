@@ -11,7 +11,8 @@ import {
 import {printRealTimeGoldReport} from './realtime/printRealTimeGoldReport';
 import {RealTimeSummaryCards} from './realtime/RealTimeSummaryCards';
 import {RealTimeStockPanel} from './realtime/RealTimeStockPanel';
-import {RealTimeManufacturingPanel} from './realtime/RealTimeManufacturingPanel';
+import {RealTimeKarigarDuePanel} from './realtime/RealTimeKarigarDuePanel';
+import {RealTimeKarigarStockPanel} from './realtime/RealTimeKarigarStockPanel';
 import {RealTimeCustomerDuePanel} from './realtime/RealTimeCustomerDuePanel';
 
 // ======================================================
@@ -106,6 +107,14 @@ const RealTimeGoldReport: React.FC = () => {
     return filteredGroups.filter((g) => g.type === 'Process');
   }, [filteredGroups]);
 
+  const karigarDueGroup = useMemo(() => {
+    return filteredGroups.find((g) => g.id === 'karigar-due');
+  }, [filteredGroups]);
+
+  const karigarStockGroup = useMemo(() => {
+    return filteredGroups.find((g) => g.id === 'karigar-stock');
+  }, [filteredGroups]);
+
   const clientDueGroup = useMemo(() => {
     return filteredGroups.find((g) => g.id === 'client-due');
   }, [filteredGroups]);
@@ -116,11 +125,16 @@ const RealTimeGoldReport: React.FC = () => {
     return {gross, fine, count: stockGroups.reduce((s, g) => s + g.count, 0)};
   }, [stockGroups]);
 
-  const processTotals = useMemo(() => {
-    const gross = processGroups.reduce((s, g) => s + g.totalGrossWeight, 0);
-    const fine = processGroups.reduce((s, g) => s + g.totalFineWeight, 0);
-    return {gross, fine, count: processGroups.reduce((s, g) => s + g.count, 0)};
-  }, [processGroups]);
+  const karigarDueTotal = useMemo(() => {
+    const fine = karigarDueGroup ? karigarDueGroup.totalFineWeight : 0;
+    return {fine, count: karigarDueGroup ? karigarDueGroup.count : 0};
+  }, [karigarDueGroup]);
+
+  const karigarStockTotals = useMemo(() => {
+    const gross = karigarStockGroup ? karigarStockGroup.totalGrossWeight : 0;
+    const fine = karigarStockGroup ? karigarStockGroup.totalFineWeight : 0;
+    return {gross, fine, count: karigarStockGroup ? karigarStockGroup.count : 0};
+  }, [karigarStockGroup]);
 
   const clientDueTotal = useMemo(() => {
     const fine = clientDueGroup ? clientDueGroup.totalFineWeight : 0;
@@ -128,11 +142,11 @@ const RealTimeGoldReport: React.FC = () => {
   }, [clientDueGroup]);
 
   const grandTotals = useMemo(() => {
-    const totalGrossWeight = stockTotals.gross + processTotals.gross;
+    const totalGrossWeight = stockTotals.gross + karigarStockTotals.gross;
     const totalFineWeight =
-      stockTotals.fine + processTotals.fine + clientDueTotal.fine;
+      stockTotals.fine + karigarStockTotals.fine + clientDueTotal.fine + karigarDueTotal.fine;
     const totalItems =
-      stockTotals.count + processTotals.count + clientDueTotal.count;
+      stockTotals.count + karigarStockTotals.count + clientDueTotal.count + karigarDueTotal.count;
 
     const apiGrandGross = Number(summaryFromApi?.grandTotalWeight || 0);
     const apiGrandFine = Number(summaryFromApi?.grandTotalFineWeight || 0);
@@ -148,7 +162,7 @@ const RealTimeGoldReport: React.FC = () => {
       grandTotalFineWeight,
       avgPurity: calculateAvgPurity(grandTotalWeight, grandTotalFineWeight),
     };
-  }, [stockTotals, processTotals, clientDueTotal, summaryFromApi]);
+  }, [stockTotals, karigarStockTotals, clientDueTotal, karigarDueTotal, summaryFromApi]);
 
   const handlePrint = () => {
     printRealTimeGoldReport({
@@ -227,8 +241,8 @@ const RealTimeGoldReport: React.FC = () => {
         {/* Simple Summary Cards */}
         <RealTimeSummaryCards grandTotals={grandTotals} />
 
-        {/* 3 Horizontal Column Layout */}
-        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-3">
+        {/* Horizontal Column Layout */}
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2 xl:grid-cols-4">
           {/* 1. GOLD & STOCK Panel */}
           <RealTimeStockPanel
             stockGroups={stockGroups}
@@ -237,12 +251,18 @@ const RealTimeGoldReport: React.FC = () => {
             toggleRow={toggleRow}
           />
 
-          {/* 2. PROCESS Panel */}
-          <RealTimeManufacturingPanel
-            processGroups={processGroups}
-            processTotals={processTotals}
+          {/* 2. KARIGAR STOCK Panel */}
+          <RealTimeKarigarStockPanel
+            karigarStockGroup={karigarStockGroup}
+            karigarStockTotals={karigarStockTotals}
             expandedRows={expandedRows}
             toggleRow={toggleRow}
+          />
+
+          {/* 3. KARIGAR DUE Panel */}
+          <RealTimeKarigarDuePanel
+            karigarDueGroup={karigarDueGroup}
+            karigarDueTotal={karigarDueTotal}
           />
 
           {/* 3. CLIENT DUE Panel */}

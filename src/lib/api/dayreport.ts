@@ -156,8 +156,9 @@ export interface DayReportData {
   todayLoss?: LossDataItem[];
   losses?: LossDataItem[];
   stock?: StockSummaryData;
-  newStock?: NewStockItem[];
   bills?: BillDataItem[];
+  karigarSettlement?: ClientDuePaidItem[];
+  karigarBills?: BillDataItem[];
 }
 
 export interface DayReportResponse {

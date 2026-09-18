@@ -80,7 +80,7 @@ const AdminProfile: React.FC = () => {
 
   const [formData, setFormData] = useState({
     fullname: '',
-    email: '',
+    shopName: '',
     phoneNumber: '',
     secondaryPhoneNumber: '',
     address: '',
@@ -147,7 +147,7 @@ const AdminProfile: React.FC = () => {
 
     setFormData({
       fullname: userObj?.fullname || userObj?.name || user?.fullname || '',
-      email: userObj?.email || resData?.contactPersonEmail || user?.email || '',
+      shopName: userObj?.shopName || resData?.shopName || user?.shopName || '',
       phoneNumber:
         userObj?.phoneNumber || userObj?.phone || user?.phoneNumber || '',
       secondaryPhoneNumber:
@@ -197,12 +197,10 @@ const AdminProfile: React.FC = () => {
     // Prepare payload with profile data
     const payload: any = {
       fullname: formData.fullname,
-      email: formData.email,
+      shopName: formData.shopName,
       phoneNumber: formData.phoneNumber,
       secondaryPhoneNumber: formData.secondaryPhoneNumber,
       address: formData.address,
-      workStartTime: formatTimeToISO(formData.workStartTime),
-      workEndTime: formatTimeToISO(formData.workEndTime),
     };
 
     // Check if password fields are filled
@@ -264,19 +262,19 @@ const AdminProfile: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Email Address */}
+                  {/* Shop Name */}
                   <div className="col-span-1">
                     <label className="text-gray-500 mb-1 block text-[11px] font-semibold dark:text-slate-400">
-                      Email Address
+                      Shop Name
                     </label>
                     <div className="relative flex items-center">
-                      <Mail className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-[#785600] dark:text-amber-400" />
+                      <User className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-[#785600] dark:text-amber-400" />
                       <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
+                        type="text"
+                        name="shopName"
+                        value={formData.shopName}
                         onChange={handleInputChange}
-                        placeholder="Enter email"
+                        placeholder="Enter shop name"
                         className="w-full rounded-lg border border-[#d3c4af]/40 bg-white py-1.5 pl-8 pr-2.5 text-xs font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
                       />
                     </div>
@@ -398,39 +396,7 @@ const AdminProfile: React.FC = () => {
                 </div>
 
                 <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                  {/* Work Start Time */}
-                  <div>
-                    <label className="text-gray-500 mb-1 block text-[11px] font-semibold dark:text-slate-400">
-                      Work Start Time
-                    </label>
-                    <div className="relative flex items-center">
-                      <Clock className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-[#785600] dark:text-amber-400" />
-                      <input
-                        type="time"
-                        name="workStartTime"
-                        value={formData.workStartTime}
-                        onChange={handleInputChange}
-                        className="w-full rounded-lg border border-[#d3c4af]/40 bg-white py-1.5 pl-8 pr-2 text-xs font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
-                      />
-                    </div>
-                  </div>
 
-                  {/* Work End Time */}
-                  <div>
-                    <label className="text-gray-500 mb-1 block text-[11px] font-semibold dark:text-slate-400">
-                      Work End Time
-                    </label>
-                    <div className="relative flex items-center">
-                      <Clock8 className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-[#785600] dark:text-amber-400" />
-                      <input
-                        type="time"
-                        name="workEndTime"
-                        value={formData.workEndTime}
-                        onChange={handleInputChange}
-                        className="w-full rounded-lg border border-[#d3c4af]/40 bg-white py-1.5 pl-8 pr-2 text-xs font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
-                      />
-                    </div>
-                  </div>
 
                   {/* Current Password */}
                   <div>

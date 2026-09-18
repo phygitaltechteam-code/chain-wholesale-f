@@ -97,6 +97,9 @@ const DayReport: React.FC = () => {
   const [expandedClientDue, setExpandedClientDue] = useState<Set<string>>(
     new Set(),
   );
+  const [expandedKarigarDue, setExpandedKarigarDue] = useState<Set<string>>(
+    new Set(),
+  );
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const formattedDateParam = useMemo(() => {
@@ -320,6 +323,18 @@ const DayReport: React.FC = () => {
     });
   };
 
+  const toggleKarigarDue = (karigarName: string) => {
+    setExpandedKarigarDue((prev) => {
+      const next = new Set(prev);
+      if (next.has(karigarName)) {
+        next.delete(karigarName);
+      } else {
+        next.add(karigarName);
+      }
+      return next;
+    });
+  };
+
   // 2. Client Due Grouped by Client (Collapsible)
   const groupedClientDue = useMemo<ClientDueDetail[]>(() => {
     const rawList =
@@ -367,6 +382,47 @@ const DayReport: React.FC = () => {
     reportData?.settlement,
     reportData?.clientDue,
   ]);
+
+  // 2b. Karigar Due Grouped by Karigar (Collapsible)
+  const groupedKarigarDue = useMemo<ClientDueDetail[]>(() => {
+    const rawList = reportData?.karigarSettlement;
+    if (!rawList || !Array.isArray(rawList)) return [];
+
+    const map = new Map<string, ClientDueDetail>();
+
+    rawList.forEach((s: any, idx: number) => {
+      const cName = (s.karigarName || s.name || 'Unknown Karigar').trim();
+      const paidVal = toNumber(
+        s.duePaid ??
+          s.weight ??
+          s.grossweight ??
+          s.fineweight ??
+          Math.abs(s.due ?? 0),
+      );
+      const entry: ClientDueEntry = {
+        id: s.id || `k-settle-${idx}`,
+        paid: paidVal,
+        remark: s.remark || 'Karigar Due',
+        createdAt: s.createdAt,
+      };
+
+      if (!map.has(cName)) {
+        map.set(cName, {
+          clientName: cName,
+          totalDue: paidVal,
+          count: 1,
+          entries: [entry],
+        });
+      } else {
+        const existing = map.get(cName)!;
+        existing.totalDue += paidVal;
+        existing.count += 1;
+        existing.entries.push(entry);
+      }
+    });
+
+    return Array.from(map.values());
+  }, [reportData?.karigarSettlement]);
 
   // 3. Loss Items
   const todayLossItems: LossItemDetail[] = useMemo(() => {
@@ -519,6 +575,62 @@ const DayReport: React.FC = () => {
     });
   }, [reportData?.bills]);
 
+  // 6b. Karigar Bills Items
+  const karigarBillsList: BillItemDetail[] = useMemo(() => {
+    if (!reportData?.karigarBills || !Array.isArray(reportData.karigarBills))
+      return [];
+    return reportData.karigarBills.map((b: any, idx: number) => {
+      const rawItems =
+        Array.isArray(b.items) && b.items.length > 0
+          ? b.items
+          : b.item || b.itemName || b.name
+            ? [b]
+            : [];
+
+      const itemDescriptions =
+        rawItems.length > 0
+          ? rawItems
+              .map((it: any) => {
+                const name =
+                  (typeof it.item === 'object' ? it.item?.name : it.item) ||
+                  it.itemName ||
+                  it.name ||
+                  '-';
+                const sizeStr =
+                  typeof it.size === 'object' ? it.size?.size : it.size;
+                const size = sizeStr && sizeStr !== '-' ? ` (${sizeStr})` : '';
+                const purityVal =
+                  it.purity !== undefined &&
+                  it.purity !== null &&
+                  it.purity !== ''
+                    ? it.purity
+                    : null;
+                const purity = purityVal !== null ? ` (${purityVal}%)` : '';
+                return `${name}${size}${purity}`;
+              })
+              .join(', ')
+          : '-';
+
+      return {
+        id: b.id || `k-bill-${idx}`,
+        billNumber: b.billNumber || `KBILL-${idx + 1}`,
+        clientName:
+          (typeof b.karigar === 'object'
+            ? b.karigar?.fullName || b.karigar?.name
+            : b.karigarName) ||
+          b.name ||
+          '-',
+        itemSummary: itemDescriptions,
+        totalWeight: toNumber(b.totalWeight ?? b.grossweight ?? b.weight ?? 0),
+        customerWeight: toNumber(b.customerWeight ?? 0),
+        remainingWeight: toNumber(
+          b.remainingWeight ?? b.fineWeight ?? b.fineweight ?? 0,
+        ),
+        items: rawItems,
+      };
+    });
+  }, [reportData?.karigarBills]);
+
   // Filter by search term
   const filteredProcessGroups = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -572,6 +684,21 @@ const DayReport: React.FC = () => {
     );
   }, [groupedClientDue, searchTerm]);
 
+  const filteredKarigarDue = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return groupedKarigarDue;
+    return groupedKarigarDue.filter(
+      (c) =>
+        c.clientName.toLowerCase().includes(term) ||
+        c.totalDue.toString().includes(term) ||
+        c.entries.some(
+          (e) =>
+            e.remark.toLowerCase().includes(term) ||
+            e.paid.toString().includes(term),
+        ),
+    );
+  }, [groupedKarigarDue, searchTerm]);
+
   const filteredLoss = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return todayLossItems;
@@ -622,6 +749,19 @@ const DayReport: React.FC = () => {
     );
   }, [billsList, searchTerm]);
 
+  const filteredKarigarBills = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return karigarBillsList;
+    return karigarBillsList.filter(
+      (b) =>
+        b.billNumber.toLowerCase().includes(term) ||
+        b.clientName.toLowerCase().includes(term) ||
+        b.itemSummary.toLowerCase().includes(term) ||
+        b.totalWeight.toString().includes(term) ||
+        b.remainingWeight.toString().includes(term),
+    );
+  }, [karigarBillsList, searchTerm]);
+
   // Dynamic Totals
   const processTotals = useMemo(() => {
     const gross = filteredProcessGroups.reduce(
@@ -640,6 +780,11 @@ const DayReport: React.FC = () => {
     const total = filteredClientDue.reduce((sum, i) => sum + i.totalDue, 0);
     return {total, count: filteredClientDue.length};
   }, [filteredClientDue]);
+
+  const karigarSettlementTotals = useMemo(() => {
+    const total = filteredKarigarDue.reduce((sum, i) => sum + i.totalDue, 0);
+    return {total, count: filteredKarigarDue.length};
+  }, [filteredKarigarDue]);
 
   const lossTotals = useMemo(() => {
     const total = filteredLoss.reduce((sum, i) => sum + i.loss, 0);
@@ -698,77 +843,70 @@ const DayReport: React.FC = () => {
     const printContainer = document.createElement('div');
     printContainer.id = 'print-container';
 
-    // 1. Process Groups Tables HTML
-    let processTablesHtml = '';
-    filteredProcessGroups.forEach((group) => {
-      const rowsHtml = group.items
+    // 1. Karigar Settlement Table HTML
+    let karigarSettlementHtml = '';
+    if (filteredKarigarDue.length > 0) {
+      const dueRows = filteredKarigarDue
         .map(
           (item, idx) => `
                 <tr style="border-bottom:1px solid #785600;">
                     <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
-                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.item || item.name || '-'} ${item.size ? `(${item.size})` : ''}</td>
-                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${formatNumberDisplay(item.grossweight)}</td>
-                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.purity !== null ? formatNumberDisplay(item.purity, 2) + '%' : '-'}</td>
-                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.fineweight)}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.clientName}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.totalDue)} G</td>
                 </tr>
             `,
         )
         .join('');
 
-      processTablesHtml += `
+      karigarSettlementHtml = `
                 <div style="margin-bottom:8px;page-break-inside:avoid;">
                     <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-weight:700;">${group.processName}</span>
-                        <span style="font-size:8.5px;color:#000;">Gross: <b>${formatNumberDisplay(group.totalGrossWeight)} G</b> | Fine: <b>${formatNumberDisplay(group.totalFineWeight)} G</b> | Items: <b>${group.count}</b></span>
+                        <span style="font-weight:700;">Karigar Settlement</span>
+                        <span style="font-size:8.5px;color:#000;">Total Settlement: <b>${formatNumberDisplay(karigarSettlementTotals.total)} G</b> | Karigars: <b>${karigarSettlementTotals.count}</b></span>
                     </div>
                     <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
                         <thead>
                             <tr style="background:#785600;color:white;font-weight:600;">
                                 <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
-                                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Item (Size)</th>
-                                <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Gross WT (G)</th>
-                                <th style="border:1px solid #785600;padding:2px 3px;width:65px;text-align:center;font-size:8px;color:white;">Purity</th>
-                                <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Fine WT (G)</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Karigar Name</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:100px;text-align:center;font-size:8px;color:white;">Settlement (G)</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            ${rowsHtml || `<tr><td colspan="5" style="border:1px solid #785600;padding:4px;text-align:center;font-size:8px;color:#666;">No items</td></tr>`}
-                        </tbody>
+                        <tbody>${dueRows}</tbody>
                     </table>
                 </div>
             `;
-    });
+    }
 
-    // 2. Loss Table HTML
-    let lossTableHtml = '';
-    if (filteredLoss.length > 0) {
-      const lossRows = filteredLoss
+    // 2. Karigar Bills Table HTML
+    let karigarBillsHtml = '';
+    if (filteredKarigarBills.length > 0) {
+      const billRows = filteredKarigarBills
         .map(
           (item, idx) => `
                 <tr style="border-bottom:1px solid #785600;">
                     <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
-                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.processName || (item as any).particular || 'Loss'}</td>
-                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;color:#b91c1c;">${formatNumberDisplay(item.loss)} G</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.billNumber} / ${item.clientName}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.totalWeight)} G</td>
                 </tr>
             `,
         )
         .join('');
 
-      lossTableHtml = `
+      karigarBillsHtml = `
                 <div style="margin-bottom:8px;page-break-inside:avoid;">
                     <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-weight:700;">Today's Loss</span>
-                        <span style="font-size:8.5px;color:#000;">Total Loss: <b>${formatNumberDisplay(lossTotals.total)} G</b> | Count: <b>${lossTotals.count}</b></span>
+                        <span style="font-weight:700;">Karigar Bills</span>
                     </div>
                     <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
                         <thead>
                             <tr style="background:#785600;color:white;font-weight:600;">
                                 <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
-                                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Process / Particular</th>
-                                <th style="border:1px solid #785600;padding:2px 3px;width:100px;text-align:center;font-size:8px;color:white;">Loss (G)</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Bill / Karigar</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:100px;text-align:center;font-size:8px;color:white;">Total (G)</th>
                             </tr>
                         </thead>
-                        <tbody>${lossRows}</tbody>
+                        <tbody>${billRows}</tbody>
                     </table>
                 </div>
             `;
@@ -921,16 +1059,14 @@ const DayReport: React.FC = () => {
 
                     <!-- Day Summary Overview Box -->
                     <div style="display:flex;justify-content:space-around;background:#fff8e6;border:1px solid #785600;padding:5px;margin-bottom:8px;font-size:9.5px;font-weight:bold;color:#000;">
-                        <div>Process Gross: <span style="color:#785600;">${formatNumberDisplay(processTotals.gross)} G</span></div>
-                        <div>Process Fine: <span style="color:#785600;">${formatNumberDisplay(processTotals.fine)} G</span></div>
-                        <div>Total Loss: <span style="color:#b91c1c;">${formatNumberDisplay(lossTotals.total)} G</span></div>
+                        <div>Karigar Settlement: <span style="color:#785600;">${formatNumberDisplay(karigarSettlementTotals.total)} G</span></div>
                         <div>Inward Fine: <span style="color:#785600;">${formatNumberDisplay(stockInwardTotals.fine)} G</span></div>
                         <div>Customer Settlement: <span style="color:#785600;">${formatNumberDisplay(settlementTotals.total)} G</span></div>
                     </div>
 
                     <!-- Tables -->
-                    ${processTablesHtml}
-                    ${lossTableHtml}
+                    ${karigarSettlementHtml}
+                    ${karigarBillsHtml}
                     ${stockInwardHtml}
                     ${stockOutwardHtml}
                     ${clientDueHtml}
@@ -1100,11 +1236,11 @@ const DayReport: React.FC = () => {
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-3">
           {/* 1. TODAY'S PROCESS & TODAY'S LOSS Panel */}
           <div className="flex flex-col gap-4">
-            {/* TODAY'S PROCESS */}
+            {/* TODAY'S KARIGAR SETTLEMENT */}
             <div className="flex flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
               <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
                 <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
-                  Today's Process
+                  Today's Karigar Settlement
                 </span>
               </div>
               <div className="flex flex-1 flex-col overflow-x-auto">
@@ -1112,28 +1248,29 @@ const DayReport: React.FC = () => {
                   <thead>
                     <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                       <th className="w-7 px-2 py-2.5 text-center"></th>
-                      <th className="px-3 py-2.5">Process / Item</th>
-                      <th className="px-3 py-2.5 text-right">Gross (G)</th>
-                      <th className="px-3 py-2.5 text-right">Fine (G)</th>
+                      <th className="px-3 py-2.5">Karigar Name</th>
+                      <th className="px-3 py-2.5 text-right">Due (G)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
-                    {filteredProcessGroups.length === 0 ? (
+                    {filteredKarigarDue.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={4}
+                          colSpan={3}
                           className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400"
                         >
-                          No process records found.
+                          No due records found.
                         </td>
                       </tr>
                     ) : (
-                      filteredProcessGroups.map((group) => {
-                        const isExpanded = expandedProcesses.has(group.id);
+                      filteredKarigarDue.map((client) => {
+                        const isExpanded = expandedKarigarDue.has(
+                          client.clientName,
+                        );
                         return (
-                          <React.Fragment key={group.id}>
+                          <React.Fragment key={client.clientName}>
                             <tr
-                              onClick={() => toggleProcess(group.id)}
+                              onClick={() => toggleKarigarDue(client.clientName)}
                               className={`cursor-pointer transition-colors ${
                                 isExpanded
                                   ? 'bg-[#785600]/10 dark:bg-amber-900/20'
@@ -1150,45 +1287,39 @@ const DayReport: React.FC = () => {
                                 </div>
                               </td>
                               <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
-                                {group.processName}
-                              </td>
-                              <td className="font-mono px-3 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
-                                {formatNumberDisplay(group.totalGrossWeight)}
+                                <div className="flex items-center gap-2">
+                                  <span>{client.clientName}</span>
+                                </div>
                               </td>
                               <td className="font-mono px-3 py-2.5 text-right font-bold text-[#785600] dark:text-amber-400">
-                                {formatNumberDisplay(group.totalFineWeight)}
+                                {formatNumberDisplay(client.totalDue)}
                               </td>
                             </tr>
 
                             {isExpanded &&
-                              group.items.map((item, idx) => (
+                              client.entries.map((entry, idx) => (
                                 <tr
-                                  key={item.id || `${group.id}-${idx}`}
+                                  key={entry.id || idx}
                                   className="border-b border-[#d3c4af]/10 bg-[#fcfbf9]/60 text-xs hover:bg-[#f5f3ef] dark:bg-slate-900/40 dark:hover:bg-slate-800/40"
                                 >
                                   <td className="px-2 py-2 text-center text-[#817563] dark:text-slate-400">
                                     {idx + 1}
                                   </td>
                                   <td className="px-3 py-2 pl-6 text-slate-700 dark:text-slate-300">
-                                    <span>{item.item || '-'}</span>
-                                    {item.size && item.size !== '-' && (
-                                      <span className="text-[#4f4535] dark:text-slate-400">
-                                        {' '}
-                                        ({item.size})
+                                    {entry.remark || 'Karigar Due'}
+                                    {entry.createdAt && (
+                                      <span className="ml-2 text-[10px] text-[#4f4535] dark:text-slate-400">
+                                        {new Date(
+                                          entry.createdAt,
+                                        ).toLocaleTimeString('en-IN', {
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })}
                                       </span>
                                     )}
-                                    {item.purity !== null && (
-                                      <span className="font-medium text-[#785600] dark:text-amber-400">
-                                        {' '}
-                                        ({item.purity}%)
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="font-mono px-3 py-2 text-right text-slate-700 dark:text-slate-300">
-                                    {formatNumberDisplay(item.grossweight)}
                                   </td>
                                   <td className="font-mono px-3 py-2 text-right font-semibold text-[#785600] dark:text-amber-400">
-                                    {formatNumberDisplay(item.fineweight)}
+                                    {formatNumberDisplay(entry.paid)}
                                   </td>
                                 </tr>
                               ))}
@@ -1203,13 +1334,10 @@ const DayReport: React.FC = () => {
                         colSpan={2}
                         className="px-3 py-2.5 text-[#1a1c1b] dark:text-white"
                       >
-                        Total Process
-                      </td>
-                      <td className="font-mono px-3 py-2.5 text-right text-[#1a1c1b] dark:text-white">
-                        {formatNumberDisplay(processTotals.gross)}
+                        Total Karigar Settlement
                       </td>
                       <td className="font-mono px-3 py-2.5 text-right text-[#785600] dark:text-amber-400">
-                        {formatNumberDisplay(processTotals.fine)}
+                        {formatNumberDisplay(karigarSettlementTotals.total)}
                       </td>
                     </tr>
                   </tfoot>
@@ -1217,64 +1345,68 @@ const DayReport: React.FC = () => {
               </div>
             </div>
 
-            {/* TODAY'S LOSS - Placed after Today's Process */}
+            {/* TODAY'S KARIGAR BILLS */}
             <div className="flex flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
               <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
                 <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
-                  Today's Loss
+                  Today's Karigar Bills
                 </span>
               </div>
               <div className="flex flex-1 flex-col overflow-x-auto">
-                <table className="w-full text-left text-xs sm:text-sm">
+                <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                       <th className="w-7 px-2 py-2.5 text-center"></th>
-                      <th className="px-3 py-2.5">Particular</th>
-                      <th className="px-3 py-2.5 text-right">Loss (G)</th>
+                      <th className="px-3 py-2.5">Bill / Karigar / Items</th>
+                      <th className="px-3 py-2.5 text-right">Total (G)</th>
+                      <th className="px-3 py-2.5 text-right">Remaining (G)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
-                    {filteredLoss.length === 0 ? (
+                    {filteredKarigarBills.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={3}
+                          colSpan={4}
                           className="px-3 py-6 text-center text-xs text-[#4f4535] dark:text-slate-400"
                         >
-                          No loss records found.
+                          No bills records found.
                         </td>
                       </tr>
                     ) : (
-                      filteredLoss.map((l, idx) => (
+                      filteredKarigarBills.map((b, idx) => (
                         <tr
-                          key={l.id || idx}
+                          key={b.id || idx}
                           className="hover:bg-[#785600]/5 dark:hover:bg-slate-800/40"
                         >
                           <td className="px-2 py-2.5 text-center text-[#817563] dark:text-slate-400">
                             {idx + 1}
                           </td>
-                          <td className="px-3 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
-                            {l.processName}
+                          <td className="px-3 py-2.5">
+                            <div className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                              {b.billNumber}
+                            </div>
+                            {b.clientName && b.clientName !== '-' && (
+                              <div className="text-[11px] font-semibold text-[#785600] dark:text-amber-400">
+                                {b.clientName}
+                              </div>
+                            )}
+                            {b.itemSummary && b.itemSummary !== '-' && (
+                              <div className="text-[11px] text-[#4f4535] dark:text-slate-400">
+                                {b.itemSummary}
+                              </div>
+                            )}
                           </td>
-                          <td className="font-mono px-3 py-2.5 text-right text-[#785600] dark:text-amber-400">
-                            {formatNumberDisplay(l.loss)}
+                          <td className="font-mono px-3 py-2.5 text-right text-[#1a1c1b] dark:text-slate-100">
+                            {formatNumberDisplay(b.totalWeight)}
+                          </td>
+                          <td className="font-mono px-3 py-2.5 text-right font-bold text-[#785600] dark:text-amber-400">
+                            {formatNumberDisplay(b.remainingWeight)}
                           </td>
                         </tr>
                       ))
                     )}
                   </tbody>
-                  <tfoot>
-                    <tr className="border-t border-[#d3c4af]/30 bg-[#f4f1ea]/70 font-bold dark:bg-slate-800/70">
-                      <td
-                        colSpan={2}
-                        className="px-3 py-2.5 text-[#1a1c1b] dark:text-white"
-                      >
-                        Total Loss
-                      </td>
-                      <td className="font-mono px-3 py-2.5 text-right text-[#785600] dark:text-amber-400">
-                        {formatNumberDisplay(lossTotals.total)}
-                      </td>
-                    </tr>
-                  </tfoot>
+                  {/* Keep footer similar or remove if not aggregated properly */}
                 </table>
               </div>
             </div>

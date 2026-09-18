@@ -69,17 +69,18 @@ export default function StockLedgerReport() {
   const [summaryData, setSummaryData] = useState<StockSummaryData>({
     opening: {
       gold: 0.0,
-      raw: 0.0,
       openingChain: 0.0,
-      srp: 0.0,
       openingClientDue: 0.0,
+      openingKarigarDue: 0.0,
+      openingSr: 0.0,
       inward: 0.0,
     },
     closing: {
       gold: 0.0,
-      raw: 0.0,
       closingChain: 0.0,
       closingClientDue: 0.0,
+      closingKarigarDue: 0.0,
+      closingSrp: 0.0,
       loss: 0.0,
       outward: 0.0,
       profitLoss: 0.0,
@@ -117,20 +118,28 @@ export default function StockLedgerReport() {
             gold: Number(
               sec1?.openingGold ?? ovOpening?.gold ?? sumOpening?.gold ?? 0,
             ),
-            raw: Number(
-              sec1?.openingRaw ?? ovOpening?.raw ?? sumOpening?.raw ?? 0,
-            ),
             openingChain: Number(
               sec1?.openingChain ??
                 ovOpening?.chain ??
                 sumOpening?.openingChain ??
                 0,
             ),
-            srp: Number(sec1?.srp ?? ovOpening?.srp ?? sumOpening?.srp ?? 0),
             openingClientDue: Number(
               sec1?.openingClientDue ??
                 ovOpening?.clientDue ??
                 sumOpening?.openingClientDue ??
+                0,
+            ),
+            openingKarigarDue: Number(
+              sec1?.openingKarigarDue ??
+                ovOpening?.karigarDue ??
+                sumOpening?.openingKarigarDue ??
+                0,
+            ),
+            openingSr: Number(
+              sec1?.openingSr ??
+                ovOpening?.sr ??
+                sumOpening?.openingSr ??
                 0,
             ),
             inward: Number(
@@ -140,9 +149,6 @@ export default function StockLedgerReport() {
           closing: {
             gold: Number(
               sec2?.closingGold ?? ovClosing?.gold ?? sumClosing?.gold ?? 0,
-            ),
-            raw: Number(
-              sec2?.closingRaw ?? ovClosing?.raw ?? sumClosing?.raw ?? 0,
             ),
             closingChain: Number(
               sec2?.closingChain ??
@@ -154,6 +160,18 @@ export default function StockLedgerReport() {
               sec2?.closingClientDue ??
                 ovClosing?.clientDue ??
                 sumClosing?.closingClientDue ??
+                0,
+            ),
+            closingKarigarDue: Number(
+              sec2?.closingKarigarDue ??
+                ovClosing?.karigarDue ??
+                sumClosing?.closingKarigarDue ??
+                0,
+            ),
+            closingSrp: Number(
+              sec2?.closingSrp ??
+                ovClosing?.srp ??
+                sumClosing?.closingSrp ??
                 0,
             ),
             loss: Number(
@@ -1957,21 +1975,12 @@ export default function StockLedgerReport() {
                       OPENING
                     </span>
                   </div>
-                  <div className="divide-y divide-[#d3c4af]/20 text-xs font-semibold dark:divide-slate-800 sm:text-sm">
                     <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
                       <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
                         Gold Stock
                       </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
                         {formatNumberDisplay(summaryData.opening.gold)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        Manufacturing
-                      </span>
-                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(summaryData.opening.raw)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
@@ -1994,10 +2003,20 @@ export default function StockLedgerReport() {
                     </div>
                     <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
                       <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        SRP
+                        Karigar Due
                       </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(summaryData.opening.srp)}
+                        {formatNumberDisplay(
+                          summaryData.opening.openingKarigarDue,
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                        SR (Received)
+                      </span>
+                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                        {formatNumberDisplay(summaryData.opening.openingSr)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between bg-[#f4f1ea]/60 px-4 py-2.5 dark:bg-slate-800/50">
@@ -2029,14 +2048,6 @@ export default function StockLedgerReport() {
                     </div>
                     <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
                       <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        Manufacturing
-                      </span>
-                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(summaryData.closing.raw)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
                         Chain Stock
                       </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
@@ -2055,10 +2066,22 @@ export default function StockLedgerReport() {
                     </div>
                     <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
                       <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        Loss
+                        Karigar Due
                       </span>
                       <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(summaryData.closing.loss)}
+                        {formatNumberDisplay(
+                          summaryData.closing.closingKarigarDue,
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                        SRP (Given)
+                      </span>
+                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                        {formatNumberDisplay(
+                          summaryData.closing.closingSrp,
+                        )}
                       </span>
                     </div>
                     <div className="flex items-center justify-between bg-[#f4f1ea]/60 px-4 py-2.5 dark:bg-slate-800/50">
@@ -2067,6 +2090,14 @@ export default function StockLedgerReport() {
                       </span>
                       <span className="font-mono text-sm font-bold text-amber-700 dark:text-amber-400">
                         {formatNumberDisplay(summaryData.closing.outward)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
+                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
+                        Loss
+                      </span>
+                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
+                        {formatNumberDisplay(summaryData.closing.loss)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between border-t border-[#d3c4af]/30 bg-emerald-50/70 px-4 py-2.5 dark:bg-emerald-950/30">
@@ -2323,6 +2354,5 @@ export default function StockLedgerReport() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
