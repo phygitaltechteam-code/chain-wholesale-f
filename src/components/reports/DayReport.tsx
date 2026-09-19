@@ -385,7 +385,7 @@ const DayReport: React.FC = () => {
 
   // 2b. Karigar Due Grouped by Karigar (Collapsible)
   const groupedKarigarDue = useMemo<ClientDueDetail[]>(() => {
-    const rawList = reportData?.karigarSettlement;
+    const rawList = reportData?.karigarDue || reportData?.karigarSettlement;
     if (!rawList || !Array.isArray(rawList)) return [];
 
     const map = new Map<string, ClientDueDetail>();
@@ -422,7 +422,7 @@ const DayReport: React.FC = () => {
     });
 
     return Array.from(map.values());
-  }, [reportData?.karigarSettlement]);
+  }, [reportData?.karigarDue, reportData?.karigarSettlement]);
 
   // 3. Loss Items
   const todayLossItems: LossItemDetail[] = useMemo(() => {
@@ -577,9 +577,10 @@ const DayReport: React.FC = () => {
 
   // 6b. Karigar Bills Items
   const karigarBillsList: BillItemDetail[] = useMemo(() => {
-    if (!reportData?.karigarBills || !Array.isArray(reportData.karigarBills))
+    const rawBills = reportData?.purchases || reportData?.karigarBills;
+    if (!rawBills || !Array.isArray(rawBills))
       return [];
-    return reportData.karigarBills.map((b: any, idx: number) => {
+    return rawBills.map((b: any, idx: number) => {
       const rawItems =
         Array.isArray(b.items) && b.items.length > 0
           ? b.items
@@ -622,14 +623,14 @@ const DayReport: React.FC = () => {
           '-',
         itemSummary: itemDescriptions,
         totalWeight: toNumber(b.totalWeight ?? b.grossweight ?? b.weight ?? 0),
-        customerWeight: toNumber(b.customerWeight ?? 0),
+        customerWeight: toNumber(b.karigarWeight ?? b.customerWeight ?? 0),
         remainingWeight: toNumber(
           b.remainingWeight ?? b.fineWeight ?? b.fineweight ?? 0,
         ),
         items: rawItems,
       };
     });
-  }, [reportData?.karigarBills]);
+  }, [reportData?.purchases, reportData?.karigarBills]);
 
   // Filter by search term
   const filteredProcessGroups = useMemo(() => {
@@ -1184,7 +1185,7 @@ const DayReport: React.FC = () => {
       <div className="sticky top-0 z-30 border-b border-[#d3c4af]/30 bg-white/95 px-3 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-4 md:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-base font-bold text-[#1a1c1b] dark:text-white sm:text-lg">
+            <h1 className="font-headline text-xl font-black italic tracking-tight text-[#1a1a2e] dark:text-white sm:text-2xl lg:text-3xl">
               Daily Report
             </h1>
             <p className="text-xs text-[#4f4535] dark:text-slate-400">

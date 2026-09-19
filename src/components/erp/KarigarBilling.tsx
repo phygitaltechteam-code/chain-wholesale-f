@@ -31,6 +31,7 @@ import {
 import {useGetProfileData, useActivateKey} from '@/lib/api/profile';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
 import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
+import DeleteConfirmModal from '@/components/common/DeleteConfirmModal';
 
 interface ReceiptItem {
   id: string;
@@ -115,6 +116,7 @@ const Billing: React.FC = () => {
   const [billingGroups, setBillingGroups] = useState<BillGroup[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEntry, setSelectedEntry] = useState<BillGroup | null>(null);
+  const [deleteModalState, setDeleteModalState] = useState<{isOpen: boolean; item: BillGroup | null}>({isOpen: false, item: null});
 
   // Profile data & subscription expiry validation
   const checkexpiration = useGetProfileData();
@@ -563,7 +565,7 @@ const Billing: React.FC = () => {
                 </td>
 
 
-                <!-- BILL NO -->
+                <!-- PURCHASE NO -->
                 <td
                   rowspan="${rowCount}"
                   class="bill-col"
@@ -1463,7 +1465,7 @@ const Billing: React.FC = () => {
 
                 <th>Date & Time</th>
 
-                <th>Bill No</th>
+                <th>Purchase No</th>
 
                 <th>Client Name</th>
 
@@ -1751,21 +1753,20 @@ const Billing: React.FC = () => {
     }
   };
 
-  const handleDelete = (group: BillGroup) => {
-    if (
-      !window.confirm(`Are you sure you want to delete bill ${group.billNo}?`)
-    ) {
-      return;
-    }
+  const handleDeleteConfirm = () => {
+    const group = deleteModalState.item;
+    if (!group) return;
 
     deleteClient.mutate(group.id, {
       onSuccess: () => {
         setBillingGroups((prev) => prev.filter((e) => e.id !== group.id));
-        toast.success(`Bill ${group.billNo} deleted successfully`);
+        toast.success(`Karigar Purchase ${group.billNo} deleted successfully`);
+        setDeleteModalState({isOpen: false, item: null});
       },
       onError: (error: any) => {
         console.error('Delete bill error:', error);
-        toast.error(error?.response?.data?.message || 'Failed to delete bill');
+        toast.error(error?.response?.data?.message || 'Failed to delete Karigar Purchase');
+        setDeleteModalState({isOpen: false, item: null});
       },
     });
   };
@@ -1872,7 +1873,7 @@ const Billing: React.FC = () => {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            handleDelete(item);
+            setDeleteModalState({isOpen: true, item});
           }}
           disabled={deleteClient.isPending}
           className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
@@ -1908,7 +1909,7 @@ const Billing: React.FC = () => {
     },
     {
       key: 'billNo',
-      header: 'Bill No',
+      header: 'Purchase No',
       render: (item) => (
         <div className="flex flex-col gap-1">
           <span className="text-sm font-semibold text-[#785600] dark:text-amber-400">
@@ -2090,14 +2091,14 @@ const Billing: React.FC = () => {
         <div className="mb-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <PageHeader title="Karigar Billing" />
+              <PageHeader title="Karigar Purchase" />
             </div>
             <GenericButton
               type="button"
               onClick={() => navigate({to: '/karigarbillingadd'})}
             >
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span>Add Bill</span>
+              <span>Add Karigar Purchase</span>
             </GenericButton>
           </div>
         </div>
@@ -2175,7 +2176,7 @@ const Billing: React.FC = () => {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
             <input
               type="text"
-              placeholder="Search by client, phone, bill no, item..."
+              placeholder="Search by client, phone, purchase no, item..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -2483,6 +2484,15 @@ const Billing: React.FC = () => {
           </div>
         )}
       </div>
+
+      <DeleteConfirmModal
+        isOpen={deleteModalState.isOpen}
+        onClose={() => setDeleteModalState({isOpen: false, item: null})}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Karigar Purchase"
+        itemIdentifier={`Karigar Purchase ${deleteModalState.item?.billNo}`}
+        isLoading={deleteClient.isPending}
+      />
     </div>
   );
 };

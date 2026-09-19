@@ -290,7 +290,7 @@ export const BillItemsTable: React.FC<BillItemsTableProps> = ({
         </h3>
         {!isReadOnly && (
           <p className="mt-1 text-xs text-[#4f4535]/60 dark:text-slate-400">
-            Use + button to add more items, - button to remove
+            {/* Instruction removed per request */}
           </p>
         )}
       </div>

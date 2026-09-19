@@ -1,12 +1,14 @@
-import React, {useState, useEffect, useMemo} from 'react';
-import {useNavigate} from '@tanstack/react-router';
-import {ArrowLeft, Search, Printer, Calendar} from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { ArrowLeft, Search, Printer, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PageHeader from '@/components/Forms/Common/PageHeader';
+import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
-import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
-import {useGetHeader} from '@/lib/api/headerapi';
-import {useGetStock} from '@/lib/api/stock';
-import {useGetLossReport} from '@/lib/api/lossreport';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
+import { useGetHeader } from '@/lib/api/headerapi';
+import { useGetStock } from '@/lib/api/stock';
+import { useGetLossReport } from '@/lib/api/lossreport';
 import {
   useGetStockLedgerReport,
   StockSummaryData,
@@ -47,7 +49,7 @@ export default function StockLedgerReport() {
   // Date filters (Defaulted to current app week range from admin settings)
   const initialDateRange = useMemo(() => {
     const range = getCurrentAppWeekRange();
-    return {from: range.fromDate, to: range.toDate};
+    return { from: range.fromDate, to: range.toDate };
   }, []);
 
   const [fromDate, setFromDate] = useState<Date | null>(initialDateRange.from);
@@ -96,6 +98,9 @@ export default function StockLedgerReport() {
   // Client Items
   const [clientList, setClientList] = useState<StockTableItem[]>([]);
 
+  // Karigar Items
+  const [karigarList, setKarigarList] = useState<StockTableItem[]>([]);
+
   // Inward Outward History Items
   const [movementList, setMovementList] = useState<StockMovementItem[]>([]);
 
@@ -120,24 +125,24 @@ export default function StockLedgerReport() {
             ),
             openingChain: Number(
               sec1?.openingChain ??
-                ovOpening?.chain ??
-                sumOpening?.openingChain ??
-                0,
+              ovOpening?.chain ??
+              sumOpening?.openingChain ??
+              0,
             ),
             openingClientDue: Number(
               sec1?.openingClientDue ??
-                ovOpening?.clientDue ??
-                sumOpening?.openingClientDue ??
-                0,
+              ovOpening?.clientDue ??
+              sumOpening?.openingClientDue ??
+              0,
             ),
             openingKarigarDue: Number(
               sec1?.openingKarigarDue ??
-                ovOpening?.karigarDue ??
-                sumOpening?.openingKarigarDue ??
-                0,
+              ovOpening?.karigarDue ??
+              sumOpening?.openingKarigarDue ??
+              0,
             ),
             openingSr: Number(
-              sec1?.openingSr ?? ovOpening?.sr ?? sumOpening?.openingSr ?? 0,
+              sec1?.openingSr ?? ovOpening?.srp ?? ovOpening?.sr ?? sumOpening?.openingSr ?? 0,
             ),
             inward: Number(
               sec1?.inward ?? ovOpening?.inward ?? sumOpening?.inward ?? 0,
@@ -149,21 +154,21 @@ export default function StockLedgerReport() {
             ),
             closingChain: Number(
               sec2?.closingChain ??
-                ovClosing?.chain ??
-                sumClosing?.closingChain ??
-                0,
+              ovClosing?.chain ??
+              sumClosing?.closingChain ??
+              0,
             ),
             closingClientDue: Number(
               sec2?.closingClientDue ??
-                ovClosing?.clientDue ??
-                sumClosing?.closingClientDue ??
-                0,
+              ovClosing?.clientDue ??
+              sumClosing?.closingClientDue ??
+              0,
             ),
             closingKarigarDue: Number(
               sec2?.closingKarigarDue ??
-                ovClosing?.karigarDue ??
-                sumClosing?.closingKarigarDue ??
-                0,
+              ovClosing?.karigarDue ??
+              sumClosing?.closingKarigarDue ??
+              0,
             ),
             closingSrp: Number(
               sec2?.closingSrp ?? ovClosing?.srp ?? sumClosing?.closingSrp ?? 0,
@@ -176,9 +181,9 @@ export default function StockLedgerReport() {
             ),
             profitLoss: Number(
               sec2?.profitLoss ??
-                ovClosing?.profitLoss ??
-                data?.summary?.profitLoss ??
-                0,
+              ovClosing?.profitLoss ??
+              data?.summary?.profitLoss ??
+              0,
             ),
           },
         });
@@ -245,6 +250,20 @@ export default function StockLedgerReport() {
           clients.map((item: any, idx: number) => ({
             id: item.id || `client-${idx}`,
             name: item.name || item.clientName || 'Client',
+            opening: Number(item.opening ?? 0),
+            closing: Number(item.closing ?? 0),
+            difference: Number(item.difference ?? 0),
+          })),
+        );
+      }
+
+      // 4.5. Karigar mapping
+      const karigars = data?.section3?.karigars || data?.karigars || data?.karigarDue || data?.karigarDues;
+      if (Array.isArray(karigars) && karigars.length > 0) {
+        setKarigarList(
+          karigars.map((item: any, idx: number) => ({
+            id: item.id || `karigar-${idx}`,
+            name: item.name || item.karigarName || 'Karigar',
             opening: Number(item.opening ?? 0),
             closing: Number(item.closing ?? 0),
             difference: Number(item.difference ?? 0),
@@ -358,6 +377,18 @@ export default function StockLedgerReport() {
           item.difference.toString().includes(query)),
     );
   }, [clientList, query]);
+
+  const filteredKarigar = useMemo(() => {
+    if (!query) return karigarList;
+    return karigarList.filter(
+      (item) =>
+        item.name.toLowerCase().includes(query) ||
+        item.opening.toString().includes(query) ||
+        item.closing.toString().includes(query) ||
+        (item.difference !== undefined &&
+          item.difference.toString().includes(query)),
+    );
+  }, [karigarList, query]);
 
   const filteredMovement = useMemo(() => {
     if (!query) return movementList;
@@ -521,23 +552,23 @@ export default function StockLedgerReport() {
     const rawRows =
       filteredRawStock.length > 0
         ? filteredRawStock
-            .map(
-              (item) => `
+          .map(
+            (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-                  item.opening,
-                )}</td>
+              item.opening,
+            )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-                  item.closing,
-                )}</td>
+              item.closing,
+            )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-                  item.due,
-                )}</td>
+              item.due,
+            )}</td>
               </tr>
             `,
-            )
-            .join('')
+          )
+          .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -551,23 +582,23 @@ export default function StockLedgerReport() {
     const chainRows =
       filteredChainStock.length > 0
         ? filteredChainStock
-            .map(
-              (item) => `
+          .map(
+            (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-                  item.opening,
-                )}</td>
+              item.opening,
+            )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-                  item.closing,
-                )}</td>
+              item.closing,
+            )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-                  item.due,
-                )}</td>
+              item.due,
+            )}</td>
               </tr>
             `,
-            )
-            .join('')
+          )
+          .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -581,23 +612,23 @@ export default function StockLedgerReport() {
     const clientRows =
       filteredClient.length > 0
         ? filteredClient
-            .map(
-              (item) => `
+          .map(
+            (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-                  item.opening,
-                )}</td>
+              item.opening,
+            )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-                  item.closing,
-                )}</td>
+              item.closing,
+            )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-                  item.difference,
-                )}</td>
+              item.difference,
+            )}</td>
               </tr>
             `,
-            )
-            .join('')
+          )
+          .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -611,27 +642,25 @@ export default function StockLedgerReport() {
     const movementRows =
       filteredMovement.length > 0
         ? filteredMovement
-            .map(
-              (item) => `
+          .map(
+            (item) => `
               <tr class="movement-row">
                 <td class="movement-name center-cell">
                   <div class="movement-main">
                     ${item.inwardName || '-'}
                   </div>
 
-                  ${
-                    item.inwardSubtext
-                      ? `<div class="movement-subtext">${item.inwardSubtext}</div>`
-                      : ''
-                  }
+                  ${item.inwardSubtext
+                ? `<div class="movement-subtext">${item.inwardSubtext}</div>`
+                : ''
+              }
                 </td>
 
                 <td class="movement-number center-cell inward-number">
-                  ${
-                    item.inwardName && item.inward != null && item.inward > 0
-                      ? formatNumberDisplay(item.inward)
-                      : '-'
-                  }
+                  ${item.inwardName && item.inward != null && item.inward > 0
+                ? formatNumberDisplay(item.inward)
+                : '-'
+              }
                 </td>
 
                 <td class="movement-name center-cell">
@@ -639,24 +668,22 @@ export default function StockLedgerReport() {
                     ${item.outwardName || '-'}
                   </div>
 
-                  ${
-                    item.outwardSubtext
-                      ? `<div class="movement-subtext">${item.outwardSubtext}</div>`
-                      : ''
-                  }
+                  ${item.outwardSubtext
+                ? `<div class="movement-subtext">${item.outwardSubtext}</div>`
+                : ''
+              }
                 </td>
 
                 <td class="movement-number center-cell outward-number">
-                  ${
-                    item.outwardName && item.outward != null && item.outward > 0
-                      ? formatNumberDisplay(item.outward)
-                      : '-'
-                  }
+                  ${item.outwardName && item.outward != null && item.outward > 0
+                ? formatNumberDisplay(item.outward)
+                : '-'
+              }
                 </td>
               </tr>
             `,
-            )
-            .join('')
+          )
+          .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -783,14 +810,14 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value">
                         ${formatNumberDisplay(
-                          summaryData.opening.openingClientDue,
-                        )}
+      summaryData.opening.openingClientDue,
+    )}
                       </td>
                     </tr>
 
                     <tr>
                       <td class="summary-label">
-                        SRP
+                        SRP (Received)
                       </td>
 
                       <td class="summary-value">
@@ -860,8 +887,8 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value">
                         ${formatNumberDisplay(
-                          summaryData.closing.closingClientDue,
-                        )}
+      summaryData.closing.closingClientDue,
+    )}
                       </td>
                     </tr>
 
@@ -895,8 +922,8 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value profit">
                         ${formatNumberDisplay(
-                          summaryData.closing.profitLoss ?? 0,
-                        )}
+      summaryData.closing.profitLoss ?? 0,
+    )}
                       </td>
 
                     </tr>
@@ -918,66 +945,6 @@ export default function StockLedgerReport() {
       <!-- THREE STOCK TABLES -->
       <div class="three-stock-wrapper">
 
-        <!-- MANUFACTURING STOCK -->
-        <div class="stock-column stock-column-left">
-
-          <div class="stock-title">
-            MANUFACTURING STOCK
-          </div>
-
-          <table class="stock-table">
-
-            <thead>
-              <tr>
-
-                <th class="stock-header">
-                  Name
-                </th>
-
-                <th class="stock-header">
-                  Opening
-                </th>
-
-                <th class="stock-header">
-                  Closing
-                </th>
-
-                <th class="stock-header">
-                  Diff
-                </th>
-
-              </tr>
-            </thead>
-
-            <tbody>
-
-              ${rawRows}
-
-              <tr class="total-row">
-
-                <td class="center-cell total-cell">
-                  TOTAL
-                </td>
-
-                <td class="center-cell total-cell">
-                  ${formatNumberDisplay(rawTotalOpening)}
-                </td>
-
-                <td class="center-cell total-cell">
-                  ${formatNumberDisplay(rawTotalClosing)}
-                </td>
-
-                <td class="center-cell total-cell">
-                  ${formatNumberDisplay(rawTotalDifference)}
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
 
         <!-- CHAIN STOCK -->
         <div class="stock-column stock-column-middle">
@@ -1306,18 +1273,19 @@ export default function StockLedgerReport() {
 
     .summary-table th,
     .summary-table td {
-      border: 1px solid #ccc;
+      border: 1px solid #f4f4f2;
     }
 
     .summary-heading {
       width: 50%;
       padding: 3px 4px;
-      background: #f5f5f5;
-      color: #000;
+      background: linear-gradient(to right, #785600, #986d00);
+      color: #ffffff;
       text-align: center;
       font-weight: bold;
       font-size: 8px;
-      border-bottom: 2px solid #000 !important;
+      border-bottom: 2px solid #785600 !important;
+      text-transform: uppercase;
     }
 
     .summary-column {
@@ -1333,7 +1301,15 @@ export default function StockLedgerReport() {
 
     .summary-inner-table td {
       border: 0;
-      border-bottom: 1px solid #ccc;
+      border-bottom: 1px solid #f4f4f2;
+    }
+
+    .summary-inner-table tr:nth-child(odd) {
+      background-color: #f8f6f4;
+    }
+
+    .summary-inner-table tr:nth-child(even) {
+      background-color: #ffffff;
     }
 
     .summary-inner-table tr:last-child td {
@@ -1342,14 +1318,14 @@ export default function StockLedgerReport() {
 
     .summary-label {
       padding: 3px 4px;
-      color: #000;
+      color: #1a1c1b;
       text-align: left;
       font-size: 8px;
     }
 
     .summary-value {
       padding: 3px 4px;
-      color: #000;
+      color: #1a1c1b;
       text-align: center;
       font-family: monospace;
       font-size: 8px;
@@ -1406,13 +1382,13 @@ export default function StockLedgerReport() {
 
     .stock-column-left {
       padding-right: 4px;
-      border-right: 1px solid #ccc;
+      border-right: 1px solid #d3c4af;
     }
 
     .stock-column-middle {
       padding-left: 4px;
       padding-right: 4px;
-      border-right: 1px solid #ccc;
+      border-right: 1px solid #d3c4af;
     }
 
     .stock-column-right {
@@ -1425,7 +1401,8 @@ export default function StockLedgerReport() {
       font-weight: bold;
       font-size: 10px;
       letter-spacing: 0.5px;
-      color: #000;
+      color: #4f4535;
+      text-transform: uppercase;
     }
 
     /* ==========================================================
@@ -1454,10 +1431,18 @@ export default function StockLedgerReport() {
       break-inside: avoid;
     }
 
+    .stock-table tbody tr:nth-child(odd) {
+      background-color: #f8f6f4;
+    }
+
+    .stock-table tbody tr:nth-child(even) {
+      background-color: #ffffff;
+    }
+
     .stock-table th,
     .stock-table td {
-      border-bottom: 1px solid #ccc;
-      border-right: 1px solid #ddd;
+      border-bottom: 1px solid #f4f4f2;
+      border-right: 1px solid #f4f4f2;
     }
 
     .stock-table th:last-child,
@@ -1469,10 +1454,11 @@ export default function StockLedgerReport() {
       padding: 3px;
       text-align: center;
       font-weight: bold;
-      color: #000;
+      color: #ffffff;
       font-size: 8px;
-      background: #f5f5f5;
-      border-bottom: 2px solid #000 !important;
+      background: linear-gradient(to right, #785600, #986d00);
+      border-bottom: 2px solid #785600 !important;
+      text-transform: uppercase;
     }
 
     .center-cell {
@@ -1482,7 +1468,7 @@ export default function StockLedgerReport() {
 
     .name-cell {
       padding: 3px;
-      color: #000;
+      color: #1a1c1b;
       font-size: 8px;
       word-wrap: break-word;
       overflow-wrap: break-word;
@@ -1490,7 +1476,7 @@ export default function StockLedgerReport() {
 
     .number-cell {
       padding: 3px;
-      color: #000;
+      color: #1a1c1b;
       font-size: 8px;
       font-family: monospace;
       font-variant-numeric: tabular-nums;
@@ -1510,12 +1496,12 @@ export default function StockLedgerReport() {
       break-inside: avoid;
       background: #fef3c7;
       font-weight: bold;
-      border-top: 2px solid #000 !important;
+      border-top: 2px solid #d3c4af !important;
     }
 
     .total-cell {
       padding: 3px;
-      color: #000;
+      color: #4f4535;
       font-size: 8px;
       font-family: monospace;
       font-variant-numeric: tabular-nums;
@@ -1586,10 +1572,18 @@ export default function StockLedgerReport() {
       break-inside: avoid !important;
     }
 
+    .movement-table tbody tr:nth-child(odd) {
+      background-color: #f8f6f4;
+    }
+
+    .movement-table tbody tr:nth-child(even) {
+      background-color: #ffffff;
+    }
+
     .movement-table th,
     .movement-table td {
-      border-bottom: 1px solid #ccc;
-      border-right: 1px solid #ddd;
+      border-bottom: 1px solid #f4f4f2;
+      border-right: 1px solid #f4f4f2;
     }
 
     .movement-table th:last-child,
@@ -1601,10 +1595,10 @@ export default function StockLedgerReport() {
       padding: 3px 4px;
       text-align: center;
       font-weight: bold;
-      color: #000;
+      color: #ffffff;
       font-size: 8px;
-      background: #f5f5f5;
-      border-bottom: 2px solid #000 !important;
+      background: linear-gradient(to right, #785600, #986d00);
+      border-bottom: 2px solid #785600 !important;
     }
 
     .movement-inward-name {
@@ -1941,15 +1935,13 @@ export default function StockLedgerReport() {
               />
             </div>
 
-            {/* Print Button */}
-            <button
+            <GenericButton
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#785600]/30 bg-white px-3 py-1.5 text-xs font-semibold text-[#785600] shadow-sm transition-colors hover:bg-[#785600]/10 dark:border-slate-700 dark:bg-slate-900 dark:text-[#b8860b] dark:hover:bg-slate-800 sm:py-2 sm:text-sm"
-              title="Print / Save PDF"
+              className="!bg-[#785600] !text-white hover:!bg-[#5d4200]"
             >
               <Printer className="h-4 w-4" />
-              <span className="hidden sm:inline">Print</span>
-            </button>
+              <span>Print</span>
+            </GenericButton>
           </div>
         </div>
       </div>
@@ -2007,7 +1999,7 @@ export default function StockLedgerReport() {
                   </div>
                   <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
                     <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                      SR (Received)
+                      SRP (Received)
                     </span>
                     <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
                       {formatNumberDisplay(summaryData.opening.openingSr)}
@@ -2107,60 +2099,8 @@ export default function StockLedgerReport() {
             </div>
           </div>
 
-          {/* 2, 3, 4: MANUFACTURING STOCK, CHAIN STOCK, & CLIENT in ONE ROW */}
-          <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-3">
-            {/* KARIGER STOCK Table */}
-            <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
-              <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
-                <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
-                  KARIGER STOCK
-                </span>
-              </div>
-              <div className="flex flex-1 flex-col overflow-x-auto">
-                <table className="w-full text-left text-xs sm:text-sm">
-                  <thead>
-                    <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                      <th className="px-3.5 py-2.5">Name</th>
-                      <th className="px-3.5 py-2.5 text-right">Opening</th>
-                      <th className="px-3.5 py-2.5 text-right">Closing</th>
-                      <th className="px-3.5 py-2.5 text-right">Difference</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
-                    {filteredRawStock.length > 0 ? (
-                      filteredRawStock.map((row) => (
-                        <tr
-                          key={row.id}
-                          className="transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40"
-                        >
-                          <td className="px-3.5 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
-                            {row.name}
-                          </td>
-                          <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
-                            {formatNumberDisplay(row.opening)}
-                          </td>
-                          <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
-                            {formatNumberDisplay(row.closing)}
-                          </td>
-                          <td className="font-mono px-3.5 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
-                            {formatNumberDisplay(row.due)}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={4}
-                          className="text-gray-500 px-3.5 py-6 text-center text-xs"
-                        >
-                          No manufacturing stock data found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          {/* CLIENT, KARIGAR, & CHAIN STOCK in ONE ROW */}
+          <div className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-3 lg:grid-cols-3 md:grid-cols-1">
 
             {/* CLIENT Table */}
             <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
@@ -2207,6 +2147,59 @@ export default function StockLedgerReport() {
                           className="text-gray-500 px-3.5 py-6 text-center text-xs"
                         >
                           No client records found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* KARIGAR Table */}
+            <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+              <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
+                <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
+                  KARIGAR
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-[#d3c4af]/30 bg-[#f4f1ea]/40 text-xs font-bold uppercase tracking-wider text-[#4f4535] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      <th className="px-3.5 py-2.5">Name</th>
+                      <th className="px-3.5 py-2.5 text-right">Opening</th>
+                      <th className="px-3.5 py-2.5 text-right">Closing</th>
+                      <th className="px-3.5 py-2.5 text-right">Difference</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#d3c4af]/20 dark:divide-slate-800">
+                    {filteredKarigar.length > 0 ? (
+                      filteredKarigar.map((row) => (
+                        <tr
+                          key={row.id}
+                          className="transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40"
+                        >
+                          <td className="px-3.5 py-2.5 font-medium text-[#1a1c1b] dark:text-slate-200">
+                            {row.name}
+                          </td>
+                          <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
+                            {formatNumberDisplay(row.opening)}
+                          </td>
+                          <td className="font-mono px-3.5 py-2.5 text-right font-medium text-[#1a1c1b] dark:text-slate-300">
+                            {formatNumberDisplay(row.closing)}
+                          </td>
+                          <td className="font-mono px-3.5 py-2.5 text-right font-bold text-[#1a1c1b] dark:text-slate-100">
+                            {formatNumberDisplay(row.difference)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="text-gray-500 px-3.5 py-6 text-center text-xs"
+                        >
+                          No karigar records found.
                         </td>
                       </tr>
                     )}
@@ -2305,8 +2298,8 @@ export default function StockLedgerReport() {
                         </td>
                         <td className="font-mono px-4 py-2.5 text-right font-bold text-green-700 dark:text-green-400">
                           {row.inwardName &&
-                          row.inward != null &&
-                          row.inward > 0
+                            row.inward != null &&
+                            row.inward > 0
                             ? formatNumberDisplay(row.inward)
                             : '-'}
                         </td>
@@ -2322,8 +2315,8 @@ export default function StockLedgerReport() {
                         </td>
                         <td className="font-mono px-4 py-2.5 text-right font-bold text-amber-700 dark:text-amber-400">
                           {row.outwardName &&
-                          row.outward != null &&
-                          row.outward > 0
+                            row.outward != null &&
+                            row.outward > 0
                             ? formatNumberDisplay(row.outward)
                             : '-'}
                         </td>

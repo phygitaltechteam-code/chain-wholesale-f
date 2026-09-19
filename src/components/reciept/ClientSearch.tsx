@@ -98,9 +98,7 @@ export const ClientSearch: React.FC<ClientSearchProps> = ({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white">
                 {getClientName(selectedClient)}
-                {selectedClient.phoneNumber && (
-                  <> - {selectedClient.phoneNumber}</>
-                )}
+                {selectedClient.phoneNumber && ` - ${selectedClient.phoneNumber}`}
               </p>
 
               {selectedClient.address && (

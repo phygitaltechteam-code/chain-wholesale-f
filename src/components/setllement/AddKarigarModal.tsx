@@ -8,18 +8,15 @@ import {useAddKarigar} from '@/components/joborder/karigar/karigarapi';
 
 const KarigarSchema = z.object({
   fullName: z.string().min(1, 'Name is required'),
-  phoneNumber: z
-    .string()
-    .length(10, 'Phone number must be exactly 10 digits')
-    .regex(/^\d+$/, 'Phone number must contain only digits'),
-  address: z.string().min(1, 'Address is required'),
+  phoneNumber: z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits'),
+  address: z.string().optional(),
   openingBalance: z.number().optional(),
 });
 
 interface AddKarigarModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (karigar?: any) => void;
 }
 
 export const AddKarigarModal: React.FC<AddKarigarModalProps> = ({
@@ -48,7 +45,14 @@ export const AddKarigarModal: React.FC<AddKarigarModalProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const {name, value} = e.target;
-    setFormData((prev) => ({...prev, [name]: value}));
+
+    if (name === 'phoneNumber') {
+      const numericValue = value.replace(/\D/g, '');
+      if (numericValue.length > 10) return;
+      setFormData((prev) => ({...prev, [name]: numericValue}));
+    } else {
+      setFormData((prev) => ({...prev, [name]: value}));
+    }
 
     if (formErrors[name as keyof typeof formErrors]) {
       setFormErrors((prev) => ({...prev, [name]: undefined}));
@@ -84,13 +88,14 @@ export const AddKarigarModal: React.FC<AddKarigarModalProps> = ({
     if (!validateForm()) return;
 
     try {
-      await addKarigar.mutateAsync({
+      const res = await addKarigar.mutateAsync({
         fullName: formData.fullName.trim(),
         phoneNumber: formData.phoneNumber.trim(),
         address: formData.address.trim(),
         openingBalance: parseFloat(formData.openingBalance) || 0,
         type: 'OUT_SOURCE',
       });
+      const newKarigar = res?.data || res;
       setFormData({
         fullName: '',
         phoneNumber: '',
@@ -98,7 +103,7 @@ export const AddKarigarModal: React.FC<AddKarigarModalProps> = ({
         openingBalance: '',
       });
       setFormErrors({});
-      onSuccess?.();
+      onSuccess?.(newKarigar);
       onClose();
     } catch (error) {
       // Error handled in mutation
@@ -169,7 +174,7 @@ export const AddKarigarModal: React.FC<AddKarigarModalProps> = ({
           {/* Address */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-[#1a1c1b] dark:text-white">
-              Address <span className="ml-1 text-red-500">*</span>
+              Address
             </label>
             <textarea
               name="address"

@@ -113,7 +113,7 @@ const Sidebar = ({
       roles: ['ADMIN'],
     },
     {
-      label: 'Karigar Billing',
+      label: 'Karigar Purchase',
       path: '/karigarbilling',
       icon: <MdReceipt size={22} />,
       roles: ['ADMIN'],

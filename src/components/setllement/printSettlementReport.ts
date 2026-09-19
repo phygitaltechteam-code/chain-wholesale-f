@@ -2,17 +2,17 @@ import {SettlementEntry, formatNumber} from './settlementUtils';
 import toast from 'react-hot-toast';
 
 interface PrintSettlementReportParams {
-  filteredSettlements: SettlementEntry[];
-  getpdfheaderdata: any;
+  settlements: SettlementEntry[];
+  headerInfo: any;
   dateRange: Date[];
 }
 
 export const printSettlementReport = ({
-  filteredSettlements,
-  getpdfheaderdata,
+  settlements,
+  headerInfo,
   dateRange,
 }: PrintSettlementReportParams) => {
-  if (!filteredSettlements || filteredSettlements.length === 0) {
+  if (!settlements || settlements.length === 0) {
     toast.error('No records available to print');
     return;
   }
@@ -39,7 +39,7 @@ export const printSettlementReport = ({
     });
   };
 
-  const rows = filteredSettlements
+  const rows = settlements
     .map((entry, index) => {
       return `
         <tr>
@@ -53,39 +53,41 @@ export const printSettlementReport = ({
     })
     .join('');
 
-  const headerInfo =
-    getpdfheaderdata?.data?.data ||
-    (getpdfheaderdata?.data?.factoryName ? getpdfheaderdata.data : {});
+  const resolvedHeaderInfo =
+    headerInfo?.data?.data ||
+    headerInfo?.data ||
+    headerInfo ||
+    {};
   const leftInvocation =
-    headerInfo.leftInvocation ||
-    headerInfo.leftInovation ||
+    resolvedHeaderInfo.leftInvocation ||
+    resolvedHeaderInfo.leftInovation ||
     '॥ श्री गणेश प्रसन्न ॥';
   const rightInvocation =
-    headerInfo.rightInvocation ||
-    headerInfo.rightInovation ||
+    resolvedHeaderInfo.rightInvocation ||
+    resolvedHeaderInfo.rightInovation ||
     '॥ श्री साई प्रसन्न ॥';
-  const factoryName = headerInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
+  const factoryName = resolvedHeaderInfo.factoryName || 'मातोश्री चेन फॅक्टरी, मिरज';
   const description =
-    headerInfo.description ||
+    resolvedHeaderInfo.description ||
     'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.';
-  const proprietorName = headerInfo.proprietorName || 'प्रो. नितीन खरात';
-  const phoneNumbers = headerInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
-  const invocationColor = headerInfo.invocationColor || '#a84b20';
-  const factoryNameColor = headerInfo.factoryNameColor || '#c43d5c';
-  const descriptionColor = headerInfo.descriptionColor || '#8b451f';
-  const proprietorColor = headerInfo.proprietorColor || '#a84b20';
-  const phoneColor = headerInfo.phoneColor || '#a84b20';
-  const factoryFontSize = headerInfo.factoryFontSize
-    ? `${headerInfo.factoryFontSize}px`
+  const proprietorName = resolvedHeaderInfo.proprietorName || 'प्रो. नितीन खरात';
+  const phoneNumbers = resolvedHeaderInfo.phoneNumbers || 'मो. ९३७०२४७०३५ / ७३८७२३५१८४';
+  const invocationColor = resolvedHeaderInfo.invocationColor || '#a84b20';
+  const factoryNameColor = resolvedHeaderInfo.factoryNameColor || '#c43d5c';
+  const descriptionColor = resolvedHeaderInfo.descriptionColor || '#8b451f';
+  const proprietorColor = resolvedHeaderInfo.proprietorColor || '#a84b20';
+  const phoneColor = resolvedHeaderInfo.phoneColor || '#a84b20';
+  const factoryFontSize = resolvedHeaderInfo.factoryFontSize
+    ? `${resolvedHeaderInfo.factoryFontSize}px`
     : '20px';
-  const descriptionFontSize = headerInfo.descriptionFontSize
-    ? `${headerInfo.descriptionFontSize}px`
+  const descriptionFontSize = resolvedHeaderInfo.descriptionFontSize
+    ? `${resolvedHeaderInfo.descriptionFontSize}px`
     : '9px';
-  const proprietorFontSize = headerInfo.proprietorFontSize
-    ? `${headerInfo.proprietorFontSize}px`
+  const proprietorFontSize = resolvedHeaderInfo.proprietorFontSize
+    ? `${resolvedHeaderInfo.proprietorFontSize}px`
     : '9px';
-  const phoneFontSize = headerInfo.phoneFontSize
-    ? `${headerInfo.phoneFontSize}px`
+  const phoneFontSize = resolvedHeaderInfo.phoneFontSize
+    ? `${resolvedHeaderInfo.phoneFontSize}px`
     : '9px';
 
   printContainer.innerHTML = `

@@ -8,18 +8,15 @@ import {useCreateClient} from '@/lib/api/client';
 
 const ClientSchema = z.object({
   fullName: z.string().min(1, 'Name is required'),
-  phoneNumber: z
-    .string()
-    .length(10, 'Phone number must be exactly 10 digits')
-    .regex(/^\d+$/, 'Phone number must contain only digits'),
-  address: z.string().min(1, 'Address is required'),
-  openingBalance: z.number(),
+  phoneNumber: z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits'),
+  address: z.string().optional(),
+  openingBalance: z.number().optional(),
 });
 
 interface AddClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (client?: any) => void;
 }
 
 export const AddClientModal: React.FC<AddClientModalProps> = ({
@@ -48,7 +45,14 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const {name, value} = e.target;
-    setFormData((prev) => ({...prev, [name]: value}));
+
+    if (name === 'phoneNumber') {
+      const numericValue = value.replace(/\D/g, '');
+      if (numericValue.length > 10) return;
+      setFormData((prev) => ({...prev, [name]: numericValue}));
+    } else {
+      setFormData((prev) => ({...prev, [name]: value}));
+    }
 
     if (formErrors[name as keyof typeof formErrors]) {
       setFormErrors((prev) => ({...prev, [name]: undefined}));
@@ -84,12 +88,13 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
     if (!validateForm()) return;
 
     try {
-      await createClient.mutateAsync({
+      const res = await createClient.mutateAsync({
         fullName: formData.fullName.trim(),
         phoneNumber: formData.phoneNumber.trim(),
         address: formData.address.trim(),
         openingBalance: parseFloat(formData.openingBalance) || 0,
       });
+      const newClient = res?.data || res;
       setFormData({
         fullName: '',
         phoneNumber: '',
@@ -97,7 +102,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
         openingBalance: '',
       });
       setFormErrors({});
-      onSuccess?.();
+      onSuccess?.(newClient);
       onClose();
     } catch (error) {
       // Error handled in mutation
@@ -168,7 +173,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
           {/* Address */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-[#1a1c1b] dark:text-white">
-              Address <span className="ml-1 text-red-500">*</span>
+              Address
             </label>
             <textarea
               name="address"

@@ -253,7 +253,7 @@ const RealTimeGoldReport: React.FC = () => {
         <RealTimeSummaryCards grandTotals={grandTotals} />
 
         {/* Horizontal Column Layout */}
-        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-3 xl:grid-cols-3">
           {/* 1. GOLD & STOCK Panel */}
           <RealTimeStockPanel
             stockGroups={stockGroups}
@@ -262,13 +262,6 @@ const RealTimeGoldReport: React.FC = () => {
             toggleRow={toggleRow}
           />
 
-          {/* 2. KARIGAR STOCK Panel */}
-          <RealTimeKarigarStockPanel
-            karigarStockGroup={karigarStockGroup}
-            karigarStockTotals={karigarStockTotals}
-            expandedRows={expandedRows}
-            toggleRow={toggleRow}
-          />
 
           {/* 3. KARIGAR DUE Panel */}
           <RealTimeKarigarDuePanel

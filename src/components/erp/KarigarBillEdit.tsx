@@ -21,8 +21,8 @@ import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import {
   useGetKarigars,
-  useAddKarigar,
 } from '@/components/joborder/karigar/karigarapi';
+import AddKarigarModal from '@/components/setllement/AddKarigarModal';
 import {useGetItems} from '@/lib/api/items';
 import {useGetSizes} from '@/lib/api/sizes';
 import toast from 'react-hot-toast';
@@ -102,12 +102,7 @@ interface BillGroup {
   totalSRP: number;
 }
 
-const KarigarSchema = z.object({
-  fullName: z.string().min(1, 'Name is required'),
-  phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits'),
-  address: z.string().min(1, 'Address is required'),
-  openingBalance: z.number().min(0, 'Opening balance cannot be negative'),
-});
+
 
 const KarigarBillEdit: React.FC = () => {
   const {id} = Route.useParams();
@@ -132,18 +127,7 @@ const KarigarBillEdit: React.FC = () => {
     },
   });
   const [showKarigarModal, setShowKarigarModal] = useState(false);
-  const [KarigarFormData, setKarigarFormData] = useState({
-    fullName: '',
-    phoneNumber: '',
-    address: '',
-    openingBalance: '',
-  });
-  const [KarigarFormErrors, setKarigarFormErrors] = useState<{
-    fullName?: string;
-    phoneNumber?: string;
-    address?: string;
-    openingBalance?: string;
-  }>({});
+
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [billType, setBillType] = useState<'DRAFT' | 'BILL'>('DRAFT');
   const [billNo, setBillNo] = useState<string>('');
@@ -172,7 +156,7 @@ const KarigarBillEdit: React.FC = () => {
     [rawItems],
   );
   const {data: sizes = []} = useGetSizes();
-  const createKarigar = useAddKarigar();
+
 
   const getpdfheaderdata = useGetHeader();
   const {data: billResponse, isLoading: isLoadingBill} = useGetKarigarBillByid(id);
@@ -390,54 +374,14 @@ const KarigarBillEdit: React.FC = () => {
     console.log('Form Data Updated:', formData);
   }, [formData]);
 
-  const handleAddKarigarFromPopup = async () => {
-    try {
-      const parsed = KarigarSchema.parse({
-        fullName: KarigarFormData.fullName.trim(),
-        phoneNumber: KarigarFormData.phoneNumber.trim(),
-        address: KarigarFormData.address.trim(),
-        openingBalance: parseFloat(KarigarFormData.openingBalance) || 0,
-      });
-
-      const res = await createKarigar.mutateAsync({
-        fullName: parsed.fullName,
-        phoneNumber: parsed.phoneNumber,
-        address: parsed.address,
-        openingBalance: parsed.openingBalance,
-      });
-
-      const newKarigar = res?.data || res;
-
-      setKarigarFormData({
-        fullName: '',
-        phoneNumber: '',
-        address: '',
-        openingBalance: '',
-      });
-      setKarigarFormErrors({});
-      setShowKarigarModal(false);
-      const refetched = await refetchKarigars();
-      const allKarigars = (refetched?.data as any[]) || [];
-      const foundKarigar =
-        allKarigars.find(
-          (c: any) =>
-            c.id === newKarigar?.id || c.phoneNumber === parsed.phoneNumber,
-        ) || newKarigar;
-      if (foundKarigar) {
-        handleKarigarSelect(foundKarigar);
-      }
-      // toast.success('Karigar added successfully!');
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const errors: any = {};
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            errors[err.path[0]] = err.message;
-          }
-        });
-        setKarigarFormErrors(errors);
-        toast.error(errors[Object.keys(errors)[0]] || 'Please fix the errors');
-      }
+  const handleKarigarSuccess = async (newKarigar?: any) => {
+    setShowKarigarModal(false);
+    const refetched = await refetchKarigars();
+    const allKarigars = (refetched?.data as any[]) || [];
+    
+    if (newKarigar) {
+      const foundKarigar = allKarigars.find((c: any) => c.id === newKarigar.id) || newKarigar;
+      handleKarigarSelect(foundKarigar);
     }
   };
 
@@ -750,10 +694,10 @@ const KarigarBillEdit: React.FC = () => {
         karigarId: formData.KarigarId,
         purchaseDate: formData.date,
         items: formData.items.map((item) => ({
-          itemID:
+          itemId:
             items.find((i: any) => i.name === item.item)?.id || item.itemId,
           itemName: item.item,
-          sizeID:
+          sizeId:
             sizes.find((s: any) => s.size === item.size)?.id || item.sizeId,
           size: item.size,
           purity: Number(item.purity) || 0,
@@ -812,10 +756,10 @@ const KarigarBillEdit: React.FC = () => {
         karigarId: formData.KarigarId,
         purchaseDate: formData.date,
         items: formData.items.map((item) => ({
-          itemID:
+          itemId:
             items.find((i: any) => i.name === item.item)?.id || item.itemId,
           itemName: item.item,
-          sizeID:
+          sizeId:
             sizes.find((s: any) => s.size === item.size)?.id || item.sizeId,
           size: item.size,
           purity: Number(item.purity) || 0,
@@ -1121,7 +1065,7 @@ const KarigarBillEdit: React.FC = () => {
               <span className="text-sm font-medium">Back</span>
             </button>
             <PageHeader
-              title={isReadOnly ? 'View Bill' : 'Edit Bill'}
+              title={isReadOnly ? 'View Karigar Purchase' : 'Edit Karigar Purchase'}
               subtitle={
                 isReadOnly
                   ? 'Completed bill details'
@@ -1134,7 +1078,7 @@ const KarigarBillEdit: React.FC = () => {
             {billNo && (
               <div className="flex items-center gap-2 rounded-xl border border-[#785600]/20 bg-amber-50 px-4 py-2 dark:border-amber-900/40 dark:bg-amber-950/30">
                 <span className="text-xs font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-                  Bill No:
+                  Purchase No:
                 </span>
                 <span className="font-mono text-base font-bold text-[#785600] dark:text-amber-400">
                   {billNo}
@@ -1229,7 +1173,7 @@ const KarigarBillEdit: React.FC = () => {
             </h3>
             {!isReadOnly && (
               <p className="mt-1 text-xs text-[#4f4535]/60 dark:text-slate-400">
-                Use + button to add more items, - button to remove
+                {/* Instruction removed per request */}
               </p>
             )}
           </div>
@@ -1429,129 +1373,11 @@ const KarigarBillEdit: React.FC = () => {
         </div>
       )}
 
-      {/* Add Karigar Modal */}
-      {showKarigarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl bg-white shadow-xl dark:bg-slate-900">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#d3c4af]/10 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-              <h3 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
-                Add New Karigar
-              </h3>
-              <button
-                onClick={() => setShowKarigarModal(false)}
-                className="rounded-lg p-1 transition-colors hover:bg-[#f4f4f2] dark:hover:bg-slate-800"
-              >
-                <X className="h-5 w-5 text-[#4f4535] dark:text-slate-400" />
-              </button>
-            </div>
-            <div className="space-y-4 p-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
-                  Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={KarigarFormData.fullName}
-                  onChange={(e) =>
-                    setKarigarFormData({
-                      ...KarigarFormData,
-                      fullName: e.target.value,
-                    })
-                  }
-                  placeholder="Enter Karigar name"
-                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-4 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white ${KarigarFormErrors.fullName ? 'ring-2 ring-red-500' : ''}`}
-                />
-                {KarigarFormErrors.fullName && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {KarigarFormErrors.fullName}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
-                  Phone <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={KarigarFormData.phoneNumber}
-                  onChange={(e) =>
-                    setKarigarFormData({
-                      ...KarigarFormData,
-                      phoneNumber: e.target.value,
-                    })
-                  }
-                  placeholder="Enter phone number"
-                  className={`w-full rounded-lg border-0 bg-[#f4f4f2] px-4 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white ${KarigarFormErrors.phoneNumber ? 'ring-2 ring-red-500' : ''}`}
-                />
-                {KarigarFormErrors.phoneNumber && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {KarigarFormErrors.phoneNumber}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
-                  Address <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={KarigarFormData.address}
-                  onChange={(e) =>
-                    setKarigarFormData({
-                      ...KarigarFormData,
-                      address: e.target.value,
-                    })
-                  }
-                  placeholder="Enter address"
-                  rows={2}
-                  className={`w-full resize-none rounded-lg border-0 bg-[#f4f4f2] px-4 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white ${KarigarFormErrors.address ? 'ring-2 ring-red-500' : ''}`}
-                />
-                {KarigarFormErrors.address && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {KarigarFormErrors.address}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-[#4f4535] dark:text-slate-300">
-                  Opening Balance (G)
-                </label>
-                <input
-                  type="text"
-                  value={KarigarFormData.openingBalance}
-                  onChange={(e) =>
-                    setKarigarFormData({
-                      ...KarigarFormData,
-                      openingBalance: e.target.value,
-                    })
-                  }
-                  placeholder="0.000"
-                  className={`font-mono w-full rounded-lg border-0 bg-[#f4f4f2] px-4 py-2.5 text-sm text-[#1a1c1b] outline-none focus:ring-2 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white ${KarigarFormErrors.openingBalance ? 'ring-2 ring-red-500' : ''}`}
-                />
-                {KarigarFormErrors.openingBalance && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {KarigarFormErrors.openingBalance}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 border-t border-[#d3c4af]/10 p-4 dark:border-slate-700">
-              <button
-                onClick={() => setShowKarigarModal(false)}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-[#4f4535] transition-colors hover:bg-[#f4f4f2] dark:text-slate-400 dark:hover:bg-slate-800"
-              >
-                Cancel
-              </button>
-              <GenericButton
-                type="button"
-                onClick={handleAddKarigarFromPopup}
-                className="!bg-[#785600] !px-4 !py-2 !text-sm !text-white hover:!bg-[#5d4200]"
-              >
-                Add Karigar
-              </GenericButton>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddKarigarModal
+        isOpen={showKarigarModal}
+        onClose={() => setShowKarigarModal(false)}
+        onSuccess={handleKarigarSuccess}
+      />
     </div>
   );
 };

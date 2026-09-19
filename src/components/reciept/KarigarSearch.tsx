@@ -98,6 +98,7 @@ export const KarigarSearch: React.FC<KarigarSearchProps> = ({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-[#1a1c1b] dark:text-white">
                 {getKarigarName(selectedKarigar)}
+                {selectedKarigar.phoneNumber && ` - ${selectedKarigar.phoneNumber}`}
               </p>
 
               {selectedKarigar.address && (
@@ -151,13 +152,12 @@ export const KarigarSearch: React.FC<KarigarSearchProps> = ({
                       >
                         <p className="text-sm font-bold text-[#1a1c1b] dark:text-white">
                           {getKarigarName(Karigar)}
+                          {Karigar.phoneNumber && (
+                            <span className="ml-2 text-xs font-normal text-[#4f4535] dark:text-slate-400">
+                              ({Karigar.phoneNumber})
+                            </span>
+                          )}
                         </p>
-
-                        {Karigar.phoneNumber && (
-                          <p className="text-xs text-[#4f4535] dark:text-slate-400">
-                            {Karigar.phoneNumber}
-                          </p>
-                        )}
 
                         {Karigar.address && (
                           <p className="mt-1 truncate text-xs text-[#4f4535] dark:text-slate-400">
