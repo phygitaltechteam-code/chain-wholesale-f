@@ -451,27 +451,21 @@ const Settlement: React.FC = () => {
   // TABLE COLUMNS & ACTIONS
   // ----------------------------------------------------
   const renderActions = (item: SettlementEntry) => {
-    if (Number(item.goldBalance || 0) === 0) {
-      return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-          <CheckCircle className="h-3.5 w-3.5" />
-          Settled
-        </span>
-      );
-    }
-
     return (
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleSettle(item);
-        }}
-        className="flex items-center gap-1 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#5d4200]"
-      >
-        <CheckCircle className="h-3 w-3" />
-        Settle
-      </button>
+      <div className="flex items-center gap-2">
+      
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSettle(item);
+          }}
+          className="flex items-center gap-1 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#5d4200]"
+        >
+          <CheckCircle className="h-3 w-3" />
+          Settle
+        </button>
+      </div>
     );
   };
 
