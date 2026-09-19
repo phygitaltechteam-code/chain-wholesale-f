@@ -754,7 +754,7 @@ const ReceiptAdd: React.FC = () => {
               <span className="text-sm font-medium">Back</span>
             </button>
             <PageHeader
-              title="Create Bill"
+              title="Purchase Bill"
               subtitle="Add items and generate bill"
             />
           </div>
