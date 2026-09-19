@@ -578,8 +578,7 @@ const DayReport: React.FC = () => {
   // 6b. Karigar Bills Items
   const karigarBillsList: BillItemDetail[] = useMemo(() => {
     const rawBills = reportData?.purchases || reportData?.karigarBills;
-    if (!rawBills || !Array.isArray(rawBills))
-      return [];
+    if (!rawBills || !Array.isArray(rawBills)) return [];
     return rawBills.map((b: any, idx: number) => {
       const rawItems =
         Array.isArray(b.items) && b.items.length > 0

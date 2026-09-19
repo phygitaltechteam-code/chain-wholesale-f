@@ -1,11 +1,12 @@
-import {useNavigate} from '@tanstack/react-router';
-import {useState, useEffect, useMemo} from 'react';
-import {Search, Printer, AlertCircle, TrendingUp} from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
+import { useState, useEffect, useMemo } from 'react';
+import { Search, Printer, AlertCircle, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import {useGetHeader} from '@/lib/api/headerapi';
-import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
+import { useGetHeader } from '@/lib/api/headerapi';
+import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
+import { useGetKarigarBill } from '@/lib/api/karigarBill';
 import React from 'react';
 
 // ======================================================
@@ -17,42 +18,22 @@ interface InwardReportEntry {
   dateTime: string;
   karigarName: string;
   item: string;
+  size: string;
   purity: number;
   wt: number;
   srp: number;
-  process?: string;
-}
-
-interface ApiResponse {
-  statusCode: number;
-  status: boolean;
-  message: string;
-  data: ApiDataItem[];
-  errors: null;
-}
-
-interface ApiDataItem {
-  id: string;
-  type: string;
-  karigarName: string;
-  item: string;
-  purity: number;
-  wt: number;
-  srp: number;
-  createdAt: string;
-  process?: string;
 }
 
 // ======================================================
 // HELPER FUNCTIONS
 // ======================================================
 const getDefaultWeekRange = () => {
-  const {fromDate, toDate} = getCurrentAppWeekRange();
-  return {monday: fromDate, sunday: toDate};
+  const { fromDate, toDate } = getCurrentAppWeekRange();
+  return { monday: fromDate, sunday: toDate };
 };
 
 const formatDate = (dateString: string) => {
-  if (!dateString) return {date: '-', time: '-'};
+  if (!dateString) return { date: '-', time: '-' };
   const date = new Date(dateString);
   return {
     date: date.toLocaleDateString('en-IN', {
@@ -89,30 +70,26 @@ const InwardReport: React.FC = () => {
   const getpdfheaderdata = useGetHeader();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProcess, setSelectedProcess] = useState<string>('all');
+  const [selectedKarigar, setSelectedKarigar] = useState<string>('all');
+  const [selectedItem, setSelectedItem] = useState<string>('all');
   const [reportData, setReportData] = useState<InwardReportEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [fromDate, setFromDate] = useState<Date | null>(() => {
-    const {monday} = getDefaultWeekRange();
+    const { monday } = getDefaultWeekRange();
     return monday;
   });
   const [toDate, setToDate] = useState<Date | null>(() => {
-    const {sunday} = getDefaultWeekRange();
+    const { sunday } = getDefaultWeekRange();
     return sunday;
   });
 
-  // TODO: replace with your actual inward report API hook
-  // const { data: inwardReportData, isLoading, isError, refetch } = useGetInwardReport();
-  const inwardReportData: ApiResponse | undefined = undefined;
-  const isLoading = false;
-  const isError = false;
-  const refetch = () => {};
+  const { data: billData, isLoading, isError, refetch } = useGetKarigarBill();
 
   // Listen for week cycle setting updates
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
-      const {monday, sunday} = getDefaultWeekRange();
+      const { monday, sunday } = getDefaultWeekRange();
       setFromDate(monday);
       setToDate(sunday);
     };
@@ -127,22 +104,15 @@ const InwardReport: React.FC = () => {
 
   // Transform API data
   useEffect(() => {
-    if (!inwardReportData) {
+    if (!billData || !Array.isArray(billData)) {
       setLoading(false);
       return;
     }
 
-    const response = inwardReportData as ApiResponse;
-
-    const apiItems: ApiDataItem[] = Array.isArray(response?.data)
-      ? response.data
-      : Array.isArray(response)
-        ? (response as any)
-        : [];
-
-    // Filter by date range
-    const filteredApiItems = apiItems.filter((item) => {
-      const createdAt = new Date(item.createdAt);
+    const filteredBills = billData.filter((receipt: any) => {
+      const rawDate = receipt.purchaseDate || receipt.createdAt || receipt.receiptDate;
+      if (!rawDate) return false;
+      const createdAt = new Date(rawDate);
       if (fromDate) {
         const from = new Date(fromDate);
         from.setHours(0, 0, 0, 0);
@@ -156,42 +126,69 @@ const InwardReport: React.FC = () => {
       return true;
     });
 
-    // Sort by date (newest first)
-    const sortedItems = [...filteredApiItems].sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+    const allItems: any[] = [];
+    filteredBills.forEach((receipt: any) => {
+      const itemsList = receipt.karigarPurchaseItems || receipt.receiptItems || [];
+      const karigarName = receipt.karigar?.fullName || receipt.karigarName || 'N/A';
+      const rawDate = receipt.purchaseDate || receipt.createdAt || receipt.receiptDate;
+      const { date, time } = formatDate(rawDate);
 
-    // Transform
-    const transformedData: InwardReportEntry[] = sortedItems.map(
-      (item, index) => {
-        const {date, time} = formatDate(item.createdAt);
-        return {
-          id: item.id,
-          srNo: index + 1,
+      itemsList.forEach((item: any, index: number) => {
+        allItems.push({
+          id: item.id || `${receipt.id}-${index}`,
+          rawDate,
           dateTime: `${date} ${time}`,
-          karigarName: item.karigarName || 'N/A',
-          item: item.item || 'N/A',
+          karigarName,
+          item: item.item?.name || 'N/A',
+          size: item.size?.size || 'N/A',
           purity: toNumber(item.purity),
-          wt: toNumber(item.wt),
+          wt: toNumber(item.fineWeight),
           srp: toNumber(item.srp),
-          process: item.process || item.type || 'Unknown',
-        };
-      },
-    );
+        });
+      });
+    });
+
+    // Sort by date (newest first)
+    allItems.sort((a, b) => new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime());
+
+    // Map to final structure with srNo
+    const transformedData: InwardReportEntry[] = allItems.map((item, index) => ({
+      id: item.id,
+      srNo: index + 1,
+      dateTime: item.dateTime,
+      karigarName: item.karigarName,
+      item: item.item,
+      size: item.size,
+      purity: item.purity,
+      wt: item.wt,
+      srp: item.srp,
+    }));
 
     setReportData(transformedData);
     setLoading(false);
-  }, [inwardReportData, fromDate, toDate]);
+  }, [billData, fromDate, toDate]);
 
-  // Get unique processes for dropdown
-  const processOptions = useMemo(() => {
-    const processes = new Set<string>();
-    processes.add('all');
+  // Dropdown options
+  const karigarOptions = useMemo(() => {
+    const karigars = new Set<string>();
+    karigars.add('all');
     reportData.forEach((item) => {
-      if (item.process) processes.add(item.process.toLowerCase());
+      if (item.karigarName && item.karigarName !== 'N/A') {
+        karigars.add(item.karigarName);
+      }
     });
-    return Array.from(processes);
+    return Array.from(karigars);
+  }, [reportData]);
+
+  const itemOptions = useMemo(() => {
+    const items = new Set<string>();
+    items.add('all');
+    reportData.forEach((item) => {
+      if (item.item && item.item !== 'N/A') {
+        items.add(item.item);
+      }
+    });
+    return Array.from(items);
   }, [reportData]);
 
   // Filter data
@@ -202,17 +199,22 @@ const InwardReport: React.FC = () => {
       matchesSearch =
         entry.karigarName.toLowerCase().includes(q) ||
         entry.item.toLowerCase().includes(q) ||
+        entry.size.toLowerCase().includes(q) ||
         entry.dateTime.toLowerCase().includes(q) ||
         entry.wt.toString().includes(q);
     }
 
-    let matchesProcess = true;
-    if (selectedProcess !== 'all') {
-      matchesProcess =
-        entry.process?.toLowerCase() === selectedProcess.toLowerCase();
+    let matchesKarigar = true;
+    if (selectedKarigar !== 'all') {
+      matchesKarigar = entry.karigarName === selectedKarigar;
     }
 
-    return matchesSearch && matchesProcess;
+    let matchesItem = true;
+    if (selectedItem !== 'all') {
+      matchesItem = entry.item === selectedItem;
+    }
+
+    return matchesSearch && matchesKarigar && matchesItem;
   });
 
   // Totals
@@ -288,6 +290,7 @@ const InwardReport: React.FC = () => {
             <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;white-space:nowrap;color:#000;">${item.dateTime}</td>
             <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;color:#000;">${item.karigarName}</td>
             <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;color:#000;">${item.item}</td>
+            <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;color:#000;">${item.size}</td>
             <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;color:#000;">${item.purity > 0 ? `${formatNumberDisplay(item.purity)}%` : '-'}</td>
             <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;font-weight:bold;color:#1a7f37;">${formatNumberDisplay(item.wt)} G</td>
             <td style="border:1px solid #000;padding:2px 3px;text-align:center;font-size:10px;font-family:monospace;color:#000;">${formatNumberDisplay(item.srp)}</td>
@@ -362,17 +365,16 @@ const InwardReport: React.FC = () => {
           <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 4px 0;padding:0;">
             <div style="flex:1;"></div>
             <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
-              Inward Report ${selectedProcess !== 'all' ? `(${selectedProcess.toUpperCase()})` : ''}
+              Inward Report ${selectedKarigar !== 'all' ? `(${selectedKarigar})` : ''}
             </h2>
-            ${
-              fromDate || toDate
-                ? `<div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
+            ${fromDate || toDate
+        ? `<div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
                     ${fromDate ? `From: ${formatDateForDisplay(fromDate)}` : ''}
                     ${fromDate && toDate ? '&nbsp;&nbsp;' : ''}
                     ${toDate ? `To: ${formatDateForDisplay(toDate)}` : ''}
                   </div>`
-                : `<div style="flex:1;"></div>`
-            }
+        : `<div style="flex:1;"></div>`
+      }
           </div>
 
           <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
@@ -382,6 +384,7 @@ const InwardReport: React.FC = () => {
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;white-space:nowrap;">Date & Time</th>
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Karigar Name</th>
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Items</th>
+                <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Size</th>
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Purity</th>
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">Wt (g)</th>
                 <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;">SRP</th>
@@ -390,7 +393,7 @@ const InwardReport: React.FC = () => {
             <tbody>
               ${rows}
               <tr style="background:#f9f9f7;font-weight:bold;">
-                <td colspan="5" style="border:1px solid #000;padding:3px 4px;text-align:right;font-size:10px;">Total:</td>
+                <td colspan="6" style="border:1px solid #000;padding:3px 4px;text-align:right;font-size:10px;">Total:</td>
                 <td style="border:1px solid #000;padding:3px 4px;text-align:center;font-size:10px;font-family:monospace;color:#1a7f37;">${formatNumberDisplay(totalWt)} G</td>
                 <td style="border:1px solid #000;padding:3px 4px;text-align:center;font-size:10px;font-family:monospace;color:#000;">${formatNumberDisplay(totalSrp)}</td>
               </tr>
@@ -405,14 +408,14 @@ const InwardReport: React.FC = () => {
               <span>Powered by Matoshree Gold</span>
               <span>|</span>
               <span>Generated: ${new Date().toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-              })} ${new Date().toLocaleTimeString('en-IN', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true,
-              })}</span>
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })} ${new Date().toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      })}</span>
             </div>
           </div>
         </div>
@@ -496,6 +499,15 @@ const InwardReport: React.FC = () => {
       ),
     },
     {
+      key: 'size',
+      header: 'Size',
+      render: (item) => (
+        <span className="text-sm text-[#1a1c1b] dark:text-white">
+          {item.size}
+        </span>
+      ),
+    },
+    {
       key: 'purity',
       header: 'Purity %',
       render: (item) => (
@@ -508,7 +520,7 @@ const InwardReport: React.FC = () => {
       key: 'wt',
       header: 'Wt(G)',
       render: (item) => (
-        <span className="font-mono text-sm font-semibold text-green-600 dark:text-green-400">
+        <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.wt)} G
         </span>
       ),
@@ -595,18 +607,26 @@ const InwardReport: React.FC = () => {
             </div>
 
             <select
-              value={selectedProcess}
-              onChange={(e) => setSelectedProcess(e.target.value)}
+              value={selectedKarigar}
+              onChange={(e) => setSelectedKarigar(e.target.value)}
               className="rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             >
-              <option value="all">All</option>
-              {processOptions
-                .filter((p) => p !== 'all')
-                .map((process) => (
-                  <option key={process} value={process}>
-                    {process.charAt(0).toUpperCase() + process.slice(1)}
-                  </option>
-                ))}
+              {karigarOptions.map((k) => (
+                <option key={k} value={k}>
+                  {k === 'all' ? 'All Karigars' : k}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedItem}
+              onChange={(e) => setSelectedItem(e.target.value)}
+              className="rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            >
+              {itemOptions.map((i) => (
+                <option key={i} value={i}>
+                  {i === 'all' ? 'All Items' : i}
+                </option>
+              ))}
             </select>
 
             <div className="relative w-full sm:w-64">

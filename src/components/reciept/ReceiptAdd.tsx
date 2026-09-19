@@ -165,7 +165,7 @@ const ReceiptAdd: React.FC = () => {
     setShowClientModal(false);
     const refetched = await refetchClients();
     const allClients = (refetched?.data as any[]) || [];
-    
+
     if (newClient) {
       const foundClient = allClients.find((c: any) => c.id === newClient.id) || newClient;
       handleClientSelect(foundClient);
@@ -984,7 +984,7 @@ const ReceiptAdd: React.FC = () => {
                   value={formData.totalFine || ''}
                   onChange={handleTotalFineChange}
                   placeholder="0.000"
-                  className="font-mono w-28 rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="font-mono w-28 rounded-lg  bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
                 <span className="pointer-events-none absolute right-2.5 text-xs text-[#817563] dark:text-slate-400">
                   G

@@ -19,9 +19,7 @@ import { useNavigate } from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import {
-  useGetKarigars,
-} from '@/components/joborder/karigar/karigarapi';
+import { useGetKarigars } from '@/components/joborder/karigar/karigarapi';
 import AddKarigarModal from '@/components/setllement/AddKarigarModal';
 import { useGetItems } from '@/lib/api/items';
 import { useGetSizes } from '@/lib/api/sizes';
@@ -30,6 +28,8 @@ import { z } from 'zod';
 import GenericInputField from '../Forms/Input/GenericInputField';
 import { KarigarSearch } from './KarigarSearch';
 import { useGetHeader } from '@/lib/api/headerapi';
+import { useGetRealTimeGold } from '@/lib/api/realtimegold';
+import { useGetStock } from '@/lib/api/stock';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 import { printReceipt } from '@/utils/printReceipt';
 import { useKarigarBill } from '@/lib/api/karigarBill';
@@ -98,8 +98,6 @@ interface BillGroup {
   totalSRP: number;
 }
 
-
-
 const ReceiptAdd: React.FC = () => {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date[]>([]);
@@ -139,6 +137,19 @@ const ReceiptAdd: React.FC = () => {
   // Fetch data from API
   const { data: Karigars = [], refetch: refetchKarigars } = useGetKarigars();
   const { data: rawItems = [] } = useGetItems();
+  const { data: rawStockData } = useGetStock();
+
+  const availableGoldStock = React.useMemo(() => {
+    const stockItems = Array.isArray(rawStockData)
+      ? rawStockData
+      : rawStockData?.data || [];
+    return stockItems.reduce((sum: number, stock: any) => {
+      const weight = Number(stock.weight) || 0;
+      const purity = Number(stock.purity) || 0;
+      const fineWeight = (weight * purity) / 100;
+      return sum + fineWeight;
+    }, 0);
+  }, [rawStockData]);
   const items = useMemo(
     () =>
       (Array.isArray(rawItems) ? rawItems : []).filter((item: any) => {
@@ -148,7 +159,6 @@ const ReceiptAdd: React.FC = () => {
     [rawItems],
   );
   const { data: sizes = [] } = useGetSizes();
-
 
   // API hooks
   const getpdfheaderdata = useGetHeader();
@@ -165,9 +175,10 @@ const ReceiptAdd: React.FC = () => {
     setShowKarigarModal(false);
     const refetched = await refetchKarigars();
     const allKarigars = (refetched?.data as any[]) || [];
-    
+
     if (newKarigar) {
-      const foundKarigar = allKarigars.find((c: any) => c.id === newKarigar.id) || newKarigar;
+      const foundKarigar =
+        allKarigars.find((c: any) => c.id === newKarigar.id) || newKarigar;
       handleKarigarSelect(foundKarigar);
     }
   };
@@ -209,8 +220,6 @@ const ReceiptAdd: React.FC = () => {
     });
     toast.success('Item removed');
   };
-
-
 
   const calculateFineWeight = (
     purity: number,
@@ -802,9 +811,7 @@ const ReceiptAdd: React.FC = () => {
             <h3 className="text-sm font-bold uppercase tracking-wider text-[#4f4535] dark:text-slate-300">
               Items
             </h3>
-            <p className="mt-1 text-xs text-[#4f4535]/60 dark:text-slate-400">
-
-            </p>
+            <p className="mt-1 text-xs text-[#4f4535]/60 dark:text-slate-400"></p>
           </div>
 
           <div className="w-full min-w-0 overflow-hidden [&_table]:w-full [&_table]:table-fixed [&_td]:px-1.5 [&_td]:py-1.5 [&_td]:text-xs [&_th]:px-1.5 [&_th]:py-2 [&_th]:text-[11px]">
@@ -836,7 +843,7 @@ const ReceiptAdd: React.FC = () => {
                   value={formData.totalFine || ''}
                   onChange={handleTotalFineChange}
                   placeholder="0.000"
-                  className="font-mono w-28 rounded-lg border border-[#d3c4af]/30 bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="font-mono w-28 rounded-lg bg-white px-2.5 py-1 pr-7 text-right text-sm font-semibold text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
                 <span className="pointer-events-none absolute right-2.5 text-xs text-[#817563] dark:text-slate-400">
                   G
@@ -862,14 +869,20 @@ const ReceiptAdd: React.FC = () => {
                 <span className="pointer-events-none absolute right-2.5 text-xs text-[#817563] dark:text-slate-400">
                   G
                 </span>
+                <span className="text-[10px] font-medium text-emerald-600">
+                  (Available Gold: {availableGoldStock.toFixed(3)}G)
+                </span>
               </div>
             </div>
 
             {/* Due Balance (Karigar Due - Read Only) */}
             <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-4 py-2.5 dark:border-slate-700">
-              <span className="text-sm font-medium text-[#4f4535] dark:text-slate-300">
-                Due Balance
-              </span>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-[#4f4535] dark:text-slate-300">
+                  Due Balance
+                </span>
+
+              </div>
               <span className="font-mono text-sm font-semibold text-black dark:text-black">
                 {formatNumberThreeDecimals(
                   getKarigarDueBalance(

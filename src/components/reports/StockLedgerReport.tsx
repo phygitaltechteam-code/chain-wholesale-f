@@ -785,16 +785,6 @@ export default function StockLedgerReport() {
 
                     <tr>
                       <td class="summary-label">
-                        Manufacturing
-                      </td>
-
-                      <td class="summary-value">
-                        ${formatNumberDisplay(summaryData.opening.raw)}
-                      </td>
-                    </tr>
-
-                    <tr>
-                      <td class="summary-label">
                         Chain Stock
                       </td>
 
@@ -809,9 +799,17 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value">
-                        ${formatNumberDisplay(
-      summaryData.opening.openingClientDue,
-    )}
+                        ${formatNumberDisplay(summaryData.opening.openingClientDue)}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">
+                        Karigar Due
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(summaryData.opening.openingKarigarDue)}
                       </td>
                     </tr>
 
@@ -821,7 +819,7 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value">
-                        ${formatNumberDisplay(summaryData.opening.srp)}
+                        ${formatNumberDisplay(summaryData.opening.openingSr)}
                       </td>
                     </tr>
 
@@ -862,16 +860,6 @@ export default function StockLedgerReport() {
 
                     <tr>
                       <td class="summary-label">
-                        Manufacturing
-                      </td>
-
-                      <td class="summary-value">
-                        ${formatNumberDisplay(summaryData.closing.raw)}
-                      </td>
-                    </tr>
-
-                    <tr>
-                      <td class="summary-label">
                         Chain Stock
                       </td>
 
@@ -886,9 +874,27 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value">
-                        ${formatNumberDisplay(
-      summaryData.closing.closingClientDue,
-    )}
+                        ${formatNumberDisplay(summaryData.closing.closingClientDue)}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">
+                        Karigar Due
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(summaryData.closing.closingKarigarDue)}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">
+                        SRP (Given)
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(summaryData.closing.closingSr)}
                       </td>
                     </tr>
 
@@ -921,9 +927,7 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value profit">
-                        ${formatNumberDisplay(
-      summaryData.closing.profitLoss ?? 0,
-    )}
+                        ${formatNumberDisplay(summaryData.closing.profitLoss ?? 0)}
                       </td>
 
                     </tr>
@@ -1955,143 +1959,85 @@ export default function StockLedgerReport() {
             <div className="overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
               <div className="grid grid-cols-1 divide-y divide-[#d3c4af]/30 dark:divide-slate-800 md:grid-cols-2 md:divide-x md:divide-y-0">
                 {/* Left: OPENING */}
-                <div>
-                  <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2 text-center dark:bg-slate-800/60">
+                <div className="flex flex-col bg-white dark:bg-slate-900">
+                  <div className="border-b border-[#f4f4f2] bg-[#fcfbf9] px-4 py-3 text-center dark:border-slate-800 dark:bg-slate-800/60">
                     <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
                       OPENING
                     </span>
                   </div>
-                  <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                    <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                      Gold Stock
-                    </span>
-                    <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                      {formatNumberDisplay(summaryData.opening.gold)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                    <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                      Chain Stock
-                    </span>
-                    <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                      {formatNumberDisplay(summaryData.opening.openingChain)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                    <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                      Client Due
-                    </span>
-                    <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                      {formatNumberDisplay(
-                        summaryData.opening.openingClientDue,
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                    <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                      Karigar Due
-                    </span>
-                    <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                      {formatNumberDisplay(
-                        summaryData.opening.openingKarigarDue,
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                    <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                      SRP (Received)
-                    </span>
-                    <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                      {formatNumberDisplay(summaryData.opening.openingSr)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between bg-[#f4f1ea]/60 px-4 py-2.5 dark:bg-slate-800/50">
-                    <span className="font-bold text-[#1a1c1b] dark:text-white">
-                      Inward
-                    </span>
-                    <span className="font-mono text-sm font-bold text-green-700 dark:text-green-400">
-                      {formatNumberDisplay(summaryData.opening.inward)}
-                    </span>
+                  <div className="flex flex-1 flex-col text-[13px] text-[#1a1c1b] dark:text-slate-200">
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>Gold Stock</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.opening.gold)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>Chain Stock</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.opening.openingChain)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>Client Due</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.opening.openingClientDue)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>Karigar Due</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.opening.openingKarigarDue)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>SRP (Received)</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.opening.openingSr)}</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-[#fcfbf9] px-4 py-2.5 font-bold dark:bg-slate-800/50">
+                      <span>Inward</span>
+                      <span className="font-mono text-emerald-600 dark:text-emerald-400">{formatNumberDisplay(summaryData.opening.inward)}</span>
+                    </div>
+                    <div className="flex flex-1 items-center justify-between border-t border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      {/* Empty space to match Loss height */}
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-2.5">
+                      {/* Empty space to match Profit/Loss height */}
+                    </div>
                   </div>
                 </div>
 
                 {/* Right: CLOSING */}
-                <div>
-                  <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2 text-center dark:bg-slate-800/60">
+                <div className="flex flex-col bg-white dark:bg-slate-900">
+                  <div className="border-b border-[#f4f4f2] bg-[#fcfbf9] px-4 py-3 text-center dark:border-slate-800 dark:bg-slate-800/60">
                     <span className="text-xs font-black uppercase tracking-widest text-[#1a1c1b] dark:text-white">
                       CLOSING
                     </span>
                   </div>
-                  <div className="divide-y divide-[#d3c4af]/20 text-xs font-semibold dark:divide-slate-800 sm:text-sm">
-                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        Gold Stock
-                      </span>
-                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(summaryData.closing.gold)}
-                      </span>
+                  <div className="flex flex-1 flex-col text-[13px] text-[#1a1c1b] dark:text-slate-200">
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>Gold Stock</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.gold)}</span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        Chain Stock
-                      </span>
-                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(summaryData.closing.closingChain)}
-                      </span>
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>Chain Stock</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.closingChain)}</span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        Client Due
-                      </span>
-                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(
-                          summaryData.closing.closingClientDue,
-                        )}
-                      </span>
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>Client Due</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.closingClientDue)}</span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        Karigar Due
-                      </span>
-                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(
-                          summaryData.closing.closingKarigarDue,
-                        )}
-                      </span>
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>Karigar Due</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.closingKarigarDue)}</span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        SRP (Given)
-                      </span>
-                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(summaryData.closing.closingSrp)}
-                      </span>
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>SRP (Given)</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.closingSr)}</span>
                     </div>
-                    <div className="flex items-center justify-between bg-[#f4f1ea]/60 px-4 py-2.5 dark:bg-slate-800/50">
-                      <span className="font-bold text-[#1a1c1b] dark:text-white">
-                        Outward
-                      </span>
-                      <span className="font-mono text-sm font-bold text-amber-700 dark:text-amber-400">
-                        {formatNumberDisplay(summaryData.closing.outward)}
-                      </span>
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>Loss</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.loss)}</span>
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-[#785600]/5 dark:hover:bg-slate-800/40">
-                      <span className="font-medium text-[#1a1c1b] dark:text-slate-200">
-                        Loss
-                      </span>
-                      <span className="font-mono font-medium text-[#1a1c1b] dark:text-slate-300">
-                        {formatNumberDisplay(summaryData.closing.loss)}
-                      </span>
+                    <div className="flex items-center justify-between bg-[#fcfbf9] px-4 py-2.5 font-bold dark:bg-slate-800/50">
+                      <span>Outward</span>
+                      <span className="font-mono text-amber-700 dark:text-amber-400">{formatNumberDisplay(summaryData.closing.outward)}</span>
                     </div>
-                    <div className="flex items-center justify-between border-t border-[#d3c4af]/30 bg-emerald-50/70 px-4 py-2.5 dark:bg-emerald-950/30">
-                      <span className="font-bold text-emerald-900 dark:text-emerald-300">
-                        Profit / Loss
-                      </span>
-                      <span className="font-mono text-sm font-extrabold text-emerald-700 dark:text-emerald-400">
-                        {formatNumberDisplay(
-                          summaryData.closing.profitLoss ?? 0,
-                        )}
-                      </span>
+                    <div className="flex items-center justify-between border-t border-emerald-100 bg-emerald-50/70 px-4 py-2.5 font-bold dark:border-emerald-900/30 dark:bg-emerald-950/30">
+                      <span className="text-emerald-900 dark:text-emerald-300">Profit / Loss</span>
+                      <span className="font-mono text-[14px] text-emerald-700 dark:text-emerald-400">{formatNumberDisplay(summaryData.closing.profitLoss ?? 0)}</span>
                     </div>
                   </div>
                 </div>
