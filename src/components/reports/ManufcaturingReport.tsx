@@ -1,5 +1,5 @@
 import {useNavigate} from '@tanstack/react-router';
-import {useState, useEffect, useMemo} from 'react';
+import {useState, useEffect, useMemo, useRef} from 'react';
 import {
   ArrowLeft,
   Search,
@@ -92,6 +92,8 @@ export default function ManufacturingReport() {
   const [toDate, setToDate] = useState<Date | null>(
     () => getDefaultWeekRange().sunday,
   );
+  
+  const isDateFilterActive = useRef(false);
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
@@ -134,12 +136,12 @@ export default function ManufacturingReport() {
     // Filter by date range directly on createdAt
     const filteredHistory = historyList.filter((item: ApiDataItem) => {
       const createdAt = new Date(item.createdAt);
-      if (fromDate) {
+      if (isDateFilterActive.current && fromDate) {
         const from = new Date(fromDate);
         from.setHours(0, 0, 0, 0);
         if (createdAt < from) return false;
       }
-      if (toDate) {
+      if (isDateFilterActive.current && toDate) {
         const to = new Date(toDate);
         to.setHours(23, 59, 59, 999);
         if (createdAt > to) return false;
@@ -318,6 +320,7 @@ export default function ManufacturingReport() {
 
   // Handle From Date
   const handleFromDateChange = (selectedDates: Date[]) => {
+    isDateFilterActive.current = true;
     if (selectedDates && selectedDates.length > 0) {
       const selected = new Date(selectedDates[0]);
       selected.setHours(0, 0, 0, 0);
@@ -329,6 +332,7 @@ export default function ManufacturingReport() {
 
   // Handle To Date
   const handleToDateChange = (selectedDates: Date[]) => {
+    isDateFilterActive.current = true;
     if (selectedDates && selectedDates.length > 0) {
       const selected = new Date(selectedDates[0]);
       selected.setHours(23, 59, 59, 999);

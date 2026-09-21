@@ -82,6 +82,8 @@ export default function StockReport() {
   const [toDate, setToDate] = useState<Date | null>(
     () => getDefaultWeekRange().sunday,
   );
+  
+  const isDateFilterActive = useRef(false);
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
@@ -181,7 +183,7 @@ export default function StockReport() {
     // Date range filter
     let matchesDate = true;
 
-    if (fromDate || toDate) {
+    if (isDateFilterActive.current && (fromDate || toDate)) {
       // Parse DD/MM/YYYY from entry.dateTime.
       const dateParts = entry.dateTime.split(' ')[0].split('/');
 
@@ -240,6 +242,7 @@ export default function StockReport() {
 
   // Handle From Date
   const handleFromDateChange = (selectedDates: Date[]) => {
+    isDateFilterActive.current = true;
     if (selectedDates && selectedDates.length > 0) {
       const selected = new Date(selectedDates[0]);
       selected.setHours(0, 0, 0, 0);
@@ -251,6 +254,7 @@ export default function StockReport() {
 
   // Handle To Date
   const handleToDateChange = (selectedDates: Date[]) => {
+    isDateFilterActive.current = true;
     if (selectedDates && selectedDates.length > 0) {
       const selected = new Date(selectedDates[0]);
       selected.setHours(23, 59, 59, 999);

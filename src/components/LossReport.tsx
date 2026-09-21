@@ -112,6 +112,8 @@ const LossReport: React.FC = () => {
     const {sunday} = getDefaultWeekRange();
     return sunday;
   });
+  
+  const isDateFilterActive = useRef(false);
 
   const {
     data: lossReportData,
@@ -153,12 +155,12 @@ const LossReport: React.FC = () => {
     // Filter by date range
     const filteredApiItems = apiItems.filter((item) => {
       const createdAt = new Date(item.createdAt);
-      if (fromDate) {
+      if (isDateFilterActive.current && fromDate) {
         const from = new Date(fromDate);
         from.setHours(0, 0, 0, 0);
         if (createdAt < from) return false;
       }
-      if (toDate) {
+      if (isDateFilterActive.current && toDate) {
         const to = new Date(toDate);
         to.setHours(23, 59, 59, 999);
         if (createdAt > to) return false;
@@ -240,6 +242,7 @@ const LossReport: React.FC = () => {
 
   // Handle From Date Change
   const handleFromDateChange = (dates: Date[]) => {
+    isDateFilterActive.current = true;
     if (dates && dates.length > 0) {
       const from = new Date(dates[0]);
       from.setHours(0, 0, 0, 0);
@@ -260,6 +263,7 @@ const LossReport: React.FC = () => {
 
   // Handle To Date Change
   const handleToDateChange = (dates: Date[]) => {
+    isDateFilterActive.current = true;
     if (dates && dates.length > 0) {
       const to = new Date(dates[0]);
       to.setHours(23, 59, 59, 999);

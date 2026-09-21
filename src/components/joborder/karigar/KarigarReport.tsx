@@ -1,6 +1,6 @@
 import {useNavigate, useParams} from '@tanstack/react-router';
 import {Route} from '../../../routes/_app/karigar/karigarreport.$id';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {ArrowLeft, Search, Printer} from 'lucide-react';
 import {useGetKarigarReport} from '@/lib/api/reportapi';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
@@ -51,6 +51,8 @@ export default function KarigarReport() {
 
   const [fromDate, setFromDate] = useState<Date | null>(defaultMonday);
   const [toDate, setToDate] = useState<Date | null>(defaultSunday);
+  
+  const isDateFilterActive = useRef(false);
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
@@ -89,12 +91,12 @@ export default function KarigarReport() {
 
     const filteredApiItems = apiItems.filter((item) => {
       const createdAt = new Date(item.createdAt);
-      if (fromDate) {
+      if (isDateFilterActive.current && fromDate) {
         const from = new Date(fromDate);
         from.setHours(0, 0, 0, 0);
         if (createdAt < from) return false;
       }
-      if (toDate) {
+      if (isDateFilterActive.current && toDate) {
         const to = new Date(toDate);
         to.setHours(23, 59, 59, 999);
         if (createdAt > to) return false;
@@ -302,6 +304,7 @@ export default function KarigarReport() {
   };
 
   const handleFromDateChange = (dates: Date[]) => {
+    isDateFilterActive.current = true;
     if (dates && dates.length > 0) {
       const from = new Date(dates[0]);
       from.setHours(0, 0, 0, 0);
@@ -321,6 +324,7 @@ export default function KarigarReport() {
   };
 
   const handleToDateChange = (dates: Date[]) => {
+    isDateFilterActive.current = true;
     if (dates && dates.length > 0) {
       const to = new Date(dates[0]);
       to.setHours(23, 59, 59, 999);

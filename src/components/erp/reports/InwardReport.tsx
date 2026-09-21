@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, Printer, AlertCircle, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
@@ -83,6 +83,8 @@ const InwardReport: React.FC = () => {
     const { sunday } = getDefaultWeekRange();
     return sunday;
   });
+  
+  const isDateFilterActive = useRef(false);
 
   const { data: billData, isLoading, isError, refetch } = useGetKarigarBill();
 
@@ -113,12 +115,12 @@ const InwardReport: React.FC = () => {
       const rawDate = receipt.purchaseDate || receipt.createdAt || receipt.receiptDate;
       if (!rawDate) return false;
       const createdAt = new Date(rawDate);
-      if (fromDate) {
+      if (isDateFilterActive.current && fromDate) {
         const from = new Date(fromDate);
         from.setHours(0, 0, 0, 0);
         if (createdAt < from) return false;
       }
-      if (toDate) {
+      if (isDateFilterActive.current && toDate) {
         const to = new Date(toDate);
         to.setHours(23, 59, 59, 999);
         if (createdAt > to) return false;
@@ -224,6 +226,7 @@ const InwardReport: React.FC = () => {
 
   // From date change
   const handleFromDateChange = (dates: Date[]) => {
+    isDateFilterActive.current = true;
     if (dates && dates.length > 0) {
       const from = new Date(dates[0]);
       from.setHours(0, 0, 0, 0);
@@ -244,6 +247,7 @@ const InwardReport: React.FC = () => {
 
   // To date change
   const handleToDateChange = (dates: Date[]) => {
+    isDateFilterActive.current = true;
     if (dates && dates.length > 0) {
       const to = new Date(dates[0]);
       to.setHours(23, 59, 59, 999);

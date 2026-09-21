@@ -46,7 +46,7 @@ export interface AdminItem {
   district?: string;
   state?: string;
   address: string;
-  accessType: 'ONLINE' | 'OFFLINE' | 'TRAIL' | 'TRIAL' | string;
+  accessType: 'ONLINE' | 'OFFLINE' | 'TRIAL' | string;
   amount?: string | number;
   renewalAmount?: string | number;
   expiryDate?: string;
@@ -64,11 +64,11 @@ export interface AdminItem {
   rawItem?: any;
 }
 
-// Calculate default expiry date: 7 days for TRAIL/TRIAL, 1 year for ONLINE/OFFLINE
+// Calculate default expiry date: 7 days for TRIAL, 1 year for ONLINE/OFFLINE
 const calculateDefaultExpiry = (type: string): string => {
   const d = new Date();
   const upperType = (type || 'ONLINE').toUpperCase();
-  if (upperType === 'TRAIL' || upperType === 'TRIAL') {
+  if (upperType === 'TRIAL') {
     d.setDate(d.getDate() + 7);
   } else {
     d.setFullYear(d.getFullYear() + 1);
@@ -178,7 +178,7 @@ const AdminCreate: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCity, setSelectedCity] = useState('ALL');
   const [selectedTab, setSelectedTab] = useState<
-    'ALL' | 'ONLINE' | 'OFFLINE' | 'TRAIL' | 'EXPIRED'
+    'ALL' | 'ONLINE' | 'OFFLINE' | 'TRIAL' | 'EXPIRED'
   >('ALL');
 
   // Sorting state for Create Date & Expiry Date
@@ -318,14 +318,14 @@ const AdminCreate: React.FC = () => {
   const tabCounts = useMemo(() => {
     let online = 0;
     let offline = 0;
-    let trail = 0;
+    let trial = 0;
     let expired = 0;
 
     adminsList.forEach((a) => {
       const type = (a.accessType || 'ONLINE').toUpperCase();
       if (type === 'ONLINE') online++;
       if (type === 'OFFLINE') offline++;
-      if (type === 'TRAIL' || type === 'TRIAL') trail++;
+      if (type === 'TRIAL') trial++;
       if (a.isExpired) expired++;
     });
 
@@ -333,7 +333,7 @@ const AdminCreate: React.FC = () => {
       all: adminsList.length,
       online,
       offline,
-      trail,
+      trial,
       expired,
     };
   }, [adminsList]);
@@ -350,9 +350,9 @@ const AdminCreate: React.FC = () => {
         if (admin.accessType !== 'ONLINE') return false;
       } else if (selectedTab === 'OFFLINE') {
         if (admin.accessType !== 'OFFLINE') return false;
-      } else if (selectedTab === 'TRAIL') {
+      } else if (selectedTab === 'TRIAL') {
         const t = admin.accessType.toUpperCase();
-        if (t !== 'TRAIL' && t !== 'TRIAL') return false;
+        if (t !== 'TRIAL') return false;
       }
 
       // City filter
@@ -926,11 +926,11 @@ const AdminCreate: React.FC = () => {
       header: 'Type',
       render: (item) => {
         const typeUpper = (item.accessType || 'ONLINE').toUpperCase();
-        if (typeUpper === 'TRAIL' || typeUpper === 'TRIAL') {
+        if (typeUpper === 'TRIAL') {
           return (
             <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-purple-800 dark:bg-purple-950/50 dark:text-purple-300">
               <Sparkles className="h-3 w-3" />
-              TRAIL
+              TRIAL
             </span>
           );
         }
@@ -1235,23 +1235,23 @@ const AdminCreate: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => setSelectedTab('TRAIL')}
+              onClick={() => setSelectedTab('TRIAL')}
               className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
-                selectedTab === 'TRAIL'
+                selectedTab === 'TRIAL'
                   ? 'bg-purple-700 text-white shadow-sm'
                   : 'bg-gray-100/70 text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:bg-slate-800 dark:hover:bg-slate-700'
               }`}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              Trail
+              Trial
               <span
                 className={`py-0.2 rounded-full px-1.5 text-[10px] ${
-                  selectedTab === 'TRAIL'
+                  selectedTab === 'TRIAL'
                     ? 'bg-white/25 text-white'
                     : 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300'
                 }`}
               >
-                {tabCounts.trail}
+                {tabCounts.trial}
               </span>
             </button>
 
@@ -1531,7 +1531,7 @@ const AdminCreate: React.FC = () => {
                   >
                     <option value="ONLINE">ONLINE (1 Year)</option>
                     <option value="OFFLINE">OFFLINE (1 Year)</option>
-                    <option value="TRAIL">TRAIL (7 Days)</option>
+                    <option value="TRIAL">TRIAL (7 Days)</option>
                   </select>
                 </div>
 

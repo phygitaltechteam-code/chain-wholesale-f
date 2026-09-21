@@ -43,6 +43,8 @@ const Settlement: React.FC = () => {
     const { monday, sunday } = getDefaultWeekRange();
     return [monday, sunday];
   });
+  
+  const isDateFilterActive = useRef(false);
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
@@ -183,6 +185,7 @@ const Settlement: React.FC = () => {
   // DATE HANDLERS
   // ----------------------------------------------------
   const handleFromDateChange = (dates: Date[]) => {
+    isDateFilterActive.current = true;
     if (dates && dates.length > 0) {
       const selected = new Date(dates[0]);
       selected.setHours(0, 0, 0, 0);
@@ -193,6 +196,7 @@ const Settlement: React.FC = () => {
   };
 
   const handleToDateChange = (dates: Date[]) => {
+    isDateFilterActive.current = true;
     if (dates && dates.length > 0) {
       const selected = new Date(dates[0]);
       selected.setHours(23, 59, 59, 999);
@@ -359,7 +363,7 @@ const Settlement: React.FC = () => {
       (balanceFilter === 'zero' && entry.goldBalance === 0);
 
     let matchesDate = true;
-    if (dateRange && (dateRange[0] || dateRange[1])) {
+    if (isDateFilterActive.current && dateRange && (dateRange[0] || dateRange[1])) {
       const fromDate = dateRange[0] ? parseDateSafely(dateRange[0]) : null;
       const toDate = dateRange[1] ? parseDateSafely(dateRange[1]) : null;
 
