@@ -316,7 +316,9 @@ const Billing: React.FC = () => {
             receive: receipt.customerWeight ?? (receipt as any).karigarWeight ?? 0,
             pending: receipt.remainingWeight || 0,
             dueBalance:
-              receipt.client?.due !== undefined && receipt.client?.due !== null
+              receipt.dueBalance !== undefined && receipt.dueBalance !== null
+                ? Number(receipt.dueBalance)
+                : receipt.client?.due !== undefined && receipt.client?.due !== null
                 ? Number(receipt.client.due)
                 : (receipt as any).karigar?.due !== undefined && (receipt as any).karigar?.due !== null
                   ? Number((receipt as any).karigar.due)

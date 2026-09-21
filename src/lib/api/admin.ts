@@ -79,7 +79,7 @@ export const useGetAdminById = (id?: string) => {
 // API call to create a new admin
 export const createAdminApi = async (data: AdminPayload) => {
   try {
-    const response = await api.post('/users/self-register', data);
+    const response = await api.post('/users/register', data);
     return response.data;
   } catch (error: any) {
     if (error?.response?.data?.message) {

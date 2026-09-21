@@ -145,6 +145,7 @@ const BillEdit: React.FC = () => {
 
   const {data: clients = [], refetch: refetchClients} = useGetClients();
   const {data: rawItems = []} = useGetItems();
+
   const items = useMemo(
     () =>
       (Array.isArray(rawItems) ? rawItems : []).filter((item: any) => {
@@ -685,6 +686,11 @@ const BillEdit: React.FC = () => {
 
   // Get Client Due Balance from client.due or client.openingBalance
   const getClientDueBalance = (client: any) => {
+    const billData = billResponse?.data || billResponse?.bill || billResponse;
+    if (billData && billData.dueBalance !== undefined && billData.dueBalance !== null) {
+      return Number(billData.dueBalance);
+    }
+    
     if (!client) return 0;
     const due =
       client?.due !== null && client?.due !== undefined
@@ -843,6 +849,7 @@ const BillEdit: React.FC = () => {
         customerWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
         remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
         totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
+        dueBalance: getClientDueBalance(clients.find((c: any) => c.id === formData.clientId)),
         type: 'DRAFT',
       };
 
@@ -905,6 +912,7 @@ const BillEdit: React.FC = () => {
         customerWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
         remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
         totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
+        dueBalance: getClientDueBalance(clients.find((c: any) => c.id === formData.clientId)),
         type: 'BILL',
       };
 

@@ -1025,6 +1025,42 @@ const DayReport: React.FC = () => {
             `;
     }
 
+    // 6. Client Bills Table HTML
+    let clientBillsHtml = '';
+    if (filteredBills.length > 0) {
+      const billRows = filteredBills
+        .map(
+          (item, idx) => `
+                <tr style="border-bottom:1px solid #785600;">
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;color:#000;font-size:8.5px;font-weight:600;">${item.billNumber}<br/>${item.clientName}<br/><span style="font-size:7px;color:#666;">${item.itemSummary}</span></td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:right;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.totalWeight)}</td>
+                    <td style="border:1px solid #785600;padding:2px 3px;text-align:right;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.remainingWeight)}</td>
+                </tr>
+            `,
+        )
+        .join('');
+
+      clientBillsHtml = `
+                <div style="margin-bottom:8px;page-break-inside:avoid;">
+                    <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:700;">Today's Bills</span>
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
+                        <thead>
+                            <tr style="background:#785600;color:white;font-weight:600;">
+                                <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;text-align:left;font-size:8px;color:white;">Bill / Client / Items</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:60px;text-align:right;font-size:8px;color:white;">Total (G)</th>
+                                <th style="border:1px solid #785600;padding:2px 3px;width:60px;text-align:right;font-size:8px;color:white;">Remaining (G)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${billRows}</tbody>
+                    </table>
+                </div>
+            `;
+    }
+
     printContainer.innerHTML = `
             <div style="width:210mm;min-height:297mm;margin:0 auto;font-family:Arial,sans-serif;padding:6mm 5mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
                 <div>
@@ -1065,11 +1101,23 @@ const DayReport: React.FC = () => {
                     </div>
 
                     <!-- Tables -->
-                    ${karigarSettlementHtml}
-                    ${karigarBillsHtml}
-                    ${stockInwardHtml}
-                    ${stockOutwardHtml}
-                    ${clientDueHtml}
+                    <div style="display:flex;gap:10px;width:100%;align-items:flex-start;">
+                        <!-- Column 1 -->
+                        <div style="flex:1;display:flex;flex-direction:column;">
+                            ${karigarSettlementHtml}
+                            ${karigarBillsHtml}
+                        </div>
+                        <!-- Column 2 -->
+                        <div style="flex:1;display:flex;flex-direction:column;">
+                            ${clientDueHtml}
+                            ${clientBillsHtml}
+                        </div>
+                        <!-- Column 3 -->
+                        <div style="flex:1;display:flex;flex-direction:column;">
+                            ${stockInwardHtml}
+                            ${stockOutwardHtml}
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Footer -->

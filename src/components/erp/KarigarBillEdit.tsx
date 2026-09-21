@@ -25,6 +25,7 @@ import {
 import AddKarigarModal from '@/components/setllement/AddKarigarModal';
 import {useGetItems} from '@/lib/api/items';
 import {useGetSizes} from '@/lib/api/sizes';
+import {useGetStock} from '@/lib/api/stock';
 import toast from 'react-hot-toast';
 import {z} from 'zod';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
@@ -147,6 +148,20 @@ const KarigarBillEdit: React.FC = () => {
 
   const {data: Karigars = [], refetch: refetchKarigars} = useGetKarigars();
   const {data: rawItems = []} = useGetItems();
+  const {data: rawStockData} = useGetStock();
+
+  const availableGoldStock = useMemo(() => {
+    const stockItems = Array.isArray(rawStockData)
+      ? rawStockData
+      : rawStockData?.data || [];
+    return stockItems.reduce((sum: number, stock: any) => {
+      const weight = Number(stock.weight) || 0;
+      const purity = Number(stock.purity) || 0;
+      const fineWeight = (weight * purity) / 100;
+      return sum + fineWeight;
+    }, 0);
+  }, [rawStockData]);
+
   const items = useMemo(
     () =>
       (Array.isArray(rawItems) ? rawItems : []).filter((item: any) => {
@@ -551,6 +566,11 @@ const KarigarBillEdit: React.FC = () => {
 
   // Get Karigar Due Balance from Karigar.due or Karigar.openingBalance
   const getKarigarDueBalance = (Karigar: any) => {
+    const billData = billResponse?.data || billResponse?.bill || billResponse;
+    if (billData && billData.dueBalance !== undefined && billData.dueBalance !== null) {
+      return Number(billData.dueBalance);
+    }
+    
     if (!Karigar) return 0;
     const due =
       Karigar?.due !== null && Karigar?.due !== undefined
@@ -772,6 +792,7 @@ const KarigarBillEdit: React.FC = () => {
         karigarWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
         remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
         totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
+        dueBalance: getKarigarDueBalance(Karigars.find((k: any) => k.id === formData.KarigarId)),
         type: 'BILL',
       };
 
@@ -1232,6 +1253,10 @@ const KarigarBillEdit: React.FC = () => {
             <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-4 py-2.5 dark:border-slate-700">
               <span className="text-sm font-medium text-[#4f4535] dark:text-slate-300">
                 Advance
+                <br />
+                <span className="text-xs text-slate-500">
+                  (Available Gold: {availableGoldStock.toFixed(3)}G)
+                </span>
               </span>
               {isReadOnly ? (
                 <span className="font-mono text-sm font-semibold text-[#1a1c1b] dark:text-white">

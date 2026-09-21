@@ -21,9 +21,21 @@ const SignIn: React.FC = () => {
 
   useEffect(() => {
     if (isSuccess || isAuthenticated) {
-      window.location.href = '/reports/realtimegoldreport';
+      let currentRole = user?.role;
+      if (!currentRole) {
+        try {
+          const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+          currentRole = localUser?.role;
+        } catch (e) {}
+      }
+
+      if (currentRole === 'SUPERADMIN' || currentRole === 'SuperAdmin') {
+        window.location.href = '/addadmin';
+      } else {
+        window.location.href = '/reports/realtimegoldreport';
+      }
     }
-  }, [isSuccess, isAuthenticated]);
+  }, [isSuccess, isAuthenticated, user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

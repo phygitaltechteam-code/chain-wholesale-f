@@ -43,7 +43,6 @@ const formatDateToISO = (date: Date | null): string => {
 };
 
 export default function StockLedgerReport() {
-  const navigate = useNavigate();
   const getpdfheaderdata = useGetHeader();
 
   // Date filters (Defaulted to current app week range from admin settings)
@@ -171,7 +170,7 @@ export default function StockLedgerReport() {
               0,
             ),
             closingSrp: Number(
-              sec2?.closingSrp ?? ovClosing?.srp ?? sumClosing?.closingSrp ?? 0,
+              sec2?.purchaseSrp ?? sec2?.closingSrp ?? ovClosing?.purchaseSrp ?? ovClosing?.srp ?? sumClosing?.purchaseSrp ?? sumClosing?.closingSrp ?? 0,
             ),
             loss: Number(
               sec2?.loss ?? ovClosing?.loss ?? sumClosing?.loss ?? 0,
@@ -894,17 +893,7 @@ export default function StockLedgerReport() {
                       </td>
 
                       <td class="summary-value">
-                        ${formatNumberDisplay(summaryData.closing.closingSr)}
-                      </td>
-                    </tr>
-
-                    <tr>
-                      <td class="summary-label">
-                        Loss
-                      </td>
-
-                      <td class="summary-value">
-                        ${formatNumberDisplay(summaryData.closing.loss)}
+                        ${formatNumberDisplay(summaryData.closing.closingSrp)}
                       </td>
                     </tr>
 
@@ -916,18 +905,6 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value orange bold">
                         ${formatNumberDisplay(summaryData.closing.outward)}
-                      </td>
-
-                    </tr>
-
-                    <tr class="profit-loss-row">
-
-                      <td class="summary-label profit">
-                        Profit / Loss
-                      </td>
-
-                      <td class="summary-value profit">
-                        ${formatNumberDisplay(summaryData.closing.profitLoss ?? 0)}
                       </td>
 
                     </tr>
@@ -2025,19 +2002,11 @@ export default function StockLedgerReport() {
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>SRP (Given)</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.closingSr)}</span>
-                    </div>
-                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
-                      <span>Loss</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.loss)}</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.closingSrp)}</span>
                     </div>
                     <div className="flex items-center justify-between bg-[#fcfbf9] px-4 py-2.5 font-bold dark:bg-slate-800/50">
                       <span>Outward</span>
                       <span className="font-mono text-amber-700 dark:text-amber-400">{formatNumberDisplay(summaryData.closing.outward)}</span>
-                    </div>
-                    <div className="flex items-center justify-between border-t border-emerald-100 bg-emerald-50/70 px-4 py-2.5 font-bold dark:border-emerald-900/30 dark:bg-emerald-950/30">
-                      <span className="text-emerald-900 dark:text-emerald-300">Profit / Loss</span>
-                      <span className="font-mono text-[14px] text-emerald-700 dark:text-emerald-400">{formatNumberDisplay(summaryData.closing.profitLoss ?? 0)}</span>
                     </div>
                   </div>
                 </div>

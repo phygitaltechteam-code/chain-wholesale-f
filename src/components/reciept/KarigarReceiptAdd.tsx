@@ -533,6 +533,7 @@ const ReceiptAdd: React.FC = () => {
         karigarWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
         remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
         totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
+        dueBalance: getKarigarDueBalance(Karigars.find((c: any) => c.id === formData.KarigarId)),
         type: 'BILL',
       };
 

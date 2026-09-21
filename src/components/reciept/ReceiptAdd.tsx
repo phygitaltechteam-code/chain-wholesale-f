@@ -568,6 +568,7 @@ const ReceiptAdd: React.FC = () => {
         customerWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
         remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
         totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
+        dueBalance: getClientDueBalance(clients.find((c: any) => c.id === formData.clientId)),
         type: 'DRAFT',
       };
 
@@ -628,6 +629,7 @@ const ReceiptAdd: React.FC = () => {
         customerWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
         remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
         totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
+        dueBalance: getClientDueBalance(clients.find((c: any) => c.id === formData.clientId)),
         type: 'BILL',
       };
 
