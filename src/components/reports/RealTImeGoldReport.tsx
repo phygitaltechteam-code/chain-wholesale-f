@@ -94,7 +94,11 @@ const RealTimeGoldReport: React.FC = () => {
 
   const stockGroups = useMemo(() => {
     return filteredGroups.filter(
-      (g) => g.type === 'Stock' && g.id !== 'client-due',
+      (g) =>
+        g.type === 'Stock' &&
+        g.id !== 'client-due' &&
+        g.id !== 'karigar-due' &&
+        g.id !== 'karigar-stock',
     );
   }, [filteredGroups]);
 

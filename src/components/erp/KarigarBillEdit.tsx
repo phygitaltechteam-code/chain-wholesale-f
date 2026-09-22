@@ -29,7 +29,7 @@ import {useGetStock} from '@/lib/api/stock';
 import toast from 'react-hot-toast';
 import {z} from 'zod';
 import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
-import {useGetKarigarBillByid, useUpdateKarigarBill} from '@/lib/api/karigarBill';
+import {useGetKarigarBillByid, useUpdateKarigarBill, useGetPurchaseSrp} from '@/lib/api/karigarBill';
 import {Route} from '@/routes/_app/karigarbilliupdate.$id';
 import GenericInputField from '../Forms/Input/GenericInputField';
 import {useGetHeader} from '@/lib/api/headerapi';
@@ -176,6 +176,7 @@ const KarigarBillEdit: React.FC = () => {
   const getpdfheaderdata = useGetHeader();
   const {data: billResponse, isLoading: isLoadingBill} = useGetKarigarBillByid(id);
   const updateBill = useUpdateKarigarBill();
+  const getPurchaseSrp = useGetPurchaseSrp();
 
   // Weighing Scale table focus hook
   const {getScaleProps} = useTableScaleFocus<keyof ReceiptItem>(
@@ -183,6 +184,97 @@ const KarigarBillEdit: React.FC = () => {
       handleItemChange(index, field, weight);
     },
   );
+
+  // ─── Fetch SRP in KarigarBillEdit (Requires only Karigar & Item) ───────
+  const fetchSrp = async (
+    index: number,
+    item: string,
+    customKarigarId?: string,
+  ) => {
+    const karigarId = customKarigarId || formData.KarigarId;
+    if (!item || !karigarId) {
+      return;
+    }
+
+    const selectedItem = items.find(
+      (i: any) => i.name === item || i.id === item,
+    );
+
+    const itemId = selectedItem?.id || formData.items[index]?.itemId;
+
+    if (!itemId) {
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      items: prev.items.map((entry, i) =>
+        i === index ? {...entry, isLoadingQty: true} : entry,
+      ),
+    }));
+
+    try {
+      const response = await getPurchaseSrp.mutateAsync({
+        karigarId: karigarId,
+        itemId: itemId,
+      });
+
+      let srpValue: number | string | null = null;
+
+      // Extract SRP
+      if (
+        response?.data?.srp !== undefined &&
+        response.data.srp !== null
+      ) {
+        srpValue = response.data.srp;
+      } else if (response?.srp !== undefined && response.srp !== null) {
+        srpValue = response.srp;
+      } else if (
+        response?.data !== undefined &&
+        response.data !== null &&
+        (typeof response.data === 'number' || typeof response.data === 'string')
+      ) {
+        srpValue = response.data;
+      }
+
+      setFormData((prev) => {
+        const updatedItems = prev.items.map((entry, i) => {
+          if (i !== index) return entry;
+
+          const nextSrp =
+            srpValue !== null && srpValue !== undefined && !isNaN(Number(srpValue))
+              ? srpValue
+              : entry.srp;
+
+          const purityVal = Number(entry.purity) || 0;
+          const grossWt = Number(entry.grossWt) || 0;
+          const srpNum = Number(nextSrp) || 0;
+          const fineWt = calculateFineWeight(purityVal, grossWt, srpNum);
+
+          return {
+            ...entry,
+            srp: nextSrp,
+            fineWt: fineWt,
+            isLoadingQty: false,
+          };
+        });
+
+        return {
+          ...prev,
+          items: updatedItems,
+          totalFine: updateTotalFine(updatedItems),
+        };
+      });
+    } catch (error: any) {
+      console.error('Error fetching purchase SRP:', error);
+      setFormData((prev) => ({
+        ...prev,
+        items: prev.items.map((entry, i) =>
+          i === index ? {...entry, isLoadingQty: false} : entry,
+        ),
+      }));
+    }
+  };
 
   const calculateFineWeight = (
     purity: number,
@@ -474,6 +566,14 @@ const KarigarBillEdit: React.FC = () => {
       items: updatedItems,
       totalFine: newTotalFine,
     }));
+
+    // Fetch SRP when item is selected
+    if (field === 'item') {
+      const currentItem = updatedItems[index];
+      if (currentItem.item) {
+        fetchSrp(index, currentItem.item);
+      }
+    }
   };
 
   useEffect(() => {
@@ -939,30 +1039,25 @@ const KarigarBillEdit: React.FC = () => {
           }
           const actualIndex = formData.items.indexOf(item);
           return (
-            <div className="relative flex-1">
-              <GenericInputField
-                type="text"
-                inputMode="decimal"
-                step="0.001"
-                min="0"
-                max="100"
-                value={
-                  item.purity !== undefined && item.purity !== null
-                    ? item.purity
-                    : ''
-                }
-                onChange={(e) =>
-                  handleItemChange(actualIndex, 'purity', e.target.value)
-                }
-                placeholder="0.000"
-                suffix="%"
-                className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
-                decimalScale={3}
-              />
-              {item.isLoadingQty && (
-                <Loader2 className="absolute right-8 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#785600]" />
-              )}
-            </div>
+            <GenericInputField
+              type="text"
+              inputMode="decimal"
+              step="0.001"
+              min="0"
+              max="100"
+              value={
+                item.purity !== undefined && item.purity !== null
+                  ? item.purity
+                  : ''
+              }
+              onChange={(e) =>
+                handleItemChange(actualIndex, 'purity', e.target.value)
+              }
+              placeholder="0.000"
+              suffix="%"
+              className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
+              decimalScale={3}
+            />
           );
         },
       },
@@ -1021,22 +1116,27 @@ const KarigarBillEdit: React.FC = () => {
           }
           const actualIndex = formData.items.indexOf(item);
           return (
-            <GenericInputField
-              type="text"
-              inputMode="decimal"
-              step="0.001"
-              min="0"
-              value={
-                item.srp !== undefined && item.srp !== null ? item.srp : ''
-              }
-              onChange={(e) =>
-                handleItemChange(actualIndex, 'srp', e.target.value)
-              }
-              placeholder="0.000"
-              suffix="G"
-              className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
-              decimalScale={3}
-            />
+            <div className="relative flex-1">
+              <GenericInputField
+                type="text"
+                inputMode="decimal"
+                step="0.001"
+                min="0"
+                value={
+                  item.srp !== undefined && item.srp !== null ? item.srp : ''
+                }
+                onChange={(e) =>
+                  handleItemChange(actualIndex, 'srp', e.target.value)
+                }
+                placeholder="0.000"
+                suffix="G"
+                className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
+                decimalScale={3}
+              />
+              {item.isLoadingQty && (
+                <Loader2 className="absolute right-8 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#785600]" />
+              )}
+            </div>
           );
         },
       },
@@ -1170,6 +1270,13 @@ const KarigarBillEdit: React.FC = () => {
                       KarigarId: Karigar.id,
                       KarigarName: Karigar.fullName || Karigar.fullname || '',
                     }));
+                    if (Karigar?.id) {
+                      formData.items.forEach((item, idx) => {
+                        if (item.item) {
+                          fetchSrp(idx, item.item, Karigar.id);
+                        }
+                      });
+                    }
                   }}
                   onClearKarigar={() => {
                     setFormData((prev) => ({

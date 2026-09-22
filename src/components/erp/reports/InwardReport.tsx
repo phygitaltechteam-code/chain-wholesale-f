@@ -522,7 +522,7 @@ const InwardReport: React.FC = () => {
     },
     {
       key: 'wt',
-      header: 'Wt(G)',
+      header: 'Purchase Wt(G)',
       render: (item) => (
         <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
           {formatNumberDisplay(item.wt)} G

@@ -64,12 +64,18 @@ export const printRealTimeGoldReport = ({
 
   let stockGroupsHtml = '';
   let processGroupsHtml = '';
+  let karigarDueHtml = '';
   let clientDueHtml = '';
 
   const stockGroups = filteredGroups.filter(
-    (g) => g.type === 'Stock' && g.id !== 'client-due',
+    (g) =>
+      g.type === 'Stock' &&
+      g.id !== 'client-due' &&
+      g.id !== 'karigar-due' &&
+      g.id !== 'karigar-stock',
   );
   const processGroups = filteredGroups.filter((g) => g.type === 'Process');
+  const karigarDueGroup = filteredGroups.find((g) => g.id === 'karigar-due');
   const clientDueGroup = filteredGroups.find((g) => g.id === 'client-due');
 
   // Build Stock Groups HTML
@@ -183,6 +189,42 @@ export const printRealTimeGoldReport = ({
     </div>
   `;
   });
+
+  // Build Karigar Due HTML
+  if (karigarDueGroup && karigarDueGroup.items.length > 0) {
+    const rowsHtml = karigarDueGroup.items
+      .map(
+        (item, idx) => `
+        <tr style="border-bottom:1px solid #785600;">
+          <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${idx + 1}</td>
+          <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:600;">${item.name}</td>
+          <td style="border:1px solid #785600;padding:2px 3px;text-align:center;color:#000;font-size:8.5px;font-weight:bold;">${formatNumberDisplay(item.fineWeight)}</td>
+        </tr>
+      `,
+      )
+      .join('');
+
+    karigarDueHtml = `
+      <div style="margin-bottom:8px;page-break-inside:avoid;">
+        <div style="background:#fff8e6;padding:3px 6px;font-weight:bold;font-size:9.5px;border:1px solid #785600;border-bottom:none;color:#785600;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:700;">Karigar Due</span>
+          <span style="font-size:8.5px;color:#000;">Total Due: <b>${formatNumberDisplay(karigarDueGroup.totalFineWeight)} G</b> | Karigars: <b>${karigarDueGroup.count}</b></span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:0;padding:0;">
+          <thead>
+            <tr style="background:#785600;color:white;font-weight:600;">
+              <th style="border:1px solid #785600;padding:2px 3px;width:32px;text-align:center;font-size:8px;color:white;">Sr. No</th>
+              <th style="border:1px solid #785600;padding:2px 3px;text-align:center;font-size:8px;color:white;">Karigar Name</th>
+              <th style="border:1px solid #785600;padding:2px 3px;width:80px;text-align:center;font-size:8px;color:white;">Fine WT (G)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
 
   // Build Client Due HTML
   if (clientDueGroup && clientDueGroup.items.length > 0) {
@@ -358,9 +400,10 @@ export const printRealTimeGoldReport = ({
 
           <div style="flex:1;">
             <div style="font-size:9.5px;font-weight:bold;color:#785600;margin-bottom:3px;border-bottom:1.5px solid #785600;padding-bottom:1px;text-transform:uppercase;">
-              Manufacturing & Customer Due
+              Manufacturing, Karigar & Customer Due
             </div>
             ${processGroupsHtml || '<p style="text-align:center;font-size:8px;color:#777;">No Process Data</p>'}
+            ${karigarDueHtml}
             ${clientDueHtml}
           </div>
         </div>

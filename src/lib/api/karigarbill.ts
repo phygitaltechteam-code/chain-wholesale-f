@@ -3,6 +3,25 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 
+export const useGetPurchaseSrp = () => {
+  return useMutation({
+    mutationFn: getPurchaseSrpApi,
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to fetch SRP');
+    },
+  });
+};
+
+const getPurchaseSrpApi = async (payload: {
+  karigarId: string;
+  itemId: string;
+  sizeId?: string;
+  purity?: number;
+}) => {
+  const response = await api.put('/admin/karigar-purchase/check', payload);
+  return response.data;
+};
+
 export const useKarigarBill = () => {
   const queryClient = useQueryClient();
   return useMutation({

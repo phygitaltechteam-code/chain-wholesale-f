@@ -128,10 +128,17 @@ export const Settings = () => {
               <div className="relative flex items-center">
                 <input
                   type="password"
+                  name="admin_secret_token"
+                  id="admin_secret_token"
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  autoComplete="off"
+                  autoComplete="new-password"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-form-type="other"
+                  aria-autocomplete="none"
+                  spellCheck={false}
                   className="h-8 w-32 rounded-lg border border-[#d3c4af]/50 bg-white px-2.5 text-xs text-transparent caret-transparent selection:bg-transparent selection:text-transparent focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600] dark:border-slate-700 dark:bg-slate-900 sm:w-36"
                 />
               </div>

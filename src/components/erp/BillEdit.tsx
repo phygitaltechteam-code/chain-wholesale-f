@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef, useMemo} from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   X,
   Save,
@@ -15,24 +15,22 @@ import {
   UserPlus,
   Printer,
 } from 'lucide-react';
-import {useNavigate} from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
+import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import {useGetClients} from '@/lib/api/client';
+import { useGetClients } from '@/lib/api/client';
 import AddClientModal from '@/components/Client/AddClientModal';
-import {useGetItems} from '@/lib/api/items';
-import {useGetSizes} from '@/lib/api/sizes';
+import { useGetItems } from '@/lib/api/items';
+import { useGetSizes } from '@/lib/api/sizes';
 import toast from 'react-hot-toast';
-import {z} from 'zod';
-import GenericDatePicker from '../Forms/DatePicker/GenericDatePicker';
-import {useGetQuantity, useGetBillByid, useBillUpdate} from '@/lib/api/bill';
-import {Route} from '@/routes/_app/billiupdate.$id';
+import { useGetQuantity, useGetBillByid, useBillUpdate } from '@/lib/api/bill';
+import { Route } from '@/routes/_app/billiupdate.$id';
 import GenericInputField from '../Forms/Input/GenericInputField';
-import {useGetHeader} from '@/lib/api/headerapi';
-import {ClientSearch} from '../reciept/ClientSearch';
-import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
-import {printReceipt} from '@/utils/printReceipt';
+import { useGetHeader } from '@/lib/api/headerapi';
+import { ClientSearch } from '../reciept/ClientSearch';
+import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
+import { printReceipt } from '@/utils/printReceipt';
 
 interface ReceiptItem {
   id: string;
@@ -103,7 +101,7 @@ interface BillGroup {
 
 
 const BillEdit: React.FC = () => {
-  const {id} = Route.useParams();
+  const { id } = Route.useParams();
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date[]>([]);
   const [showStockErrorModal, setShowStockErrorModal] = useState(false);
@@ -143,8 +141,8 @@ const BillEdit: React.FC = () => {
     purity: number;
   } | null>(null);
 
-  const {data: clients = [], refetch: refetchClients} = useGetClients();
-  const {data: rawItems = []} = useGetItems();
+  const { data: clients = [], refetch: refetchClients } = useGetClients();
+  const { data: rawItems = [] } = useGetItems();
 
   const items = useMemo(
     () =>
@@ -154,16 +152,16 @@ const BillEdit: React.FC = () => {
       }),
     [rawItems],
   );
-  const {data: sizes = []} = useGetSizes();
+  const { data: sizes = [] } = useGetSizes();
 
 
   const getpdfheaderdata = useGetHeader();
   const getQuantity = useGetQuantity();
-  const {data: billResponse, isLoading: isLoadingBill} = useGetBillByid(id);
+  const { data: billResponse, isLoading: isLoadingBill } = useGetBillByid(id);
   const updateBill = useBillUpdate();
 
   // Weighing Scale table focus hook
-  const {getScaleProps} = useTableScaleFocus<keyof ReceiptItem>(
+  const { getScaleProps } = useTableScaleFocus<keyof ReceiptItem>(
     (index, field, weight) => {
       handleItemChange(index, field, weight);
     },
@@ -377,7 +375,7 @@ const BillEdit: React.FC = () => {
     setShowClientModal(false);
     const refetched = await refetchClients();
     const allClients = (refetched?.data as any[]) || [];
-    
+
     if (newClient) {
       const foundClient = allClients.find((c: any) => c.id === newClient.id) || newClient;
       handleClientSelect(foundClient);
@@ -433,7 +431,7 @@ const BillEdit: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       items: prev.items.map((entry, i) =>
-        i === index ? {...entry, isLoadingQty: true} : entry,
+        i === index ? { ...entry, isLoadingQty: true } : entry,
       ),
     }));
 
@@ -445,8 +443,8 @@ const BillEdit: React.FC = () => {
         purity: purity,
       });
 
-      let weight = 0;
-      let srpValue = 0;
+      let weight: number | null = null;
+      let srpValue: number | string | null = null;
 
       // Extract weight
       if (
@@ -468,33 +466,56 @@ const BillEdit: React.FC = () => {
         weight = Number(response.quantity);
       }
 
-      if (!isNaN(weight) && weight >= 0) {
-        setFormData((prev) => ({
-          ...prev,
-          items: prev.items.map((entry, i) =>
-            i === index
-              ? {
-                  ...entry,
-                  availableQty: weight,
-                  isLoadingQty: false,
-                }
-              : entry,
-          ),
-        }));
-      } else {
-        setFormData((prev) => ({
-          ...prev,
-          items: prev.items.map((entry, i) =>
-            i === index ? {...entry, isLoadingQty: false} : entry,
-          ),
-        }));
+      // Extract SRP
+      if (
+        response?.data?.srp !== undefined &&
+        response.data.srp !== null
+      ) {
+        srpValue = response.data.srp;
+      } else if (response?.srp !== undefined && response.srp !== null) {
+        srpValue = response.srp;
       }
+
+      setFormData((prev) => {
+        const updatedItems = prev.items.map((entry, i) => {
+          if (i !== index) return entry;
+
+          const nextAvailableQty =
+            weight !== null && !isNaN(weight) && weight >= 0
+              ? weight
+              : entry.availableQty;
+
+          const nextSrp =
+            srpValue !== null && srpValue !== undefined && !isNaN(Number(srpValue))
+              ? srpValue
+              : entry.srp;
+
+          const purityVal = Number(entry.purity) || purity;
+          const grossWt = Number(entry.grossWt) || 0;
+          const srpNum = Number(nextSrp) || 0;
+          const fineWt = calculateFineWeight(purityVal, grossWt, srpNum);
+
+          return {
+            ...entry,
+            availableQty: nextAvailableQty,
+            srp: nextSrp,
+            fineWt: fineWt,
+            isLoadingQty: false,
+          };
+        });
+
+        return {
+          ...prev,
+          items: updatedItems,
+          totalFine: updateTotalFine(updatedItems),
+        };
+      });
     } catch (error: any) {
       console.error('Error fetching quantity:', error);
       setFormData((prev) => ({
         ...prev,
         items: prev.items.map((entry, i) =>
-          i === index ? {...entry, isLoadingQty: false} : entry,
+          i === index ? { ...entry, isLoadingQty: false } : entry,
         ),
       }));
     }
@@ -643,12 +664,12 @@ const BillEdit: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const value = e.target.value;
-    setFormData((prev) => ({...prev, customerWeight: value}));
+    setFormData((prev) => ({ ...prev, customerWeight: value }));
   };
 
   const handleTotalFineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setFormData((prev) => ({...prev, totalFine: value}));
+    setFormData((prev) => ({ ...prev, totalFine: value }));
   };
 
   const calculateTotalGrossWt = () => {
@@ -690,7 +711,7 @@ const BillEdit: React.FC = () => {
     if (billData && billData.dueBalance !== undefined && billData.dueBalance !== null) {
       return Number(billData.dueBalance);
     }
-    
+
     if (!client) return 0;
     const due =
       client?.due !== null && client?.due !== undefined
@@ -728,9 +749,9 @@ const BillEdit: React.FC = () => {
       formData.totalFine !== undefined && formData.totalFine !== ''
         ? Number(formData.totalFine) || 0
         : formData.items.reduce(
-            (sum, item) => sum + (Number(item.fineWt) || 0),
-            0,
-          );
+          (sum, item) => sum + (Number(item.fineWt) || 0),
+          0,
+        );
     // Remaining Balance = Total Fine Wt + Due Balance - Advance
     const remaining = totalFineWeight + dueBalance - advance;
     return Math.round(remaining * 1000) / 1000;
@@ -754,31 +775,31 @@ const BillEdit: React.FC = () => {
     const advance =
       Number(
         responseData?.customerWeight ??
-          responseData?.receive ??
-          formData.customerWeight,
+        responseData?.receive ??
+        formData.customerWeight,
       ) || 0;
 
     const remaining =
       Number(
         responseData?.remainingWeight ??
-          responseData?.pending ??
-          calculateRemainingWeight(),
+        responseData?.pending ??
+        calculateRemainingWeight(),
       ) || 0;
 
     const itemsList =
       Array.isArray(responseData?.items) &&
-      responseData.items.length > 0 &&
-      responseData.items[0]?.item
+        responseData.items.length > 0 &&
+        responseData.items[0]?.item
         ? responseData.items
         : formData.items.map((item) => ({
-            item: item.item || '-',
-            size: item.size || '-',
-            purity: Number(item.purity) || 0,
-            grossWeight: Number(item.grossWt) || 0,
-            srp: Number(item.srp) || 0,
-            finWt: Number(item.fineWt) || 0,
-            laborRate: Number(item.laborRate) || 0,
-          }));
+          item: item.item || '-',
+          size: item.size || '-',
+          purity: Number(item.purity) || 0,
+          grossWeight: Number(item.grossWt) || 0,
+          srp: Number(item.srp) || 0,
+          finWt: Number(item.fineWt) || 0,
+          laborRate: Number(item.laborRate) || 0,
+        }));
 
     const totalFineWt =
       Number(responseData?.totalFineWt ?? responseData?.totalFinWt) ||
@@ -853,9 +874,9 @@ const BillEdit: React.FC = () => {
         type: 'DRAFT',
       };
 
-      await updateBill.mutateAsync({id, data: billData});
+      await updateBill.mutateAsync({ id, data: billData });
       // toast.success('Bill updated as draft successfully!');
-      navigate({to: '/billing'});
+      navigate({ to: '/billing' });
     } catch (error) {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
@@ -916,7 +937,7 @@ const BillEdit: React.FC = () => {
         type: 'BILL',
       };
 
-      const response = await updateBill.mutateAsync({id, data: billData});
+      const response = await updateBill.mutateAsync({ id, data: billData });
       // toast.success('Bill updated successfully!');
 
       // Print the receipt after successful update
@@ -926,7 +947,7 @@ const BillEdit: React.FC = () => {
 
       // Navigate after print
       setTimeout(() => {
-        navigate({to: '/billing'});
+        navigate({ to: '/billing' });
       }, 2000);
     } catch (error: any) {
       isSubmittingRef.current = false;
@@ -1050,8 +1071,8 @@ const BillEdit: React.FC = () => {
             return (
               <span className="font-mono text-sm text-[#1a1c1b] dark:text-white">
                 {item.purity !== undefined &&
-                item.purity !== null &&
-                item.purity !== ''
+                  item.purity !== null &&
+                  item.purity !== ''
                   ? `${formatNumberThreeDecimals(Number(item.purity))}%`
                   : '-'}
               </span>
@@ -1096,8 +1117,8 @@ const BillEdit: React.FC = () => {
           <div className="flex w-full items-center justify-end gap-1 whitespace-nowrap rounded-md border border-[#c5b497] bg-[#eae3d5] px-2 py-1.5 text-xs shadow-inner dark:border-slate-600 dark:bg-slate-800">
             <span className="font-mono font-bold text-black dark:text-white">
               {item.availableQty !== undefined &&
-              item.availableQty !== null &&
-              item.availableQty !== ''
+                item.availableQty !== null &&
+                item.availableQty !== ''
                 ? formatNumberThreeDecimals(Number(item.availableQty))
                 : '0'}
             </span>
@@ -1118,8 +1139,8 @@ const BillEdit: React.FC = () => {
             return (
               <span className="font-mono text-sm font-semibold text-[#1a1c1b] dark:text-white">
                 {item.grossWt !== undefined &&
-                item.grossWt !== null &&
-                item.grossWt !== ''
+                  item.grossWt !== null &&
+                  item.grossWt !== ''
                   ? `${formatNumberThreeDecimals(Number(item.grossWt))} G`
                   : '0 G'}
               </span>
@@ -1205,8 +1226,8 @@ const BillEdit: React.FC = () => {
             return (
               <span className="font-mono text-sm text-[#4f4535] dark:text-slate-300">
                 {item.laborRate !== undefined &&
-                item.laborRate !== null &&
-                item.laborRate !== ''
+                  item.laborRate !== null &&
+                  item.laborRate !== ''
                   ? `${formatNumberThreeDecimals(Number(item.laborRate))} G`
                   : '0 G'}
               </span>
@@ -1260,7 +1281,7 @@ const BillEdit: React.FC = () => {
         <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate({to: '/billing'})}
+              onClick={() => navigate({ to: '/billing' })}
               className="flex flex-shrink-0 items-center gap-2 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -1315,25 +1336,25 @@ const BillEdit: React.FC = () => {
                       {formData.clientName || 'N/A'}
                       {clients.find((c: any) => c.id === formData.clientId)
                         ?.phoneNumber && (
-                        <>
-                          {' '}
-                          -{' '}
-                          {
-                            clients.find((c: any) => c.id === formData.clientId)
-                              ?.phoneNumber
-                          }
-                        </>
-                      )}
+                          <>
+                            {' '}
+                            -{' '}
+                            {
+                              clients.find((c: any) => c.id === formData.clientId)
+                                ?.phoneNumber
+                            }
+                          </>
+                        )}
                     </p>
                     {clients.find((c: any) => c.id === formData.clientId)
                       ?.address && (
-                      <p className="mt-1 truncate text-xs text-[#4f4535] dark:text-slate-400">
-                        {
-                          clients.find((c: any) => c.id === formData.clientId)
-                            ?.address
-                        }
-                      </p>
-                    )}
+                        <p className="mt-1 truncate text-xs text-[#4f4535] dark:text-slate-400">
+                          {
+                            clients.find((c: any) => c.id === formData.clientId)
+                              ?.address
+                          }
+                        </p>
+                      )}
                   </div>
                 </div>
               ) : (
@@ -1413,8 +1434,8 @@ const BillEdit: React.FC = () => {
                     disabled
                     value={
                       formData.totalFine !== undefined &&
-                      formData.totalFine !== null &&
-                      formData.totalFine !== ''
+                        formData.totalFine !== null &&
+                        formData.totalFine !== ''
                         ? formData.totalFine
                         : ''
                     }

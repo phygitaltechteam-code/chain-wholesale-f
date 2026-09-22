@@ -321,7 +321,7 @@ export const printReceipt = (
 
           <!-- FOOTER -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:4px;border-top:1px dashed #aaaaaa;font-size:10px;line-height:1;color:#444444;">
-            <div>Contact For Support: 9511640351</div>
+            <div>Contact For Support: 9511640351 (FineWt)</div>
           </div>
         </div>
       </body>

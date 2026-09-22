@@ -32,7 +32,7 @@ import { useGetRealTimeGold } from '@/lib/api/realtimegold';
 import { useGetStock } from '@/lib/api/stock';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 import { printReceipt } from '@/utils/printReceipt';
-import { useKarigarBill } from '@/lib/api/karigarBill';
+import { useKarigarBill, useGetPurchaseSrp } from '@/lib/api/karigarBill';
 
 interface ReceiptItem {
   id: string;
@@ -163,6 +163,7 @@ const ReceiptAdd: React.FC = () => {
   // API hooks
   const getpdfheaderdata = useGetHeader();
   const savebill = useKarigarBill();
+  const getPurchaseSrp = useGetPurchaseSrp();
 
   // Weighing Scale table focus hook
   const { getScaleProps } = useTableScaleFocus<keyof ReceiptItem>(
@@ -219,6 +220,93 @@ const ReceiptAdd: React.FC = () => {
       items: updatedItems,
     });
     toast.success('Item removed');
+  };
+
+  // ─── Fetch SRP for selected Karigar and Item ──
+  const fetchSrp = async (
+    index: number,
+    item: string,
+    customKarigarId?: string,
+  ) => {
+    const karigarId = customKarigarId || formData.KarigarId;
+    if (!item || !karigarId) {
+      return;
+    }
+
+    const selectedItem = items.find(
+      (i: any) => i.name === item || i.id === item,
+    );
+
+    if (!selectedItem?.id) {
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      items: prev.items.map((entry, i) =>
+        i === index ? { ...entry, isLoadingQty: true } : entry,
+      ),
+    }));
+
+    try {
+      const response = await getPurchaseSrp.mutateAsync({
+        karigarId: karigarId,
+        itemId: selectedItem.id,
+      });
+
+      // Extract SRP
+      if (
+        response?.data?.srp !== undefined &&
+        response.data.srp !== null
+      ) {
+        srpValue = response.data.srp;
+      } else if (response?.srp !== undefined && response.srp !== null) {
+        srpValue = response.srp;
+      } else if (
+        response?.data !== undefined &&
+        response.data !== null &&
+        (typeof response.data === 'number' || typeof response.data === 'string')
+      ) {
+        srpValue = response.data;
+      }
+
+      setFormData((prev) => {
+        const updatedItems = prev.items.map((entry, i) => {
+          if (i !== index) return entry;
+
+          const nextSrp =
+            srpValue !== null && srpValue !== undefined && !isNaN(Number(srpValue))
+              ? srpValue
+              : entry.srp;
+
+          const purityVal = Number(entry.purity) || 0;
+          const grossWt = Number(entry.grossWt) || 0;
+          const srpNum = Number(nextSrp) || 0;
+          const fineWt = calculateFineWeight(purityVal, grossWt, srpNum);
+
+          return {
+            ...entry,
+            srp: nextSrp,
+            fineWt: fineWt,
+            isLoadingQty: false,
+          };
+        });
+
+        return {
+          ...prev,
+          items: updatedItems,
+          totalFine: updateTotalFine(updatedItems),
+        };
+      });
+    } catch (error: any) {
+      console.error('Error fetching purchase SRP:', error);
+      setFormData((prev) => ({
+        ...prev,
+        items: prev.items.map((entry, i) =>
+          i === index ? { ...entry, isLoadingQty: false } : entry,
+        ),
+      }));
+    }
   };
 
   const calculateFineWeight = (
@@ -293,6 +381,14 @@ const ReceiptAdd: React.FC = () => {
       items: updatedItems,
       totalFine: newTotalFine,
     });
+
+    // Fetch SRP when item is selected
+    if (field === 'item') {
+      const currentItem = updatedItems[index];
+      if (currentItem.item) {
+        fetchSrp(index, currentItem.item);
+      }
+    }
   };
 
   useEffect(() => {
@@ -655,34 +751,28 @@ const ReceiptAdd: React.FC = () => {
       render: (item, index) => {
         const actualIndex = formData.items.indexOf(item);
         return (
-          <div className="relative flex-1">
-            <GenericInputField
-              type="text"
-              inputMode="decimal"
-              step="0.001"
-              min="0"
-              max="100"
-              value={
-                item.purity !== undefined && item.purity !== null
-                  ? item.purity
-                  : ''
-              }
-              onChange={(e) =>
-                handleItemChange(actualIndex, 'purity', e.target.value)
-              }
-              placeholder="0.000"
-              suffix="%"
-              className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
-              decimalScale={3}
-            />
-            {item.isLoadingQty && (
-              <Loader2 className="absolute right-8 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#785600]" />
-            )}
-          </div>
+          <GenericInputField
+            type="text"
+            inputMode="decimal"
+            step="0.001"
+            min="0"
+            max="100"
+            value={
+              item.purity !== undefined && item.purity !== null
+                ? item.purity
+                : ''
+            }
+            onChange={(e) =>
+              handleItemChange(actualIndex, 'purity', e.target.value)
+            }
+            placeholder="0.000"
+            suffix="%"
+            className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
+            decimalScale={3}
+          />
         );
       },
     },
-
     {
       key: 'grossWt',
       header: 'Gross Wt (G)',
@@ -717,20 +807,25 @@ const ReceiptAdd: React.FC = () => {
       render: (item, index) => {
         const actualIndex = formData.items.indexOf(item);
         return (
-          <GenericInputField
-            type="text"
-            inputMode="decimal"
-            step="0.001"
-            min="0"
-            value={item.srp !== undefined && item.srp !== null ? item.srp : ''}
-            onChange={(e) =>
-              handleItemChange(actualIndex, 'srp', e.target.value)
-            }
-            placeholder="0.000"
-            suffix="G"
-            className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
-            decimalScale={3}
-          />
+          <div className="relative flex-1">
+            <GenericInputField
+              type="text"
+              inputMode="decimal"
+              step="0.001"
+              min="0"
+              value={item.srp !== undefined && item.srp !== null ? item.srp : ''}
+              onChange={(e) =>
+                handleItemChange(actualIndex, 'srp', e.target.value)
+              }
+              placeholder="0.000"
+              suffix="G"
+              className="!w-full !min-w-0 !px-1.5 !py-1.5 !pr-6 text-right text-xs"
+              decimalScale={3}
+            />
+            {item.isLoadingQty && (
+              <Loader2 className="absolute right-8 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#785600]" />
+            )}
+          </div>
         );
       },
     },
@@ -791,6 +886,14 @@ const ReceiptAdd: React.FC = () => {
                     KarigarId: Karigar.id,
                     KarigarName: Karigar.fullName || Karigar.fullname || '',
                   }));
+                  // Re-fetch SRP for any rows that already have an item selected
+                  if (Karigar?.id) {
+                    formData.items.forEach((item, idx) => {
+                      if (item.item) {
+                        fetchSrp(idx, item.item, Karigar.id);
+                      }
+                    });
+                  }
                 }}
                 onClearKarigar={() => {
                   setFormData((prev) => ({
@@ -854,9 +957,14 @@ const ReceiptAdd: React.FC = () => {
 
             {/* Advance (Editable) */}
             <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-4 py-2.5 dark:border-slate-700">
-              <span className="text-sm font-medium text-[#4f4535] dark:text-slate-300">
-                Advance
-              </span>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-[#4f4535] dark:text-slate-300">
+                  Advance
+                </span>
+                <span className="text-[10px] font-medium text-emerald-600">
+                  (Available Gold: {availableGoldStock.toFixed(3)}G)
+                </span>
+              </div>
               <div className="relative flex items-center">
                 <input
                   type="number"
@@ -869,9 +977,6 @@ const ReceiptAdd: React.FC = () => {
                 />
                 <span className="pointer-events-none absolute right-2.5 text-xs text-[#817563] dark:text-slate-400">
                   G
-                </span>
-                <span className="text-[10px] font-medium text-emerald-600">
-                  (Available Gold: {availableGoldStock.toFixed(3)}G)
                 </span>
               </div>
             </div>

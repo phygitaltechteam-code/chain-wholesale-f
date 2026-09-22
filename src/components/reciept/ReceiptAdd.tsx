@@ -243,7 +243,8 @@ const ReceiptAdd: React.FC = () => {
         purity: purity,
       });
 
-      let weight = 0;
+      let weight: number | null = null;
+      let srpValue: number | string | null = null;
 
       // Extract weight
       if (
@@ -265,27 +266,50 @@ const ReceiptAdd: React.FC = () => {
         weight = Number(response.quantity);
       }
 
-      if (!isNaN(weight) && weight >= 0) {
-        setFormData((prev) => ({
-          ...prev,
-          items: prev.items.map((entry, i) =>
-            i === index
-              ? {
-                ...entry,
-                availableQty: weight,
-                isLoadingQty: false,
-              }
-              : entry,
-          ),
-        }));
-      } else {
-        setFormData((prev) => ({
-          ...prev,
-          items: prev.items.map((entry, i) =>
-            i === index ? { ...entry, isLoadingQty: false } : entry,
-          ),
-        }));
+      // Extract SRP
+      if (
+        response?.data?.srp !== undefined &&
+        response.data.srp !== null
+      ) {
+        srpValue = response.data.srp;
+      } else if (response?.srp !== undefined && response.srp !== null) {
+        srpValue = response.srp;
       }
+
+      setFormData((prev) => {
+        const updatedItems = prev.items.map((entry, i) => {
+          if (i !== index) return entry;
+
+          const nextAvailableQty =
+            weight !== null && !isNaN(weight) && weight >= 0
+              ? weight
+              : entry.availableQty;
+
+          const nextSrp =
+            srpValue !== null && srpValue !== undefined && !isNaN(Number(srpValue))
+              ? srpValue
+              : entry.srp;
+
+          const purityVal = Number(entry.purity) || purity;
+          const grossWt = Number(entry.grossWt) || 0;
+          const srpNum = Number(nextSrp) || 0;
+          const fineWt = calculateFineWeight(purityVal, grossWt, srpNum);
+
+          return {
+            ...entry,
+            availableQty: nextAvailableQty,
+            srp: nextSrp,
+            fineWt: fineWt,
+            isLoadingQty: false,
+          };
+        });
+
+        return {
+          ...prev,
+          items: updatedItems,
+          totalFine: updateTotalFine(updatedItems),
+        };
+      });
     } catch (error: any) {
       console.error('Error fetching quantity:', error);
       setFormData((prev) => ({

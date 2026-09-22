@@ -1,8 +1,8 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import PageHeader from '@/components/Forms/Common/PageHeader';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import toast from 'react-hot-toast';
-import {Save, RotateCcw, Printer, Edit2} from 'lucide-react';
+import { Save, RotateCcw, Printer, Edit2 } from 'lucide-react';
 import {
   useSaveHeader,
   useGetHeader,
@@ -11,26 +11,34 @@ import {
 } from '@/lib/api/headerapi';
 
 const DEFAULT_PDF_HEADER_CONFIG: HeaderConfig = {
-  leftInvocation: '॥ श्री गणेश प्रसन्न ॥',
-  rightInvocation: '॥ श्री साई प्रसन्न ॥',
-  factoryName: 'मातोश्री चेन फॅक्टरी, मिरज',
-  description: 'आमचेकडे ऑर्डर प्रमाणे सोन्याच्या चेन बनवल्या जातील.',
-  proprietorName: 'प्रो. नितीन खरात',
-  phoneNumbers: 'मो. ९३७०२४७०३५ / ७३८७२३५१८४',
+  leftInvocation: '॥ श्री गणेशाय नमः ॥',
+  rightInvocation: '॥ श्री स्वामी समर्थ ॥',
+
+  factoryName: 'श्री समर्थ गोल्ड चेन मॅन्युफॅक्चरिंग, सांगली',
+
+  description:
+    'आमचेकडे आपल्या ऑर्डरप्रमाणे उच्च दर्जाच्या सोन्याच्या चेन बनवून मिळतील.',
+
+  proprietorName: 'प्रो. अमोल देशमुख',
+
+  phoneNumbers: 'मो. ९८२३४५६७८९ / ८७६५४३२१०९',
+
   invocationColor: '#a84b20',
   factoryNameColor: '#c43d5c',
   descriptionColor: '#8b451f',
   proprietorColor: '#a84b20',
   phoneColor: '#a84b20',
+
   factoryFontSize: 24,
   descriptionFontSize: 13,
   proprietorFontSize: 12,
   phoneFontSize: 12,
 };
 
+
 const HeaderPdfDesign: React.FC = () => {
   const saveHeader = useSaveHeader();
-  const {data: headerApiRes} = useGetHeader();
+  const { data: headerApiRes } = useGetHeader();
   const [config, setConfig] = useState<HeaderConfig>(DEFAULT_PDF_HEADER_CONFIG);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -67,11 +75,11 @@ const HeaderPdfDesign: React.FC = () => {
         ),
         descriptionFontSize: Number(
           raw.descriptionFontSize ||
-            DEFAULT_PDF_HEADER_CONFIG.descriptionFontSize,
+          DEFAULT_PDF_HEADER_CONFIG.descriptionFontSize,
         ),
         proprietorFontSize: Number(
           raw.proprietorFontSize ||
-            DEFAULT_PDF_HEADER_CONFIG.proprietorFontSize,
+          DEFAULT_PDF_HEADER_CONFIG.proprietorFontSize,
         ),
         phoneFontSize: Number(
           raw.phoneFontSize || DEFAULT_PDF_HEADER_CONFIG.phoneFontSize,
@@ -81,7 +89,7 @@ const HeaderPdfDesign: React.FC = () => {
       try {
         const saved = localStorage.getItem('pdf_header_config');
         if (saved) {
-          setConfig({...DEFAULT_PDF_HEADER_CONFIG, ...JSON.parse(saved)});
+          setConfig({ ...DEFAULT_PDF_HEADER_CONFIG, ...JSON.parse(saved) });
         }
       } catch (e) {
         console.error('Failed to parse pdf_header_config:', e);

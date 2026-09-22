@@ -106,23 +106,29 @@ const Sidebar = ({
       icon: <MdAutoGraph size={22} />,
       roles: ['ADMIN'],
     },
-    {
-      label: 'Billing',
-      path: '/billing',
-      icon: <MdReceipt size={22} />,
-      roles: ['ADMIN'],
-    },
-    {
+       {
       label: 'Karigar Purchase',
       path: '/karigarbilling',
       icon: <MdReceipt size={22} />,
       roles: ['ADMIN'],
     },
-
+      {
+      label: 'Karigar Settlement',
+      path: '/karigarsetlment',
+      icon: <MdGroups size={22} />,
+      roles: ['ADMIN'],
+    },
+    
     {
       label: 'Stocks',
       path: '/Stocks/stockpage',
       icon: <MdInventory2 size={22} />,
+      roles: ['ADMIN'],
+    },
+    {
+      label: 'Client Billing',
+      path: '/billing',
+      icon: <MdReceipt size={22} />,
       roles: ['ADMIN'],
     },
     {
@@ -131,13 +137,13 @@ const Sidebar = ({
       icon: <MdGroups size={22} />,
       roles: ['ADMIN'],
     },
-    {
-      label: 'Karigar Settlement',
-      path: '/karigarsetlment',
-      icon: <MdGroups size={22} />,
+  
+ {
+      path: '/reports/todayreport',
+      label: 'Daily Report',
+      icon: <MdAssessment size={22} />,
       roles: ['ADMIN'],
     },
-
     {
       label: 'Karigar Inward Report',
       path: '/reports/inwardreport',
@@ -147,12 +153,6 @@ const Sidebar = ({
     {
       path: '/reports/stockledgerreport',
       label: 'Bussiness 360 Report',
-      icon: <MdAssessment size={22} />,
-      roles: ['ADMIN'],
-    },
-    {
-      path: '/reports/todayreport',
-      label: 'Daily Report',
       icon: <MdAssessment size={22} />,
       roles: ['ADMIN'],
     },

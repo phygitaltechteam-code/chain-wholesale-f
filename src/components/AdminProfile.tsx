@@ -231,7 +231,7 @@ const AdminProfile: React.FC = () => {
     <div className="bg-[#f9f9f7] px-4 py-3 dark:bg-slate-950 sm:px-6">
       <div className="mx-auto max-w-7xl space-y-3">
         {/* Profile Form with Header Actions and 2-Column Compact Layout */}
-        <form onSubmit={handleSave} className="space-y-3">
+        <form onSubmit={handleSave} autoComplete="off" className="space-y-3">
           <div className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-2">
             {/* LEFT COLUMN: Account Information (Compact 2-col field grid) */}
             <div className="flex flex-col justify-between rounded-xl border border-[#d3c4af]/30 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -406,9 +406,16 @@ const AdminProfile: React.FC = () => {
                       <input
                         type={showCurrentPassword ? 'text' : 'password'}
                         name="currentPassword"
+                        id="currentPassword"
                         value={passwordData.currentPassword}
                         onChange={handlePasswordChange}
                         placeholder="Current password"
+                        autoComplete="new-password"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        data-form-type="other"
+                        aria-autocomplete="none"
+                        spellCheck={false}
                         className="w-full rounded-lg border border-[#d3c4af]/40 bg-white py-1.5 pl-8 pr-8 text-xs font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
                       />
                       <button
@@ -437,9 +444,16 @@ const AdminProfile: React.FC = () => {
                       <input
                         type={showNewPassword ? 'text' : 'password'}
                         name="newPassword"
+                        id="newPassword"
                         value={passwordData.newPassword}
                         onChange={handlePasswordChange}
                         placeholder="New password"
+                        autoComplete="new-password"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        data-form-type="other"
+                        aria-autocomplete="none"
+                        spellCheck={false}
                         className="w-full rounded-lg border border-[#d3c4af]/40 bg-white py-1.5 pl-8 pr-8 text-xs font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600]/20 dark:bg-slate-800 dark:text-white"
                       />
                       <button
