@@ -102,6 +102,18 @@ const deleteStockApi = async (id: string) => {
   }
 };
 
+const revertStockApi = async (id: string) => {
+  try {
+    const response = await api.post(`/admin/stock/revert/${id}`);
+    return response.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || `Failed to revert stock with ID: ${id}`);
+    }
+    throw error;
+  }
+};
+
 // Export individual functions
 export {
   getStockApi,
@@ -110,6 +122,7 @@ export {
   createStockApi,
   updateStockApi,
   deleteStockApi,
+  revertStockApi,
 };
 
 // React Query Hooks
@@ -201,3 +214,28 @@ export const useDeleteStock = () => {
     },
   });
 };
+
+export const useRevertStock = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: revertStockApi,
+    onSuccess: () => {
+      toast.success('Stock reverted successfully');
+      queryClient.invalidateQueries({
+        queryKey: ['stock'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['stock-report'],
+      });
+    },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Failed to revert stock',
+      );
+    },
+  });
+};
+

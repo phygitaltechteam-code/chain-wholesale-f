@@ -480,6 +480,14 @@ export default function ClientReport() {
         <ClientReportTable
           filteredData={filteredData}
           onOpenReceipt={handleOpenReceipt}
+          openingBalance={
+            Number(
+              currentClient.openingBalance ??
+                currentClient.goldBalance ??
+                currentClient.balance ??
+                0,
+            )
+          }
         />
       </div>
     </div>

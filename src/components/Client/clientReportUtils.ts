@@ -18,6 +18,7 @@ export interface ClientReportEntry {
   groupRowSpan: number;
   rawGroupItems?: ApiDataItem[];
   fineWeight?: number | null;
+  totalWeight?: number | null;
   given?: number | null;
   pending?: number | null;
 }

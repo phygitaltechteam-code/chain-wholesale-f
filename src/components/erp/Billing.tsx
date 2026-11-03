@@ -8,6 +8,7 @@ import {
   Plus,
   Calendar,
   Factory,
+  Lock,
 } from 'lucide-react';
 import {useNavigate} from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
@@ -27,7 +28,7 @@ import {
   AlertTriangle,
   ShieldAlert,
 } from 'lucide-react';
-import {useGetProfileData, useActivateKey} from '@/lib/api/profile';
+import {useGetProfileData, useActivateKey, useAccessForBackup} from '@/lib/api/profile';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
 import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
 
@@ -1748,23 +1749,105 @@ const Billing: React.FC = () => {
     }
   };
 
-  const handleDelete = (group: BillGroup) => {
-    if (
-      !window.confirm(`Are you sure you want to delete bill ${group.billNo}?`)
-    ) {
+  const accessForBackupMutation = useAccessForBackup();
+  const [deleteModalState, setDeleteModalState] = useState<{
+    isOpen: boolean;
+    item: BillGroup | null;
+    step: 'password' | 'confirm';
+    password: string;
+    isVerifying: boolean;
+    error: string;
+  }>({
+    isOpen: false,
+    item: null,
+    step: 'password',
+    password: '',
+    isVerifying: false,
+    error: '',
+  });
+
+  const handleOpenDeleteModal = (group: BillGroup) => {
+    setDeleteModalState({
+      isOpen: true,
+      item: group,
+      step: 'password',
+      password: '',
+      isVerifying: false,
+      error: '',
+    });
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeleteModalState({
+      isOpen: false,
+      item: null,
+      step: 'password',
+      password: '',
+      isVerifying: false,
+      error: '',
+    });
+  };
+
+  const handleVerifyPasswordForDelete = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = deleteModalState.password.trim();
+    if (!trimmed) {
+      setDeleteModalState((prev) => ({
+        ...prev,
+        error: 'Please enter admin password',
+      }));
       return;
     }
+
+    setDeleteModalState((prev) => ({ ...prev, isVerifying: true, error: '' }));
+    try {
+      const res: any = await accessForBackupMutation.mutateAsync({
+        password: trimmed,
+      });
+
+      if (res?.data !== true) {
+        setDeleteModalState((prev) => ({
+          ...prev,
+          isVerifying: false,
+          error: res?.message || 'Incorrect password',
+        }));
+        return;
+      }
+
+      setDeleteModalState((prev) => ({
+        ...prev,
+        isVerifying: false,
+        step: 'confirm',
+        error: '',
+      }));
+    } catch (err: any) {
+      setDeleteModalState((prev) => ({
+        ...prev,
+        isVerifying: false,
+        error: err?.message || 'Failed to verify password',
+      }));
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteModalState.item) return;
+    const group = deleteModalState.item;
 
     deleteClient.mutate(group.id, {
       onSuccess: () => {
         setBillingGroups((prev) => prev.filter((e) => e.id !== group.id));
         toast.success(`Bill ${group.billNo} deleted successfully`);
+        handleCloseDeleteModal();
       },
       onError: (error: any) => {
         console.error('Delete bill error:', error);
         toast.error(error?.response?.data?.message || 'Failed to delete bill');
       },
     });
+  };
+
+  const handleDelete = (group: BillGroup) => {
+    handleOpenDeleteModal(group);
   };
 
   const getTypeColor = (type: string) => {
@@ -1865,19 +1948,17 @@ const Billing: React.FC = () => {
         <Printer className="h-4 w-4" />
       </button>
 
-      {item.type === 'DRAFT' && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDelete(item);
-          }}
-          disabled={deleteClient.isPending}
-          className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-          title="Delete"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      )}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleOpenDeleteModal(item);
+        }}
+        disabled={deleteClient.isPending}
+        className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
+        title="Delete Bill"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
     </div>
   );
 
@@ -2450,6 +2531,142 @@ const Billing: React.FC = () => {
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Bill Password & Confirmation Modal */}
+        {deleteModalState.isOpen && deleteModalState.item && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="w-full max-w-md rounded-2xl border border-[#d3c4af]/30 bg-white p-6 shadow-2xl transition-all dark:border-slate-700 dark:bg-slate-900">
+              {deleteModalState.step === 'password' ? (
+                <form onSubmit={handleVerifyPasswordForDelete}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-[#785600] dark:bg-amber-950/40 dark:text-amber-400">
+                      <Lock className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
+                        Admin Password Required
+                      </h3>
+                      <p className="text-xs text-[#817563] dark:text-slate-400">
+                        Enter admin password to delete bill{' '}
+                        <span className="font-semibold text-[#1a1c1b] dark:text-white">
+                          {deleteModalState.item.billNo}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="block text-xs font-semibold text-[#4f4535] dark:text-slate-300">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      autoFocus
+                      placeholder="Enter password"
+                      value={deleteModalState.password}
+                      onChange={(e) =>
+                        setDeleteModalState((prev) => ({
+                          ...prev,
+                          password: e.target.value,
+                          error: '',
+                        }))
+                      }
+                      className="mt-1.5 w-full rounded-lg border border-[#d3c4af]/50 bg-white px-3.5 py-2.5 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    />
+                    {deleteModalState.error && (
+                      <p className="mt-1.5 text-xs font-medium text-red-500">
+                        {deleteModalState.error}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCloseDeleteModal}
+                      className="rounded-lg border border-[#d3c4af]/40 px-4 py-2 text-xs font-semibold text-[#4f4535] transition-colors hover:bg-gray-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={deleteModalState.isVerifying}
+                      className="flex items-center gap-1.5 rounded-lg bg-[#785600] px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#5d4200] disabled:opacity-50"
+                    >
+                      {deleteModalState.isVerifying ? (
+                        <>
+                          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          <span>Verifying...</span>
+                        </>
+                      ) : (
+                        <span>Verify & Continue</span>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400">
+                      <AlertTriangle className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-[#1a1c1b] dark:text-white">
+                        Confirm Bill Deletion
+                      </h3>
+                      <p className="text-xs text-[#817563] dark:text-slate-400">
+                        Password verified successfully
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-lg bg-red-50/60 p-3.5 border border-red-200/50 dark:bg-red-950/20 dark:border-red-900/30">
+                    <p className="text-sm text-red-800 dark:text-red-300">
+                      Are you sure you want to permanently delete bill{' '}
+                      <strong className="font-mono font-bold">
+                        {deleteModalState.item.billNo}
+                      </strong>{' '}
+                      for client{' '}
+                      <strong>{deleteModalState.item.clientName}</strong>?
+                    </p>
+                    <p className="mt-1 text-xs text-red-600/80 dark:text-red-400/80">
+                      This action cannot be undone and will remove all associated item entries.
+                    </p>
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCloseDeleteModal}
+                      disabled={deleteClient.isPending}
+                      className="rounded-lg border border-[#d3c4af]/40 px-4 py-2 text-xs font-semibold text-[#4f4535] transition-colors hover:bg-gray-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmDelete}
+                      disabled={deleteClient.isPending}
+                      className="flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {deleteClient.isPending ? (
+                        <>
+                          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          <span>Deleting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>Delete Bill</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

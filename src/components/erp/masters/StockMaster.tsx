@@ -10,6 +10,7 @@ import {
   Search,
   Eye,
   RefreshCw,
+  RotateCcw,
 } from 'lucide-react';
 import {useNavigate} from '@tanstack/react-router';
 import toast from 'react-hot-toast';
@@ -22,6 +23,7 @@ import {
   useUpdateStock,
   useDeleteStock,
   useGetStock,
+  useRevertStock,
 } from '@/lib/api/stock';
 import {z} from 'zod';
 
@@ -51,6 +53,7 @@ interface OpeningStockEntry {
   purityRaw?: string;
   itemId?: string;
   sizeId?: string;
+  isGold?: boolean;
 }
 
 const StockMaster: React.FC = () => {
@@ -74,6 +77,7 @@ const StockMaster: React.FC = () => {
   const createStock = useCreateStock();
   const updateStock = useUpdateStock();
   const deleteStock = useDeleteStock();
+  const revertStock = useRevertStock();
 
   useEffect(() => {
     if (itemsLoading || sizesLoading || stockLoading) {
@@ -108,6 +112,7 @@ const StockMaster: React.FC = () => {
             purityRaw: formatNumberDisplay(purity, 3),
             itemId: stock.itemId,
             sizeId: stock.sizeId,
+            isGold: Boolean(isGold),
           };
         },
       );
@@ -240,6 +245,49 @@ const StockMaster: React.FC = () => {
   const handleRowClick = (entry: OpeningStockEntry) => {
     const id = entry.id;
     navigate({to: `/stock/stockreport/${entry.id}`});
+  };
+
+  const handleRevert = (entry: OpeningStockEntry) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to revert stock for ${entry.item} (${entry.size})?`,
+      )
+    ) {
+      return;
+    }
+
+    revertStock.mutate(entry.id);
+  };
+
+  const renderActions = (item: OpeningStockEntry) => {
+    // Only in gold don't give me (exclude gold entries)
+    if (
+      item.isGold ||
+      item.item?.trim().toLowerCase().includes('gold') ||
+      item.size === '-' ||
+      (item.sizeId === null && item.purity === 100)
+    ) {
+      return null;
+    }
+
+    return (
+      <div className="flex items-center justify-center">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleRevert(item);
+          }}
+          disabled={revertStock.isPending}
+          title="Revert Stock"
+          className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20 disabled:opacity-50"
+        >
+          <RotateCcw
+            className={`h-4 w-4 ${revertStock.isPending ? 'animate-spin' : ''}`}
+          />
+        </button>
+      </div>
+    );
   };
 
   // Define columns for GenericTable - NO EDIT/DELETE icons
@@ -404,7 +452,7 @@ const StockMaster: React.FC = () => {
               onRowClick={handleRowClick}
               showEdit={false}
               showDelete={false}
-              renderActions={undefined}
+              renderActions={renderActions}
             />
           </div>
         </div>

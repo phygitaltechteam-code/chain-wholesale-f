@@ -28,19 +28,17 @@ export const getBillingColumns = (
         <Printer className="h-4 w-4" />
       </button>
 
-      {item.type === 'DRAFT' && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDelete(item);
-          }}
-          disabled={isDeletePending}
-          className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-          title="Delete"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      )}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleDelete(item);
+        }}
+        disabled={isDeletePending}
+        className="rounded-lg p-1.5 text-[#785600] transition-colors hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
+        title="Delete"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
     </div>
   );
 

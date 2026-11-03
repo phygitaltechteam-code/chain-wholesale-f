@@ -460,7 +460,14 @@ const ReceiptAdd: React.FC = () => {
   const handleCustomerWeightChange = (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const value = e.target.value;
+    let value = e.target.value;
+    if (value.includes('-')) {
+      value = value.replace(/-/g, '');
+    }
+    const num = Number(value);
+    if (!isNaN(num) && num < 0) {
+      value = Math.abs(num).toString();
+    }
     setFormData((prev) => ({ ...prev, customerWeight: value }));
   };
 
@@ -573,23 +580,34 @@ const ReceiptAdd: React.FC = () => {
     try {
       const totalGrossWt = calculateTotalGrossWt();
       const remainingWeight = calculateRemainingWeight();
+      const advanceVal = Number(Number(formData.customerWeight || 0).toFixed(3));
 
       const billData = {
         clientId: formData.clientId,
         receiptDate: formData.date,
-        items: formData.items.map((item) => ({
-          itemId: items.find((i: any) => i.name === item.item)?.id,
-          itemName: item.item,
-          sizeId: sizes.find((s: any) => s.size === item.size)?.id,
-          size: item.size,
-          purity: Number(item.purity) || 0,
-          availableQty: Number(item.availableQty) || 0,
-          grossWeight: Number(Number(item.grossWt || 0).toFixed(3)),
-          srp: Number(item.srp) || 0,
-          fineWeight: Number(Number(item.fineWt || 0).toFixed(3)),
-          laborRate: Number(item.laborRate) || 0,
-        })),
-        customerWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
+        items: formData.items.map((item) => {
+          const grossWt = Number(item.grossWt) || 0;
+          const srpInput = Number(item.srp) || 0;
+          // Calculate the SRP weight that is added into fine weight: grossWt * (srp / 100)
+          const srpWeight = grossWt > 0 ? Number((grossWt * (srpInput / 100)).toFixed(3)) : srpInput;
+
+          return {
+            itemId: items.find((i: any) => i.name === item.item)?.id,
+            itemName: item.item,
+            sizeId: sizes.find((s: any) => s.size === item.size)?.id,
+            size: item.size,
+            purity: Number(item.purity) || 0,
+            availableQty: Number(item.availableQty) || 0,
+            grossWeight: Number(Number(item.grossWt || 0).toFixed(3)),
+            srp: srpWeight,
+            fineWeight: Number(Number(item.fineWt || 0).toFixed(3)),
+            laborRate: Number(item.laborRate) || 0,
+          };
+        }),
+        customerWeight: advanceVal,
+        advance: advanceVal,
+        receive: advanceVal,
+        receivedWeight: advanceVal,
         remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
         totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
         dueBalance: getClientDueBalance(clients.find((c: any) => c.id === formData.clientId)),
@@ -634,23 +652,34 @@ const ReceiptAdd: React.FC = () => {
     try {
       const totalGrossWt = calculateTotalGrossWt();
       const remainingWeight = calculateRemainingWeight();
+      const advanceVal = Number(Number(formData.customerWeight || 0).toFixed(3));
 
       const billData = {
         clientId: formData.clientId,
         receiptDate: formData.date,
-        items: formData.items.map((item) => ({
-          itemId: items.find((i: any) => i.name === item.item)?.id,
-          itemName: item.item,
-          sizeId: sizes.find((s: any) => s.size === item.size)?.id,
-          size: item.size,
-          purity: Number(item.purity) || 0,
-          availableQty: Number(item.availableQty) || 0,
-          grossWeight: Number(Number(item.grossWt || 0).toFixed(3)),
-          srp: Number(item.srp) || 0,
-          fineWeight: Number(Number(item.fineWt || 0).toFixed(3)),
-          laborRate: Number(item.laborRate) || 0,
-        })),
-        customerWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
+        items: formData.items.map((item) => {
+          const grossWt = Number(item.grossWt) || 0;
+          const srpInput = Number(item.srp) || 0;
+          // Calculate the SRP weight that is added into fine weight: grossWt * (srp / 100)
+          const srpWeight = grossWt > 0 ? Number((grossWt * (srpInput / 100)).toFixed(3)) : srpInput;
+
+          return {
+            itemId: items.find((i: any) => i.name === item.item)?.id,
+            itemName: item.item,
+            sizeId: sizes.find((s: any) => s.size === item.size)?.id,
+            size: item.size,
+            purity: Number(item.purity) || 0,
+            availableQty: Number(item.availableQty) || 0,
+            grossWeight: Number(Number(item.grossWt || 0).toFixed(3)),
+            srp: srpWeight,
+            fineWeight: Number(Number(item.fineWt || 0).toFixed(3)),
+            laborRate: Number(item.laborRate) || 0,
+          };
+        }),
+        customerWeight: advanceVal,
+        advance: advanceVal,
+        receive: advanceVal,
+        receivedWeight: advanceVal,
         remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
         totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
         dueBalance: getClientDueBalance(clients.find((c: any) => c.id === formData.clientId)),
@@ -1028,6 +1057,11 @@ const ReceiptAdd: React.FC = () => {
                   type="number"
                   step="0.001"
                   min="0"
+                  onKeyDown={(e) => {
+                    if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                      e.preventDefault();
+                    }
+                  }}
                   value={formData.customerWeight || ''}
                   onChange={handleCustomerWeightChange}
                   placeholder="0.000"
