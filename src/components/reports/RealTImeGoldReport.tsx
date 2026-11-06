@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useMemo} from 'react';
+import React, {useState, useEffect, useMemo, useRef} from 'react';
 import {Search, Printer, Loader2} from 'lucide-react';
 import {useGetHeader} from '@/lib/api/headerapi';
 import {useGetRealTimeGold} from '@/lib/api/realtimegold';
@@ -85,12 +85,26 @@ const RealTimeGoldReport: React.FC = () => {
       .filter((g): g is CategoryGroup => g !== null);
   }, [categoryGroups, searchTerm]);
 
+  // Expand all categories by default once data first loads
+  const didInitExpand = useRef(false);
+  useEffect(() => {
+    if (!didInitExpand.current && categoryGroups.length > 0) {
+      didInitExpand.current = true;
+      setExpandedRows(new Set(categoryGroups.map((g) => g.id)));
+    }
+  }, [categoryGroups]);
+
+  const hadSearch = useRef(false);
   useEffect(() => {
     if (searchTerm.trim()) {
+      hadSearch.current = true;
       const matchIds = filteredGroups.map((g) => g.id);
       setExpandedRows(new Set(matchIds));
+    } else if (hadSearch.current) {
+      hadSearch.current = false;
+      setExpandedRows(new Set(categoryGroups.map((g) => g.id)));
     }
-  }, [searchTerm, filteredGroups]);
+  }, [searchTerm, filteredGroups, categoryGroups]);
 
   const stockGroups = useMemo(() => {
     return filteredGroups.filter(
@@ -179,6 +193,12 @@ const RealTimeGoldReport: React.FC = () => {
     summaryFromApi,
   ]);
 
+  // Total Gold WT = Stock Fine WT + Customer Due - Karigar Due
+  const totalGoldWeight = useMemo(
+    () => stockTotals.fine + clientDueTotal.fine - karigarDueTotal.fine,
+    [stockTotals, clientDueTotal, karigarDueTotal],
+  );
+
   const handlePrint = () => {
     printRealTimeGoldReport({
       headerInfo: getpdfheaderdata?.data?.data || {},
@@ -254,7 +274,10 @@ const RealTimeGoldReport: React.FC = () => {
       {/* Main Content Area */}
       <div className="space-y-4 p-3 sm:p-4 md:p-6">
         {/* Simple Summary Cards */}
-        <RealTimeSummaryCards grandTotals={grandTotals} />
+        <RealTimeSummaryCards
+          grandTotals={grandTotals}
+          totalGoldWeight={totalGoldWeight}
+        />
 
         {/* Horizontal Column Layout */}
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-3 xl:grid-cols-3">
