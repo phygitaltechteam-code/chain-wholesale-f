@@ -32,7 +32,7 @@ import { useGetRealTimeGold } from '@/lib/api/realtimegold';
 import { useGetStock } from '@/lib/api/stock';
 import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
 import { printReceipt } from '@/utils/printReceipt';
-import { useKarigarBill, useGetPurchaseSrp } from '@/lib/api/karigarBill';
+import { useKarigarBill, useGetPurchaseSrp } from '@/lib/api/karigarbill';
 
 interface ReceiptItem {
   id: string;
@@ -226,18 +226,22 @@ const ReceiptAdd: React.FC = () => {
   const fetchSrp = async (
     index: number,
     item: string,
+    size: string,
     customKarigarId?: string,
   ) => {
     const karigarId = customKarigarId || formData.KarigarId;
-    if (!item || !karigarId) {
+    if (!item || !size || !karigarId) {
       return;
     }
 
     const selectedItem = items.find(
       (i: any) => i.name === item || i.id === item,
     );
+    const selectedSize = sizes.find(
+      (s: any) => s.size === size || s.id === size,
+    );
 
-    if (!selectedItem?.id) {
+    if (!selectedItem?.id || !selectedSize?.id) {
       return;
     }
 
@@ -252,9 +256,11 @@ const ReceiptAdd: React.FC = () => {
       const response = await getPurchaseSrp.mutateAsync({
         karigarId: karigarId,
         itemId: selectedItem.id,
+        sizeId: selectedSize.id,
       });
 
       // Extract SRP
+      let srpValue: number | string | null = null;
       if (
         response?.data?.srp !== undefined &&
         response.data.srp !== null
@@ -306,6 +312,22 @@ const ReceiptAdd: React.FC = () => {
           i === index ? { ...entry, isLoadingQty: false } : entry,
         ),
       }));
+    }
+  };
+
+  const handleKarigarSelect = (Karigar: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      KarigarId: Karigar.id,
+      KarigarName: Karigar.fullName || Karigar.fullname || '',
+    }));
+    // Re-fetch SRP for any rows that already have an item selected
+    if (Karigar?.id) {
+      formData.items.forEach((item, idx) => {
+        if (item.item && item.size) {
+          fetchSrp(idx, item.item, item.size, Karigar.id);
+        }
+      });
     }
   };
 
@@ -382,11 +404,11 @@ const ReceiptAdd: React.FC = () => {
       totalFine: newTotalFine,
     });
 
-    // Fetch SRP when item is selected
-    if (field === 'item') {
+    // Fetch SRP once both item and size are selected
+    if (field === 'item' || field === 'size') {
       const currentItem = updatedItems[index];
-      if (currentItem.item) {
-        fetchSrp(index, currentItem.item);
+      if (currentItem.item && currentItem.size) {
+        fetchSrp(index, currentItem.item, currentItem.size);
       }
     }
   };
@@ -880,21 +902,7 @@ const ReceiptAdd: React.FC = () => {
                     (Karigar: any) => Karigar.id === formData.KarigarId,
                   ) || null
                 }
-                onSelectKarigar={(Karigar: any) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    KarigarId: Karigar.id,
-                    KarigarName: Karigar.fullName || Karigar.fullname || '',
-                  }));
-                  // Re-fetch SRP for any rows that already have an item selected
-                  if (Karigar?.id) {
-                    formData.items.forEach((item, idx) => {
-                      if (item.item) {
-                        fetchSrp(idx, item.item, Karigar.id);
-                      }
-                    });
-                  }
-                }}
+                onSelectKarigar={handleKarigarSelect}
                 onClearKarigar={() => {
                   setFormData((prev) => ({
                     ...prev,

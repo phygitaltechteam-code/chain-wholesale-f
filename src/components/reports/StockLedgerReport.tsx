@@ -74,6 +74,7 @@ export default function StockLedgerReport() {
       openingClientDue: 0.0,
       openingKarigarDue: 0.0,
       openingSr: 0.0,
+      manufacturing: 0.0,
       inward: 0.0,
     },
     closing: {
@@ -82,6 +83,7 @@ export default function StockLedgerReport() {
       closingClientDue: 0.0,
       closingKarigarDue: 0.0,
       closingSrp: 0.0,
+      manufacturing: 0.0,
       loss: 0.0,
       outward: 0.0,
       profitLoss: 0.0,
@@ -143,6 +145,12 @@ export default function StockLedgerReport() {
             openingSr: Number(
               sec1?.openingSr ?? ovOpening?.srp ?? ovOpening?.sr ?? sumOpening?.openingSr ?? 0,
             ),
+            manufacturing: Number(
+              sec1?.openingManufacturing ??
+              ovOpening?.manufacturing ??
+              sumOpening?.openingManufacturing ??
+              0,
+            ),
             inward: Number(
               sec1?.inward ?? ovOpening?.inward ?? sumOpening?.inward ?? 0,
             ),
@@ -171,6 +179,12 @@ export default function StockLedgerReport() {
             ),
             closingSrp: Number(
               sec2?.purchaseSrp ?? sec2?.closingSrp ?? ovClosing?.purchaseSrp ?? ovClosing?.srp ?? sumClosing?.purchaseSrp ?? sumClosing?.closingSrp ?? 0,
+            ),
+            manufacturing: Number(
+              sec2?.closingManufacturing ??
+              ovClosing?.manufacturing ??
+              sumClosing?.closingManufacturing ??
+              0,
             ),
             loss: Number(
               sec2?.loss ?? ovClosing?.loss ?? sumClosing?.loss ?? 0,
@@ -822,6 +836,21 @@ export default function StockLedgerReport() {
                       </td>
                     </tr>
 
+                    <tr>
+                      <td class="summary-label">
+                        Manufacturing
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(summaryData.opening.manufacturing)}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">&nbsp;</td>
+                      <td class="summary-value">&nbsp;</td>
+                    </tr>
+
                     <tr class="summary-total-row">
 
                       <td class="summary-label bold">
@@ -894,6 +923,26 @@ export default function StockLedgerReport() {
 
                       <td class="summary-value">
                         ${formatNumberDisplay(summaryData.closing.closingSrp)}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">
+                        Manufacturing
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(summaryData.closing.manufacturing)}
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="summary-label">
+                        Loss
+                      </td>
+
+                      <td class="summary-value">
+                        ${formatNumberDisplay(summaryData.closing.loss)}
                       </td>
                     </tr>
 
@@ -1963,15 +2012,17 @@ export default function StockLedgerReport() {
                       <span>SRP (Received)</span>
                       <span className="font-mono">{formatNumberDisplay(summaryData.opening.openingSr)}</span>
                     </div>
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>Manufacturing</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.opening.manufacturing)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      {/* Empty space to match Loss height */}
+                      <span>&nbsp;</span>
+                    </div>
                     <div className="flex items-center justify-between bg-[#fcfbf9] px-4 py-2.5 font-bold dark:bg-slate-800/50">
                       <span>Inward</span>
                       <span className="font-mono text-emerald-600 dark:text-emerald-400">{formatNumberDisplay(summaryData.opening.inward)}</span>
-                    </div>
-                    <div className="flex flex-1 items-center justify-between border-t border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
-                      {/* Empty space to match Loss height */}
-                    </div>
-                    <div className="flex items-center justify-between px-4 py-2.5">
-                      {/* Empty space to match Profit/Loss height */}
                     </div>
                   </div>
                 </div>
@@ -2003,6 +2054,14 @@ export default function StockLedgerReport() {
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>SRP (Given)</span>
                       <span className="font-mono">{formatNumberDisplay(summaryData.closing.closingSrp)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>Manufacturing</span>
+                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.manufacturing)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
+                      <span>Loss</span>
+                      <span className="font-mono text-red-600 dark:text-red-400">{formatNumberDisplay(summaryData.closing.loss)}</span>
                     </div>
                     <div className="flex items-center justify-between bg-[#fcfbf9] px-4 py-2.5 font-bold dark:bg-slate-800/50">
                       <span>Outward</span>

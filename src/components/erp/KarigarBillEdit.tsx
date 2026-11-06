@@ -189,20 +189,25 @@ const KarigarBillEdit: React.FC = () => {
   const fetchSrp = async (
     index: number,
     item: string,
+    size: string,
     customKarigarId?: string,
   ) => {
     const karigarId = customKarigarId || formData.KarigarId;
-    if (!item || !karigarId) {
+    if (!item || !size || !karigarId) {
       return;
     }
 
     const selectedItem = items.find(
       (i: any) => i.name === item || i.id === item,
     );
+    const selectedSize = sizes.find(
+      (s: any) => s.size === size || s.id === size,
+    );
 
     const itemId = selectedItem?.id || formData.items[index]?.itemId;
+    const sizeId = selectedSize?.id || (formData.items[index] as any)?.sizeId;
 
-    if (!itemId) {
+    if (!itemId || !sizeId) {
       return;
     }
 
@@ -217,6 +222,7 @@ const KarigarBillEdit: React.FC = () => {
       const response = await getPurchaseSrp.mutateAsync({
         karigarId: karigarId,
         itemId: itemId,
+        sizeId: sizeId,
       });
 
       let srpValue: number | string | null = null;
@@ -567,11 +573,11 @@ const KarigarBillEdit: React.FC = () => {
       totalFine: newTotalFine,
     }));
 
-    // Fetch SRP when item is selected
-    if (field === 'item') {
+    // Fetch SRP once both item and size are selected
+    if (field === 'item' || field === 'size') {
       const currentItem = updatedItems[index];
-      if (currentItem.item) {
-        fetchSrp(index, currentItem.item);
+      if (currentItem.item && currentItem.size) {
+        fetchSrp(index, currentItem.item, currentItem.size);
       }
     }
   };
@@ -1272,8 +1278,8 @@ const KarigarBillEdit: React.FC = () => {
                     }));
                     if (Karigar?.id) {
                       formData.items.forEach((item, idx) => {
-                        if (item.item) {
-                          fetchSrp(idx, item.item, Karigar.id);
+                        if (item.item && item.size) {
+                          fetchSrp(idx, item.item, item.size, Karigar.id);
                         }
                       });
                     }

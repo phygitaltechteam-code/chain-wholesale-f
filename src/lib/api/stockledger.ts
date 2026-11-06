@@ -8,6 +8,7 @@ export interface StockSummaryData {
     openingClientDue: number;
     openingKarigarDue: number;
     openingSr: number;
+    manufacturing: number;
     inward: number;
   };
   closing: {
@@ -16,6 +17,7 @@ export interface StockSummaryData {
     closingClientDue: number;
     closingKarigarDue: number;
     closingSrp: number;
+    manufacturing: number;
     outward: number;
     loss: number;
     profitLoss?: number;

@@ -394,7 +394,7 @@ export const buildCategoryGroups = (data: any | undefined): CategoryGroup[] => {
             i.grossweight ??
             0,
         );
-        return dueVal > 0;
+        return dueVal >= 0;
       })
       .map((i: any) => {
         const dueVal = toNumber(
@@ -451,7 +451,7 @@ export const buildCategoryGroups = (data: any | undefined): CategoryGroup[] => {
             i.grossweight ??
             0,
         );
-        return dueVal > 0;
+        return dueVal >= 0;
       })
       .map((i: any) => {
         const dueVal = toNumber(
