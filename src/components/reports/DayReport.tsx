@@ -1230,34 +1230,56 @@ const DayReport: React.FC = () => {
     <div className="min-h-screen bg-white pb-12 dark:bg-slate-950">
       {/* Top Sticky Header - Like RealTimeGoldReport */}
       <div className="sticky top-0 z-30 border-b border-[#d3c4af]/30 bg-white/95 px-3 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-4 md:px-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="font-headline text-xl font-black italic tracking-tight text-[#1a1a2e] dark:text-white sm:text-2xl lg:text-3xl">
-              Daily Report
-            </h1>
-            <p className="text-xs text-[#4f4535] dark:text-slate-400">
-              {selectedDate.toLocaleDateString('en-IN', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </p>
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          {/* Row 1 on mobile: Title + Date Picker */}
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h1 className="font-headline text-lg font-black italic tracking-tight text-[#1a1a2e] dark:text-white sm:text-2xl lg:text-3xl">
+                Daily Report
+              </h1>
+              <p className="hidden text-xs text-[#4f4535] dark:text-slate-400 sm:block">
+                {selectedDate.toLocaleDateString('en-IN', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </p>
+            </div>
+
+            {/* Mobile Date Picker in Row 1 */}
+            <div className="sm:hidden">
+              <GenericDatePicker
+                id="day-report-date-picker-mobile"
+                initialDate={selectedDate}
+                onDateChange={(dates) => {
+                  if (dates && dates[0]) {
+                    setSelectedDate(dates[0]);
+                  }
+                }}
+                className="w-32"
+              />
+            </div>
           </div>
 
-          <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-            <GenericDatePicker
-              id="day-report-date-picker"
-              initialDate={selectedDate}
-              onDateChange={(dates) => {
-                if (dates && dates[0]) {
-                  setSelectedDate(dates[0]);
-                }
-              }}
-              className="w-32 sm:w-36 md:w-40"
-            />
+          {/* Row 2 on mobile: Search + Print (Desktop: Date Picker + Search + Print) */}
+          <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+            {/* Desktop Date Picker */}
+            <div className="hidden sm:block">
+              <GenericDatePicker
+                id="day-report-date-picker"
+                initialDate={selectedDate}
+                onDateChange={(dates) => {
+                  if (dates && dates[0]) {
+                    setSelectedDate(dates[0]);
+                  }
+                }}
+                className="w-32 sm:w-36 md:w-40"
+              />
+            </div>
 
-            <div className="relative w-full sm:w-56 md:w-64">
+            {/* Search - takes flex-1 on mobile */}
+            <div className="relative min-w-0 flex-1 sm:w-56 sm:flex-initial md:w-64">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f4535]" />
               <input
                 type="text"
@@ -1268,9 +1290,10 @@ const DayReport: React.FC = () => {
               />
             </div>
 
+            {/* Print Button */}
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#5d4200]"
+              className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#5d4200]"
             >
               <Printer className="h-4 w-4" />
               <span>Print</span>

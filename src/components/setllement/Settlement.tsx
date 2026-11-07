@@ -1,27 +1,27 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Search, Plus, CheckCircle, Printer } from 'lucide-react';
+import React, {useEffect, useRef, useState} from 'react';
+import {Search, Plus, CheckCircle, Printer} from 'lucide-react';
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import toast from 'react-hot-toast';
-import { useSubmitSettlement } from '@/lib/api/settlement';
-import { Client, useGetClients } from '@/lib/api/client';
-import { useGetHeader } from '@/lib/api/headerapi';
+import {useSubmitSettlement} from '@/lib/api/settlement';
+import {Client, useGetClients} from '@/lib/api/client';
+import {useGetHeader} from '@/lib/api/headerapi';
 import GenericButton from '../Forms/Buttons/GenericButton';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
-import { useScaleFocus } from '@/lib/hooks/useScaleFocus';
-import { useNavigate } from '@tanstack/react-router';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
+import {useScaleFocus} from '@/lib/hooks/useScaleFocus';
+import {useNavigate} from '@tanstack/react-router';
 import AddClientModal from '../Client/AddClientModal';
-import { printClientReceipt } from '@/utils/printClientReceipt';
+import {printClientReceipt} from '@/utils/printClientReceipt';
 import {
   SettlementEntry,
   SettlementDetail,
   parseDateSafely,
   formatNumber,
 } from './settlementUtils';
-import { SettlementSummaryCards } from './SettlementSummaryCards';
-import { SettlementModal } from './SettlementModal';
-import { printSettlementReport } from './printSettlementReport';
+import {SettlementSummaryCards} from './SettlementSummaryCards';
+import {SettlementModal} from './SettlementModal';
+import {printSettlementReport} from './printSettlementReport';
 
 const Settlement: React.FC = () => {
   const navigate = useNavigate();
@@ -35,20 +35,20 @@ const Settlement: React.FC = () => {
   const [balanceFilter, setBalanceFilter] = useState<string>('all');
 
   const getDefaultWeekRange = () => {
-    const { fromDate, toDate } = getCurrentAppWeekRange();
-    return { monday: fromDate, sunday: toDate };
+    const {fromDate, toDate} = getCurrentAppWeekRange();
+    return {monday: fromDate, sunday: toDate};
   };
 
   const [dateRange, setDateRange] = useState<Date[]>(() => {
-    const { monday, sunday } = getDefaultWeekRange();
+    const {monday, sunday} = getDefaultWeekRange();
     return [monday, sunday];
   });
-  
+
   const isDateFilterActive = useRef(false);
 
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
-      const { monday, sunday } = getDefaultWeekRange();
+      const {monday, sunday} = getDefaultWeekRange();
       setDateRange([monday, sunday]);
     };
     window.addEventListener('app_week_cycle_changed', handleWeekCycleUpdate);
@@ -123,10 +123,10 @@ const Settlement: React.FC = () => {
     const rawList = Array.isArray(settlementsData)
       ? settlementsData
       : (settlementsData as any)?.data &&
-        Array.isArray((settlementsData as any).data)
+          Array.isArray((settlementsData as any).data)
         ? (settlementsData as any).data
         : (settlementsData as any)?.clients &&
-          Array.isArray((settlementsData as any).clients)
+            Array.isArray((settlementsData as any).clients)
           ? (settlementsData as any).clients
           : [];
 
@@ -286,34 +286,34 @@ const Settlement: React.FC = () => {
       const isGive = settlementDetail.settlementType === 'give';
       const receiptDataToPrint = isGive
         ? {
-          clientName: settlementDetail.clientName,
-          phoneNumber: settlementDetail.phoneNumber,
-          address: settlementDetail.address,
-          transactionType: 'give' as const,
-          amount: settlementDetail.settlementAmount,
-          previousBalance: settlementDetail.pendingBalance,
-          newBalance:
-            settlementDetail.pendingBalance +
-            settlementDetail.settlementAmount,
-          remark: settlementDetail.remark || 'Settlement (Given)',
-          items: [
-            {
-              item: 'Gold',
-              purity: '100%',
-              fineWeight: settlementDetail.settlementAmount,
-              weight: settlementDetail.settlementAmount,
-              remark: settlementDetail.remark || '',
-            },
-          ],
-          dateTime: new Date().toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-          }),
-        }
+            clientName: settlementDetail.clientName,
+            phoneNumber: settlementDetail.phoneNumber,
+            address: settlementDetail.address,
+            transactionType: 'give' as const,
+            amount: settlementDetail.settlementAmount,
+            previousBalance: settlementDetail.pendingBalance,
+            newBalance:
+              settlementDetail.pendingBalance +
+              settlementDetail.settlementAmount,
+            remark: settlementDetail.remark || 'Settlement (Given)',
+            items: [
+              {
+                item: 'Gold',
+                purity: '100%',
+                fineWeight: settlementDetail.settlementAmount,
+                weight: settlementDetail.settlementAmount,
+                remark: settlementDetail.remark || '',
+              },
+            ],
+            dateTime: new Date().toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            }),
+          }
         : null;
 
       await submitSettlementMutation.mutateAsync(settlementData);
@@ -363,7 +363,11 @@ const Settlement: React.FC = () => {
       (balanceFilter === 'zero' && entry.goldBalance === 0);
 
     let matchesDate = true;
-    if (isDateFilterActive.current && dateRange && (dateRange[0] || dateRange[1])) {
+    if (
+      isDateFilterActive.current &&
+      dateRange &&
+      (dateRange[0] || dateRange[1])
+    ) {
       const fromDate = dateRange[0] ? parseDateSafely(dateRange[0]) : null;
       const toDate = dateRange[1] ? parseDateSafely(dateRange[1]) : null;
 
@@ -430,7 +434,7 @@ const Settlement: React.FC = () => {
   const handleRowClick = (client: Client) => {
     const targetId = client?.id || (client as any)?._id;
     if (targetId) {
-      navigate({ to: '/client/clientreport/$id', params: { id: targetId } });
+      navigate({to: '/client/clientreport/$id', params: {id: targetId}});
     }
   };
 
@@ -523,14 +527,12 @@ const Settlement: React.FC = () => {
     <div className="bg-[#f9f9f7] dark:bg-slate-950">
       <div className="px-4 py-4 md:px-8 md:py-6">
         {/* PAGE HEADER */}
-        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <PageHeader
-            title="Client & Settlement"
-            subtitle="Manage client settlements and gold balances"
-          />
+        <div className="mb-4 flex flex-row items-center justify-between gap-2">
+          <PageHeader title="Client & Settlement" />
           <GenericButton
             onClick={() => setShowAddClientModal(true)}
             variant="primary"
+            className="shrink-0"
           >
             <Plus className="h-4 w-4" />
             <span>Add Client</span>
@@ -546,9 +548,10 @@ const Settlement: React.FC = () => {
         />
 
         {/* FILTERS */}
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 items-center gap-2 sm:max-w-md">
-            <div className="relative flex-1">
+        <div className="mb-4 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          {/* Row 1 on mobile: Search + Print */}
+          <div className="flex flex-1 items-center gap-2 sm:max-w-xs md:max-w-sm">
+            <div className="relative min-w-0 flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
               <input
                 type="text"
@@ -558,27 +561,26 @@ const Settlement: React.FC = () => {
                 className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-1.5 pl-9 pr-3 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
-
-            <select
-              value={balanceFilter}
-              onChange={(e) => setBalanceFilter(e.target.value)}
-              className="rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-            >
-              <option value="all">All Balance</option>
-              <option value="positive">Receiving (+)</option>
-              <option value="negative">Giving (-)</option>
-              <option value="zero">Zero Balance</option>
-            </select>
+            <div className="shrink-0 sm:hidden">
+              <GenericButton
+                onClick={handlePrint}
+                className="!bg-[#785600] !text-white hover:!bg-[#5d4200]"
+              >
+                <Printer className="h-4 w-4" />
+                <span>Print</span>
+              </GenericButton>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Row 2 on mobile: Date Pickers + Status Filter */}
+          <div className="flex items-center gap-2">
             <GenericWeeklyDatePicker
               id="from-date-settlement"
               placeholder="DD/MM/YYYY"
               mode="from"
               initialDates={dateRange}
               onDateChange={handleFromDateChange}
-              className="w-32 sm:w-36 md:w-40"
+              className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
             />
 
             <GenericWeeklyDatePicker
@@ -587,16 +589,29 @@ const Settlement: React.FC = () => {
               mode="to"
               initialDates={dateRange}
               onDateChange={handleToDateChange}
-              className="w-32 sm:w-36 md:w-40"
+              className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
             />
 
-            <GenericButton
-              onClick={handlePrint}
-              className="!bg-[#785600] !text-white hover:!bg-[#5d4200]"
+            <select
+              value={balanceFilter}
+              onChange={(e) => setBalanceFilter(e.target.value)}
+              className="h-[38px] min-w-0 flex-1 rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:flex-initial sm:px-3 sm:text-sm"
             >
-              <Printer className="h-4 w-4" />
-              <span>Print</span>
-            </GenericButton>
+              <option value="all">All Balance</option>
+              <option value="positive">Receiving (+)</option>
+              <option value="negative">Giving (-)</option>
+              <option value="zero">Zero Balance</option>
+            </select>
+
+            <div className="hidden sm:block">
+              <GenericButton
+                onClick={handlePrint}
+                className="!bg-[#785600] !text-white hover:!bg-[#5d4200]"
+              >
+                <Printer className="h-4 w-4" />
+                <span>Print</span>
+              </GenericButton>
+            </div>
           </div>
         </div>
 

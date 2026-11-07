@@ -8,6 +8,7 @@ import {
   Wallet,
   IndianRupee,
   RefreshCw,
+  LogOut,
 } from 'lucide-react';
 import {erpStore} from '@/store/erpStore';
 import {useGetDashboard} from '@/lib/api/dashboard';
@@ -17,6 +18,15 @@ const Dashboard = () => {
   const [lastRefreshed, setLastRefreshed] = useState<string>(
     new Date().toLocaleTimeString(),
   );
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
+    sessionStorage.clear();
+    window.location.href = '/signin';
+  };
 
   const {data: dashboardData} = useGetDashboard();
   console.log(dashboardData);
@@ -33,13 +43,22 @@ const Dashboard = () => {
     <div className="min-h-screen bg-[#f9f9f7] p-4 dark:bg-slate-950 md:p-8">
       {/* Top Banner Header */}
       <div className="mb-6 flex flex-col gap-4 border-b border-[#d3c4af]/20 pb-6 dark:border-slate-700 md:flex-row md:items-center md:justify-between">
-        <div>
+        <div className="flex w-full items-center justify-between md:w-auto">
           <div className="flex items-center gap-2">
             <span className="h-3 w-3 animate-pulse rounded-full bg-amber-500"></span>
             <h1 className="font-serif text-2xl font-bold tracking-tight text-[#785600] dark:text-amber-400 md:text-3xl">
               Dashboard
             </h1>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowLogoutModal(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 active:scale-95 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-400 md:hidden"
+            title="Logout"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span>Logout</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-3">
@@ -167,6 +186,41 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-xs overflow-hidden rounded-2xl border border-[#d3c4af]/30 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="p-5 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                <LogOut className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-base font-bold text-[#1a1c1b] dark:text-white">
+                Confirm Logout
+              </h3>
+              <p className="mt-1 text-xs text-[#4f4535] dark:text-slate-400">
+                Are you sure you want to log out of your account?
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 border-t border-[#d3c4af]/20 bg-[#f9f9f7] p-3 dark:border-slate-800 dark:bg-slate-950">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="hover:bg-gray-50 rounded-lg border border-[#d3c4af]/40 bg-white px-3 py-2 text-xs font-semibold text-[#4f4535] transition-colors dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700 active:scale-95"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

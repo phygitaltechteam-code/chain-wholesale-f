@@ -13,12 +13,12 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   className = '',
 }) => {
   return (
-    <div className={className}>
-      <h2 className="font-headline text-2xl font-black italic text-[#1a1a2e] sm:text-3xl lg:text-4xl">
+    <div className={`min-w-0 ${className}`}>
+      <h2 className="font-headline text-xl font-black italic tracking-tight text-[#1a1a2e] dark:text-white sm:text-2xl lg:text-3xl">
         {title}
       </h2>
       {subtitle && (
-        <p className="text-on-surface-variant text-xs tracking-wide sm:text-sm">
+        <p className="text-on-surface-variant text-[11px] tracking-wide sm:text-xs">
           {subtitle}
         </p>
       )}

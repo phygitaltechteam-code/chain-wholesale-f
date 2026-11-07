@@ -1,12 +1,12 @@
-import { useNavigate } from '@tanstack/react-router';
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, Printer, AlertCircle, TrendingUp } from 'lucide-react';
+import {useNavigate} from '@tanstack/react-router';
+import {useState, useEffect, useMemo, useRef} from 'react';
+import {Search, Printer, AlertCircle, TrendingUp} from 'lucide-react';
 import toast from 'react-hot-toast';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericWeeklyDatePicker from '@/components/Forms/DatePicker/GenericWeeklyDatePicker';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
-import { useGetKarigarBill } from '@/lib/api/karigarBill';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
+import {useGetKarigarBill} from '@/lib/api/karigarBill';
 import React from 'react';
 
 // ======================================================
@@ -28,12 +28,12 @@ interface InwardReportEntry {
 // HELPER FUNCTIONS
 // ======================================================
 const getDefaultWeekRange = () => {
-  const { fromDate, toDate } = getCurrentAppWeekRange();
-  return { monday: fromDate, sunday: toDate };
+  const {fromDate, toDate} = getCurrentAppWeekRange();
+  return {monday: fromDate, sunday: toDate};
 };
 
 const formatDate = (dateString: string) => {
-  if (!dateString) return { date: '-', time: '-' };
+  if (!dateString) return {date: '-', time: '-'};
   const date = new Date(dateString);
   return {
     date: date.toLocaleDateString('en-IN', {
@@ -76,22 +76,22 @@ const InwardReport: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const [fromDate, setFromDate] = useState<Date | null>(() => {
-    const { monday } = getDefaultWeekRange();
+    const {monday} = getDefaultWeekRange();
     return monday;
   });
   const [toDate, setToDate] = useState<Date | null>(() => {
-    const { sunday } = getDefaultWeekRange();
+    const {sunday} = getDefaultWeekRange();
     return sunday;
   });
-  
+
   const isDateFilterActive = useRef(false);
 
-  const { data: billData, isLoading, isError, refetch } = useGetKarigarBill();
+  const {data: billData, isLoading, isError, refetch} = useGetKarigarBill();
 
   // Listen for week cycle setting updates
   useEffect(() => {
     const handleWeekCycleUpdate = () => {
-      const { monday, sunday } = getDefaultWeekRange();
+      const {monday, sunday} = getDefaultWeekRange();
       setFromDate(monday);
       setToDate(sunday);
     };
@@ -112,7 +112,8 @@ const InwardReport: React.FC = () => {
     }
 
     const filteredBills = billData.filter((receipt: any) => {
-      const rawDate = receipt.purchaseDate || receipt.createdAt || receipt.receiptDate;
+      const rawDate =
+        receipt.purchaseDate || receipt.createdAt || receipt.receiptDate;
       if (!rawDate) return false;
       const createdAt = new Date(rawDate);
       if (isDateFilterActive.current && fromDate) {
@@ -130,10 +131,13 @@ const InwardReport: React.FC = () => {
 
     const allItems: any[] = [];
     filteredBills.forEach((receipt: any) => {
-      const itemsList = receipt.karigarPurchaseItems || receipt.receiptItems || [];
-      const karigarName = receipt.karigar?.fullName || receipt.karigarName || 'N/A';
-      const rawDate = receipt.purchaseDate || receipt.createdAt || receipt.receiptDate;
-      const { date, time } = formatDate(rawDate);
+      const itemsList =
+        receipt.karigarPurchaseItems || receipt.receiptItems || [];
+      const karigarName =
+        receipt.karigar?.fullName || receipt.karigarName || 'N/A';
+      const rawDate =
+        receipt.purchaseDate || receipt.createdAt || receipt.receiptDate;
+      const {date, time} = formatDate(rawDate);
 
       itemsList.forEach((item: any, index: number) => {
         allItems.push({
@@ -151,20 +155,24 @@ const InwardReport: React.FC = () => {
     });
 
     // Sort by date (newest first)
-    allItems.sort((a, b) => new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime());
+    allItems.sort(
+      (a, b) => new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime(),
+    );
 
     // Map to final structure with srNo
-    const transformedData: InwardReportEntry[] = allItems.map((item, index) => ({
-      id: item.id,
-      srNo: index + 1,
-      dateTime: item.dateTime,
-      karigarName: item.karigarName,
-      item: item.item,
-      size: item.size,
-      purity: item.purity,
-      wt: item.wt,
-      srp: item.srp,
-    }));
+    const transformedData: InwardReportEntry[] = allItems.map(
+      (item, index) => ({
+        id: item.id,
+        srNo: index + 1,
+        dateTime: item.dateTime,
+        karigarName: item.karigarName,
+        item: item.item,
+        size: item.size,
+        purity: item.purity,
+        wt: item.wt,
+        srp: item.srp,
+      }),
+    );
 
     setReportData(transformedData);
     setLoading(false);
@@ -371,14 +379,15 @@ const InwardReport: React.FC = () => {
             <h2 style="margin:0;font-size:14px;color:#000;padding:0;font-weight:bold;text-align:center;flex:1;">
               Inward Report ${selectedKarigar !== 'all' ? `(${selectedKarigar})` : ''}
             </h2>
-            ${fromDate || toDate
-        ? `<div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
+            ${
+              fromDate || toDate
+                ? `<div style="font-size:9px;color:#000;font-weight:bold;flex:1;text-align:right;">
                     ${fromDate ? `From: ${formatDateForDisplay(fromDate)}` : ''}
                     ${fromDate && toDate ? '&nbsp;&nbsp;' : ''}
                     ${toDate ? `To: ${formatDateForDisplay(toDate)}` : ''}
                   </div>`
-        : `<div style="flex:1;"></div>`
-      }
+                : `<div style="flex:1;"></div>`
+            }
           </div>
 
           <table style="width:100%;border-collapse:collapse;font-size:10px;margin:0;padding:0;">
@@ -412,14 +421,14 @@ const InwardReport: React.FC = () => {
               <span>Powered by Matoshree Gold</span>
               <span>|</span>
               <span>Generated: ${new Date().toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      })} ${new Date().toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      })}</span>
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              })} ${new Date().toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+              })}</span>
             </div>
           </div>
         </div>
@@ -590,15 +599,40 @@ const InwardReport: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex w-full flex-col items-center gap-2 sm:w-auto xl:flex-row">
+          <div className="flex w-full flex-col gap-2.5 sm:w-auto xl:flex-row xl:items-center">
+            {/* Mobile Row 1: Search + Print */}
             <div className="flex w-full items-center gap-2 sm:w-auto">
+              <div className="relative min-w-0 flex-1 sm:w-64 sm:flex-initial">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+                <input
+                  type="text"
+                  placeholder="Search by karigar, item..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
+
+              <div className="shrink-0 sm:hidden">
+                <button
+                  onClick={handlePrint}
+                  className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5d4200]"
+                >
+                  <Printer className="h-4 w-4" />
+                  <span>Print</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Row 2: Date Pickers + All Items + All Karigars */}
+            <div className="flex w-full items-center gap-1.5 overflow-x-auto pb-0.5 sm:w-auto sm:overflow-visible sm:pb-0">
               <GenericWeeklyDatePicker
                 id="from-date-inward"
                 mode="from"
                 placeholder="DD/MM/YYYY"
                 initialDates={fromDate ? [fromDate] : []}
                 onDateChange={handleFromDateChange}
-                className="w-32 sm:w-36 md:w-40"
+                className="xs:w-28 w-24 shrink-0 sm:w-36 md:w-40"
               />
               <GenericWeeklyDatePicker
                 id="to-date-inward"
@@ -606,87 +640,78 @@ const InwardReport: React.FC = () => {
                 mode="to"
                 initialDates={toDate ? [toDate] : []}
                 onDateChange={handleToDateChange}
-                className="w-32 sm:w-36 md:w-40"
+                className="xs:w-28 w-24 shrink-0 sm:w-36 md:w-40"
               />
+
+              <select
+                value={selectedKarigar}
+                onChange={(e) => setSelectedKarigar(e.target.value)}
+                className="h-[38px] shrink-0 rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-xs text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:px-3 sm:text-sm"
+              >
+                {karigarOptions.map((k) => (
+                  <option key={k} value={k}>
+                    {k === 'all' ? 'All Karigars' : k}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={selectedItem}
+                onChange={(e) => setSelectedItem(e.target.value)}
+                className="h-[38px] shrink-0 rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-xs text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:px-3 sm:text-sm"
+              >
+                {itemOptions.map((i) => (
+                  <option key={i} value={i}>
+                    {i === 'all' ? 'All Items' : i}
+                  </option>
+                ))}
+              </select>
+
+              <div className="hidden shrink-0 sm:block">
+                <button
+                  onClick={handlePrint}
+                  className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5d4200]"
+                >
+                  <Printer className="h-4 w-4" />
+                  <span>Print</span>
+                </button>
+              </div>
             </div>
-
-            <select
-              value={selectedKarigar}
-              onChange={(e) => setSelectedKarigar(e.target.value)}
-              className="rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-            >
-              {karigarOptions.map((k) => (
-                <option key={k} value={k}>
-                  {k === 'all' ? 'All Karigars' : k}
-                </option>
-              ))}
-            </select>
-            <select
-              value={selectedItem}
-              onChange={(e) => setSelectedItem(e.target.value)}
-              className="rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 text-sm text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-            >
-              {itemOptions.map((i) => (
-                <option key={i} value={i}>
-                  {i === 'all' ? 'All Items' : i}
-                </option>
-              ))}
-            </select>
-
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
-              <input
-                type="text"
-                placeholder="Search by karigar, item..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-              />
-            </div>
-
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#785600] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5d4200]"
-            >
-              <Printer className="h-4 w-4" />
-              <span className="hidden sm:inline">Print</span>
-              <span className="sm:hidden">Print</span>
-            </button>
           </div>
         </div>
       </div>
 
       <div className="px-3 py-4 sm:px-4 md:px-6">
-        {/* Summary Cards */}
-        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-2">
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+        {/* Summary Cards - 2 cards in one row on mobile */}
+        <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-2">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-4">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total Entries
                 </span>
-                <span className="text-2xl font-bold text-black dark:text-white">
+                <span className="font-mono truncate text-lg font-bold text-black dark:text-white sm:text-2xl">
                   {totalEntries}
                 </span>
               </div>
-              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2">
-                <AlertCircle className="h-5 w-5 text-black dark:text-white" />
+              <div className="bg-gray-100 dark:bg-gray-800 shrink-0 rounded-lg p-1.5 sm:p-2">
+                <AlertCircle className="h-4 w-4 text-black dark:text-white sm:h-5 sm:w-5" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-4">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total Wt
                 </span>
-                <span className="text-2xl font-bold text-black dark:text-white">
+                <span className="font-mono truncate text-lg font-bold text-black dark:text-white sm:text-2xl">
                   {formatNumberDisplay(totalWt)} G
                 </span>
               </div>
-              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2">
-                <TrendingUp className="h-5 w-5 text-black dark:text-white" />
+              <div className="bg-gray-100 dark:bg-gray-800 shrink-0 rounded-lg p-1.5 sm:p-2">
+                <TrendingUp className="h-4 w-4 text-black dark:text-white sm:h-5 sm:w-5" />
               </div>
             </div>
           </div>

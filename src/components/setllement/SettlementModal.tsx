@@ -67,7 +67,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
           }}
         >
           <div
-            className="relative w-full max-w-sm rounded-xl bg-white shadow-2xl dark:bg-slate-900"
+            className="relative max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-xl bg-white shadow-2xl dark:bg-slate-900"
             onMouseDown={(e) => e.stopPropagation()}
           >
             {/* HEADER */}
@@ -289,7 +289,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
           }}
         >
           <div
-            className="relative w-full max-w-sm rounded-xl bg-white shadow-2xl dark:bg-slate-900"
+            className="relative max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-xl bg-white shadow-2xl dark:bg-slate-900"
             onMouseDown={(e) => e.stopPropagation()}
           >
             <button

@@ -6,8 +6,6 @@ import {
   MdPrecisionManufacturing,
   MdAssessment,
   MdLogout,
-  MdMenu,
-  MdClose,
   MdChevronLeft,
   MdChevronRight,
   MdExpandMore,
@@ -106,19 +104,19 @@ const Sidebar = ({
       icon: <MdAutoGraph size={22} />,
       roles: ['ADMIN'],
     },
-       {
+    {
       label: 'Karigar Purchase',
       path: '/karigarbilling',
       icon: <MdReceipt size={22} />,
       roles: ['ADMIN'],
     },
-      {
+    {
       label: 'Karigar Settlement',
       path: '/karigarsetlment',
       icon: <MdGroups size={22} />,
       roles: ['ADMIN'],
     },
-    
+
     {
       label: 'Stocks',
       path: '/Stocks/stockpage',
@@ -137,8 +135,8 @@ const Sidebar = ({
       icon: <MdGroups size={22} />,
       roles: ['ADMIN'],
     },
-  
- {
+
+    {
       path: '/reports/todayreport',
       label: 'Daily Report',
       icon: <MdAssessment size={22} />,
@@ -327,19 +325,9 @@ const Sidebar = ({
     isMobileDevice,
   });
 
-  const MobileMenuButton = () => (
-    <button
-      onClick={toggleMobileMenu}
-      className="fixed left-4 top-4 z-50 flex items-center justify-center rounded-lg bg-[#1a1a2e] p-2.5 text-white shadow-lg transition-all hover:bg-[#2a2a3e] active:scale-95 md:hidden"
-      aria-label="Toggle menu"
-    >
-      {isMobileMenuOpen ? <MdClose size={22} /> : <MdMenu size={22} />}
-    </button>
-  );
-
   const MobileOverlay = () => (
     <div
-      className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-all duration-300 md:hidden ${
+      className={`fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm transition-all duration-300 md:hidden ${
         isMobileMenuOpen ? 'visible opacity-100' : 'invisible opacity-0'
       }`}
       onClick={toggleMobileMenu}
@@ -587,11 +575,10 @@ const Sidebar = ({
 
   return (
     <>
-      {isMobileDevice && <MobileMenuButton />}
       <MobileOverlay />
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-full flex-col bg-[#1a1a2e] shadow-2xl transition-all duration-300 ease-in-out ${getSidebarWidth()} ${
+        className={`fixed left-0 top-0 z-[70] flex h-full flex-col bg-[#1a1a2e] shadow-2xl transition-all duration-300 ease-in-out md:z-50 ${getSidebarWidth()} ${
           isMobileDevice && !isMobileMenuOpen
             ? '-translate-x-full'
             : 'translate-x-0'

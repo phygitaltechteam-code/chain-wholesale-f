@@ -210,10 +210,10 @@ const SizeMaster: React.FC = () => {
             </h2>
           </div>
 
-          {/* Right side - Search and Add Size Button */}
-          <div className="flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
+          {/* Right side - Search and Add Size Button in one row */}
+          <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-3">
             {/* Search Bar */}
-            <div className="relative w-full sm:w-64">
+            <div className="relative min-w-0 flex-1 sm:w-64 sm:flex-initial">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
               <input
                 type="text"
@@ -225,9 +225,13 @@ const SizeMaster: React.FC = () => {
             </div>
 
             {/* Add Size Button */}
-            <GenericButton type="button" onClick={() => setIsModalOpen(true)}>
+            <GenericButton
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="shrink-0 whitespace-nowrap"
+            >
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="xs:hidden">Add Size</span>
+              <span>Add Size</span>
             </GenericButton>
           </div>
         </div>

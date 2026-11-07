@@ -289,22 +289,27 @@ export function GenericTable<T extends {id?: string | number}>({
               </h2>
             )}
 
-            <div className="flex flex-col items-center gap-3 sm:flex-row">
+            <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:items-center">
               {searchFields.length > 0 && (
-                <div className="relative w-full sm:w-auto">
+                <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
                   <input
                     type="text"
                     placeholder={searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:w-64"
+                    className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-xs text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:text-sm"
                   />
                 </div>
               )}
 
               {onAdd && (
-                <GenericButton type="button" onClick={onAdd} variant="primary">
+                <GenericButton
+                  type="button"
+                  onClick={onAdd}
+                  variant="primary"
+                  className="w-full sm:w-auto"
+                >
                   <span className="text-lg leading-none">+</span>
                   {addButtonLabel}
                 </GenericButton>
@@ -535,7 +540,7 @@ export function GenericTable<T extends {id?: string | number}>({
           </div>
 
           {isPaginationEnabled && totalPages > 1 && (
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center justify-center gap-1 sm:justify-end">
               <button
                 type="button"
                 onClick={() => setCurrentPage(1)}

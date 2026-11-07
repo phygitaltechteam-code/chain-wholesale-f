@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Search, Printer, Calendar } from 'lucide-react';
+import React, {useState, useEffect, useMemo} from 'react';
+import {useNavigate} from '@tanstack/react-router';
+import {ArrowLeft, Search, Printer, Calendar} from 'lucide-react';
 import toast from 'react-hot-toast';
 import PageHeader from '@/components/Forms/Common/PageHeader';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
 import GenericDatePicker from '@/components/Forms/DatePicker/GenericDatePicker';
-import { getCurrentAppWeekRange } from '@/utils/weekRangeUtils';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { useGetStock } from '@/lib/api/stock';
-import { useGetLossReport } from '@/lib/api/lossreport';
+import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {useGetStock} from '@/lib/api/stock';
+import {useGetLossReport} from '@/lib/api/lossreport';
 import {
   useGetStockLedgerReport,
   StockSummaryData,
@@ -48,7 +48,7 @@ export default function StockLedgerReport() {
   // Date filters (Defaulted to current app week range from admin settings)
   const initialDateRange = useMemo(() => {
     const range = getCurrentAppWeekRange();
-    return { from: range.fromDate, to: range.toDate };
+    return {from: range.fromDate, to: range.toDate};
   }, []);
 
   const [fromDate, setFromDate] = useState<Date | null>(initialDateRange.from);
@@ -126,30 +126,34 @@ export default function StockLedgerReport() {
             ),
             openingChain: Number(
               sec1?.openingChain ??
-              ovOpening?.chain ??
-              sumOpening?.openingChain ??
-              0,
+                ovOpening?.chain ??
+                sumOpening?.openingChain ??
+                0,
             ),
             openingClientDue: Number(
               sec1?.openingClientDue ??
-              ovOpening?.clientDue ??
-              sumOpening?.openingClientDue ??
-              0,
+                ovOpening?.clientDue ??
+                sumOpening?.openingClientDue ??
+                0,
             ),
             openingKarigarDue: Number(
               sec1?.openingKarigarDue ??
-              ovOpening?.karigarDue ??
-              sumOpening?.openingKarigarDue ??
-              0,
+                ovOpening?.karigarDue ??
+                sumOpening?.openingKarigarDue ??
+                0,
             ),
             openingSr: Number(
-              sec1?.openingSr ?? ovOpening?.srp ?? ovOpening?.sr ?? sumOpening?.openingSr ?? 0,
+              sec1?.openingSr ??
+                ovOpening?.srp ??
+                ovOpening?.sr ??
+                sumOpening?.openingSr ??
+                0,
             ),
             manufacturing: Number(
               sec1?.openingManufacturing ??
-              ovOpening?.manufacturing ??
-              sumOpening?.openingManufacturing ??
-              0,
+                ovOpening?.manufacturing ??
+                sumOpening?.openingManufacturing ??
+                0,
             ),
             inward: Number(
               sec1?.inward ?? ovOpening?.inward ?? sumOpening?.inward ?? 0,
@@ -161,30 +165,36 @@ export default function StockLedgerReport() {
             ),
             closingChain: Number(
               sec2?.closingChain ??
-              ovClosing?.chain ??
-              sumClosing?.closingChain ??
-              0,
+                ovClosing?.chain ??
+                sumClosing?.closingChain ??
+                0,
             ),
             closingClientDue: Number(
               sec2?.closingClientDue ??
-              ovClosing?.clientDue ??
-              sumClosing?.closingClientDue ??
-              0,
+                ovClosing?.clientDue ??
+                sumClosing?.closingClientDue ??
+                0,
             ),
             closingKarigarDue: Number(
               sec2?.closingKarigarDue ??
-              ovClosing?.karigarDue ??
-              sumClosing?.closingKarigarDue ??
-              0,
+                ovClosing?.karigarDue ??
+                sumClosing?.closingKarigarDue ??
+                0,
             ),
             closingSrp: Number(
-              sec2?.purchaseSrp ?? sec2?.closingSrp ?? ovClosing?.purchaseSrp ?? ovClosing?.srp ?? sumClosing?.purchaseSrp ?? sumClosing?.closingSrp ?? 0,
+              sec2?.purchaseSrp ??
+                sec2?.closingSrp ??
+                ovClosing?.purchaseSrp ??
+                ovClosing?.srp ??
+                sumClosing?.purchaseSrp ??
+                sumClosing?.closingSrp ??
+                0,
             ),
             manufacturing: Number(
               sec2?.closingManufacturing ??
-              ovClosing?.manufacturing ??
-              sumClosing?.closingManufacturing ??
-              0,
+                ovClosing?.manufacturing ??
+                sumClosing?.closingManufacturing ??
+                0,
             ),
             loss: Number(
               sec2?.loss ?? ovClosing?.loss ?? sumClosing?.loss ?? 0,
@@ -194,9 +204,9 @@ export default function StockLedgerReport() {
             ),
             profitLoss: Number(
               sec2?.profitLoss ??
-              ovClosing?.profitLoss ??
-              data?.summary?.profitLoss ??
-              0,
+                ovClosing?.profitLoss ??
+                data?.summary?.profitLoss ??
+                0,
             ),
           },
         });
@@ -271,7 +281,11 @@ export default function StockLedgerReport() {
       }
 
       // 4.5. Karigar mapping
-      const karigars = data?.section3?.karigars || data?.karigars || data?.karigarDue || data?.karigarDues;
+      const karigars =
+        data?.section3?.karigars ||
+        data?.karigars ||
+        data?.karigarDue ||
+        data?.karigarDues;
       if (Array.isArray(karigars) && karigars.length > 0) {
         setKarigarList(
           karigars.map((item: any, idx: number) => ({
@@ -565,23 +579,23 @@ export default function StockLedgerReport() {
     const rawRows =
       filteredRawStock.length > 0
         ? filteredRawStock
-          .map(
-            (item) => `
+            .map(
+              (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.opening,
-            )}</td>
+                  item.opening,
+                )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.closing,
-            )}</td>
+                  item.closing,
+                )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-              item.due,
-            )}</td>
+                  item.due,
+                )}</td>
               </tr>
             `,
-          )
-          .join('')
+            )
+            .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -595,23 +609,23 @@ export default function StockLedgerReport() {
     const chainRows =
       filteredChainStock.length > 0
         ? filteredChainStock
-          .map(
-            (item) => `
+            .map(
+              (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.opening,
-            )}</td>
+                  item.opening,
+                )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.closing,
-            )}</td>
+                  item.closing,
+                )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-              item.due,
-            )}</td>
+                  item.due,
+                )}</td>
               </tr>
             `,
-          )
-          .join('')
+            )
+            .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -625,23 +639,23 @@ export default function StockLedgerReport() {
     const clientRows =
       filteredClient.length > 0
         ? filteredClient
-          .map(
-            (item) => `
+            .map(
+              (item) => `
               <tr class="data-row">
                 <td class="center-cell name-cell">${item.name}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.opening,
-            )}</td>
+                  item.opening,
+                )}</td>
                 <td class="center-cell number-cell">${formatNumberDisplay(
-              item.closing,
-            )}</td>
+                  item.closing,
+                )}</td>
                 <td class="center-cell number-cell bold-cell">${formatNumberDisplay(
-              item.difference,
-            )}</td>
+                  item.difference,
+                )}</td>
               </tr>
             `,
-          )
-          .join('')
+            )
+            .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -655,25 +669,27 @@ export default function StockLedgerReport() {
     const movementRows =
       filteredMovement.length > 0
         ? filteredMovement
-          .map(
-            (item) => `
+            .map(
+              (item) => `
               <tr class="movement-row">
                 <td class="movement-name center-cell">
                   <div class="movement-main">
                     ${item.inwardName || '-'}
                   </div>
 
-                  ${item.inwardSubtext
-                ? `<div class="movement-subtext">${item.inwardSubtext}</div>`
-                : ''
-              }
+                  ${
+                    item.inwardSubtext
+                      ? `<div class="movement-subtext">${item.inwardSubtext}</div>`
+                      : ''
+                  }
                 </td>
 
                 <td class="movement-number center-cell inward-number">
-                  ${item.inwardName && item.inward != null && item.inward > 0
-                ? formatNumberDisplay(item.inward)
-                : '-'
-              }
+                  ${
+                    item.inwardName && item.inward != null && item.inward > 0
+                      ? formatNumberDisplay(item.inward)
+                      : '-'
+                  }
                 </td>
 
                 <td class="movement-name center-cell">
@@ -681,22 +697,24 @@ export default function StockLedgerReport() {
                     ${item.outwardName || '-'}
                   </div>
 
-                  ${item.outwardSubtext
-                ? `<div class="movement-subtext">${item.outwardSubtext}</div>`
-                : ''
-              }
+                  ${
+                    item.outwardSubtext
+                      ? `<div class="movement-subtext">${item.outwardSubtext}</div>`
+                      : ''
+                  }
                 </td>
 
                 <td class="movement-number center-cell outward-number">
-                  ${item.outwardName && item.outward != null && item.outward > 0
-                ? formatNumberDisplay(item.outward)
-                : '-'
-              }
+                  ${
+                    item.outwardName && item.outward != null && item.outward > 0
+                      ? formatNumberDisplay(item.outward)
+                      : '-'
+                  }
                 </td>
               </tr>
             `,
-          )
-          .join('')
+            )
+            .join('')
         : `
           <tr>
             <td colspan="4" class="no-data">No data</td>
@@ -1924,54 +1942,69 @@ export default function StockLedgerReport() {
           </div>
 
           {/* Right Controls: Search, From Date, To Date, Print Button */}
-          <div className="flex w-full flex-wrap items-center justify-end gap-2.5 sm:w-auto">
-            {/* Search Input */}
-            <div className="relative w-full sm:w-48 md:w-56">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-1.5 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:py-2"
-              />
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2.5">
+            {/* Mobile Row 1: Search + Print */}
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <div className="relative min-w-0 flex-1 sm:w-48 sm:flex-initial md:w-56">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-1.5 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:py-2"
+                />
+              </div>
+
+              <div className="shrink-0 sm:hidden">
+                <GenericButton
+                  onClick={handlePrint}
+                  className="!bg-[#785600] !text-white hover:!bg-[#5d4200]"
+                >
+                  <Printer className="h-4 w-4" />
+                  <span>Print</span>
+                </GenericButton>
+              </div>
             </div>
 
-            {/* From Date */}
-            <div className="flex items-center gap-1.5">
-              <span className="hidden text-xs font-bold uppercase text-[#785600] dark:text-[#b8860b] lg:inline">
-                From:
-              </span>
-              <GenericDatePicker
-                id="stock-ledger-from-date"
-                placeholder="From Date"
-                initialDate={fromDate || undefined}
-                onDateChange={handleFromDateChange}
-                className="w-28 sm:w-32 md:w-36"
-              />
-            </div>
+            {/* Mobile Row 2: From Date + To Date (and Desktop Print) */}
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <div className="flex flex-1 items-center gap-1.5 sm:flex-initial">
+                <span className="hidden text-xs font-bold uppercase text-[#785600] dark:text-[#b8860b] lg:inline">
+                  From:
+                </span>
+                <GenericDatePicker
+                  id="stock-ledger-from-date"
+                  placeholder="From Date"
+                  initialDate={fromDate || undefined}
+                  onDateChange={handleFromDateChange}
+                  className="w-full sm:w-32 md:w-36"
+                />
+              </div>
 
-            {/* To Date */}
-            <div className="flex items-center gap-1.5">
-              <span className="hidden text-xs font-bold uppercase text-[#785600] dark:text-[#b8860b] lg:inline">
-                To:
-              </span>
-              <GenericDatePicker
-                id="stock-ledger-to-date"
-                placeholder="To Date"
-                initialDate={toDate || undefined}
-                onDateChange={handleToDateChange}
-                className="w-28 sm:w-32 md:w-36"
-              />
-            </div>
+              <div className="flex flex-1 items-center gap-1.5 sm:flex-initial">
+                <span className="hidden text-xs font-bold uppercase text-[#785600] dark:text-[#b8860b] lg:inline">
+                  To:
+                </span>
+                <GenericDatePicker
+                  id="stock-ledger-to-date"
+                  placeholder="To Date"
+                  initialDate={toDate || undefined}
+                  onDateChange={handleToDateChange}
+                  className="w-full sm:w-32 md:w-36"
+                />
+              </div>
 
-            <GenericButton
-              onClick={handlePrint}
-              className="!bg-[#785600] !text-white hover:!bg-[#5d4200]"
-            >
-              <Printer className="h-4 w-4" />
-              <span>Print</span>
-            </GenericButton>
+              <div className="hidden shrink-0 sm:block">
+                <GenericButton
+                  onClick={handlePrint}
+                  className="!bg-[#785600] !text-white hover:!bg-[#5d4200]"
+                >
+                  <Printer className="h-4 w-4" />
+                  <span>Print</span>
+                </GenericButton>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1994,27 +2027,43 @@ export default function StockLedgerReport() {
                   <div className="flex flex-1 flex-col text-[13px] text-[#1a1c1b] dark:text-slate-200">
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>Gold Stock</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.opening.gold)}</span>
+                      <span className="font-mono">
+                        {formatNumberDisplay(summaryData.opening.gold)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>Chain Stock</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.opening.openingChain)}</span>
+                      <span className="font-mono">
+                        {formatNumberDisplay(summaryData.opening.openingChain)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>Client Due</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.opening.openingClientDue)}</span>
+                      <span className="font-mono">
+                        {formatNumberDisplay(
+                          summaryData.opening.openingClientDue,
+                        )}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>Karigar Due</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.opening.openingKarigarDue)}</span>
+                      <span className="font-mono">
+                        {formatNumberDisplay(
+                          summaryData.opening.openingKarigarDue,
+                        )}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>SRP (Received)</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.opening.openingSr)}</span>
+                      <span className="font-mono">
+                        {formatNumberDisplay(summaryData.opening.openingSr)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>Manufacturing</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.opening.manufacturing)}</span>
+                      <span className="font-mono">
+                        {formatNumberDisplay(summaryData.opening.manufacturing)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       {/* Empty space to match Loss height */}
@@ -2022,7 +2071,9 @@ export default function StockLedgerReport() {
                     </div>
                     <div className="flex items-center justify-between bg-[#fcfbf9] px-4 py-2.5 font-bold dark:bg-slate-800/50">
                       <span>Inward</span>
-                      <span className="font-mono text-emerald-600 dark:text-emerald-400">{formatNumberDisplay(summaryData.opening.inward)}</span>
+                      <span className="font-mono text-emerald-600 dark:text-emerald-400">
+                        {formatNumberDisplay(summaryData.opening.inward)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -2037,35 +2088,55 @@ export default function StockLedgerReport() {
                   <div className="flex flex-1 flex-col text-[13px] text-[#1a1c1b] dark:text-slate-200">
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>Gold Stock</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.gold)}</span>
+                      <span className="font-mono">
+                        {formatNumberDisplay(summaryData.closing.gold)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>Chain Stock</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.closingChain)}</span>
+                      <span className="font-mono">
+                        {formatNumberDisplay(summaryData.closing.closingChain)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>Client Due</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.closingClientDue)}</span>
+                      <span className="font-mono">
+                        {formatNumberDisplay(
+                          summaryData.closing.closingClientDue,
+                        )}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>Karigar Due</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.closingKarigarDue)}</span>
+                      <span className="font-mono">
+                        {formatNumberDisplay(
+                          summaryData.closing.closingKarigarDue,
+                        )}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>SRP (Given)</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.closingSrp)}</span>
+                      <span className="font-mono">
+                        {formatNumberDisplay(summaryData.closing.closingSrp)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>Manufacturing</span>
-                      <span className="font-mono">{formatNumberDisplay(summaryData.closing.manufacturing)}</span>
+                      <span className="font-mono">
+                        {formatNumberDisplay(summaryData.closing.manufacturing)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>Loss</span>
-                      <span className="font-mono text-red-600 dark:text-red-400">{formatNumberDisplay(summaryData.closing.loss)}</span>
+                      <span className="font-mono text-red-600 dark:text-red-400">
+                        {formatNumberDisplay(summaryData.closing.loss)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between bg-[#fcfbf9] px-4 py-2.5 font-bold dark:bg-slate-800/50">
                       <span>Outward</span>
-                      <span className="font-mono text-amber-700 dark:text-amber-400">{formatNumberDisplay(summaryData.closing.outward)}</span>
+                      <span className="font-mono text-amber-700 dark:text-amber-400">
+                        {formatNumberDisplay(summaryData.closing.outward)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -2074,8 +2145,7 @@ export default function StockLedgerReport() {
           </div>
 
           {/* CLIENT, KARIGAR, & CHAIN STOCK in ONE ROW */}
-          <div className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-3 lg:grid-cols-3 md:grid-cols-1">
-
+          <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-1 lg:grid-cols-3 xl:grid-cols-3">
             {/* CLIENT Table */}
             <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[#d3c4af]/30 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
               <div className="border-b border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-2.5 text-center dark:bg-slate-800/60">
@@ -2272,8 +2342,8 @@ export default function StockLedgerReport() {
                         </td>
                         <td className="font-mono px-4 py-2.5 text-right font-bold text-green-700 dark:text-green-400">
                           {row.inwardName &&
-                            row.inward != null &&
-                            row.inward > 0
+                          row.inward != null &&
+                          row.inward > 0
                             ? formatNumberDisplay(row.inward)
                             : '-'}
                         </td>
@@ -2289,8 +2359,8 @@ export default function StockLedgerReport() {
                         </td>
                         <td className="font-mono px-4 py-2.5 text-right font-bold text-amber-700 dark:text-amber-400">
                           {row.outwardName &&
-                            row.outward != null &&
-                            row.outward > 0
+                          row.outward != null &&
+                          row.outward > 0
                             ? formatNumberDisplay(row.outward)
                             : '-'}
                         </td>

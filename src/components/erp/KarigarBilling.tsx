@@ -116,7 +116,10 @@ const Billing: React.FC = () => {
   const [billingGroups, setBillingGroups] = useState<BillGroup[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEntry, setSelectedEntry] = useState<BillGroup | null>(null);
-  const [deleteModalState, setDeleteModalState] = useState<{isOpen: boolean; item: BillGroup | null}>({isOpen: false, item: null});
+  const [deleteModalState, setDeleteModalState] = useState<{
+    isOpen: boolean;
+    item: BillGroup | null;
+  }>({isOpen: false, item: null});
 
   // Profile data & subscription expiry validation
   const checkexpiration = useGetProfileData();
@@ -247,7 +250,10 @@ const Billing: React.FC = () => {
     if (billData && Array.isArray(billData)) {
       const groups: BillGroup[] = billData.map(
         (receipt: ReceiptData, index: number) => {
-          const rawDate = (receipt as any).purchaseDate || receipt.createdAt || receipt.receiptDate;
+          const rawDate =
+            (receipt as any).purchaseDate ||
+            receipt.createdAt ||
+            receipt.receiptDate;
           let formattedDate = '-';
           if (rawDate) {
             const dateObj = new Date(rawDate);
@@ -266,7 +272,8 @@ const Billing: React.FC = () => {
           }
 
           // Map all items
-          const itemsList = (receipt as any).karigarPurchaseItems || receipt.receiptItems || [];
+          const itemsList =
+            (receipt as any).karigarPurchaseItems || receipt.receiptItems || [];
           const items =
             itemsList.map((item: any) => ({
               itemId:
@@ -311,22 +318,38 @@ const Billing: React.FC = () => {
             srNo: index + 1,
             dateTime: formattedDate,
             billNo: billNumber,
-            clientName: receipt.client?.fullName || (receipt as any).karigar?.fullName || (receipt as any).Karigar?.fullName || 'N/A',
-            phoneNumber: receipt.client?.phoneNumber || (receipt as any).karigar?.phoneNumber || (receipt as any).Karigar?.phoneNumber || 'N/A',
-            receive: receipt.customerWeight ?? (receipt as any).karigarWeight ?? 0,
+            clientName:
+              receipt.client?.fullName ||
+              (receipt as any).karigar?.fullName ||
+              (receipt as any).Karigar?.fullName ||
+              'N/A',
+            phoneNumber:
+              receipt.client?.phoneNumber ||
+              (receipt as any).karigar?.phoneNumber ||
+              (receipt as any).Karigar?.phoneNumber ||
+              'N/A',
+            receive:
+              receipt.customerWeight ?? (receipt as any).karigarWeight ?? 0,
             pending: receipt.remainingWeight || 0,
             dueBalance:
               receipt.dueBalance !== undefined && receipt.dueBalance !== null
                 ? Number(receipt.dueBalance)
-                : receipt.client?.due !== undefined && receipt.client?.due !== null
-                ? Number(receipt.client.due)
-                : (receipt as any).karigar?.due !== undefined && (receipt as any).karigar?.due !== null
-                  ? Number((receipt as any).karigar.due)
-                  : Number(receipt.client?.openingBalance) || Number((receipt as any).karigar?.openingBalance) || 0,
+                : receipt.client?.due !== undefined &&
+                    receipt.client?.due !== null
+                  ? Number(receipt.client.due)
+                  : (receipt as any).karigar?.due !== undefined &&
+                      (receipt as any).karigar?.due !== null
+                    ? Number((receipt as any).karigar.due)
+                    : Number(receipt.client?.openingBalance) ||
+                      Number((receipt as any).karigar?.openingBalance) ||
+                      0,
             type:
               (receipt.type as 'DRAFT' | 'BILL') ||
               (receipt.remainingWeight === 0 ? 'BILL' : 'DRAFT'),
-            createdAt: (receipt as any).purchaseDate || receipt.createdAt || receipt.receiptDate,
+            createdAt:
+              (receipt as any).purchaseDate ||
+              receipt.createdAt ||
+              receipt.receiptDate,
             items: items,
             displayItems: displayItems,
             displaySizes: displaySizes,
@@ -1767,7 +1790,9 @@ const Billing: React.FC = () => {
       },
       onError: (error: any) => {
         console.error('Delete bill error:', error);
-        toast.error(error?.response?.data?.message || 'Failed to delete Karigar Purchase');
+        toast.error(
+          error?.response?.data?.message || 'Failed to delete Karigar Purchase',
+        );
         setDeleteModalState({isOpen: false, item: null});
       },
     });
@@ -2091,13 +2116,12 @@ const Billing: React.FC = () => {
       <div className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
         {/* Header & Filters */}
         <div className="mb-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <PageHeader title="Karigar Purchase" />
-            </div>
+          <div className="flex flex-row items-center justify-between gap-2">
+            <PageHeader title="Karigar Purchase" />
             <GenericButton
               type="button"
               onClick={() => navigate({to: '/karigarbillingadd'})}
+              className="w-auto shrink-0"
             >
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span>Add Karigar Purchase</span>
@@ -2106,18 +2130,18 @@ const Billing: React.FC = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col">
+              <div className="flex min-w-0 flex-col">
                 <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total Fin Wt
                 </span>
-                <span className="text-lg font-bold text-black dark:text-white">
+                <span className="font-mono truncate text-base font-bold text-black dark:text-white sm:text-lg">
                   {formatNumberWithDecimals(totalFinWt)} G
                 </span>
               </div>
-              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-amber-700/30 dark:bg-amber-900/30">
+              <div className="shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-amber-700/30 dark:bg-amber-900/30">
                 <Scale className="h-4 w-4 text-[#785600] dark:text-amber-400" />
               </div>
             </div>
@@ -2125,15 +2149,15 @@ const Billing: React.FC = () => {
 
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col">
+              <div className="flex min-w-0 flex-col">
                 <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total SRP
                 </span>
-                <span className="text-lg font-bold text-black dark:text-white">
+                <span className="font-mono truncate text-base font-bold text-black dark:text-white sm:text-lg">
                   {formatNumberWithDecimals(totalSRP)} G
                 </span>
               </div>
-              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-blue-700/30 dark:bg-blue-900/30">
+              <div className="shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-blue-700/30 dark:bg-blue-900/30">
                 <DollarSign className="h-4 w-4 text-[#785600] dark:text-blue-400" />
               </div>
             </div>
@@ -2141,15 +2165,15 @@ const Billing: React.FC = () => {
 
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col">
+              <div className="flex min-w-0 flex-col">
                 <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total Receive
                 </span>
-                <span className="text-lg font-bold text-black dark:text-white">
+                <span className="font-mono truncate text-base font-bold text-black dark:text-white sm:text-lg">
                   {formatNumberWithDecimals(totalReceive)} G
                 </span>
               </div>
-              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-green-700/30 dark:bg-green-900/30">
+              <div className="shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-green-700/30 dark:bg-green-900/30">
                 <ArrowDownToLine className="h-4 w-4 text-[#785600] dark:text-green-400" />
               </div>
             </div>
@@ -2157,15 +2181,15 @@ const Billing: React.FC = () => {
 
           <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col">
+              <div className="flex min-w-0 flex-col">
                 <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total Pending
                 </span>
-                <span className="text-lg font-bold text-black dark:text-white">
+                <span className="font-mono truncate text-base font-bold text-black dark:text-white sm:text-lg">
                   {formatNumberWithDecimals(Math.abs(totalPending))} G
                 </span>
               </div>
-              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-red-700/30 dark:bg-red-900/30">
+              <div className="shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-red-700/30 dark:bg-red-900/30">
                 <Clock className="h-4 w-4 text-[#785600] dark:text-red-400" />
               </div>
             </div>
@@ -2173,18 +2197,37 @@ const Billing: React.FC = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="mb-3 flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="relative min-w-[140px] flex-1 sm:min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
-            <input
-              type="text"
-              placeholder="Search by client, phone, purchase no, item..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-            />
+        <div className="mb-3 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
+          {/* Mobile Row 1: Search + Print */}
+          <div className="flex flex-1 items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+              <input
+                type="text"
+                placeholder="Search by client, phone, purchase no, item..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+            </div>
+            <div className="shrink-0 sm:hidden">
+              <GenericButton
+                onClick={() => {
+                  if (filteredGroups.length === 0) {
+                    toast.error('No records to print');
+                    return;
+                  }
+                  handlePrintTable();
+                }}
+              >
+                <Printer className="h-4 w-4" />
+                <span>Print</span>
+              </GenericButton>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+
+          {/* Mobile Row 2: From Date + To Date + Status Filter */}
+          <div className="flex items-center gap-2">
             <GenericWeeklyDatePicker
               id="from-date-billing"
               placeholder="DD/MM/YYYY"
@@ -2211,7 +2254,7 @@ const Billing: React.FC = () => {
                   setFromDate([]);
                 }
               }}
-              className="w-32 sm:w-36 md:w-40"
+              className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
             />
 
             <GenericWeeklyDatePicker
@@ -2240,32 +2283,34 @@ const Billing: React.FC = () => {
                   setToDate([]);
                 }
               }}
-              className="w-32 sm:w-36 md:w-40"
+              className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
             />
             <select
               value={statusFilter}
               onChange={(e) =>
                 setStatusFilter(e.target.value as 'ALL' | 'BILL' | 'DRAFT')
               }
-              className="h-[38px] rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 text-xs font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="h-[38px] min-w-0 flex-1 rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-xs font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:flex-initial sm:px-3"
             >
               <option value="ALL">All Status</option>
               <option value="BILL">Bill (Completed)</option>
               <option value="DRAFT">Draft</option>
             </select>
+            <div className="hidden sm:block">
+              <GenericButton
+                onClick={() => {
+                  if (filteredGroups.length === 0) {
+                    toast.error('No records to print');
+                    return;
+                  }
+                  handlePrintTable();
+                }}
+              >
+                <Printer className="h-4 w-4" />
+                <span>Print</span>
+              </GenericButton>
+            </div>
           </div>
-          <GenericButton
-            onClick={() => {
-              if (filteredGroups.length === 0) {
-                toast.error('No records to print');
-                return;
-              }
-              handlePrintTable();
-            }}
-          >
-            <Printer className="h-4 w-4" />
-            <span>Print</span>
-          </GenericButton>
         </div>
 
         {/* Table */}
