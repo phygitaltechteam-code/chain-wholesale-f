@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useMemo, useRef} from 'react';
-import {Search, Printer, Loader2} from 'lucide-react';
+import {Search, Printer, Loader2, LogOut} from 'lucide-react';
 import {useGetHeader} from '@/lib/api/headerapi';
 import {useGetRealTimeGold} from '@/lib/api/realtimegold';
 import PageHeader from '@/components/Forms/Common/PageHeader';
@@ -22,6 +22,15 @@ const RealTimeGoldReport: React.FC = () => {
   const getpdfheaderdata = useGetHeader();
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
+    sessionStorage.clear();
+    window.location.href = '/signin';
+  };
 
   const {data: goldData, isLoading, isError, refetch} = useGetRealTimeGold();
 
@@ -243,12 +252,23 @@ const RealTimeGoldReport: React.FC = () => {
       {/* Top Sticky Header */}
       <div className="sticky top-0 z-30 border-b border-[#d3c4af]/30 bg-white/95 px-3 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-4 md:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <PageHeader title="Real Time Gold Dashboard" />
+          <div className="flex w-full items-center justify-between sm:w-auto">
+            <PageHeader title="Real Time Gold Dashboard" />
+            <button
+              type="button"
+              onClick={() => setShowLogoutModal(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 active:scale-95 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-400 sm:hidden"
+              title="Logout"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span>Logout</span>
+            </button>
+          </div>
 
           {/* Right Controls: Search & Print */}
-          <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+          <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
             {/* Search */}
-            <div className="relative w-full sm:w-44 md:w-52">
+            <div className="relative min-w-0 flex-1 sm:w-44 sm:flex-initial md:w-52">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
               <input
                 type="text"
@@ -262,7 +282,7 @@ const RealTimeGoldReport: React.FC = () => {
             {/* Print Button */}
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#5d4200]"
+              className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#785600] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#5d4200]"
             >
               <Printer className="h-4 w-4" />
               <span>Print</span>
@@ -289,7 +309,6 @@ const RealTimeGoldReport: React.FC = () => {
             toggleRow={toggleRow}
           />
 
-
           {/* 3. KARIGAR DUE Panel */}
           <RealTimeKarigarDuePanel
             karigarDueGroup={karigarDueGroup}
@@ -303,6 +322,41 @@ const RealTimeGoldReport: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-xs overflow-hidden rounded-2xl border border-[#d3c4af]/30 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="p-5 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                <LogOut className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-base font-bold text-[#1a1c1b] dark:text-white">
+                Confirm Logout
+              </h3>
+              <p className="mt-1 text-xs text-[#4f4535] dark:text-slate-400">
+                Are you sure you want to log out of your account?
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 border-t border-[#d3c4af]/20 bg-[#f9f9f7] p-3 dark:border-slate-800 dark:bg-slate-950">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="hover:bg-gray-50 rounded-lg border border-[#d3c4af]/40 bg-white px-3 py-2 text-xs font-semibold text-[#4f4535] transition-colors dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700 active:scale-95"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

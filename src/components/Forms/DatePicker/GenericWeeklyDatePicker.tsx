@@ -162,28 +162,12 @@ const GenericWeeklyDatePicker: React.FC<GenericWeeklyDatePickerProps> = ({
           type="text"
           placeholder={placeholder}
           readOnly
-          className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 pr-12 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:px-3 sm:py-2 sm:pr-14 sm:text-sm"
+          className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 pr-8 text-xs focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:px-3 sm:py-2 sm:pr-9 sm:text-sm"
         />
-
-        {/* Clear Button */}
-        {hasValue && (
-          <button
-            type="button"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onClick={handleClearDate}
-            className="text-gray-400 absolute inset-y-0 right-8 z-20 flex items-center justify-center px-1 transition-colors hover:text-red-500 sm:right-9"
-            title="Clear date"
-          >
-            <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          </button>
-        )}
 
         {/* Calendar Icon */}
         <div className="pointer-events-none absolute inset-y-0 right-2 z-10 flex items-center sm:right-3">
-          <Calendar className="h-3.5 w-3.5 text-[#817563] sm:h-4 sm:w-4" />
+          <Calendar className="h-3.5 w-3.5 text-[#785600] sm:h-4 sm:w-4" />
         </div>
       </div>
     </div>

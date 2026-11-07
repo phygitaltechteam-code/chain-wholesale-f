@@ -28,7 +28,11 @@ import {
   AlertTriangle,
   ShieldAlert,
 } from 'lucide-react';
-import {useGetProfileData, useActivateKey, useAccessForBackup} from '@/lib/api/profile';
+import {
+  useGetProfileData,
+  useActivateKey,
+  useAccessForBackup,
+} from '@/lib/api/profile';
 import GenericWeeklyDatePicker from '../Forms/DatePicker/GenericWeeklyDatePicker';
 import {getCurrentAppWeekRange} from '@/utils/weekRangeUtils';
 
@@ -314,9 +318,10 @@ const Billing: React.FC = () => {
             dueBalance:
               receipt.dueBalance !== undefined && receipt.dueBalance !== null
                 ? Number(receipt.dueBalance)
-                : receipt.client?.due !== undefined && receipt.client?.due !== null
-                ? Number(receipt.client.due)
-                : Number(receipt.client?.openingBalance) || 0,
+                : receipt.client?.due !== undefined &&
+                    receipt.client?.due !== null
+                  ? Number(receipt.client.due)
+                  : Number(receipt.client?.openingBalance) || 0,
             type:
               (receipt.type as 'DRAFT' | 'BILL') ||
               (receipt.remainingWeight === 0 ? 'BILL' : 'DRAFT'),
@@ -1799,7 +1804,7 @@ const Billing: React.FC = () => {
       return;
     }
 
-    setDeleteModalState((prev) => ({ ...prev, isVerifying: true, error: '' }));
+    setDeleteModalState((prev) => ({...prev, isVerifying: true, error: ''}));
     try {
       const res: any = await accessForBackupMutation.mutateAsync({
         password: trimmed,
@@ -2140,13 +2145,12 @@ const Billing: React.FC = () => {
       <div className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
         {/* Header & Filters */}
         <div className="mb-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <PageHeader title="Billing" />
-            </div>
+          <div className="flex flex-row items-center justify-between gap-2">
+            <PageHeader title="Billing" />
             <GenericButton
               type="button"
               onClick={() => navigate({to: '/receipt/addreciept'})}
+              className="w-auto shrink-0"
             >
               <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span>Add Bill</span>
@@ -2154,86 +2158,105 @@ const Billing: React.FC = () => {
           </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+        {/* Summary Cards - 4 in one row */}
+        <div className="xs:gap-1.5 mb-4 grid grid-cols-4 gap-1 sm:gap-2.5">
+          <div className="xs:p-2 rounded-xl border border-[#d3c4af]/20 bg-white p-1.5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-3">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+              <div className="flex min-w-0 flex-col">
+                <span className="xs:text-[9px] truncate text-[8px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
                   Total Fin Wt
                 </span>
-                <span className="text-lg font-bold text-black dark:text-white">
+                <span className="font-mono xs:text-sm truncate text-[11px] font-bold text-black dark:text-white sm:text-lg">
                   {formatNumberWithDecimals(totalFinWt)} G
                 </span>
               </div>
-              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-amber-700/30 dark:bg-amber-900/30">
-                <Scale className="h-4 w-4 text-[#785600] dark:text-amber-400" />
+              <div className="xs:flex hidden shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-1 dark:border-amber-700/30 dark:bg-amber-900/30 sm:p-2">
+                <Scale className="h-3.5 w-3.5 text-[#785600] dark:text-amber-400 sm:h-4 sm:w-4" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+          <div className="xs:p-2 rounded-xl border border-[#d3c4af]/20 bg-white p-1.5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-3">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+              <div className="flex min-w-0 flex-col">
+                <span className="xs:text-[9px] truncate text-[8px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
                   Total SRP
                 </span>
-                <span className="text-lg font-bold text-black dark:text-white">
+                <span className="font-mono xs:text-sm truncate text-[11px] font-bold text-black dark:text-white sm:text-lg">
                   {formatNumberWithDecimals(totalSRP)} G
                 </span>
               </div>
-              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-blue-700/30 dark:bg-blue-900/30">
-                <DollarSign className="h-4 w-4 text-[#785600] dark:text-blue-400" />
+              <div className="xs:flex hidden shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-1 dark:border-blue-700/30 dark:bg-blue-900/30 sm:p-2">
+                <DollarSign className="h-3.5 w-3.5 text-[#785600] dark:text-blue-400 sm:h-4 sm:w-4" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+          <div className="xs:p-2 rounded-xl border border-[#d3c4af]/20 bg-white p-1.5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-3">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+              <div className="flex min-w-0 flex-col">
+                <span className="xs:text-[9px] truncate text-[8px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
                   Total Receive
                 </span>
-                <span className="text-lg font-bold text-black dark:text-white">
+                <span className="font-mono xs:text-sm truncate text-[11px] font-bold text-black dark:text-white sm:text-lg">
                   {formatNumberWithDecimals(totalReceive)} G
                 </span>
               </div>
-              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-green-700/30 dark:bg-green-900/30">
-                <ArrowDownToLine className="h-4 w-4 text-[#785600] dark:text-green-400" />
+              <div className="xs:flex hidden shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-1 dark:border-green-700/30 dark:bg-green-900/30 sm:p-2">
+                <ArrowDownToLine className="h-3.5 w-3.5 text-[#785600] dark:text-green-400 sm:h-4 sm:w-4" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
+          <div className="xs:p-2 rounded-xl border border-[#d3c4af]/20 bg-white p-1.5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-3">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+              <div className="flex min-w-0 flex-col">
+                <span className="xs:text-[9px] truncate text-[8px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
                   Total Pending
                 </span>
-                <span className="text-lg font-bold text-black dark:text-white">
+                <span className="font-mono xs:text-sm truncate text-[11px] font-bold text-black dark:text-white sm:text-lg">
                   {formatNumberWithDecimals(Math.abs(totalPending))} G
                 </span>
               </div>
-              <div className="rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-red-700/30 dark:bg-red-900/30">
-                <Clock className="h-4 w-4 text-[#785600] dark:text-red-400" />
+              <div className="xs:flex hidden shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-1 dark:border-red-700/30 dark:bg-red-900/30 sm:p-2">
+                <Clock className="h-3.5 w-3.5 text-[#785600] dark:text-red-400 sm:h-4 sm:w-4" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Search and Filters */}
-        <div className="mb-3 flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="relative min-w-[140px] flex-1 sm:min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
-            <input
-              type="text"
-              placeholder="Search by client, phone, bill no, item..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-            />
+        <div className="mb-3 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
+          {/* Mobile Row 1: Search + Print */}
+          <div className="flex flex-1 items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#817563]" />
+              <input
+                type="text"
+                placeholder="Search by client, phone, bill no, item..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-3 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+            </div>
+            <div className="shrink-0 sm:hidden">
+              <GenericButton
+                onClick={() => {
+                  if (filteredGroups.length === 0) {
+                    toast.error('No records to print');
+                    return;
+                  }
+                  handlePrintTable();
+                }}
+              >
+                <Printer className="h-4 w-4" />
+                <span>Print</span>
+              </GenericButton>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+
+          {/* Mobile Row 2: From Date + To Date + Status Filter */}
+          <div className="flex items-center gap-2">
             <GenericWeeklyDatePicker
               id="from-date-billing"
               placeholder="DD/MM/YYYY"
@@ -2260,7 +2283,7 @@ const Billing: React.FC = () => {
                   setFromDate([]);
                 }
               }}
-              className="w-32 sm:w-36 md:w-40"
+              className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
             />
 
             <GenericWeeklyDatePicker
@@ -2289,32 +2312,34 @@ const Billing: React.FC = () => {
                   setToDate([]);
                 }
               }}
-              className="w-32 sm:w-36 md:w-40"
+              className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
             />
             <select
               value={statusFilter}
               onChange={(e) =>
                 setStatusFilter(e.target.value as 'ALL' | 'BILL' | 'DRAFT')
               }
-              className="h-[38px] rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-1.5 text-xs font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="h-[38px] min-w-0 flex-1 rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-xs font-medium text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:flex-initial sm:px-3"
             >
               <option value="ALL">All Status</option>
               <option value="BILL">Bill (Completed)</option>
               <option value="DRAFT">Draft</option>
             </select>
+            <div className="hidden sm:block">
+              <GenericButton
+                onClick={() => {
+                  if (filteredGroups.length === 0) {
+                    toast.error('No records to print');
+                    return;
+                  }
+                  handlePrintTable();
+                }}
+              >
+                <Printer className="h-4 w-4" />
+                <span>Print</span>
+              </GenericButton>
+            </div>
           </div>
-          <GenericButton
-            onClick={() => {
-              if (filteredGroups.length === 0) {
-                toast.error('No records to print');
-                return;
-              }
-              handlePrintTable();
-            }}
-          >
-            <Printer className="h-4 w-4" />
-            <span>Print</span>
-          </GenericButton>
         </div>
 
         {/* Table */}
@@ -2537,7 +2562,7 @@ const Billing: React.FC = () => {
 
         {/* Delete Bill Password & Confirmation Modal */}
         {deleteModalState.isOpen && deleteModalState.item && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
             <div className="w-full max-w-md rounded-2xl border border-[#d3c4af]/30 bg-white p-6 shadow-2xl transition-all dark:border-slate-700 dark:bg-slate-900">
               {deleteModalState.step === 'password' ? (
                 <form onSubmit={handleVerifyPasswordForDelete}>
@@ -2587,7 +2612,7 @@ const Billing: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleCloseDeleteModal}
-                      className="rounded-lg border border-[#d3c4af]/40 px-4 py-2 text-xs font-semibold text-[#4f4535] transition-colors hover:bg-gray-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      className="hover:bg-gray-100 rounded-lg border border-[#d3c4af]/40 px-4 py-2 text-xs font-semibold text-[#4f4535] transition-colors dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
                       Cancel
                     </button>
@@ -2623,7 +2648,7 @@ const Billing: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="mt-4 rounded-lg bg-red-50/60 p-3.5 border border-red-200/50 dark:bg-red-950/20 dark:border-red-900/30">
+                  <div className="mt-4 rounded-lg border border-red-200/50 bg-red-50/60 p-3.5 dark:border-red-900/30 dark:bg-red-950/20">
                     <p className="text-sm text-red-800 dark:text-red-300">
                       Are you sure you want to permanently delete bill{' '}
                       <strong className="font-mono font-bold">
@@ -2633,7 +2658,8 @@ const Billing: React.FC = () => {
                       <strong>{deleteModalState.item.clientName}</strong>?
                     </p>
                     <p className="mt-1 text-xs text-red-600/80 dark:text-red-400/80">
-                      This action cannot be undone and will remove all associated item entries.
+                      This action cannot be undone and will remove all
+                      associated item entries.
                     </p>
                   </div>
 
@@ -2642,7 +2668,7 @@ const Billing: React.FC = () => {
                       type="button"
                       onClick={handleCloseDeleteModal}
                       disabled={deleteClient.isPending}
-                      className="rounded-lg border border-[#d3c4af]/40 px-4 py-2 text-xs font-semibold text-[#4f4535] transition-colors hover:bg-gray-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      className="hover:bg-gray-100 rounded-lg border border-[#d3c4af]/40 px-4 py-2 text-xs font-semibold text-[#4f4535] transition-colors dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
                       Cancel
                     </button>

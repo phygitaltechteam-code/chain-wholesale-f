@@ -236,7 +236,7 @@ const AdminProfile: React.FC = () => {
             {/* LEFT COLUMN: Account Information (Compact 2-col field grid) */}
             <div className="flex flex-col justify-between rounded-xl border border-[#d3c4af]/30 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div>
-                <div className="flex items-center justify-between border-b border-stroke pb-2 dark:border-slate-800">
+                <div className="flex flex-col gap-2 border-b border-stroke pb-2 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#785600] dark:text-amber-400">
                     <User className="h-4 w-4" />
                     Account Information
@@ -388,7 +388,7 @@ const AdminProfile: React.FC = () => {
             <div className="space-y-3">
               {/* Work Hours & Security Card */}
               <div className="rounded-xl border border-[#d3c4af]/30 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex items-center justify-between border-b border-stroke pb-2 dark:border-slate-800">
+                <div className="flex flex-col gap-2 border-b border-stroke pb-2 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#785600] dark:text-amber-400">
                     <Clock className="h-4 w-4" />
                     Work Schedule & Security
@@ -474,7 +474,7 @@ const AdminProfile: React.FC = () => {
 
               {/* Weekly Date Cycle Settings Card */}
               <div className="rounded-xl border border-[#d3c4af]/30 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex items-center justify-between border-b border-stroke pb-2 dark:border-slate-800">
+                <div className="flex flex-col gap-2 border-b border-stroke pb-2 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
                   <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#785600] dark:text-amber-400">
                     <CalendarDays className="h-4 w-4" />
                     Default Weekly Date Cycle
@@ -534,12 +534,12 @@ const AdminProfile: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="flex justify-end">
+          <div className="flex w-full justify-end sm:w-auto">
             <GenericButton
               type="submit"
               variant="primary"
               disabled={updateProfile.isPending}
-              className="!px-4 !py-1.5 !text-xs"
+              className="w-full !px-4 !py-1.5 !text-xs sm:w-auto"
             >
               <Save className="h-3.5 w-3.5" />
               <span>

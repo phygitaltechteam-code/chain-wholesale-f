@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, {useState, useEffect, useRef, useMemo} from 'react';
 import {
   X,
   Save,
@@ -15,24 +15,24 @@ import {
   UserPlus,
   Printer,
 } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import PageHeader from '@/components/Forms/Common/PageHeader';
-import { GenericTable, Column } from '@/components/Forms/Table/GenericTable';
+import {GenericTable, Column} from '@/components/Forms/Table/GenericTable';
 import GenericButton from '@/components/Forms/Buttons/GenericButton';
-import { useGetKarigars } from '@/components/joborder/karigar/karigarapi';
+import {useGetKarigars} from '@/components/joborder/karigar/karigarapi';
 import AddKarigarModal from '@/components/setllement/AddKarigarModal';
-import { useGetItems } from '@/lib/api/items';
-import { useGetSizes } from '@/lib/api/sizes';
+import {useGetItems} from '@/lib/api/items';
+import {useGetSizes} from '@/lib/api/sizes';
 import toast from 'react-hot-toast';
-import { z } from 'zod';
+import {z} from 'zod';
 import GenericInputField from '../Forms/Input/GenericInputField';
-import { KarigarSearch } from './KarigarSearch';
-import { useGetHeader } from '@/lib/api/headerapi';
-import { useGetRealTimeGold } from '@/lib/api/realtimegold';
-import { useGetStock } from '@/lib/api/stock';
-import { useTableScaleFocus } from '@/lib/hooks/useScaleFocus';
-import { printReceipt } from '@/utils/printReceipt';
-import { useKarigarBill, useGetPurchaseSrp } from '@/lib/api/karigarbill';
+import {KarigarSearch} from './KarigarSearch';
+import {useGetHeader} from '@/lib/api/headerapi';
+import {useGetRealTimeGold} from '@/lib/api/realtimegold';
+import {useGetStock} from '@/lib/api/stock';
+import {useTableScaleFocus} from '@/lib/hooks/useScaleFocus';
+import {printReceipt} from '@/utils/printReceipt';
+import {useKarigarBill, useGetPurchaseSrp} from '@/lib/api/karigarbill';
 
 interface ReceiptItem {
   id: string;
@@ -135,9 +135,9 @@ const ReceiptAdd: React.FC = () => {
   } | null>(null);
 
   // Fetch data from API
-  const { data: Karigars = [], refetch: refetchKarigars } = useGetKarigars();
-  const { data: rawItems = [] } = useGetItems();
-  const { data: rawStockData } = useGetStock();
+  const {data: Karigars = [], refetch: refetchKarigars} = useGetKarigars();
+  const {data: rawItems = []} = useGetItems();
+  const {data: rawStockData} = useGetStock();
 
   const availableGoldStock = React.useMemo(() => {
     const stockItems = Array.isArray(rawStockData)
@@ -158,7 +158,7 @@ const ReceiptAdd: React.FC = () => {
       }),
     [rawItems],
   );
-  const { data: sizes = [] } = useGetSizes();
+  const {data: sizes = []} = useGetSizes();
 
   // API hooks
   const getpdfheaderdata = useGetHeader();
@@ -166,7 +166,7 @@ const ReceiptAdd: React.FC = () => {
   const getPurchaseSrp = useGetPurchaseSrp();
 
   // Weighing Scale table focus hook
-  const { getScaleProps } = useTableScaleFocus<keyof ReceiptItem>(
+  const {getScaleProps} = useTableScaleFocus<keyof ReceiptItem>(
     (index, field, weight) => {
       handleItemChange(index, field, weight);
     },
@@ -248,7 +248,7 @@ const ReceiptAdd: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       items: prev.items.map((entry, i) =>
-        i === index ? { ...entry, isLoadingQty: true } : entry,
+        i === index ? {...entry, isLoadingQty: true} : entry,
       ),
     }));
 
@@ -261,10 +261,7 @@ const ReceiptAdd: React.FC = () => {
 
       // Extract SRP
       let srpValue: number | string | null = null;
-      if (
-        response?.data?.srp !== undefined &&
-        response.data.srp !== null
-      ) {
+      if (response?.data?.srp !== undefined && response.data.srp !== null) {
         srpValue = response.data.srp;
       } else if (response?.srp !== undefined && response.srp !== null) {
         srpValue = response.srp;
@@ -281,7 +278,9 @@ const ReceiptAdd: React.FC = () => {
           if (i !== index) return entry;
 
           const nextSrp =
-            srpValue !== null && srpValue !== undefined && !isNaN(Number(srpValue))
+            srpValue !== null &&
+            srpValue !== undefined &&
+            !isNaN(Number(srpValue))
               ? srpValue
               : entry.srp;
 
@@ -309,7 +308,7 @@ const ReceiptAdd: React.FC = () => {
       setFormData((prev) => ({
         ...prev,
         items: prev.items.map((entry, i) =>
-          i === index ? { ...entry, isLoadingQty: false } : entry,
+          i === index ? {...entry, isLoadingQty: false} : entry,
         ),
       }));
     }
@@ -459,13 +458,13 @@ const ReceiptAdd: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const value = e.target.value;
-    setFormData((prev) => ({ ...prev, customerWeight: value }));
+    setFormData((prev) => ({...prev, customerWeight: value}));
   };
 
   // Handle Total Fine (Issue) change - Manual edit
   const handleTotalFineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setFormData((prev) => ({ ...prev, totalFine: value }));
+    setFormData((prev) => ({...prev, totalFine: value}));
   };
 
   const calculateTotalGrossWt = () => {
@@ -496,9 +495,9 @@ const ReceiptAdd: React.FC = () => {
       formData.totalFine !== undefined && formData.totalFine !== ''
         ? Number(formData.totalFine) || 0
         : formData.items.reduce(
-          (sum, item) => sum + (Number(item.fineWt) || 0),
-          0,
-        );
+            (sum, item) => sum + (Number(item.fineWt) || 0),
+            0,
+          );
     // Remaining Balance = Total Fine Wt + Due Balance - Advance
     const remaining = totalFineWeight + dueBalance - advance;
     return Math.round(remaining * 1000) / 1000;
@@ -596,7 +595,7 @@ const ReceiptAdd: React.FC = () => {
 
       await savebill.mutateAsync(billData);
       // toast.success('Bill saved as draft successfully!');
-      navigate({ to: '/karigarbilling' });
+      navigate({to: '/karigarbilling'});
     } catch (error) {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
@@ -651,7 +650,9 @@ const ReceiptAdd: React.FC = () => {
         karigarWeight: Number(Number(formData.customerWeight || 0).toFixed(3)),
         remainingWeight: Number(Number(remainingWeight || 0).toFixed(3)),
         totalWeight: Number(Number(totalGrossWt || 0).toFixed(3)),
-        dueBalance: getKarigarDueBalance(Karigars.find((c: any) => c.id === formData.KarigarId)),
+        dueBalance: getKarigarDueBalance(
+          Karigars.find((c: any) => c.id === formData.KarigarId),
+        ),
         type: 'BILL',
       };
 
@@ -668,7 +669,7 @@ const ReceiptAdd: React.FC = () => {
 
       // Navigate after print
       setTimeout(() => {
-        navigate({ to: '/karigarbilling' });
+        navigate({to: '/karigarbilling'});
       }, 1500);
     } catch (error: any) {
       isSubmittingRef.current = false;
@@ -835,7 +836,9 @@ const ReceiptAdd: React.FC = () => {
               inputMode="decimal"
               step="0.001"
               min="0"
-              value={item.srp !== undefined && item.srp !== null ? item.srp : ''}
+              value={
+                item.srp !== undefined && item.srp !== null ? item.srp : ''
+              }
               onChange={(e) =>
                 handleItemChange(actualIndex, 'srp', e.target.value)
               }
@@ -874,16 +877,13 @@ const ReceiptAdd: React.FC = () => {
         <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate({ to: '/karigarbilling' })}
+              onClick={() => navigate({to: '/karigarbilling'})}
               className="flex flex-shrink-0 items-center gap-2 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="text-sm font-medium">Back</span>
             </button>
-            <PageHeader
-              title="Purchase Bill"
-              subtitle="Add items and generate bill"
-            />
+            <PageHeader title="Purchase Bill" />
           </div>
         </div>
 
@@ -995,7 +995,6 @@ const ReceiptAdd: React.FC = () => {
                 <span className="text-sm font-medium text-[#4f4535] dark:text-slate-300">
                   Due Balance
                 </span>
-
               </div>
               <span className="font-mono text-sm font-semibold text-black dark:text-black">
                 {formatNumberThreeDecimals(
@@ -1026,33 +1025,39 @@ const ReceiptAdd: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="sticky bottom-0 z-50 border-t border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-950">
-          <div className="flex flex-col justify-end gap-3 sm:flex-row">
+        <div className="sticky bottom-0 z-30 border-t border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-950">
+          <div className="flex w-full flex-row items-center justify-end gap-2 sm:w-auto sm:gap-3">
             <GenericButton
               type="button"
               onClick={handleSaveAsDraft}
               disabled={isSubmitting || savebill.isPending}
               variant="secondary"
+              className="flex-1 sm:flex-initial"
             >
               {submittingType === 'draft' ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin sm:h-5 sm:w-5" />
               ) : (
-                <FileText className="h-5 w-5" />
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
               )}
-              {submittingType === 'draft' ? 'Saving...' : 'Save as Draft'}
+              <span>
+                {submittingType === 'draft' ? 'Saving...' : 'Save as Draft'}
+              </span>
             </GenericButton>
 
             <GenericButton
               type="button"
               onClick={handleSaveReceipt}
               disabled={isSubmitting || savebill.isPending}
+              className="flex-1 sm:flex-initial"
             >
               {submittingType === 'bill' ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin sm:h-5 sm:w-5" />
               ) : (
-                <Save className="h-5 w-5" />
+                <Save className="h-4 w-4 sm:h-5 sm:w-5" />
               )}
-              {submittingType === 'bill' ? 'Saving...' : 'Save & Print Bill'}
+              <span>
+                {submittingType === 'bill' ? 'Saving...' : 'Save & Print Bill'}
+              </span>
             </GenericButton>
           </div>
         </div>

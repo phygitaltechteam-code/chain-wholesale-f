@@ -149,26 +149,14 @@ const GenericDatePicker: React.FC<GenericDatePickerProps> = ({
         <input
           ref={inputRef}
           id={id}
-          className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-12 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          className="w-full rounded-lg border border-[#d3c4af]/30 bg-white px-3 py-2 pr-8 text-sm focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           placeholder={placeholder}
           readOnly
         />
 
-        {/* Clear button - shows only when there's a value */}
-        {hasValue && (
-          <button
-            type="button"
-            onClick={handleClearDate}
-            className="text-gray-400 absolute inset-0 left-auto right-8 flex items-center transition-colors hover:text-red-500"
-            title="Clear date"
-          >
-            <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          </button>
-        )}
-
         {/* Calendar icon */}
         <div className="pointer-events-none absolute inset-0 left-auto right-3 flex items-center">
-          <Calendar className="h-4 w-4 text-[#817563]" />
+          <Calendar className="h-4 w-4 text-[#785600]" />
         </div>
       </div>
     </div>

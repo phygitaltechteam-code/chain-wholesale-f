@@ -311,7 +311,7 @@ const StockMaster: React.FC = () => {
               }}
               disabled={stockLoading}
               title="Refresh Stock Data"
-              className="flex items-center justify-center rounded-lg p-1.5 text-[#785600] transition-all hover:scale-105 hover:bg-[#785600]/10 active:scale-95 disabled:opacity-50 dark:text-amber-400 dark:hover:bg-slate-800"
+              className="hidden items-center justify-center rounded-lg p-1.5 text-[#785600] transition-all hover:scale-105 hover:bg-[#785600]/10 active:scale-95 disabled:opacity-50 dark:text-amber-400 dark:hover:bg-slate-800 sm:flex"
             >
               <RefreshCw
                 className={`h-4 w-4 sm:h-5 sm:w-5 ${stockLoading ? 'animate-spin' : ''}`}
@@ -342,15 +342,16 @@ const StockMaster: React.FC = () => {
             </div>
 
             {/* Action Buttons - Themed Colors */}
-            <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto">
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-center">
               {/* Inward / Outward */}
               <GenericButton
                 type="button"
                 onClick={() => navigate({to: '/Stocks/stockmanagement'})}
                 variant="primary"
+                className="w-full sm:w-auto"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span>Inward / Outward</span>
+                <span className="truncate">Inward / Outward</span>
               </GenericButton>
 
               {/* Opening Stock */}
@@ -358,9 +359,10 @@ const StockMaster: React.FC = () => {
                 type="button"
                 onClick={() => navigate({to: '/stock/openingstock'})}
                 variant="primary"
+                className="w-full sm:w-auto"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span>Opening Stock</span>
+                <span className="truncate">Opening Stock</span>
               </GenericButton>
 
               {/* Add Item */}
@@ -368,9 +370,10 @@ const StockMaster: React.FC = () => {
                 type="button"
                 onClick={() => navigate({to: '/master/additems'})}
                 variant="primary"
+                className="w-full sm:w-auto"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span>Add Item</span>
+                <span className="truncate">Add Item</span>
               </GenericButton>
 
               {/* Add Size */}
@@ -378,9 +381,10 @@ const StockMaster: React.FC = () => {
                 type="button"
                 onClick={() => navigate({to: '/master/size'})}
                 variant="primary"
+                className="w-full sm:w-auto"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span>Add Size</span>
+                <span className="truncate">Add Size</span>
               </GenericButton>
             </div>
           </div>

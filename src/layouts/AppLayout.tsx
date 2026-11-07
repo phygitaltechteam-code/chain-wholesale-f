@@ -2,10 +2,11 @@ import Sidebar from '@/components/Sidebar';
 import {useAuthContext} from '@/context/AuthContext';
 import {Outlet, useNavigate} from '@tanstack/react-router';
 import React, {useEffect, useState} from 'react';
-import {Menu} from 'lucide-react';
 import WorkflowGuide from '@/components/common/WorkflowGuide';
 import {WeightScaleProvider} from '@/context/WeightScaleContext';
 import AdminExpiryModal from '@/components/common/AdminExpiryModal';
+import BottomNavbar from '@/components/common/BottomNavbar';
+import MobileSectionTabs from '@/components/common/MobileSectionTabs';
 
 const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
   children,
@@ -105,9 +106,9 @@ const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
 
   return (
     <div className="h-screen overflow-hidden bg-[#f9f9f7] dark:bg-slate-950">
-      {/* Sidebar - fixed position */}
+      {/* Sidebar - fixed position with high z-index on mobile */}
       <div
-        className={`fixed left-0 top-0 z-50 h-full transition-transform duration-300 ${
+        className={`fixed left-0 top-0 z-[70] h-full transition-transform duration-300 md:z-50 ${
           isMobile && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'
         }`}
       >
@@ -121,31 +122,28 @@ const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
 
       {/* Main content */}
       <div
-        className={`h-full overflow-y-auto transition-all duration-300 ${!isMobile ? getContentMargin() : 'ml-0'}`}
+        className={`h-full overflow-y-auto overflow-x-hidden transition-all duration-300 ${!isMobile ? getContentMargin() : 'ml-0'}`}
       >
-        {/* Mobile Header with Hamburger Menu */}
-        {isMobile && (
-          <div className="sticky top-0 z-40 flex items-center border-b border-[#d3c4af]/10 bg-[#f9f9f7] p-3 dark:border-slate-700 dark:bg-slate-950">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="rounded-lg p-2 text-[#785600] hover:bg-[#785600]/10 dark:text-[#986d00] dark:hover:bg-[#986d00]/20"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-          </div>
-        )}
+        {/* Mobile sub-tabs for Karigar / Reports */}
+        {isMobile && <MobileSectionTabs />}
 
-        <main className="min-h-full">
+        <main className="min-h-full pb-20 md:pb-0">
           {/* {user?.role?.toUpperCase() !== 'SUPERADMIN' && <WorkflowGuide />} */}
           <AdminExpiryModal />
           {children ?? <Outlet />}
         </main>
       </div>
 
+      {/* Mobile Bottom Navigation Bar */}
+      <BottomNavbar
+        onOpenSidebar={() => setSidebarOpen(true)}
+        sidebarOpen={sidebarOpen}
+      />
+
       {/* Mobile overlay */}
       {isMobile && sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50"
+          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         />
       )}

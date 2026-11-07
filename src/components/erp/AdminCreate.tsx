@@ -1122,7 +1122,7 @@ const AdminCreate: React.FC = () => {
         {/* Unified Single Line Filter Toolbar: Search -> City -> Tabs */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d3c4af]/30 bg-white p-2.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           {/* 1. First: Search Bar */}
-          <div className="relative min-w-[200px] max-w-xs flex-1">
+          <div className="relative w-full min-w-0 sm:min-w-[200px] sm:max-w-xs sm:flex-1">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#817563]" />
             <input
               type="text"
@@ -1294,8 +1294,8 @@ const AdminCreate: React.FC = () => {
 
       {/* Modal for Create / Edit Admin */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4">
-          <div className="my-8 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-[#d3c4af]/20 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-2 sm:p-4">
+          <div className="my-4 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-[#d3c4af]/20 bg-white p-3.5 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:my-8 sm:p-6">
             {/* Modal Header */}
             <div className="border-gray-100 mb-5 flex items-center justify-between border-b pb-4 dark:border-slate-800">
               <div>
