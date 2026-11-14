@@ -962,7 +962,7 @@ const ReceiptAdd: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate({to: '/billing'})}
-              className="flex flex-shrink-0 items-center gap-2 text-[#785600] transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
+              className="hidden flex-shrink-0 items-center gap-2 text-[#785600] md:flex transition-colors hover:text-[#5d4200] dark:text-amber-400 dark:hover:text-amber-300"
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="text-sm font-medium">Back</span>
@@ -1016,7 +1016,40 @@ const ReceiptAdd: React.FC = () => {
             <p className="mt-1 text-xs text-[#4f4535]/60 dark:text-slate-400"></p>
           </div>
 
-          <div className="w-full min-w-0 overflow-hidden [&_table]:w-full [&_table]:table-fixed [&_td]:px-1.5 [&_td]:py-1.5 [&_td]:text-xs [&_th]:px-1.5 [&_th]:py-2 [&_th]:text-[11px]">
+          {/* Mobile: one card per item, 2 fields per row (no horizontal scroll) */}
+          <div className="space-y-2.5 md:hidden">
+            {formData.items.length === 0 && (
+              <p className="py-4 text-center text-xs text-[#817563] dark:text-slate-400">
+                No items added yet.
+              </p>
+            )}
+            {formData.items.map((item, index) => (
+              <div
+                key={index}
+                className="rounded-lg border border-[#d3c4af]/30 bg-[#f9f9f7]/60 dark:border-slate-700 dark:bg-slate-800/40"
+              >
+                <div className="flex items-center justify-between border-b border-[#d3c4af]/20 px-3 py-1 dark:border-slate-700">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#785600] dark:text-amber-400">
+                    Item {index + 1}
+                  </span>
+                  {renderActions(item, index)}
+                </div>
+                <div className="grid grid-cols-2 gap-x-2.5 gap-y-2 p-2.5">
+                  {columns.map((col) => (
+                    <div key={String(col.key)} className="min-w-0">
+                      <span className="mb-0.5 block truncate text-[10px] font-semibold uppercase tracking-wide text-[#4f4535] dark:text-slate-300">
+                        {col.header}
+                      </span>
+                      {col.render?.(item, index)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden w-full min-w-0 overflow-hidden md:block [&_table]:w-full [&_table]:table-fixed [&_td]:px-1.5 [&_td]:py-1.5 [&_td]:text-xs [&_th]:px-1.5 [&_th]:py-2 [&_th]:text-[11px]">
             <GenericTable<ReceiptItem>
               data={formData.items}
               columns={columns}

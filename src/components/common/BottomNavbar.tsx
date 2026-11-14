@@ -7,11 +7,7 @@ import {
   MdPrecisionManufacturing,
   MdAssessment,
   MdAccountCircle,
-  MdPersonAdd,
-  MdLogout,
-  MdApps,
 } from 'react-icons/md';
-import {EPinIcon} from '@/icons';
 import {useAuthContext} from '@/context/AuthContext';
 
 interface BottomNavbarProps {
@@ -34,8 +30,10 @@ export interface SectionTab {
 }
 
 export interface Section {
-  id: 'karigar' | 'reports';
+  id: 'karigar' | 'reports' | 'sales';
   storageKey: string;
+  /** Tab opened when nothing is remembered (defaults to the first tab). */
+  defaultPath?: string;
   tabs: SectionTab[];
 }
 
@@ -45,17 +43,47 @@ export const SECTION_TABS: Section[] = [
   {
     id: 'karigar',
     storageKey: 'mobile-tab-karigar',
+    defaultPath: '/karigarbilling',
     tabs: [
       {
-        label: 'Purchase',
+        label: 'Add Bill',
+        path: '/karigarbillingadd',
+        isActive: (p) => p.startsWith('/karigarbillingadd'),
+      },
+      {
+        label: 'Purchase List',
         path: '/karigarbilling',
         isActive: (p) =>
-          p.startsWith('/karigarbilling') || p.startsWith('/karigarbilliupdate'),
+          p === '/karigarbilling' ||
+          p.startsWith('/karigarbilling/') ||
+          p.startsWith('/karigarbilliupdate'),
       },
       {
         label: 'Settlement',
         path: '/karigarsetlment',
         isActive: (p) => p.startsWith('/karigarsetlment'),
+      },
+    ],
+  },
+  {
+    id: 'sales',
+    storageKey: 'mobile-tab-sales',
+    defaultPath: '/billing',
+    tabs: [
+      {
+        label: 'Add Bill',
+        path: '/receipt/addreciept',
+        isActive: (p) => p.startsWith('/receipt/addreciept'),
+      },
+      {
+        label: 'Client List',
+        path: '/billing',
+        isActive: (p) => p.startsWith('/billing') || p.startsWith('/billiupdate'),
+      },
+      {
+        label: 'Settlement',
+        path: '/setlment/settlement',
+        isActive: (p) => p.startsWith('/setlment/settlement'),
       },
     ],
   },
@@ -102,7 +130,7 @@ const getStoredTabPath = (section: Section) => {
   } catch {
     // ignore
   }
-  return section.tabs[0].path;
+  return section.defaultPath ?? section.tabs[0].path;
 };
 
 const BottomNavbar: React.FC<BottomNavbarProps> = ({
@@ -142,16 +170,9 @@ const BottomNavbar: React.FC<BottomNavbarProps> = ({
     }
   }, [activeSection?.section.storageKey, activeSection?.tab.path]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refreshToken');
-    sessionStorage.clear();
-    window.location.href = '/signin';
-  };
-
   const karigarSection = getSection('karigar');
   const reportsSection = getSection('reports');
+  const salesSection = getSection('sales');
 
   // Primary bottom navigation items for ADMIN
   const adminMainItems: NavItem[] = [
@@ -180,10 +201,9 @@ const BottomNavbar: React.FC<BottomNavbarProps> = ({
     {
       id: 'sales',
       label: 'Sales',
-      path: '/billing',
+      path: getStoredTabPath(salesSection),
       icon: <MdReceipt size={22} />,
-      isActive: (path) =>
-        path.startsWith('/billing') || path.startsWith('/billiupdate'),
+      isActive: (path) => salesSection.tabs.some((t) => t.isActive(path)),
     },
     {
       id: 'reports',
@@ -191,24 +211,6 @@ const BottomNavbar: React.FC<BottomNavbarProps> = ({
       path: getStoredTabPath(reportsSection),
       icon: <MdAssessment size={22} />,
       isActive: (path) => reportsSection.tabs.some((t) => t.isActive(path)),
-    },
-  ];
-
-  // Primary bottom navigation items for SUPERADMIN
-  const superAdminMainItems: NavItem[] = [
-    {
-      id: 'addadmin',
-      label: 'Add Admin',
-      path: '/addadmin',
-      icon: <MdPersonAdd size={22} />,
-      isActive: (path) => path.startsWith('/addadmin'),
-    },
-    {
-      id: 'epin',
-      label: 'E-PIN',
-      path: '/epinrequest',
-      icon: <EPinIcon size={20} />,
-      isActive: (path) => path.startsWith('/epinrequest'),
     },
     {
       id: 'profile',
@@ -219,8 +221,10 @@ const BottomNavbar: React.FC<BottomNavbarProps> = ({
     },
   ];
 
-  const isSuperAdmin = role === 'SUPERADMIN';
-  const mainNavItems = isSuperAdmin ? superAdminMainItems : adminMainItems;
+  // Super Admin has no bottom bar on mobile (uses MobileTopBar + sidebar).
+  if (role === 'SUPERADMIN') return null;
+
+  const mainNavItems = adminMainItems;
 
   return (
     <nav
@@ -270,60 +274,6 @@ const BottomNavbar: React.FC<BottomNavbarProps> = ({
             </Link>
           );
         })}
-
-        {/* More -> opens the existing sidebar */}
-        {!isSuperAdmin && (
-          <button
-            type="button"
-            onClick={() => onOpenSidebar?.()}
-            className={`relative flex min-w-0 flex-1 flex-col items-center justify-center py-1 transition-all duration-200 active:scale-95 ${
-              sidebarOpen
-                ? 'text-[#986d00] dark:text-[#B8860B]'
-                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-            }`}
-            aria-label="More"
-            aria-expanded={sidebarOpen}
-          >
-            {sidebarOpen && (
-              <span className="absolute top-0 h-1 w-7 rounded-full bg-[#B8860B] shadow-[0_0_6px_rgba(184,134,11,0.5)]" />
-            )}
-
-            <div
-              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-transform ${
-                sidebarOpen ? 'scale-110' : ''
-              }`}
-            >
-              <MdApps size={22} />
-            </div>
-
-            <span
-              className={`mt-0.5 max-w-[56px] truncate text-[11px] font-medium leading-tight ${
-                sidebarOpen
-                  ? 'font-bold text-[#986d00] dark:text-[#B8860B]'
-                  : 'text-slate-600 dark:text-slate-400'
-              }`}
-            >
-              More
-            </span>
-          </button>
-        )}
-
-        {/* SuperAdmin Logout button */}
-        {isSuperAdmin && (
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="relative flex flex-1 flex-col items-center justify-center py-1 text-slate-500 transition-all duration-200 hover:text-red-500 active:scale-95 dark:text-slate-400 dark:hover:text-red-400"
-            aria-label="Logout"
-          >
-            <div className="flex h-8 w-8 items-center justify-center">
-              <MdLogout size={20} />
-            </div>
-            <span className="mt-0.5 max-w-[70px] truncate text-[11px] font-medium leading-tight text-slate-600 dark:text-slate-400">
-              Logout
-            </span>
-          </button>
-        )}
       </div>
     </nav>
   );

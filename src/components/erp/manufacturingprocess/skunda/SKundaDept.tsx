@@ -477,7 +477,7 @@ const SKundaDept: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {showHistory && (
             <>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex w-full items-center gap-2 sm:w-auto">
                 <GenericWeeklyDatePicker
                   id="from-date-box"
                   placeholder="DD/MM/YYYY"
@@ -492,7 +492,7 @@ const SKundaDept: React.FC = () => {
                       setDateRange((prev) => [undefined as any, prev[1]]);
                     }
                   }}
-                  className="w-32 sm:w-36 md:w-40"
+                  className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
                 />
 
                 <GenericWeeklyDatePicker
@@ -509,7 +509,7 @@ const SKundaDept: React.FC = () => {
                       setDateRange((prev) => [prev[0], undefined as any]);
                     }
                   }}
-                  className="w-32 sm:w-36 md:w-40"
+                  className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
                 />
               </div>
 

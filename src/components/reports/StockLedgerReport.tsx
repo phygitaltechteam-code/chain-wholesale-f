@@ -814,15 +814,6 @@ export default function StockLedgerReport() {
                       </td>
                     </tr>
 
-                    <tr>
-                      <td class="summary-label">
-                        Chain Stock
-                      </td>
-
-                      <td class="summary-value">
-                        ${formatNumberDisplay(summaryData.opening.openingChain)}
-                      </td>
-                    </tr>
 
                     <tr>
                       <td class="summary-label">
@@ -854,15 +845,6 @@ export default function StockLedgerReport() {
                       </td>
                     </tr>
 
-                    <tr>
-                      <td class="summary-label">
-                        Manufacturing
-                      </td>
-
-                      <td class="summary-value">
-                        ${formatNumberDisplay(summaryData.opening.manufacturing)}
-                      </td>
-                    </tr>
 
                     <tr>
                       <td class="summary-label">&nbsp;</td>
@@ -904,15 +886,6 @@ export default function StockLedgerReport() {
                       </td>
                     </tr>
 
-                    <tr>
-                      <td class="summary-label">
-                        Chain Stock
-                      </td>
-
-                      <td class="summary-value">
-                        ${formatNumberDisplay(summaryData.closing.closingChain)}
-                      </td>
-                    </tr>
 
                     <tr>
                       <td class="summary-label">
@@ -944,15 +917,6 @@ export default function StockLedgerReport() {
                       </td>
                     </tr>
 
-                    <tr>
-                      <td class="summary-label">
-                        Manufacturing
-                      </td>
-
-                      <td class="summary-value">
-                        ${formatNumberDisplay(summaryData.closing.manufacturing)}
-                      </td>
-                    </tr>
 
                     <tr>
                       <td class="summary-label">
@@ -1969,7 +1933,7 @@ export default function StockLedgerReport() {
 
             {/* Mobile Row 2: From Date + To Date (and Desktop Print) */}
             <div className="flex w-full items-center gap-2 sm:w-auto">
-              <div className="flex flex-1 items-center gap-1.5 sm:flex-initial">
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:flex-initial">
                 <span className="hidden text-xs font-bold uppercase text-[#785600] dark:text-[#b8860b] lg:inline">
                   From:
                 </span>
@@ -1978,11 +1942,11 @@ export default function StockLedgerReport() {
                   placeholder="From Date"
                   initialDate={fromDate || undefined}
                   onDateChange={handleFromDateChange}
-                  className="w-full sm:w-32 md:w-36"
+                  className="w-full sm:w-36 md:w-40"
                 />
               </div>
 
-              <div className="flex flex-1 items-center gap-1.5 sm:flex-initial">
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:flex-initial">
                 <span className="hidden text-xs font-bold uppercase text-[#785600] dark:text-[#b8860b] lg:inline">
                   To:
                 </span>
@@ -1991,7 +1955,7 @@ export default function StockLedgerReport() {
                   placeholder="To Date"
                   initialDate={toDate || undefined}
                   onDateChange={handleToDateChange}
-                  className="w-full sm:w-32 md:w-36"
+                  className="w-full sm:w-36 md:w-40"
                 />
               </div>
 
@@ -2032,12 +1996,6 @@ export default function StockLedgerReport() {
                       </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
-                      <span>Chain Stock</span>
-                      <span className="font-mono">
-                        {formatNumberDisplay(summaryData.opening.openingChain)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>Client Due</span>
                       <span className="font-mono">
                         {formatNumberDisplay(
@@ -2057,12 +2015,6 @@ export default function StockLedgerReport() {
                       <span>SRP (Received)</span>
                       <span className="font-mono">
                         {formatNumberDisplay(summaryData.opening.openingSr)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
-                      <span>Manufacturing</span>
-                      <span className="font-mono">
-                        {formatNumberDisplay(summaryData.opening.manufacturing)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
@@ -2093,12 +2045,6 @@ export default function StockLedgerReport() {
                       </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
-                      <span>Chain Stock</span>
-                      <span className="font-mono">
-                        {formatNumberDisplay(summaryData.closing.closingChain)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
                       <span>Client Due</span>
                       <span className="font-mono">
                         {formatNumberDisplay(
@@ -2118,12 +2064,6 @@ export default function StockLedgerReport() {
                       <span>SRP (Given)</span>
                       <span className="font-mono">
                         {formatNumberDisplay(summaryData.closing.closingSrp)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">
-                      <span>Manufacturing</span>
-                      <span className="font-mono">
-                        {formatNumberDisplay(summaryData.closing.manufacturing)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-[#f4f4f2] px-4 py-2.5 dark:border-slate-800">

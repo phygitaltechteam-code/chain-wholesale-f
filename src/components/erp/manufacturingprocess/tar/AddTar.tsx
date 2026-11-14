@@ -783,9 +783,9 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
           )}
 
           {showHistory && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               {/* From Date - Defaults to Monday */}
-              <div className="w-32 sm:w-36 md:w-40">
+              <div className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40">
                 <GenericWeeklyDatePicker
                   id="from-date-tar"
                   placeholder="DD/MM/YYYY"
@@ -805,7 +805,7 @@ const AddTar: React.FC<AddTarProps> = ({showBack = false}) => {
               </div>
 
               {/* To Date - Defaults to Sunday */}
-              <div className="w-32 sm:w-36 md:w-40">
+              <div className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40">
                 <GenericWeeklyDatePicker
                   id="to-date-tar"
                   placeholder="DD/MM/YYYY"

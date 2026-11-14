@@ -3,7 +3,7 @@ import {useQuery} from '@tanstack/react-query';
 
 export const useGetDashboard = () => {
   return useQuery({
-    queryKey: ['cutting'],
+    queryKey: ['dashboard'],
     queryFn: getDashboardApi,
   });
 };

@@ -212,8 +212,8 @@ const HeaderPdfDesign: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9f9f7] px-4 py-6 dark:bg-slate-950 sm:px-6">
-      <div className="mx-auto space-y-6">
+    <div className="bg-[#f9f9f7] px-0 py-1 dark:bg-slate-950 sm:px-6 sm:py-6">
+      <div className="mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
@@ -248,21 +248,21 @@ const HeaderPdfDesign: React.FC = () => {
         </div>
 
         {/* Preview with Editable Header */}
-        <div className="rounded-xl border border-[#d3c4af]/30 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="border-gray-100 mb-4 flex items-center justify-between border-b pb-3 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              <Printer className="h-5 w-5 text-[#785600] dark:text-amber-400" />
-              <h2 className="text-base font-bold text-[#1a1c1b] dark:text-white">
-                Header Preview (Click to Edit)
+        <div className="rounded-xl border border-[#d3c4af]/30 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+          <div className="border-gray-100 mb-4 flex items-center justify-between gap-2 border-b pb-3 dark:border-slate-800">
+            <div className="flex min-w-0 items-center gap-2">
+              <Printer className="h-5 w-5 shrink-0 text-[#785600] dark:text-amber-400" />
+              <h2 className="truncate text-base font-bold text-[#1a1c1b] dark:text-white">
+                Header Preview
               </h2>
             </div>
-            <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-950/40 dark:text-green-400">
+            <span className="shrink-0 whitespace-nowrap rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-950/40 dark:text-green-400">
               Click to Edit
             </span>
           </div>
 
           {/* Editable Header - Exact Layout */}
-          <div className="rounded-lg border-2 border-dashed border-[#785600]/30 bg-white p-6">
+          <div className="rounded-lg border-2 border-dashed border-[#785600]/30 bg-white p-3 sm:p-6">
             <div
               style={{
                 width: '100%',
@@ -272,12 +272,12 @@ const HeaderPdfDesign: React.FC = () => {
                 marginBottom: '12px',
               }}
             >
-              {/* Top Row - Ganesh, Factory Name, Sai */}
+              {/* Top Row - Ganesh, Factory Name, Sai.
+                  Mobile: invocations on one row, factory name wraps below.
+                  sm+: single line left | name | right. */}
               <div
+                className="flex flex-wrap items-center justify-between gap-y-1"
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
                   width: '100%',
                   marginBottom: '4px',
                 }}
@@ -291,19 +291,19 @@ const HeaderPdfDesign: React.FC = () => {
                     color: config.invocationColor,
                     whiteSpace: 'nowrap',
                   }}
+                  className="order-1"
                 />
                 <EditableText
                   value={config.factoryName}
                   onChange={(val) => handleInlineEdit('factoryName', val)}
                   style={{
-                    fontSize: `${config.factoryFontSize}px`,
+                    fontSize: `min(${config.factoryFontSize}px, 6vw)`,
                     fontWeight: 'bold',
                     color: config.factoryNameColor,
-                    whiteSpace: 'nowrap',
                     textAlign: 'center',
                     padding: '0 10px',
                   }}
-                  className="text-center"
+                  className="order-3 w-full whitespace-normal text-center sm:order-2 sm:w-auto sm:whitespace-nowrap"
                 />
                 <EditableText
                   value={config.rightInvocation}
@@ -314,6 +314,7 @@ const HeaderPdfDesign: React.FC = () => {
                     color: config.invocationColor,
                     whiteSpace: 'nowrap',
                   }}
+                  className="order-2 sm:order-3"
                 />
               </div>
 

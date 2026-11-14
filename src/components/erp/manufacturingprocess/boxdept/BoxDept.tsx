@@ -771,7 +771,7 @@ const BoxDept: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {/* Date Filters - Only show when viewing history */}
           {showHistory && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               {/* From Date - Defaults to Monday */}
               <GenericWeeklyDatePicker
                 id="from-date-box"
@@ -787,7 +787,7 @@ const BoxDept: React.FC = () => {
                     setDateRange((prev) => [undefined as any, prev[1]]);
                   }
                 }}
-                className="w-32 sm:w-36 md:w-40"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
               />
 
               {/* To Date - Defaults to Sunday */}
@@ -805,7 +805,7 @@ const BoxDept: React.FC = () => {
                     setDateRange((prev) => [prev[0], undefined as any]);
                   }
                 }}
-                className="w-32 sm:w-36 md:w-40"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
               />
             </div>
           )}

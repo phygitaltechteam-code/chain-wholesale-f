@@ -905,7 +905,7 @@ const SolderingDept: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {/* Date Filters */}
           {showHistory && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               <GenericWeeklyDatePicker
                 id="from-date-box"
                 placeholder="DD/MM/YYYY"
@@ -920,7 +920,7 @@ const SolderingDept: React.FC = () => {
                     setFromDate(null);
                   }
                 }}
-                className="w-32 sm:w-36 md:w-40"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
               />
 
               <GenericWeeklyDatePicker
@@ -937,7 +937,7 @@ const SolderingDept: React.FC = () => {
                     setToDate(null);
                   }
                 }}
-                className="w-32 sm:w-36 md:w-40"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
               />
             </div>
           )}

@@ -17,7 +17,6 @@ export const EPinRequest: React.FC = () => {
 
   // Copied tracking
   const [copiedPin, setCopiedPin] = useState<string | null>(null);
-
   // Queries & Mutations
   const {
     data: inventory = [],
@@ -255,13 +254,13 @@ export const EPinRequest: React.FC = () => {
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       <div className="mx-auto space-y-4 px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
         {/* Header */}
-        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-row items-center justify-between gap-3">
           <PageHeader title="E-PIN Generator" />
           <button
             type="button"
             onClick={() => refetch()}
             title="Refresh list"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
           >
             <RefreshCw
               className={`h-3.5 w-3.5 ${
@@ -276,11 +275,11 @@ export const EPinRequest: React.FC = () => {
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <form
             onSubmit={handleGenerate}
-            className="flex flex-col gap-3 sm:flex-row sm:items-end"
+            className="grid grid-cols-2 gap-3 sm:flex sm:flex-row sm:items-end"
           >
             {/* Field 1: Extend Days */}
-            <div className="flex-1">
-              <div className="mb-1 flex items-center justify-between">
+            <div className="min-w-0 sm:flex-1">
+              <div className="mb-1 flex flex-wrap items-center justify-between gap-x-2">
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-200">
                   Extend Days
                 </label>
@@ -303,7 +302,7 @@ export const EPinRequest: React.FC = () => {
             </div>
 
             {/* Field 2: Count */}
-            <div className="w-full sm:w-48">
+            <div className="min-w-0 self-end sm:w-48">
               <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
                 Count (Quantity)
               </label>
@@ -320,7 +319,7 @@ export const EPinRequest: React.FC = () => {
             </div>
 
             {/* Generate Button on Same Line */}
-            <div className="w-full sm:w-auto">
+            <div className="col-span-2 w-full sm:w-auto">
               <button
                 type="submit"
                 disabled={generateMutation.isPending}

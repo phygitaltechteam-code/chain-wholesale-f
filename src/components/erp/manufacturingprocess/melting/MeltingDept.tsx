@@ -720,8 +720,8 @@ const MeltingDept: React.FC = () => {
 
         <div className="flex flex-wrap items-center gap-2">
           {showHistory && (
-            <div className="flex flex-wrap items-center gap-2">
-              <div>
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <div className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40">
                 <GenericWeeklyDatePicker
                   id="from-date-melting"
                   placeholder="DD/MM/YYYY"
@@ -736,11 +736,11 @@ const MeltingDept: React.FC = () => {
                       setFromDate(null);
                     }
                   }}
-                  className="w-32 sm:w-36 md:w-40"
+                  className="w-full"
                 />
               </div>
 
-              <div>
+              <div className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40">
                 <GenericWeeklyDatePicker
                   id="to-date-melting"
                   placeholder="DD/MM/YYYY"
@@ -755,7 +755,7 @@ const MeltingDept: React.FC = () => {
                       setToDate(null);
                     }
                   }}
-                  className="w-32 sm:w-36 md:w-40"
+                  className="w-full"
                 />
               </div>
             </div>
