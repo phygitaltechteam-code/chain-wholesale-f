@@ -297,6 +297,9 @@ const RealTimeGoldReport: React.FC = () => {
         <RealTimeSummaryCards
           grandTotals={grandTotals}
           totalGoldWeight={totalGoldWeight}
+          totalStock={stockTotals.fine}
+          customerDue={clientDueTotal.fine}
+          karigarDue={karigarDueTotal.fine}
         />
 
         {/* Horizontal Column Layout */}

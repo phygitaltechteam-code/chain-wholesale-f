@@ -95,9 +95,18 @@ export const Settings = () => {
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       <div className="mx-auto px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
         {/* Tab Bar Header with Top-Right Small Password Field */}
-        <div className="mb-5 flex flex-col gap-3 border-b border-slate-200 pb-2 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          className={`mb-4 flex gap-2 border-b border-slate-200 pb-1 dark:border-slate-700 sm:mb-5 sm:flex-row sm:items-center sm:justify-between sm:pb-2 ${
+            isBackupUnlocked
+              ? 'flex-col-reverse'
+              : 'flex-row items-center justify-between'
+          }`}
+        >
           {/* Tab Navigation */}
-          <div className="flex gap-6 overflow-x-auto">
+          <div
+            className="no-scrollbar flex min-w-0 flex-1 gap-4 overflow-x-auto sm:gap-6"
+            style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}
+          >
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -117,13 +126,22 @@ export const Settings = () => {
                     : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                 }`}
               >
-                {tab.label}
+                {tab.id === 'backup' ? (
+                  <>
+                    <span className="sm:hidden">Backup</span>
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </>
+                ) : (
+                  tab.label
+                )}
               </button>
             ))}
           </div>
 
           {/* Right Top Corner Small Password Field (No Button, Auto-Verifies) */}
-          <div className="self-end sm:self-auto">
+          <div
+            className={`shrink-0 ${isBackupUnlocked ? 'self-end sm:self-auto' : ''}`}
+          >
             {!isBackupUnlocked ? (
               <div className="relative flex items-center">
                 <input
@@ -139,14 +157,14 @@ export const Settings = () => {
                   data-form-type="other"
                   aria-autocomplete="none"
                   spellCheck={false}
-                  className="h-8 w-32 rounded-lg border border-[#d3c4af]/50 bg-white px-2.5 text-xs text-transparent caret-transparent selection:bg-transparent selection:text-transparent focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600] dark:border-slate-700 dark:bg-slate-900 sm:w-36"
+                  className="h-8 w-20 rounded-lg border border-[#d3c4af]/50 bg-white px-2.5 text-xs text-transparent caret-transparent selection:bg-transparent selection:text-transparent focus:border-[#785600] focus:outline-none focus:ring-1 focus:ring-[#785600] dark:border-slate-700 dark:bg-slate-900 sm:w-36"
                 />
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Backup Unlocked
+                  <span className="hidden sm:inline">Backup</span> Unlocked
                 </span>
                 <button
                   type="button"

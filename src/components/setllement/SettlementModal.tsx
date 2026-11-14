@@ -30,7 +30,18 @@ interface SettlementModalProps {
   onCloseConfirm: () => void;
   onConfirmSave: () => void;
   isSubmitting: boolean;
+  /** 'karigar': Receive adds to due (green), Give subtracts (red). */
+  variant?: 'customer' | 'karigar';
 }
+
+const BTN_BASE =
+  'flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors';
+const BTN_GREEN_ACTIVE = 'border-emerald-600 bg-emerald-600 text-white';
+const BTN_GREEN_IDLE =
+  'border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:bg-slate-800 dark:text-emerald-400 dark:hover:bg-slate-700';
+const BTN_RED_ACTIVE = 'border-red-600 bg-red-600 text-white';
+const BTN_RED_IDLE =
+  'border-red-300 bg-white text-red-600 hover:bg-red-50 dark:border-red-800 dark:bg-slate-800 dark:text-red-400 dark:hover:bg-slate-700';
 
 export const SettlementModal: React.FC<SettlementModalProps> = ({
   showSettleModal,
@@ -46,13 +57,35 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
   onCloseConfirm,
   onConfirmSave,
   isSubmitting,
+  variant = 'customer',
 }) => {
   if (!showSettleModal && !showConfirmModal) return null;
 
+  const isKarigar = variant === 'karigar';
+  const isReceive = settlementDetail.settlementType === 'receive';
+  // Customer: receive reduces due. Karigar: receive increases due, give reduces it.
   const remainingBalance =
-    settlementDetail.settlementType === 'receive'
-      ? settlementDetail.pendingBalance - settlementDetail.settlementAmount
-      : settlementDetail.pendingBalance + settlementDetail.settlementAmount;
+    isReceive === isKarigar
+      ? settlementDetail.pendingBalance + settlementDetail.settlementAmount
+      : settlementDetail.pendingBalance - settlementDetail.settlementAmount;
+
+  // Karigar: Receive green / Give red. Customer: Receive red / Give green.
+  const receiveClass = isKarigar
+    ? isReceive
+      ? BTN_GREEN_ACTIVE
+      : BTN_GREEN_IDLE
+    : isReceive
+      ? BTN_RED_ACTIVE
+      : BTN_RED_IDLE;
+  const giveClass = isKarigar
+    ? !isReceive
+      ? BTN_RED_ACTIVE
+      : BTN_RED_IDLE
+    : !isReceive
+      ? BTN_GREEN_ACTIVE
+      : BTN_GREEN_IDLE;
+  const ReceiveIcon = isKarigar ? Plus : Minus;
+  const GiveIcon = isKarigar ? Minus : Plus;
 
   return (
     <>
@@ -145,13 +178,9 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
                       inputRef.current?.select();
                     }, 50);
                   }}
-                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                    settlementDetail.settlementType === 'receive'
-                      ? 'border-[#785600] bg-[#785600] text-white'
-                      : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                  }`}
+                  className={`${BTN_BASE} ${receiveClass}`}
                 >
-                  <Minus className="h-4 w-4" />
+                  <ReceiveIcon className="h-4 w-4" />
                   Receive
                 </button>
                 <button
@@ -166,13 +195,9 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
                       inputRef.current?.select();
                     }, 50);
                   }}
-                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                    settlementDetail.settlementType === 'give'
-                      ? 'border-[#785600] bg-[#785600] text-white'
-                      : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                  }`}
+                  className={`${BTN_BASE} ${giveClass}`}
                 >
-                  <Plus className="h-4 w-4" />
+                  <GiveIcon className="h-4 w-4" />
                   Give
                 </button>
               </div>

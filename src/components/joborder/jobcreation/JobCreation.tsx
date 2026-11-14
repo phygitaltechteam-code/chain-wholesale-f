@@ -126,14 +126,14 @@ const JobCreation: React.FC = () => {
             </div>
 
             {/* Weekly Date Filters */}
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               <GenericWeeklyDatePicker
                 id="job-creation-from-date"
                 placeholder="From Date"
                 mode="from"
                 initialDates={fromDate ? [fromDate] : []}
                 onDateChange={handleFromDateChange}
-                className="w-32 sm:w-36 md:w-40"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
               />
 
               <GenericWeeklyDatePicker
@@ -142,7 +142,7 @@ const JobCreation: React.FC = () => {
                 mode="to"
                 initialDates={toDate ? [toDate] : []}
                 onDateChange={handleToDateChange}
-                className="w-32 sm:w-36 md:w-40"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
               />
             </div>
 

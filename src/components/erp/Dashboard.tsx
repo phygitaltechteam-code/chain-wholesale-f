@@ -1,23 +1,118 @@
-import React, {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {
   Weight,
-  Gem,
-  Ruler,
-  Award,
-  CreditCard,
-  Wallet,
-  IndianRupee,
+  Package,
+  Coins,
+  Hammer,
+  Recycle,
+  Scissors,
+  Users,
+  HardHat,
   RefreshCw,
   LogOut,
+  type LucideIcon,
 } from 'lucide-react';
-import {erpStore} from '@/store/erpStore';
-import {useGetDashboard} from '@/lib/api/dashboard';
+import {useGetRealTimeGold} from '@/lib/api/realtimegold';
+import {formatGramWithUnit} from '@/utils/weightValidation';
+
+type Summary = Record<string, any>;
+
+type CardConfig = {
+  label: string;
+  weightKey: string;
+  fineKey: string;
+  countKey: string;
+  icon: LucideIcon;
+  iconClass: string;
+  hoverClass: string;
+  highlight?: boolean;
+};
+
+const CARDS: CardConfig[] = [
+  {
+    label: 'Grand Total',
+    weightKey: 'grandTotalWeight',
+    fineKey: 'grandTotalFineWeight',
+    countKey: 'totalItemsCount',
+    icon: Weight,
+    iconClass:
+      'bg-amber-100 text-[#785600] dark:bg-amber-500/10 dark:text-amber-400',
+    hoverClass: 'hover:border-amber-500/40',
+    highlight: true,
+  },
+  {
+    label: 'Stock',
+    weightKey: 'totalStockWeight',
+    fineKey: 'totalStockFineWeight',
+    countKey: 'stockItemsCount',
+    icon: Package,
+    iconClass:
+      'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400',
+    hoverClass: 'hover:border-blue-500/40',
+  },
+  {
+    label: 'Gold',
+    weightKey: 'totalGoldWeight',
+    fineKey: 'totalGoldFineWeight',
+    countKey: 'goldItemsCount',
+    icon: Coins,
+    iconClass:
+      'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400',
+    hoverClass: 'hover:border-yellow-500/40',
+  },
+  {
+    label: 'In Process',
+    weightKey: 'totalProcessWeight',
+    fineKey: 'totalProcessFineWeight',
+    countKey: 'processItemsCount',
+    icon: Hammer,
+    iconClass:
+      'bg-purple-100 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400',
+    hoverClass: 'hover:border-purple-500/40',
+  },
+  {
+    label: 'Scrap',
+    weightKey: 'totalScrapWeight',
+    fineKey: 'totalScrapFineWeight',
+    countKey: 'scrapItemsCount',
+    icon: Recycle,
+    iconClass:
+      'bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400',
+    hoverClass: 'hover:border-orange-500/40',
+  },
+  {
+    label: 'Cutting Scrap',
+    weightKey: 'totalCuttingScrapWeight',
+    fineKey: 'totalCuttingScrapFineWeight',
+    countKey: 'cuttingScrapItemsCount',
+    icon: Scissors,
+    iconClass:
+      'bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400',
+    hoverClass: 'hover:border-rose-500/40',
+  },
+  {
+    label: 'Client Due',
+    weightKey: 'totalClientDueWeight',
+    fineKey: 'totalClientDueFineWeight',
+    countKey: 'clientDueItemsCount',
+    icon: Users,
+    iconClass:
+      'bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400',
+    hoverClass: 'hover:border-cyan-500/40',
+  },
+  {
+    label: 'Karigar Due',
+    weightKey: 'totalKarigarDueWeight',
+    fineKey: 'totalKarigarDueFineWeight',
+    countKey: 'karigarDueItemsCount',
+    icon: HardHat,
+    iconClass:
+      'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
+    hoverClass: 'hover:border-emerald-500/40',
+  },
+];
 
 const Dashboard = () => {
-  const [data, setData] = useState(erpStore.getData());
-  const [lastRefreshed, setLastRefreshed] = useState<string>(
-    new Date().toLocaleTimeString(),
-  );
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogout = () => {
@@ -28,16 +123,27 @@ const Dashboard = () => {
     window.location.href = '/signin';
   };
 
-  const {data: dashboardData} = useGetDashboard();
-  console.log(dashboardData);
-  const handleRefresh = () => {
-    setData(erpStore.getData());
-    setLastRefreshed(new Date().toLocaleTimeString());
-  };
+  const {
+    data: dashboardData,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetRealTimeGold();
 
-  useEffect(() => {
-    setData(erpStore.getData());
-  }, []);
+  const summary: Summary =
+    (dashboardData as any)?.data?.summary ??
+    (dashboardData as any)?.summary ??
+    {};
+
+  const processEntries = Object.entries(
+    (summary.byProcess ?? {}) as Record<
+      string,
+      {totalWeight?: number; totalFineWeight?: number; count?: number}
+    >,
+  );
+
+  const showValue = (val: unknown) =>
+    isLoading ? '—' : formatGramWithUnit(Number(val ?? 0));
 
   return (
     <div className="min-h-screen bg-[#f9f9f7] p-4 dark:bg-slate-950 md:p-8">
@@ -63,129 +169,95 @@ const Dashboard = () => {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={handleRefresh}
-            className="flex items-center gap-2 rounded-lg border border-[#d3c4af]/30 bg-white px-4 py-2 text-xs font-semibold text-[#1a1c1b] shadow-sm transition-all hover:bg-[#f4f4f2] hover:text-[#785600] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-amber-400"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="flex items-center gap-2 rounded-lg border border-[#d3c4af]/30 bg-white px-4 py-2 text-xs font-semibold text-[#1a1c1b] shadow-sm transition-all hover:bg-[#f4f4f2] hover:text-[#785600] disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-amber-400"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw
+              className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`}
+            />
             Refresh Data
           </button>
         </div>
       </div>
 
-      {/* 7 Stat Cards Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {/* Card 1: Total Gold Weight */}
-        <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-5 shadow-sm transition-all hover:border-amber-500/40 dark:border-slate-800 dark:bg-slate-900/90">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-              Total Gold Weight
-            </span>
-            <div className="rounded-lg bg-amber-100 p-2 text-[#785600] dark:bg-amber-500/10 dark:text-amber-400">
-              <Weight className="h-5 w-5" />
+      {/* Summary Cards Grid */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        {CARDS.map((card) => {
+          const Icon = card.icon;
+          const count = Number(summary[card.countKey] ?? 0);
+          return (
+            <div
+              key={card.label}
+              className={`min-w-0 rounded-xl border bg-white p-3 shadow-sm transition-all sm:p-5 dark:bg-slate-900/90 ${card.hoverClass} ${
+                card.highlight
+                  ? 'border-amber-400/60 ring-1 ring-amber-300/40 dark:border-amber-500/40'
+                  : 'border-[#d3c4af]/20 dark:border-slate-800'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-[#4f4535] dark:text-slate-400 sm:text-xs">
+                  {card.label}
+                </span>
+                <div
+                  className={`shrink-0 rounded-lg p-1.5 sm:p-2 ${card.iconClass}`}
+                >
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                </div>
+              </div>
+              <div className="mt-2 sm:mt-3">
+                <span className="block truncate font-mono text-base font-bold text-[#1a1c1b] dark:text-slate-100 sm:text-2xl">
+                  {showValue(summary[card.weightKey])}
+                </span>
+                <p className="mt-1 truncate text-[10px] text-[#4f4535] dark:text-slate-400 sm:text-[11px]">
+                  Fine:{' '}
+                  <span className="font-mono font-semibold">
+                    {showValue(summary[card.fineKey])}
+                  </span>
+                </p>
+                <p className="mt-0.5 text-[10px] text-slate-400 sm:text-[11px]">
+                  {isLoading ? '—' : count} {count === 1 ? 'item' : 'items'}
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="mt-3">
-            <span className="font-mono text-2xl font-bold text-[#1a1c1b] dark:text-slate-100"></span>
-            <p className="mt-1 text-[11px]">Total Gold in System</p>
-          </div>
-        </div>
-
-        {/* Card 2: Total Items */}
-        <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-5 shadow-sm transition-all hover:border-blue-500/40 dark:border-slate-800 dark:bg-slate-900/90">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-              Total Items
-            </span>
-            <div className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
-              <Gem className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <span className="text-2xl font-bold text-[#1a1c1b] dark:text-slate-100"></span>
-            <p className="mt-1 text-[11px]">Unique Item Types</p>
-          </div>
-        </div>
-
-        {/* Card 3: Total Sizes */}
-        <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-5 shadow-sm transition-all hover:border-purple-500/40 dark:border-slate-800 dark:bg-slate-900/90">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-              Total Sizes
-            </span>
-            <div className="rounded-lg bg-purple-100 p-2 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400">
-              <Ruler className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <span className="text-2xl font-bold text-[#1a1c1b] dark:text-slate-100"></span>
-            <p className="mt-1 text-[11px]">Available Size Variations</p>
-          </div>
-        </div>
-
-        {/* Card 4: Average Purity */}
-        <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-5 shadow-sm transition-all hover:border-emerald-500/40 dark:border-slate-800 dark:bg-slate-900/90">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-              Avg Purity
-            </span>
-            <div className="rounded-lg bg-emerald-100 p-2 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
-              <Award className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <span className="text-2xl font-bold text-[#1a1c1b] dark:text-slate-100"></span>
-            <p className="mt-1 text-[11px]">Average Gold Purity</p>
-          </div>
-        </div>
-
-        {/* Card 5: Total Receivable */}
-        <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-5 shadow-sm transition-all hover:border-cyan-500/40 dark:border-slate-800 dark:bg-slate-900/90">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-              Total Receivable
-            </span>
-            <div className="rounded-lg bg-cyan-100 p-2 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400">
-              <CreditCard className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <span className="font-mono text-2xl font-bold text-[#1a1c1b] dark:text-slate-100"></span>
-            <p className="mt-1 text-[11px]">Pending Customer Payments</p>
-          </div>
-        </div>
-
-        {/* Card 6: Total Payable */}
-        <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-5 shadow-sm transition-all hover:border-rose-500/40 dark:border-slate-800 dark:bg-slate-900/90">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-              Total Payable
-            </span>
-            <div className="rounded-lg bg-rose-100 p-2 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
-              <Wallet className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <span className="font-mono text-2xl font-bold text-[#1a1c1b] dark:text-slate-100"></span>
-            <p className="mt-1 text-[11px]">Pending Vendor Payments</p>
-          </div>
-        </div>
-
-        {/* Card 7: Total SRP */}
-        <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-5 shadow-sm transition-all hover:border-orange-500/40 dark:border-slate-800 dark:bg-slate-900/90">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
-              Total SRP
-            </span>
-            <div className="rounded-lg bg-orange-100 p-2 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
-              <IndianRupee className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <span className="font-mono text-2xl font-bold text-[#1a1c1b] dark:text-slate-100"></span>
-            <p className="mt-1 text-[11px]">Total Selling Price Value</p>
-          </div>
-        </div>
+          );
+        })}
       </div>
+
+      {/* Process Breakdown */}
+      {processEntries.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
+            Process Breakdown
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {processEntries.map(([name, p]) => (
+              <div
+                key={name}
+                className="min-w-0 rounded-lg border border-[#d3c4af]/20 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/90"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-xs font-semibold capitalize text-[#785600] dark:text-amber-400">
+                    {name}
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    {Number(p?.count ?? 0)} items
+                  </span>
+                </div>
+                <p className="mt-1 truncate font-mono text-sm font-bold text-[#1a1c1b] dark:text-slate-100">
+                  {formatGramWithUnit(Number(p?.totalWeight ?? 0))}
+                </p>
+                <p className="truncate text-[10px] text-[#4f4535] dark:text-slate-400">
+                  Fine:{' '}
+                  <span className="font-mono">
+                    {formatGramWithUnit(Number(p?.totalFineWeight ?? 0))}
+                  </span>
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (

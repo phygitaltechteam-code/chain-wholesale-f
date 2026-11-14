@@ -625,14 +625,15 @@ const InwardReport: React.FC = () => {
             </div>
 
             {/* Mobile Row 2: Date Pickers + All Items + All Karigars */}
-            <div className="flex w-full items-center gap-1.5 overflow-x-auto pb-0.5 sm:w-auto sm:overflow-visible sm:pb-0">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+              <div className="flex w-full items-center gap-2 sm:w-auto">
               <GenericWeeklyDatePicker
                 id="from-date-inward"
                 mode="from"
                 placeholder="DD/MM/YYYY"
                 initialDates={fromDate ? [fromDate] : []}
                 onDateChange={handleFromDateChange}
-                className="xs:w-28 w-24 shrink-0 sm:w-36 md:w-40"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
               />
               <GenericWeeklyDatePicker
                 id="to-date-inward"
@@ -640,13 +641,14 @@ const InwardReport: React.FC = () => {
                 mode="to"
                 initialDates={toDate ? [toDate] : []}
                 onDateChange={handleToDateChange}
-                className="xs:w-28 w-24 shrink-0 sm:w-36 md:w-40"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
               />
+              </div>
 
               <select
                 value={selectedKarigar}
                 onChange={(e) => setSelectedKarigar(e.target.value)}
-                className="h-[38px] shrink-0 rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-xs text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:px-3 sm:text-sm"
+                className="h-[38px] min-w-0 flex-1 rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-xs text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:flex-initial sm:shrink-0 sm:px-3 sm:text-sm"
               >
                 {karigarOptions.map((k) => (
                   <option key={k} value={k}>
@@ -658,7 +660,7 @@ const InwardReport: React.FC = () => {
               <select
                 value={selectedItem}
                 onChange={(e) => setSelectedItem(e.target.value)}
-                className="h-[38px] shrink-0 rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-xs text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:px-3 sm:text-sm"
+                className="h-[38px] min-w-0 flex-1 rounded-lg border border-[#d3c4af]/30 bg-white px-2 py-1.5 text-xs text-[#1a1c1b] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:flex-initial sm:shrink-0 sm:px-3 sm:text-sm"
               >
                 {itemOptions.map((i) => (
                   <option key={i} value={i}>

@@ -68,9 +68,8 @@ export const getEPinInventoryApi = async (): Promise<EPinItem[]> => {
       updatedAt: item.updatedAt || '',
     }));
   } catch (error: any) {
-    if (error?.response?.data?.message) {
-      toast.error(error.response.data.message);
-    }
+    // Don't toast on page load / refresh; just show an empty list
+    console.error('Failed to load E-PIN inventory:', error);
     return [];
   }
 };

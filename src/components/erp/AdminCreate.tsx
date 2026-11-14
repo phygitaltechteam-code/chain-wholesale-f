@@ -186,7 +186,6 @@ const AdminCreate: React.FC = () => {
     null,
   );
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<AdminItem | null>(null);
   const [isPincodeLoading, setIsPincodeLoading] = useState(false);
@@ -1107,12 +1106,12 @@ const AdminCreate: React.FC = () => {
     <div className="min-h-screen bg-[#f9f9f7] dark:bg-slate-950">
       <div className="mx-auto space-y-4 px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
         {/* Page Header */}
-        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-row items-center justify-between gap-3">
           <PageHeader title="Admin Management" />
           <GenericButton
             type="button"
             onClick={handleOpenCreateModal}
-            className="w-full sm:w-auto"
+            className="w-auto shrink-0"
           >
             <Plus className="h-4 w-4" />
             <span>Add Admin</span>
@@ -1134,7 +1133,10 @@ const AdminCreate: React.FC = () => {
           </div>
 
           {/* 3. Third: Status / Type Filter Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto py-0.5">
+          <div
+            className="no-scrollbar flex w-full items-center gap-1 overflow-x-auto py-0.5 sm:w-auto"
+            style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}
+          >
             <label className="text-gray-500 whitespace-nowrap text-xs font-medium dark:text-slate-400">
               City:
             </label>

@@ -161,10 +161,16 @@ const Sidebar = ({
       roles: ['SUPERADMIN'],
     },
     {
+      label: 'E-PIN Request',
+      path: '/epinrequest',
+      icon: <EPinIcon size={20} />,
+      roles: ['SUPERADMIN'],
+    },
+    {
       label: 'Admin Profile',
       path: '/adminprofile',
       icon: <MdAccountCircle size={22} />,
-      roles: ['ADMIN'],
+      roles: ['ADMIN', 'SUPERADMIN'],
     },
   ];
 

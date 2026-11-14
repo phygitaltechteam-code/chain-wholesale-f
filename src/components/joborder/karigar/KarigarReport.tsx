@@ -440,7 +440,7 @@ export default function KarigarReport() {
                 placeholder="DD/MM/YYYY"
                 initialDates={fromDate ? [fromDate] : []}
                 onDateChange={handleFromDateChange}
-                className="w-32 sm:w-36 md:w-40"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
               />
 
               <GenericWeeklyDatePicker
@@ -449,7 +449,7 @@ export default function KarigarReport() {
                 mode="to"
                 initialDates={toDate ? [toDate] : []}
                 onDateChange={handleToDateChange}
-                className="w-32 sm:w-36 md:w-40"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
               />
             </div>
 

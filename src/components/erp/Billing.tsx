@@ -2147,14 +2147,17 @@ const Billing: React.FC = () => {
         <div className="mb-4 space-y-3">
           <div className="flex flex-row items-center justify-between gap-2">
             <PageHeader title="Billing" />
-            <GenericButton
-              type="button"
-              onClick={() => navigate({to: '/receipt/addreciept'})}
-              className="w-auto shrink-0"
-            >
-              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span>Add Bill</span>
-            </GenericButton>
+            {/* Mobile uses the "Add Bill" tab instead */}
+            <div className="hidden shrink-0 md:block">
+              <GenericButton
+                type="button"
+                onClick={() => navigate({to: '/receipt/addreciept'})}
+                className="w-auto shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>Add Bill</span>
+              </GenericButton>
+            </div>
           </div>
         </div>
 

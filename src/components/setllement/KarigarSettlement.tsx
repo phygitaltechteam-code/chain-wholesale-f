@@ -275,7 +275,7 @@ const Settlement: React.FC = () => {
       }
 
       const signedAmount =
-        settlementDetail.settlementType === 'receive' ? -amount : amount;
+        settlementDetail.settlementType === 'give' ? -amount : amount;
 
       const settlementData = {
         clientId: settlementDetail.clientId,
@@ -294,7 +294,7 @@ const Settlement: React.FC = () => {
             amount: settlementDetail.settlementAmount,
             previousBalance: settlementDetail.pendingBalance,
             newBalance:
-              settlementDetail.pendingBalance +
+              settlementDetail.pendingBalance -
               settlementDetail.settlementAmount,
             remark: settlementDetail.remark || 'Settlement (Given)',
             items: [
@@ -651,6 +651,7 @@ const Settlement: React.FC = () => {
         onCloseConfirm={() => setShowConfirmModal(false)}
         onConfirmSave={handleSaveSettlement}
         isSubmitting={submitSettlementMutation.isPending}
+        variant="karigar"
       />
       <AddKarigarModal
         isOpen={showAddClientModal}

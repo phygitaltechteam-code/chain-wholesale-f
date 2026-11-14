@@ -7,6 +7,7 @@ import {WeightScaleProvider} from '@/context/WeightScaleContext';
 import AdminExpiryModal from '@/components/common/AdminExpiryModal';
 import BottomNavbar from '@/components/common/BottomNavbar';
 import MobileSectionTabs from '@/components/common/MobileSectionTabs';
+import MobileTopBar from '@/components/common/MobileTopBar';
 
 const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
   children,
@@ -90,6 +91,8 @@ const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
     return sidebarCollapsed ? 'ml-20' : 'ml-64';
   };
 
+  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPERADMIN';
+
   // Show loading if still checking authentication
   if (isLoading || !isReady) {
     return (
@@ -125,20 +128,27 @@ const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
         className={`h-full overflow-y-auto overflow-x-hidden transition-all duration-300 ${!isMobile ? getContentMargin() : 'ml-0'}`}
       >
         {/* Mobile sub-tabs for Karigar / Reports */}
-        {isMobile && <MobileSectionTabs />}
+        {isMobile && isSuperAdmin && (
+          <MobileTopBar onMenu={() => setSidebarOpen(true)} />
+        )}
+        {isMobile && !isSuperAdmin && <MobileSectionTabs />}
 
-        <main className="min-h-full pb-20 md:pb-0">
+        <main
+          className={`min-h-full md:pb-0 ${isSuperAdmin ? 'pb-0' : 'pb-20'}`}
+        >
           {/* {user?.role?.toUpperCase() !== 'SUPERADMIN' && <WorkflowGuide />} */}
           <AdminExpiryModal />
           {children ?? <Outlet />}
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <BottomNavbar
-        onOpenSidebar={() => setSidebarOpen(true)}
-        sidebarOpen={sidebarOpen}
-      />
+      {/* Mobile Bottom Navigation Bar (not for Super Admin) */}
+      {!isSuperAdmin && (
+        <BottomNavbar
+          onOpenSidebar={() => setSidebarOpen(true)}
+          sidebarOpen={sidebarOpen}
+        />
+      )}
 
       {/* Mobile overlay */}
       {isMobile && sidebarOpen && (

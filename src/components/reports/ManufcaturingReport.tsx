@@ -637,14 +637,14 @@ export default function ManufacturingReport() {
                 className="w-full rounded-lg border border-[#d3c4af]/30 bg-white py-2 pl-9 pr-4 text-sm text-[#1a1c1b] placeholder:text-[#817563] focus:border-[#785600] focus:outline-none focus:ring-2 focus:ring-[#785600]/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               <GenericWeeklyDatePicker
                 id="from-date-box"
                 placeholder="DD/MM/YYYY"
                 mode="from"
                 initialDates={fromInitialDates}
                 onDateChange={handleFromDateChange}
-                className="w-32 sm:w-36 md:w-40"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
               />
 
               <GenericWeeklyDatePicker
@@ -653,7 +653,7 @@ export default function ManufacturingReport() {
                 mode="to"
                 initialDates={toInitialDates}
                 onDateChange={handleToDateChange}
-                className="w-32 sm:w-36 md:w-40"
+                className="min-w-0 flex-1 sm:w-36 sm:flex-initial md:w-40"
               />
             </div>
 

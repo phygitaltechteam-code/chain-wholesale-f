@@ -8,49 +8,51 @@ interface RealTimeSummaryCardsProps {
     avgPurity: string;
   };
   totalGoldWeight: number;
+  totalStock: number;
+  customerDue: number;
+  karigarDue: number;
 }
+
+const SummaryCard: React.FC<{label: string; value: string}> = ({
+  label,
+  value,
+}) => (
+  <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div className="flex flex-col items-center justify-center">
+      <span className="text-[10px] font-bold uppercase tracking-wider text-black dark:text-slate-300">
+        {label}
+      </span>
+      <span className="font-mono truncate text-base font-black text-black dark:text-white sm:text-lg">
+        {value}
+      </span>
+    </div>
+  </div>
+);
+
+const fmt = (n: number) => `${toNumber(n).toFixed(3)} G`;
 
 export const RealTimeSummaryCards: React.FC<RealTimeSummaryCardsProps> = ({
   grandTotals,
   totalGoldWeight,
+  totalStock,
+  customerDue,
+  karigarDue,
 }) => {
   return (
-    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-      {/* 1. Total Gross WT */}
-      <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <div className="flex flex-col items-center justify-center">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-black dark:text-slate-300">
-            Total Gross WT
-          </span>
-          <span className="font-mono truncate text-base font-black text-black dark:text-white sm:text-lg">
-            {formatNumberDisplay(grandTotals.grandTotalWeight)} G
-          </span>
-        </div>
-      </div>
-
-      {/* 3. Total Fine WT */}
-      <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <div className="flex flex-col items-center justify-center">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-black dark:text-slate-300">
-            Total Fine WT
-          </span>
-          <span className="font-mono truncate text-base font-black text-black dark:text-white sm:text-lg">
-            {toNumber(grandTotals.grandTotalFineWeight).toFixed(3)} G
-          </span>
-        </div>
-      </div>
-
-      {/* 4. Total Gold WT = Fine WT + Customer Due - Karigar Due */}
-      <div className="col-span-2 rounded-xl border border-[#d3c4af]/20 bg-white p-3 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:col-span-1">
-        <div className="flex flex-col items-center justify-center">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-black dark:text-slate-300">
-            Total Gold WT
-          </span>
-          <span className="font-mono truncate text-base font-black text-black dark:text-white sm:text-lg">
-            {toNumber(totalGoldWeight).toFixed(3)} G
-          </span>
-        </div>
-      </div>
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      {/* <SummaryCard
+        label="Total Gross WT"
+        value={`${formatNumberDisplay(grandTotals.grandTotalWeight)} G`}
+      />
+      <SummaryCard
+        label="Total Fine WT"
+        value={fmt(grandTotals.grandTotalFineWeight)}
+      /> */}
+      {/* Total Gold WT = Fine WT + Customer Due - Karigar Due */}
+      <SummaryCard label="Total Gold WT" value={fmt(totalGoldWeight)} />
+      <SummaryCard label="Total Stock" value={fmt(totalStock)} />
+      <SummaryCard label="Total Customer Due" value={fmt(customerDue)} />
+      <SummaryCard label="Total Karigar Due" value={fmt(karigarDue)} />
     </div>
   );
 };
