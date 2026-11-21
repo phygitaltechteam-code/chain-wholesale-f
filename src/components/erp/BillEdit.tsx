@@ -1461,7 +1461,40 @@ const BillEdit: React.FC = () => {
             )}
           </div>
 
-          <div className="w-full min-w-0 overflow-hidden [&_table]:w-full [&_table]:table-fixed [&_td]:px-1.5 [&_td]:py-1.5 [&_td]:text-xs [&_th]:px-1.5 [&_th]:py-2 [&_th]:text-[11px]">
+          {/* Mobile: one card per item, 2 fields per row (same as Add Bill) */}
+          <div className="space-y-2.5 md:hidden">
+            {formData.items.length === 0 && (
+              <p className="py-4 text-center text-xs text-[#817563] dark:text-slate-400">
+                No items added yet.
+              </p>
+            )}
+            {formData.items.map((item, index) => (
+              <div
+                key={index}
+                className="rounded-lg border border-[#d3c4af]/30 bg-[#f9f9f7]/60 dark:border-slate-700 dark:bg-slate-800/40"
+              >
+                <div className="flex min-h-[36px] items-center justify-between border-b border-[#d3c4af]/20 px-3 py-1 dark:border-slate-700">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#785600] dark:text-amber-400">
+                    Item {index + 1}
+                  </span>
+                  {!isReadOnly && renderActions(item, index)}
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-3 p-3 [&_input]:!py-2 [&_input]:!text-sm [&_select]:!py-2 [&_select]:!text-sm [&_div.shadow-inner]:py-2 [&_div.shadow-inner]:text-sm">
+                  {columns.map((col) => (
+                    <div key={String(col.key)} className="min-w-0">
+                      <span className="mb-1 block truncate text-[11px] font-semibold uppercase tracking-wide text-[#4f4535] dark:text-slate-300">
+                        {col.header}
+                      </span>
+                      {col.render?.(item, index)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden w-full min-w-0 overflow-hidden md:block [&_table]:w-full [&_table]:table-fixed [&_td]:px-1.5 [&_td]:py-1.5 [&_td]:text-xs [&_th]:px-1.5 [&_th]:py-2 [&_th]:text-[11px]">
             <GenericTable<ReceiptItem>
               data={formData.items}
               columns={columns}
@@ -1571,7 +1604,7 @@ const BillEdit: React.FC = () => {
 
         {/* Action Buttons - Only displayed for DRAFT bills */}
         {billType === 'DRAFT' && (
-          <div className="sticky bottom-0 z-50 border-t border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-950">
+          <div className="sticky bottom-16 z-30 border-t md:bottom-0 md:z-50 border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-950">
             <div className="flex flex-col justify-end gap-3 sm:flex-row">
               <GenericButton
                 type="button"
