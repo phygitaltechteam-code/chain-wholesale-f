@@ -3,6 +3,7 @@ import {ChevronDown, ChevronRight} from 'lucide-react';
 import {
   CategoryGroup,
   formatNumberDisplay,
+  formatWeight,
   renderItemDisplayName,
 } from './realTimeGoldUtils';
 
@@ -75,10 +76,10 @@ export const RealTimeManufacturingPanel: React.FC<
                         {group.name}
                       </td>
                       <td className="font-mono px-3 py-2.5 text-center font-bold text-black dark:text-white">
-                        {formatNumberDisplay(group.totalGrossWeight)}
+                        {formatWeight(group.totalGrossWeight)}
                       </td>
                       <td className="font-mono px-3 py-2.5 text-center font-bold text-black dark:text-white">
-                        {formatNumberDisplay(group.totalFineWeight)}
+                        {formatWeight(group.totalFineWeight)}
                       </td>
                     </tr>
 
@@ -95,10 +96,10 @@ export const RealTimeManufacturingPanel: React.FC<
                             {renderItemDisplayName(item)}
                           </td>
                           <td className="font-mono px-3 py-2 text-center font-semibold text-black dark:text-slate-200">
-                            {formatNumberDisplay(item.grossWeight)}
+                            {formatWeight(item.grossWeight)}
                           </td>
                           <td className="font-mono px-3 py-2 text-center font-bold text-black dark:text-slate-200">
-                            {formatNumberDisplay(item.fineWeight)}
+                            {formatWeight(item.fineWeight)}
                           </td>
                         </tr>
                       ))}
@@ -116,10 +117,10 @@ export const RealTimeManufacturingPanel: React.FC<
                 Total Process
               </td>
               <td className="font-mono px-3 py-2.5 text-center font-black text-black dark:text-white">
-                {formatNumberDisplay(processTotals.gross)}
+                {formatWeight(processTotals.gross)}
               </td>
               <td className="font-mono px-3 py-2.5 text-center font-black text-black dark:text-white">
-                {formatNumberDisplay(processTotals.fine)}
+                {formatWeight(processTotals.fine)}
               </td>
             </tr>
           </tfoot>

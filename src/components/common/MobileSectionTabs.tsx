@@ -27,7 +27,7 @@ const MobileSectionTabs: React.FC = () => {
               to={tab.path}
               role="tab"
               aria-selected={isActive}
-              className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-center text-sm font-medium transition-all ${
+              className={`flex-1 whitespace-nowrap rounded-lg px-2 py-2 text-center text-xs font-medium sm:px-3 sm:text-sm transition-all ${
                 isActive
                   ? 'bg-[#B8860B]/10 font-semibold text-[#986d00] ring-1 ring-[#B8860B]/30 dark:bg-[#B8860B]/20 dark:text-[#cca028]'
                   : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200/60 dark:text-slate-400 dark:hover:bg-slate-800'

@@ -1,5 +1,5 @@
 import React from 'react';
-import {formatNumberDisplay, toNumber} from './realTimeGoldUtils';
+import {formatWeight} from './realTimeGoldUtils';
 
 interface RealTimeSummaryCardsProps {
   grandTotals: {
@@ -13,11 +13,14 @@ interface RealTimeSummaryCardsProps {
   karigarDue: number;
 }
 
-const SummaryCard: React.FC<{label: string; value: string}> = ({
-  label,
-  value,
-}) => (
-  <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+const SummaryCard: React.FC<{
+  label: string;
+  value: string;
+  className?: string;
+}> = ({label, value, className = ''}) => (
+  <div
+    className={`rounded-xl border border-[#d3c4af]/20 bg-white p-3 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900 ${className}`}
+  >
     <div className="flex flex-col items-center justify-center">
       <span className="text-[10px] font-bold uppercase tracking-wider text-black dark:text-slate-300">
         {label}
@@ -29,7 +32,7 @@ const SummaryCard: React.FC<{label: string; value: string}> = ({
   </div>
 );
 
-const fmt = (n: number) => `${toNumber(n).toFixed(3)} G`;
+const fmt = (n: number) => `${formatWeight(n)} G`;
 
 export const RealTimeSummaryCards: React.FC<RealTimeSummaryCardsProps> = ({
   grandTotals,
@@ -42,7 +45,7 @@ export const RealTimeSummaryCards: React.FC<RealTimeSummaryCardsProps> = ({
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
       {/* <SummaryCard
         label="Total Gross WT"
-        value={`${formatNumberDisplay(grandTotals.grandTotalWeight)} G`}
+        value={`${formatWeight(grandTotals.grandTotalWeight)} G`}
       />
       <SummaryCard
         label="Total Fine WT"
@@ -53,6 +56,7 @@ export const RealTimeSummaryCards: React.FC<RealTimeSummaryCardsProps> = ({
       <SummaryCard label="Total Stock" value={fmt(totalStock)} />
       <SummaryCard label="Total Customer Due" value={fmt(customerDue)} />
       <SummaryCard label="Total Karigar Due" value={fmt(karigarDue)} />
+
     </div>
   );
 };

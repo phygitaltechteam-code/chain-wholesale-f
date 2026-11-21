@@ -43,7 +43,7 @@ export const SECTION_TABS: Section[] = [
   {
     id: 'karigar',
     storageKey: 'mobile-tab-karigar',
-    defaultPath: '/karigarbilling',
+    defaultPath: '/karigarbillingadd',
     tabs: [
       {
         label: 'Add Bill',
@@ -68,7 +68,7 @@ export const SECTION_TABS: Section[] = [
   {
     id: 'sales',
     storageKey: 'mobile-tab-sales',
-    defaultPath: '/billing',
+    defaultPath: '/receipt/addreciept',
     tabs: [
       {
         label: 'Add Bill',
@@ -124,6 +124,8 @@ const getSection = (id: Section['id']) =>
 
 // Last visited tab of a section, so returning to it restores the same tab.
 const getStoredTabPath = (section: Section) => {
+  // Sections with a defaultPath (Karigar, Sales) always open on that tab (Add Bill).
+  if (section.defaultPath) return section.defaultPath;
   try {
     const saved = sessionStorage.getItem(section.storageKey);
     if (saved && section.tabs.some((t) => t.path === saved)) return saved;
@@ -185,18 +187,18 @@ const BottomNavbar: React.FC<BottomNavbarProps> = ({
         path === '/dashboard' || path.startsWith('/reports/realtimegoldreport'),
     },
     {
-      id: 'karigar',
-      label: 'Karigar',
-      path: getStoredTabPath(karigarSection),
-      icon: <MdPrecisionManufacturing size={22} />,
-      isActive: (path) => karigarSection.tabs.some((t) => t.isActive(path)),
-    },
-    {
       id: 'stocks',
       label: 'Stocks',
       path: '/Stocks/stockpage',
       icon: <MdInventory2 size={22} />,
       isActive: (path) => path.startsWith('/stocks') || path.startsWith('/stock'),
+    },
+    {
+      id: 'karigar',
+      label: 'Karigar',
+      path: getStoredTabPath(karigarSection),
+      icon: <MdPrecisionManufacturing size={22} />,
+      isActive: (path) => karigarSection.tabs.some((t) => t.isActive(path)),
     },
     {
       id: 'sales',

@@ -134,7 +134,7 @@ const AppLayoutContent: React.FC<{children?: React.ReactNode}> = ({
         {isMobile && !isSuperAdmin && <MobileSectionTabs />}
 
         <main
-          className={`min-h-full md:pb-0 ${isSuperAdmin ? 'pb-0' : 'pb-20'}`}
+          className={`min-h-full md:pb-0 ${isSuperAdmin ? 'pb-0' : 'pb-[calc(5rem+env(safe-area-inset-bottom))]'}`}
         >
           {/* {user?.role?.toUpperCase() !== 'SUPERADMIN' && <WorkflowGuide />} */}
           <AdminExpiryModal />

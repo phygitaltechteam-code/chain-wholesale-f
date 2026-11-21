@@ -69,21 +69,9 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
       ? settlementDetail.pendingBalance + settlementDetail.settlementAmount
       : settlementDetail.pendingBalance - settlementDetail.settlementAmount;
 
-  // Karigar: Receive green / Give red. Customer: Receive red / Give green.
-  const receiveClass = isKarigar
-    ? isReceive
-      ? BTN_GREEN_ACTIVE
-      : BTN_GREEN_IDLE
-    : isReceive
-      ? BTN_RED_ACTIVE
-      : BTN_RED_IDLE;
-  const giveClass = isKarigar
-    ? !isReceive
-      ? BTN_RED_ACTIVE
-      : BTN_RED_IDLE
-    : !isReceive
-      ? BTN_GREEN_ACTIVE
-      : BTN_GREEN_IDLE;
+  // Karigar and Customer: Receive green / Give red.
+  const receiveClass = isReceive ? BTN_GREEN_ACTIVE : BTN_GREEN_IDLE;
+  const giveClass = !isReceive ? BTN_RED_ACTIVE : BTN_RED_IDLE;
   const ReceiveIcon = isKarigar ? Plus : Minus;
   const GiveIcon = isKarigar ? Minus : Plus;
 
@@ -195,7 +183,7 @@ export const SettlementModal: React.FC<SettlementModalProps> = ({
                       inputRef.current?.select();
                     }, 50);
                   }}
-                  className={`${BTN_BASE} ${giveClass}`}
+                  className={`${BTN_BASE} ${giveClass} ${isKarigar ? 'order-first' : ''}`}
                 >
                   <GiveIcon className="h-4 w-4" />
                   Give

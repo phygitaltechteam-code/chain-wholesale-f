@@ -2162,67 +2162,67 @@ const Billing: React.FC = () => {
         </div>
 
         {/* Summary Cards - 4 in one row */}
-        <div className="xs:gap-1.5 mb-4 grid grid-cols-4 gap-1 sm:gap-2.5">
-          <div className="xs:p-2 rounded-xl border border-[#d3c4af]/20 bg-white p-1.5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-3">
+        <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
               <div className="flex min-w-0 flex-col">
-                <span className="xs:text-[9px] truncate text-[8px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total Fin Wt
                 </span>
-                <span className="font-mono xs:text-sm truncate text-[11px] font-bold text-black dark:text-white sm:text-lg">
+                <span className="font-mono truncate text-base font-bold text-black dark:text-white sm:text-lg">
                   {formatNumberWithDecimals(totalFinWt)} G
                 </span>
               </div>
-              <div className="xs:flex hidden shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-1 dark:border-amber-700/30 dark:bg-amber-900/30 sm:p-2">
-                <Scale className="h-3.5 w-3.5 text-[#785600] dark:text-amber-400 sm:h-4 sm:w-4" />
+              <div className="shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-amber-700/30 dark:bg-amber-900/30">
+                <Scale className="h-4 w-4 text-[#785600] dark:text-amber-400" />
               </div>
             </div>
           </div>
 
-          <div className="xs:p-2 rounded-xl border border-[#d3c4af]/20 bg-white p-1.5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-3">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
               <div className="flex min-w-0 flex-col">
-                <span className="xs:text-[9px] truncate text-[8px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total SRP
                 </span>
-                <span className="font-mono xs:text-sm truncate text-[11px] font-bold text-black dark:text-white sm:text-lg">
+                <span className="font-mono truncate text-base font-bold text-black dark:text-white sm:text-lg">
                   {formatNumberWithDecimals(totalSRP)} G
                 </span>
               </div>
-              <div className="xs:flex hidden shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-1 dark:border-blue-700/30 dark:bg-blue-900/30 sm:p-2">
-                <DollarSign className="h-3.5 w-3.5 text-[#785600] dark:text-blue-400 sm:h-4 sm:w-4" />
+              <div className="shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-blue-700/30 dark:bg-blue-900/30">
+                <DollarSign className="h-4 w-4 text-[#785600] dark:text-blue-400" />
               </div>
             </div>
           </div>
 
-          <div className="xs:p-2 rounded-xl border border-[#d3c4af]/20 bg-white p-1.5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-3">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
               <div className="flex min-w-0 flex-col">
-                <span className="xs:text-[9px] truncate text-[8px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total Receive
                 </span>
-                <span className="font-mono xs:text-sm truncate text-[11px] font-bold text-black dark:text-white sm:text-lg">
+                <span className="font-mono truncate text-base font-bold text-black dark:text-white sm:text-lg">
                   {formatNumberWithDecimals(totalReceive)} G
                 </span>
               </div>
-              <div className="xs:flex hidden shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-1 dark:border-green-700/30 dark:bg-green-900/30 sm:p-2">
-                <ArrowDownToLine className="h-3.5 w-3.5 text-[#785600] dark:text-green-400 sm:h-4 sm:w-4" />
+              <div className="shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-green-700/30 dark:bg-green-900/30">
+                <ArrowDownToLine className="h-4 w-4 text-[#785600] dark:text-green-400" />
               </div>
             </div>
           </div>
 
-          <div className="xs:p-2 rounded-xl border border-[#d3c4af]/20 bg-white p-1.5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 sm:p-3">
+          <div className="rounded-xl border border-[#d3c4af]/20 bg-white p-3 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-start justify-between">
               <div className="flex min-w-0 flex-col">
-                <span className="xs:text-[9px] truncate text-[8px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400 sm:text-[10px]">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-[#4f4535] dark:text-slate-400">
                   Total Pending
                 </span>
-                <span className="font-mono xs:text-sm truncate text-[11px] font-bold text-black dark:text-white sm:text-lg">
+                <span className="font-mono truncate text-base font-bold text-black dark:text-white sm:text-lg">
                   {formatNumberWithDecimals(Math.abs(totalPending))} G
                 </span>
               </div>
-              <div className="xs:flex hidden shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-1 dark:border-red-700/30 dark:bg-red-900/30 sm:p-2">
-                <Clock className="h-3.5 w-3.5 text-[#785600] dark:text-red-400 sm:h-4 sm:w-4" />
+              <div className="shrink-0 rounded-full border border-[#785600]/20 bg-[#785600]/10 p-2 dark:border-red-700/30 dark:bg-red-900/30">
+                <Clock className="h-4 w-4 text-[#785600] dark:text-red-400" />
               </div>
             </div>
           </div>

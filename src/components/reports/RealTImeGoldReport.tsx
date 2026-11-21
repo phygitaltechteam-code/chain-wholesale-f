@@ -202,10 +202,21 @@ const RealTimeGoldReport: React.FC = () => {
     summaryFromApi,
   ]);
 
+  // Karigar due counted in Total Gold WT: only non-negative dues (unchanged calculation;
+  // the panel/card above now show all karigar dues including negatives).
+  const karigarDueForGold = useMemo(
+    () =>
+      (karigarDueGroup?.items || []).reduce(
+        (sum, i) => (i.fineWeight >= 0 ? sum + i.fineWeight : sum),
+        0,
+      ),
+    [karigarDueGroup],
+  );
+
   // Total Gold WT = Stock Fine WT + Customer Due - Karigar Due
   const totalGoldWeight = useMemo(
-    () => stockTotals.fine + clientDueTotal.fine - karigarDueTotal.fine,
-    [stockTotals, clientDueTotal, karigarDueTotal],
+    () => stockTotals.fine + clientDueTotal.fine - karigarDueForGold,
+    [stockTotals, clientDueTotal, karigarDueForGold],
   );
 
   const handlePrint = () => {
@@ -312,11 +323,13 @@ const RealTimeGoldReport: React.FC = () => {
             toggleRow={toggleRow}
           />
 
-          {/* 3. KARIGAR DUE Panel */}
-          <RealTimeKarigarDuePanel
-            karigarDueGroup={karigarDueGroup}
-            karigarDueTotal={karigarDueTotal}
-          />
+          {/* 3. KARIGAR DUE Panel (hidden on mobile) */}
+          <div className="hidden md:block">
+            <RealTimeKarigarDuePanel
+              karigarDueGroup={karigarDueGroup}
+              karigarDueTotal={karigarDueTotal}
+            />
+          </div>
 
           {/* 3. CLIENT DUE Panel */}
           <RealTimeCustomerDuePanel

@@ -3,6 +3,7 @@ import {ChevronDown, ChevronRight} from 'lucide-react';
 import {
   CategoryGroup,
   formatNumberDisplay,
+  formatWeight,
   renderItemDisplayName,
 } from './realTimeGoldUtils';
 
@@ -72,10 +73,10 @@ export const RealTimeKarigarStockPanel: React.FC<
                     {karigarStockGroup.name}
                   </td>
                   <td className="font-mono px-3 py-2.5 text-center font-bold text-black dark:text-white">
-                    {formatNumberDisplay(karigarStockGroup.totalGrossWeight)}
+                    {formatWeight(karigarStockGroup.totalGrossWeight)}
                   </td>
                   <td className="font-mono px-3 py-2.5 text-center font-bold text-black dark:text-white">
-                    {formatNumberDisplay(karigarStockGroup.totalFineWeight)}
+                    {formatWeight(karigarStockGroup.totalFineWeight)}
                   </td>
                 </tr>
 
@@ -92,10 +93,10 @@ export const RealTimeKarigarStockPanel: React.FC<
                         {renderItemDisplayName(item)}
                       </td>
                       <td className="font-mono px-3 py-2 text-center font-semibold text-black dark:text-slate-200">
-                        {formatNumberDisplay(item.grossWeight)}
+                        {formatWeight(item.grossWeight)}
                       </td>
                       <td className="font-mono px-3 py-2 text-center font-bold text-black dark:text-slate-200">
-                        {formatNumberDisplay(item.fineWeight)}
+                        {formatWeight(item.fineWeight)}
                       </td>
                     </tr>
                   ))}
@@ -111,10 +112,10 @@ export const RealTimeKarigarStockPanel: React.FC<
                 Total Stock
               </td>
               <td className="font-mono px-3 py-2.5 text-center font-black text-black dark:text-white">
-                {formatNumberDisplay(karigarStockTotals.gross)}
+                {formatWeight(karigarStockTotals.gross)}
               </td>
               <td className="font-mono px-3 py-2.5 text-center font-black text-black dark:text-white">
-                {formatNumberDisplay(karigarStockTotals.fine)}
+                {formatWeight(karigarStockTotals.fine)}
               </td>
             </tr>
           </tfoot>

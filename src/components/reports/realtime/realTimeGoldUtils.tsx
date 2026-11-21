@@ -114,7 +114,14 @@ export const formatNumberDisplay = (
   return num.toFixed(decimals);
 };
 
-export const calculateAvgPurity = (gross: number, fine: number): string => {
+// Dashboard display: the value as received, max 3 decimals, no padded zeros
+// (20.05 -> "20.05", 39 -> "39", -19.176 -> "-19.176").
+export const formatWeight = (value: unknown): string => {
+  const rounded = Number(toNumber(value).toFixed(3));
+  return String(rounded === 0 ? 0 : rounded);
+};
+
+export const calculateAvgPurity =(gross: number, fine: number): string => {
   if (!gross || gross <= 0 || !fine || fine <= 0) return '0.00';
   const purity = (fine / gross) * 100;
   return purity.toFixed(2);
@@ -441,18 +448,8 @@ export const buildCategoryGroups = (data: any | undefined): CategoryGroup[] => {
     data.stocks?.karigarDues ||
     data.stocks?.karigarDue;
   if (karigarDueItems && Array.isArray(karigarDueItems)) {
+    // Show every karigar due as returned by the API (including negative dues)
     const activeDueItems = karigarDueItems
-      .filter((i: any) => {
-        const dueVal = toNumber(
-          i.due ??
-            i.fineWeight ??
-            i.fineweight ??
-            i.grossWeight ??
-            i.grossweight ??
-            0,
-        );
-        return dueVal >= 0;
-      })
       .map((i: any) => {
         const dueVal = toNumber(
           i.due ??

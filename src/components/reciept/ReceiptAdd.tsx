@@ -555,6 +555,46 @@ const ReceiptAdd: React.FC = () => {
     );
   };
 
+  // Open WhatsApp with the saved bill summary for the client (mobile Save).
+  const openWhatsAppBill = (responseData?: any) => {
+    const client: any = clients.find((c: any) => c.id === formData.clientId);
+    const fmt = (n: unknown) => String(Number((Number(n) || 0).toFixed(3)));
+
+    const advance =
+      Number(responseData?.customerWeight ?? formData.customerWeight) || 0;
+    const remaining =
+      Number(responseData?.remainingWeight ?? calculateRemainingWeight()) || 0;
+    const totalFineWt = formData.items.reduce(
+      (sum, i) => sum + (Number(i.fineWt) || 0),
+      0,
+    );
+    const now = new Date();
+    const date = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+
+    const lines = [
+      `*Bill - ${formData.clientName || client?.fullName || ''}*`,
+      `Date: ${date}`,
+      '',
+      ...formData.items.map(
+        (i, idx) =>
+          `${idx + 1}. ${i.item || '-'} (${i.size || '-'}) - Gross ${fmt(i.grossWt)} G, Fine ${fmt(i.fineWt)} G`,
+      ),
+      '',
+      `Total Fine Wt: ${fmt(totalFineWt)} G`,
+      `Advance: ${fmt(advance)} G`,
+      `Due Balance: ${fmt(getClientDueBalance(client))} G`,
+      `*Remaining Balance: ${fmt(remaining)} G*`,
+    ];
+
+    // Indian 10-digit numbers get the 91 country code
+    let phone = String(client?.phoneNumber || '').replace(/\D/g, '');
+    if (phone.length === 10) phone = `91${phone}`;
+
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(lines.join('\n'))}`;
+    const win = window.open(url, '_blank');
+    if (!win) window.location.href = url; // popup blocked: open in same tab
+  };
+
   // Save as Draft - Use 'DRAFT' (uppercase)
   const handleSaveAsDraft = async () => {
     if (isSubmittingRef.current || savebill.isPending) {
@@ -631,7 +671,8 @@ const ReceiptAdd: React.FC = () => {
   };
 
   // Save as Completed - Use 'BILL' (uppercase)
-  const handleSaveReceipt = async () => {
+  // print: false is used by the mobile "Save" button (saves without printing)
+  const handleSaveReceipt = async ({print = true}: {print?: boolean} = {}) => {
     if (isSubmittingRef.current || savebill.isPending) {
       return;
     }
@@ -704,9 +745,14 @@ const ReceiptAdd: React.FC = () => {
       setSavedBillData(response?.data || billData);
 
       // Print the receipt after successful save
-      setTimeout(() => {
-        handlePrintReceipt(response?.data || billData);
-      }, 500);
+      if (print) {
+        setTimeout(() => {
+          handlePrintReceipt(response?.data || billData);
+        }, 500);
+      } else {
+        // Mobile Save: send the bill to the client on WhatsApp
+        openWhatsAppBill(response?.data || billData);
+      }
 
       // Navigate after print
       setTimeout(() => {
@@ -1034,10 +1080,10 @@ const ReceiptAdd: React.FC = () => {
                   </span>
                   {renderActions(item, index)}
                 </div>
-                <div className="grid grid-cols-2 gap-x-2.5 gap-y-2 p-2.5">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-3 p-3 [&_input]:!py-2 [&_input]:!text-sm [&_select]:!py-2 [&_select]:!text-sm [&_div.shadow-inner]:py-2 [&_div.shadow-inner]:text-sm">
                   {columns.map((col) => (
                     <div key={String(col.key)} className="min-w-0">
-                      <span className="mb-0.5 block truncate text-[10px] font-semibold uppercase tracking-wide text-[#4f4535] dark:text-slate-300">
+                      <span className="mb-1 block truncate text-[11px] font-semibold uppercase tracking-wide text-[#4f4535] dark:text-slate-300">
                         {col.header}
                       </span>
                       {col.render?.(item, index)}
@@ -1146,7 +1192,26 @@ const ReceiptAdd: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="sticky bottom-0 z-30 border-t border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-950">
+        {/* Mobile: single Save (no print), sits above the bottom nav */}
+        <div className="sticky bottom-16 z-30 -mx-4 border-t border-[#d3c4af]/20 bg-[#f9f9f7] px-4 py-3 dark:border-slate-700 dark:bg-slate-950 md:hidden">
+          <GenericButton
+            type="button"
+            onClick={() => handleSaveReceipt({print: false})}
+            disabled={isSubmitting || savebill.isPending}
+            size="md"
+            fullWidth
+          >
+            {submittingType === 'bill' ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            <span>{submittingType === 'bill' ? 'Saving...' : 'Save'}</span>
+          </GenericButton>
+        </div>
+
+        {/* Desktop: Save as Draft + Save & Print */}
+        <div className="sticky bottom-0 z-30 hidden border-t border-[#d3c4af]/20 bg-[#f9f9f7] p-4 dark:border-slate-700 dark:bg-slate-950 md:block">
           <div className="flex w-full flex-row items-center justify-end gap-2 sm:w-auto sm:gap-3">
             <GenericButton
               type="button"
@@ -1167,7 +1232,7 @@ const ReceiptAdd: React.FC = () => {
 
             <GenericButton
               type="button"
-              onClick={handleSaveReceipt}
+              onClick={() => handleSaveReceipt()}
               disabled={isSubmitting || savebill.isPending}
               className="flex-1 sm:flex-initial"
             >

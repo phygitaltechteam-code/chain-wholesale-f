@@ -79,7 +79,7 @@ const Settlement: React.FC = () => {
     pendingBalance: 0,
     totalBills: 0,
     settlementAmount: 0,
-    settlementType: 'receive',
+    settlementType: 'give',
     date: new Date().toISOString().split('T')[0],
     clientId: '',
     openingBalance: 0,
@@ -220,7 +220,7 @@ const Settlement: React.FC = () => {
       pendingBalance: balance,
       totalBills: entry.totalBills || 0,
       settlementAmount: 0,
-      settlementType: 'receive',
+      settlementType: 'give',
       date: new Date().toISOString().split('T')[0],
       clientId: entry.clientId,
       openingBalance: entry.openingBalance || 0,
@@ -241,7 +241,7 @@ const Settlement: React.FC = () => {
       pendingBalance: 0,
       totalBills: 0,
       settlementAmount: 0,
-      settlementType: 'receive',
+      settlementType: 'give',
       date: new Date().toISOString().split('T')[0],
       clientId: '',
       openingBalance: 0,
@@ -334,7 +334,7 @@ const Settlement: React.FC = () => {
         pendingBalance: 0,
         totalBills: 0,
         settlementAmount: 0,
-        settlementType: 'receive',
+        settlementType: 'give',
         date: new Date().toISOString().split('T')[0],
         clientId: '',
         openingBalance: 0,
@@ -489,6 +489,7 @@ const Settlement: React.FC = () => {
     {
       key: 'phoneNumber',
       header: 'Phone',
+      className: 'hidden md:table-cell',
       render: (item) => (
         <span className="text-sm text-[#1a1c1b] dark:text-white">
           {item.phoneNumber}
@@ -498,6 +499,7 @@ const Settlement: React.FC = () => {
     {
       key: 'address',
       header: 'Address',
+      className: 'hidden md:table-cell',
       render: (item) => (
         <span className="text-sm text-[#1a1c1b] dark:text-white">
           {item.address}
@@ -516,6 +518,7 @@ const Settlement: React.FC = () => {
     {
       key: 'totalBills',
       header: 'Total Bills',
+      className: 'hidden md:table-cell',
       render: (item) => (
         <span className="font-mono text-sm text-black dark:text-white">
           {item.totalBills || 0}

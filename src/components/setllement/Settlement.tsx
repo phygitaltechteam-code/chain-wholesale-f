@@ -488,6 +488,7 @@ const Settlement: React.FC = () => {
     {
       key: 'phoneNumber',
       header: 'Phone',
+      className: 'hidden md:table-cell',
       render: (item) => (
         <span className="text-sm text-[#1a1c1b] dark:text-white">
           {item.phoneNumber}
@@ -497,6 +498,7 @@ const Settlement: React.FC = () => {
     {
       key: 'address',
       header: 'Address',
+      className: 'hidden md:table-cell',
       render: (item) => (
         <span className="text-sm text-[#1a1c1b] dark:text-white">
           {item.address}
@@ -515,6 +517,7 @@ const Settlement: React.FC = () => {
     {
       key: 'totalBills',
       header: 'Total Bills',
+      className: 'hidden md:table-cell',
       render: (item) => (
         <span className="font-mono text-sm text-black dark:text-white">
           {item.totalBills || 0}

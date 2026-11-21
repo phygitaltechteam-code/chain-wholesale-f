@@ -1,5 +1,5 @@
 import React from 'react';
-import {CategoryGroup, formatNumberDisplay} from './realTimeGoldUtils';
+import {CategoryGroup, formatWeight} from './realTimeGoldUtils';
 
 interface RealTimeCustomerDuePanelProps {
   clientDueGroup?: CategoryGroup;
@@ -45,7 +45,7 @@ export const RealTimeCustomerDuePanel: React.FC<
                     {item.name}
                   </td>
                   <td className="font-mono px-3 py-2.5 text-center font-bold text-black dark:text-white">
-                    {formatNumberDisplay(item.fineWeight)}
+                    {formatWeight(item.fineWeight)}
                   </td>
                 </tr>
               ))
@@ -69,7 +69,7 @@ export const RealTimeCustomerDuePanel: React.FC<
                 Total Due
               </td>
               <td className="font-mono px-3 py-2.5 text-center font-black text-black dark:text-white">
-                {formatNumberDisplay(clientDueTotal.fine)}
+                {formatWeight(clientDueTotal.fine)}
               </td>
             </tr>
           </tfoot>
